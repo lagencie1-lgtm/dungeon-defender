@@ -17,5 +17,15 @@ $out = Join-Path $root "tools\publish-build.rbxl"
 if ($LASTEXITCODE -ne 0) { throw "rojo build failed" }
 
 $url = "https://apis.roblox.com/universes/v1/$($settings.universeId)/places/$($settings.placeId)/versions?versionType=Published"
-$result = Invoke-RestMethod -Method Post -Uri $url -InFile $out -ContentType "application/octet-stream" -Headers @{ "x-api-key" = $key }
-Write-Output "Published version $($result.versionNumber)"
+# Roblox sometimes answers "server is busy": try again a few times
+for ($try = 1; $try -le 6; $try++) {
+    try {
+        $result = Invoke-RestMethod -Method Post -Uri $url -InFile $out -ContentType "application/octet-stream" -Headers @{ "x-api-key" = $key }
+        Write-Output "Published version $($result.versionNumber)"
+        exit 0
+    } catch {
+        Write-Output "Try $try failed: $($_.ErrorDetails.Message)"
+        if ($try -lt 6) { Start-Sleep -Seconds (30 * $try) }
+    }
+}
+throw "Publishing failed"

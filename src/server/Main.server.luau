@@ -15,4 +15,4 @@ HeroService.Start()
 LootService.Start()
 GameService.Start()
 
-print("Realm Guardians is running!")
+print("Heroes Tower Defense is running!")

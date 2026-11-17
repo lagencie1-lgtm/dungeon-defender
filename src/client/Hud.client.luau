@@ -1233,4 +1233,4 @@ if not isTouch then
 		TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
 end
 
-print("Welcome to Realm Guardians!")
+print("Welcome to Heroes Tower Defense!")

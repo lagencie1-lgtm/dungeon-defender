@@ -1,6 +1,6 @@
-# Realm Guardians
+# Heroes Tower Defense
 
-A co-op tower defense game for Roblox. The game idea is in `Game_Idea`.
+A co-op tower defense game for Roblox (first called Realm Guardians). The game idea is in `Game_Idea`.
 
 The scripts live in `src/` as normal files. Rojo copies them into Roblox Studio live while you work.
 

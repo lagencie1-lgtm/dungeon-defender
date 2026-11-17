@@ -1,5 +1,7 @@
--- The game screen on each player's computer: gold, waves, portal health,
--- defender buttons, placing/upgrading/selling, hero abilities and messages.
+-- The game screen on each player's computer or phone: gold, waves, portal
+-- health, defender buttons, placing/upgrading/selling, hero abilities, shop,
+-- daily reward, banners, combos and screen shake.
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -7,7 +9,9 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Ui = require(script.Parent.Ui)
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
 workspace:WaitForChild("Map"):WaitForChild("Ground")
@@ -15,125 +19,148 @@ workspace:WaitForChild("Towers")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.label, Ui.button
 
-local GOLD = Color3.fromRGB(255, 210, 70)
-local DARK = Color3.fromRGB(25, 20, 35)
-local PANEL = Color3.fromRGB(40, 32, 55)
+-- phones and tablets get bigger buttons in different places
+local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 -------------------------------------------------------------------------------
--- little helpers to make UI pieces
+-- the screen, scaled to fit any size (phones get everything a bit smaller)
 -------------------------------------------------------------------------------
-local function make(className, props, children)
-	local obj = Instance.new(className)
-	for k, v in props do
-		obj[k] = v
-	end
-	for _, child in children or {} do
-		child.Parent = obj
-	end
-	return obj
-end
-
-local function corner(radius)
-	return make("UICorner", { CornerRadius = UDim.new(0, radius or 8) })
-end
-
-local function stroke(color, thickness)
-	return make("UIStroke", { Color = color or Color3.fromRGB(120, 90, 160), Thickness = thickness or 2 })
-end
-
-local function label(props)
-	local l = make("TextLabel", {
-		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextScaled = true,
-	})
-	for k, v in props do
-		l[k] = v
-	end
-	return l
-end
-
-local function button(props)
-	local b = make("TextButton", {
-		BackgroundColor3 = PANEL,
-		Font = Enum.Font.GothamBold,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextScaled = true,
-		AutoButtonColor = true,
-	}, { corner(8), stroke() })
-	for k, v in props do
-		b[k] = v
-	end
-	return b
-end
-
 local gui = make("ScreenGui", {
 	Name = "RealmGuardiansHud",
 	ResetOnSpawn = false,
-	IgnoreGuiInset = false,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+local root = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
+local rootScale = make("UIScale", { Parent = root })
+
+local function fitScreen()
+	local size = camera.ViewportSize
+	local s = math.clamp(math.min(size.X / 1280, size.Y / 720), 0.55, 1.3)
+	rootScale.Scale = s
+	root.Size = UDim2.fromScale(1 / s, 1 / s)
+end
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
+fitScreen()
+
+-- red flash over the whole screen when the portal is hit
+local flash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(255, 0, 0),
+	BackgroundTransparency = 1, ZIndex = 50, Active = false, Parent = gui })
 
 -------------------------------------------------------------------------------
 -- top bar: wave, gold, portal health
 -------------------------------------------------------------------------------
 local top = make("Frame", {
-	Size = UDim2.fromOffset(560, 64),
+	Size = UDim2.fromOffset(600, 64),
 	Position = UDim2.new(0.5, 0, 0, 8),
 	AnchorPoint = Vector2.new(0.5, 0),
-	BackgroundColor3 = DARK,
+	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.15,
-	Parent = gui,
-}, { corner(12), stroke() })
+	Parent = root,
+}, { corner(14), stroke() })
 
-local waveLabel = label({ Size = UDim2.fromOffset(150, 30), Position = UDim2.fromOffset(12, 6), Text = "Wave 0/10",
+local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fromOffset(14, 6), Text = "Wave 0/10",
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-local stateLabel = label({ Size = UDim2.fromOffset(170, 20), Position = UDim2.fromOffset(12, 38), Text = "",
-	TextColor3 = Color3.fromRGB(200, 190, 230), Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-local goldLabel = label({ Size = UDim2.fromOffset(130, 34), Position = UDim2.fromOffset(190, 14), Text = "200",
-	TextColor3 = GOLD, Parent = top })
-label({ Size = UDim2.fromOffset(200, 16), Position = UDim2.fromOffset(345, 6), Text = "Portal",
+local stateLabel = label({ Size = UDim2.fromOffset(180, 20), Position = UDim2.fromOffset(14, 38), Text = "",
+	TextColor3 = Ui.TEXT_DIM, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
+local goldLabel = label({ Size = UDim2.fromOffset(150, 36), Position = UDim2.fromOffset(200, 14), Text = "200 gold",
+	TextColor3 = Ui.GOLD, Parent = top })
+label({ Size = UDim2.fromOffset(220, 16), Position = UDim2.fromOffset(366, 6), Text = "Portal",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 170, 255), Parent = top })
-local portalBack = make("Frame", { Size = UDim2.fromOffset(200, 22), Position = UDim2.fromOffset(345, 26),
+local portalBack = make("Frame", { Size = UDim2.fromOffset(220, 24), Position = UDim2.fromOffset(366, 26),
 	BackgroundColor3 = Color3.fromRGB(50, 30, 40), Parent = top }, { corner(6) })
 local portalFill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(150, 90, 255),
 	Parent = portalBack }, { corner(6) })
-local portalText = label({ Size = UDim2.fromScale(1, 1), Text = "100 / 100", ZIndex = 2, Parent = portalBack })
+local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fromScale(0, 0.08), Text = "100 / 100",
+	ZIndex = 2, Parent = portalBack })
 
-local startButton = button({
-	Size = UDim2.fromOffset(200, 40),
+-- start wave + speed buttons under the bar
+local controls = make("Frame", {
+	Size = UDim2.fromOffset(420, 44),
 	Position = UDim2.new(0.5, 0, 0, 80),
 	AnchorPoint = Vector2.new(0.5, 0),
-	BackgroundColor3 = Color3.fromRGB(150, 60, 40),
-	Text = "Start wave now",
-	Parent = gui,
-})
+	BackgroundTransparency = 1,
+	Parent = root,
+}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
+	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+local startButton = button({ Size = UDim2.fromOffset(210, 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+	Text = "Start wave now", LayoutOrder = 1, Parent = controls })
+local speedButton = button({ Size = UDim2.fromOffset(110, 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
+	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
+
+-- difficulty picker, only before the first wave
+local diffPanel = make("Frame", {
+	Size = UDim2.fromOffset(480, 92),
+	Position = UDim2.new(0.5, 0, 0, 132),
+	AnchorPoint = Vector2.new(0.5, 0),
+	BackgroundColor3 = Ui.DARK,
+	BackgroundTransparency = 0.15,
+	Parent = root,
+}, { corner(12), stroke() })
+label({ Size = UDim2.new(1, -20, 0, 22), Position = UDim2.fromOffset(10, 4), Text = "Pick a difficulty",
+	Parent = diffPanel })
+local diffButtons = {}
+for i, diff in Config.Difficulties do
+	local b = button({ Size = UDim2.fromOffset(148, 56), Position = UDim2.fromOffset(10 + (i - 1) * 156, 30),
+		Text = "", BackgroundColor3 = Ui.PANEL, Parent = diffPanel })
+	label({ Size = UDim2.new(1, -10, 0, 26), Position = UDim2.fromOffset(5, 4), Text = diff.Name,
+		TextColor3 = diff.Color, Parent = b })
+	label({ Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 32),
+		Text = diff.Subtitle .. " · gems x" .. diff.Gems, Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
+	b.Activated:Connect(function()
+		Remotes.PickDifficulty:FireServer(diff.Id)
+	end)
+	diffButtons[diff.Id] = b
+end
 
 -------------------------------------------------------------------------------
--- messages in the middle of the screen
+-- left side: gems, shop, daily reward
+-------------------------------------------------------------------------------
+local side = make("Frame", {
+	Size = UDim2.fromOffset(150, 170),
+	Position = UDim2.fromOffset(10, isTouch and 70 or 60),
+	BackgroundTransparency = 1,
+	Parent = root,
+}, { make("UIListLayout", { Padding = UDim.new(0, 8) }) })
+local gemsLabel = label({ Size = UDim2.fromOffset(150, 34), Text = "0 gems", TextColor3 = Ui.GEM,
+	TextStrokeTransparency = 0.4, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1, Parent = side })
+local shopButton = button({ Size = UDim2.fromOffset(150, 46), BackgroundColor3 = Color3.fromRGB(60, 110, 170),
+	Text = "Shop", LayoutOrder = 2, Parent = side })
+local dailyButton = button({ Size = UDim2.fromOffset(150, 46), BackgroundColor3 = Color3.fromRGB(170, 120, 40),
+	Text = "Daily reward", LayoutOrder = 3, Parent = side })
+local dailyDot = make("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -8, 0, -6),
+	BackgroundColor3 = Color3.fromRGB(255, 60, 60), Visible = false, ZIndex = 3, Parent = dailyButton }, { corner(8) })
+
+-------------------------------------------------------------------------------
+-- messages, banners and combo counter
 -------------------------------------------------------------------------------
 local messages = make("Frame", {
-	Size = UDim2.fromOffset(600, 160),
-	Position = UDim2.new(0.5, 0, 0, 130),
+	Size = UDim2.fromOffset(640, 170),
+	Position = UDim2.new(0.5, 0, 0, 232),
 	AnchorPoint = Vector2.new(0.5, 0),
 	BackgroundTransparency = 1,
-	Parent = gui,
+	Parent = root,
 }, { make("UIListLayout", { HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4) }) })
 
 local function showMessage(text, color)
-	local l = label({ Size = UDim2.fromOffset(600, 30), Text = text, TextColor3 = color or Color3.new(1, 1, 1),
+	local l = label({ Size = UDim2.fromOffset(640, 28), Text = text, TextColor3 = color or Color3.new(1, 1, 1),
 		TextStrokeTransparency = 0.2, Parent = messages })
-	task.delay(3, function()
+	Ui.pop(l, 1.15)
+	task.delay(3.2, function()
 		TweenService:Create(l, TweenInfo.new(0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
 		task.wait(0.6)
 		l:Destroy()
 	end)
-	local list = messages:GetChildren()
-	if #list > 6 then
-		for _, child in list do
+	local count = 0
+	for _, child in messages:GetChildren() do
+		if child:IsA("TextLabel") then
+			count += 1
+		end
+	end
+	if count > 5 then
+		for _, child in messages:GetChildren() do
 			if child:IsA("TextLabel") then
 				child:Destroy()
 				break
@@ -143,121 +170,587 @@ local function showMessage(text, color)
 end
 Remotes.Notify.OnClientEvent:Connect(showMessage)
 
+local banner = make("Frame", {
+	Size = UDim2.fromOffset(800, 130),
+	Position = UDim2.fromScale(0.5, 0.36),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	BackgroundTransparency = 1,
+	Visible = false,
+	Parent = root,
+})
+local bannerTitle = label({ Size = UDim2.new(1, 0, 0, 80), Text = "", Font = Enum.Font.GothamBlack,
+	TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(40, 10, 50), Parent = banner })
+local bannerSub = label({ Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 84), Text = "",
+	TextColor3 = Color3.fromRGB(255, 230, 180), TextStrokeTransparency = 0.2, Parent = banner })
+local bannerToken = 0
+
+local function showBanner(title, subtitle, color)
+	bannerToken += 1
+	local my = bannerToken
+	banner.Visible = true
+	bannerTitle.Text = title
+	bannerTitle.TextColor3 = color or Color3.new(1, 1, 1)
+	bannerSub.Text = subtitle or ""
+	bannerTitle.TextTransparency = 0
+	bannerSub.TextTransparency = 0
+	bannerTitle.TextStrokeTransparency = 0
+	banner.Position = UDim2.fromScale(0.5, 0.3)
+	TweenService:Create(banner, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		{ Position = UDim2.fromScale(0.5, 0.36) }):Play()
+	Ui.pop(banner, 1.4)
+	task.delay(2.4, function()
+		if my ~= bannerToken then
+			return
+		end
+		TweenService:Create(bannerTitle, TweenInfo.new(0.5), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		TweenService:Create(bannerSub, TweenInfo.new(0.5), { TextTransparency = 1 }):Play()
+		task.wait(0.5)
+		if my == bannerToken then
+			banner.Visible = false
+		end
+	end)
+end
+
+local comboLabel = label({
+	Size = UDim2.fromOffset(300, 46),
+	Position = UDim2.new(1, -20, 0, isTouch and 80 or 150),
+	AnchorPoint = Vector2.new(1, 0),
+	Text = "",
+	Font = Enum.Font.GothamBlack,
+	TextColor3 = Color3.fromRGB(255, 220, 90),
+	TextStrokeTransparency = 0,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = root,
+})
+local comboShout = label({
+	Size = UDim2.fromOffset(420, 30),
+	Position = UDim2.new(1, -20, 0, isTouch and 128 or 198),
+	AnchorPoint = Vector2.new(1, 0),
+	Text = "",
+	TextColor3 = Color3.fromRGB(255, 140, 220),
+	TextStrokeTransparency = 0.1,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = root,
+})
+
+-------------------------------------------------------------------------------
+-- screen shake
+-------------------------------------------------------------------------------
+local shakeAmount = 0
+local function shake(amount)
+	shakeAmount = math.max(shakeAmount, amount)
+end
+RunService.RenderStepped:Connect(function(dt)
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	if shakeAmount > 0.01 then
+		local function r()
+			return (math.random() - 0.5) * 2 * shakeAmount * 0.35
+		end
+		humanoid.CameraOffset = Vector3.new(r(), r(), r())
+		shakeAmount = math.max(0, shakeAmount - dt * 3)
+	elseif humanoid.CameraOffset ~= Vector3.zero then
+		humanoid.CameraOffset = Vector3.zero
+	end
+end)
+
 -------------------------------------------------------------------------------
 -- defender buttons (bottom middle)
 -------------------------------------------------------------------------------
+local BUTTON_W = 112
 local towerBar = make("Frame", {
-	Size = UDim2.fromOffset(#Config.TowerOrder * 150 + 10, 96),
-	Position = UDim2.new(0.5, 0, 1, -10),
+	Size = UDim2.fromOffset(#Config.TowerOrder * (BUTTON_W + 8), 100),
+	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -10),
 	AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundTransparency = 1,
-	Parent = gui,
-}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
-	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+	Parent = root,
+}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8),
+	HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Bottom }) })
 
+local owned = { Swords = {}, Titles = {}, Towers = {} }
 local towerButtons = {}
 for i, towerType in Config.TowerOrder do
 	local info = Config.Towers[towerType]
-	local b = button({ Size = UDim2.fromOffset(140, 96), Text = "", LayoutOrder = i, Parent = towerBar })
+	local b = button({ Size = UDim2.fromOffset(BUTTON_W, 100), Text = "", LayoutOrder = i, Parent = towerBar })
 	make("Frame", { Size = UDim2.new(1, -16, 0, 6), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = info.Color,
 		Parent = b }, { corner(3) })
-	label({ Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, 18), Text = info.DisplayName, Parent = b })
-	label({ Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, 42), Text = info.Cost .. " gold",
-		TextColor3 = GOLD, Parent = b })
-	label({ Size = UDim2.new(1, -12, 0, 24), Position = UDim2.fromOffset(6, 66), Text = info.Description,
-		Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 190, 220), TextWrapped = true, Parent = b })
-	label({ Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -26, 0, -8), Text = tostring(i),
-		BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(90, 70, 130), Parent = b }, {})
-	towerButtons[towerType] = b
+	label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 18), Text = info.DisplayName, Parent = b })
+	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40), Text = info.Cost .. " gold",
+		TextColor3 = Ui.GOLD, Parent = b })
+	label({ Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 62), Text = info.Description,
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = b })
+	if not isTouch then
+		label({ Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -18, 0, -8), Text = tostring(i),
+			BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(90, 70, 130), ZIndex = 3, Parent = b }, {})
+	end
+	local lock = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.35, Visible = false, ZIndex = 4, Parent = b }, { corner(10) })
+	label({ Size = UDim2.new(1, -10, 0, 30), Position = UDim2.fromOffset(5, 20), Text = "🔒", ZIndex = 5, Parent = lock })
+	label({ Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56),
+		Text = (info.UnlockGems or 0) .. " gems", TextColor3 = Ui.GEM, ZIndex = 5, Parent = lock })
+	towerButtons[towerType] = { button = b, cost = cost, lock = lock }
+end
+
+local function isUnlocked(towerType)
+	local info = Config.Towers[towerType]
+	return not info.UnlockGems or owned.Towers[towerType] == true
 end
 
 -------------------------------------------------------------------------------
--- hero panel (bottom left)
+-- hero panel and ability buttons
 -------------------------------------------------------------------------------
 local heroPanel = make("Frame", {
-	Size = UDim2.fromOffset(250, 120),
-	Position = UDim2.new(0, 10, 1, -10),
-	AnchorPoint = Vector2.new(0, 1),
-	BackgroundColor3 = DARK,
+	Size = UDim2.fromOffset(230, 52),
+	Position = isTouch and UDim2.fromOffset(170, 70) or UDim2.new(0, 10, 1, -132),
+	AnchorPoint = Vector2.new(0, 0),
+	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.15,
-	Parent = gui,
+	Parent = root,
 }, { corner(12), stroke() })
-local heroName = label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 6),
+local heroName = label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 4),
 	Text = Config.Hero.Name .. "  Lv 1", TextXAlignment = Enum.TextXAlignment.Left, Parent = heroPanel })
 local xpBack = make("Frame", { Size = UDim2.new(1, -20, 0, 10), Position = UDim2.fromOffset(10, 34),
 	BackgroundColor3 = Color3.fromRGB(50, 45, 60), Parent = heroPanel }, { corner(4) })
 local xpFill = make("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(110, 200, 255),
 	Parent = xpBack }, { corner(4) })
 
-local function abilityButton(text, key, x)
-	local b = button({ Size = UDim2.fromOffset(110, 58), Position = UDim2.fromOffset(x, 52), Text = "", Parent = heroPanel })
-	label({ Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 6), Text = text, Parent = b })
-	label({ Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 32), Text = "Key: " .. key,
-		Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 190, 220), Parent = b })
+local abilityHolder
+if isTouch then
+	-- a column on the right, above the jump button
+	abilityHolder = make("Frame", {
+		Size = UDim2.fromOffset(96, 320),
+		Position = UDim2.new(1, -16, 1, -150),
+		AnchorPoint = Vector2.new(1, 1),
+		BackgroundTransparency = 1,
+		Parent = root,
+	}, { make("UIListLayout", { Padding = UDim.new(0, 12), VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right }) })
+else
+	abilityHolder = make("Frame", {
+		Size = UDim2.fromOffset(230, 64),
+		Position = UDim2.new(0, 10, 1, -64),
+		BackgroundTransparency = 1,
+		Parent = root,
+	}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
+end
+
+local function abilityButton(text, key, order)
+	local size = isTouch and UDim2.fromOffset(92, 92) or UDim2.fromOffset(71, 58)
+	local b = button({ Size = size, Text = "", LayoutOrder = order, BackgroundColor3 = Color3.fromRGB(70, 50, 100),
+		Parent = abilityHolder })
+	if isTouch then
+		b:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
+	end
+	label({ Size = UDim2.new(1, -8, 0.45, 0), Position = UDim2.fromScale(0, 0.12), AnchorPoint = Vector2.new(0, 0),
+		Text = text, Parent = b })
+	if not isTouch then
+		label({ Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0, 4, 1, -20), Text = "[" .. key .. "]",
+			Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
+	end
 	local shade = make("Frame", { Size = UDim2.fromScale(1, 0), Position = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0, 1),
-		BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, ZIndex = 3, Parent = b }, { corner(8) })
+		BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, ZIndex = 3, Parent = b },
+		{ corner(isTouch and 46 or 8) })
 	return b, shade
 end
-local attackButton, attackShade = abilityButton("Sword", "F", 10)
-local whirlButton, whirlShade = abilityButton("Whirlwind", "E", 130)
+local attackButton, attackShade = abilityButton("Sword", "F", 3)
+local whirlButton, whirlShade = abilityButton("Whirl", "E", 2)
+local leapButton, leapShade = abilityButton("Leap", "R", 1)
+if not isTouch then
+	-- on PC the order left to right is Sword, Whirl, Leap
+	attackButton.LayoutOrder, whirlButton.LayoutOrder, leapButton.LayoutOrder = 1, 2, 3
+end
 
 -------------------------------------------------------------------------------
 -- defender info panel (shows when you click one of your defenders)
 -------------------------------------------------------------------------------
 local infoPanel = make("Frame", {
-	Size = UDim2.fromOffset(220, 170),
-	Position = UDim2.new(1, -10, 0.5, 0),
+	Size = UDim2.fromOffset(240, 176),
+	Position = isTouch and UDim2.new(1, -124, 0.42, 0) or UDim2.new(1, -10, 0.5, 0),
 	AnchorPoint = Vector2.new(1, 0.5),
-	BackgroundColor3 = DARK,
+	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.1,
 	Visible = false,
-	Parent = gui,
+	Parent = root,
 }, { corner(12), stroke() })
 local infoTitle = label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 8), Text = "", Parent = infoPanel })
 local infoStats = label({ Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 36), Text = "",
-	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(210, 200, 230), TextWrapped = true, Parent = infoPanel })
-local upgradeButton = button({ Size = UDim2.new(1, -20, 0, 36), Position = UDim2.fromOffset(10, 82),
-	BackgroundColor3 = Color3.fromRGB(60, 120, 60), Text = "Upgrade", Parent = infoPanel })
-local sellButton = button({ Size = UDim2.new(1, -20, 0, 36), Position = UDim2.fromOffset(10, 124),
-	BackgroundColor3 = Color3.fromRGB(130, 50, 50), Text = "Sell", Parent = infoPanel })
+	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = infoPanel })
+local upgradeButton = button({ Size = UDim2.new(1, -20, 0, 38), Position = UDim2.fromOffset(10, 82),
+	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Upgrade", Parent = infoPanel })
+local sellButton = button({ Size = UDim2.new(1, -20, 0, 38), Position = UDim2.fromOffset(10, 128),
+	BackgroundColor3 = Color3.fromRGB(140, 50, 50), Text = "Sell", Parent = infoPanel })
+
+-- phones: confirm where to build
+local confirmBar = make("Frame", {
+	Size = UDim2.fromOffset(330, 54),
+	Position = UDim2.new(0.5, 0, 1, -130),
+	AnchorPoint = Vector2.new(0.5, 1),
+	BackgroundTransparency = 1,
+	Visible = false,
+	Parent = root,
+}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
+	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+local confirmButton = button({ Size = UDim2.fromOffset(200, 54), BackgroundColor3 = Color3.fromRGB(60, 140, 60),
+	Text = "Build here", LayoutOrder = 1, Parent = confirmBar })
+local cancelButton = button({ Size = UDim2.fromOffset(120, 54), BackgroundColor3 = Color3.fromRGB(140, 50, 50),
+	Text = "Cancel", LayoutOrder = 2, Parent = confirmBar })
+local tapHint = label({ Size = UDim2.fromOffset(400, 26), Position = UDim2.new(0.5, 0, 1, -190), AnchorPoint = Vector2.new(0.5, 1),
+	Text = "Tap the ground where it should go", TextStrokeTransparency = 0.3, Visible = false, Parent = root })
 
 -------------------------------------------------------------------------------
 -- end screen
 -------------------------------------------------------------------------------
 local endPanel = make("Frame", {
-	Size = UDim2.fromOffset(420, 220),
-	Position = UDim2.fromScale(0.5, 0.45),
+	Size = UDim2.fromOffset(460, 270),
+	Position = UDim2.fromScale(0.5, 0.48),
 	AnchorPoint = Vector2.new(0.5, 0.5),
-	BackgroundColor3 = DARK,
+	BackgroundColor3 = Ui.DARK,
 	Visible = false,
 	ZIndex = 10,
-	Parent = gui,
-}, { corner(16), stroke(GOLD, 3) })
-local endTitle = label({ Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 16), Text = "", ZIndex = 11, Parent = endPanel })
-local endText = label({ Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 86), Text = "", ZIndex = 11,
-	Font = Enum.Font.Gotham, Parent = endPanel })
-local playAgainButton = button({ Size = UDim2.fromOffset(220, 50), Position = UDim2.new(0.5, 0, 1, -20),
-	AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Color3.fromRGB(90, 60, 150), Text = "Play again", ZIndex = 11,
+	Parent = root,
+}, { corner(18), stroke(Ui.GOLD, 3) })
+local endTitle = label({ Size = UDim2.new(1, -20, 0, 70), Position = UDim2.fromOffset(10, 12), Text = "",
+	Font = Enum.Font.GothamBlack, ZIndex = 11, Parent = endPanel })
+local endMeme = label({ Size = UDim2.new(1, -20, 0, 28), Position = UDim2.fromOffset(10, 84), Text = "",
+	TextColor3 = Color3.fromRGB(255, 160, 230), ZIndex = 11, Parent = endPanel })
+local endText = label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 118), Text = "",
+	Font = Enum.Font.Gotham, ZIndex = 11, Parent = endPanel })
+local endGems = label({ Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 148), Text = "",
+	TextColor3 = Ui.GEM, ZIndex = 11, Parent = endPanel })
+local playAgainButton = button({ Size = UDim2.fromOffset(240, 54), Position = UDim2.new(0.5, 0, 1, -18),
+	AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Color3.fromRGB(100, 60, 170), Text = "Play again", ZIndex = 11,
 	Parent = endPanel })
 
-label({ Size = UDim2.fromOffset(330, 18), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
-	Text = "1/2/3 build  ·  click defender to upgrade  ·  Q cancel", Font = Enum.Font.Gotham,
-	TextColor3 = Color3.fromRGB(200, 190, 220), TextStrokeTransparency = 0.5, Parent = gui })
+-------------------------------------------------------------------------------
+-- shop
+-------------------------------------------------------------------------------
+local shopPanel = make("Frame", {
+	Size = UDim2.fromOffset(560, 440),
+	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	BackgroundColor3 = Ui.DARK,
+	Visible = false,
+	ZIndex = 20,
+	Parent = root,
+}, { corner(18), stroke(Ui.GEM, 3) })
+label({ Size = UDim2.new(1, -120, 0, 36), Position = UDim2.fromOffset(16, 10), Text = "Shop",
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = shopPanel })
+local shopGems = label({ Size = UDim2.fromOffset(200, 30), Position = UDim2.new(1, -70, 0, 14), AnchorPoint = Vector2.new(1, 0),
+	Text = "0 gems", TextColor3 = Ui.GEM, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 21, Parent = shopPanel })
+local shopClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = shopPanel })
+local tabBar = make("Frame", { Size = UDim2.new(1, -32, 0, 40), Position = UDim2.fromOffset(16, 56),
+	BackgroundTransparency = 1, ZIndex = 21, Parent = shopPanel },
+	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
+local list = make("ScrollingFrame", {
+	Size = UDim2.new(1, -32, 1, -116),
+	Position = UDim2.fromOffset(16, 104),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 6,
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	ZIndex = 21,
+	Parent = shopPanel,
+}, { make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
+
+local shopTab = "Towers"
+local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "Swords", Name = "Swords" }, { Id = "Titles", Name = "Titles" } }
+local tabButtons = {}
+
+local function shopItems(kind)
+	local items = {}
+	if kind == "Towers" then
+		for _, towerType in Config.TowerOrder do
+			local info = Config.Towers[towerType]
+			if info.UnlockGems then
+				table.insert(items, { Id = towerType, Name = info.DisplayName, Price = info.UnlockGems,
+					Text = info.Description, Color = info.Color })
+			end
+		end
+	elseif kind == "Swords" then
+		for _, s in Config.Swords do
+			table.insert(items, { Id = s.Id, Name = s.Name, Price = s.Price, Text = "A new look for your sword", Color = s.Color })
+		end
+	else
+		for _, t in Config.Titles do
+			table.insert(items, { Id = t.Id, Name = t.Name, Price = t.Price, Text = "Shows over your head",
+				Color = Color3.fromRGB(255, 200, 90) })
+		end
+	end
+	return items
+end
+
+local refreshShop -- defined below
+
+local function rowFor(kind, item, order)
+	local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = order,
+		ZIndex = 22, Parent = list }, { corner(10) })
+	make("Frame", { Size = UDim2.fromOffset(10, 44), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = item.Color,
+		ZIndex = 23, Parent = row }, { corner(4) })
+	label({ Size = UDim2.new(1, -200, 0, 26), Position = UDim2.fromOffset(30, 8), Text = item.Name,
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+	label({ Size = UDim2.new(1, -200, 0, 18), Position = UDim2.fromOffset(30, 38), Text = item.Text,
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+
+	local isOwned = owned[kind] and owned[kind][item.Id] == true
+	local equippedId = kind == "Swords" and player:GetAttribute("EquippedSword")
+		or kind == "Titles" and player:GetAttribute("EquippedTitle") or nil
+	local text, color
+	if not isOwned then
+		text, color = "Buy " .. item.Price .. " gems", Color3.fromRGB(40, 120, 170)
+	elseif kind == "Towers" then
+		text, color = "Unlocked", Color3.fromRGB(60, 60, 70)
+	elseif equippedId == item.Id then
+		text, color = "Equipped", Color3.fromRGB(60, 60, 70)
+	else
+		text, color = "Equip", Color3.fromRGB(60, 130, 60)
+	end
+	local b = button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		Text = text, BackgroundColor3 = color, ZIndex = 23, Parent = row })
+	b.Activated:Connect(function()
+		local ok, reason
+		if not isOwned then
+			ok, reason = Remotes.BuyItem:InvokeServer(kind, item.Id)
+			if ok then
+				showMessage("You got " .. item.Name .. "!", Ui.GEM)
+				Ui.playSound("Coin")
+			end
+		elseif kind ~= "Towers" then
+			ok, reason = Remotes.EquipItem:InvokeServer(kind, item.Id)
+		end
+		if ok == false then
+			showMessage(reason or "Can't do that", Ui.BAD)
+		end
+		task.wait(0.15)
+		refreshShop()
+	end)
+end
+
+function refreshShop()
+	for _, child in list:GetChildren() do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	for i, item in shopItems(shopTab) do
+		rowFor(shopTab, item, i)
+	end
+	for id, b in tabButtons do
+		b.BackgroundColor3 = id == shopTab and Color3.fromRGB(90, 70, 150) or Ui.PANEL
+	end
+end
+
+for i, tab in TABS do
+	local b = button({ Size = UDim2.fromOffset(160, 40), Text = tab.Name, LayoutOrder = i, ZIndex = 22, Parent = tabBar })
+	b.Activated:Connect(function()
+		shopTab = tab.Id
+		refreshShop()
+	end)
+	tabButtons[tab.Id] = b
+end
+
+local function openShop(tab)
+	shopTab = tab or shopTab
+	shopPanel.Visible = true
+	refreshShop()
+	Ui.pop(shopPanel, 0.85)
+end
+shopButton.Activated:Connect(function()
+	if shopPanel.Visible then
+		shopPanel.Visible = false
+	else
+		openShop()
+	end
+end)
+shopClose.Activated:Connect(function()
+	shopPanel.Visible = false
+end)
+
+-------------------------------------------------------------------------------
+-- daily reward
+-------------------------------------------------------------------------------
+local dailyPanel = make("Frame", {
+	Size = UDim2.fromOffset(560, 250),
+	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	BackgroundColor3 = Ui.DARK,
+	Visible = false,
+	ZIndex = 20,
+	Parent = root,
+}, { corner(18), stroke(Ui.GOLD, 3) })
+label({ Size = UDim2.new(1, -80, 0, 36), Position = UDim2.fromOffset(16, 10), Text = "Daily reward",
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = dailyPanel })
+local dailyClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = dailyPanel })
+local dayRow = make("Frame", { Size = UDim2.new(1, -32, 0, 90), Position = UDim2.fromOffset(16, 56),
+	BackgroundTransparency = 1, ZIndex = 21, Parent = dailyPanel },
+	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6),
+		HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+local dayBoxes = {}
+for day, reward in Config.DailyRewards do
+	local box = make("Frame", { Size = UDim2.fromOffset(68, 90), BackgroundColor3 = Ui.PANEL, LayoutOrder = day,
+		ZIndex = 22, Parent = dayRow }, { corner(10), stroke() })
+	label({ Size = UDim2.new(1, -6, 0, 22), Position = UDim2.fromOffset(3, 6), Text = "Day " .. day, ZIndex = 23, Parent = box })
+	label({ Size = UDim2.new(1, -6, 0, 30), Position = UDim2.fromOffset(3, 32), Text = tostring(reward),
+		TextColor3 = Ui.GEM, ZIndex = 23, Parent = box })
+	label({ Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 64), Text = "gems",
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 23, Parent = box })
+	dayBoxes[day] = box
+end
+local claimButton = button({ Size = UDim2.fromOffset(260, 54), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 1),
+	BackgroundColor3 = Color3.fromRGB(60, 140, 60), Text = "Claim", ZIndex = 21, Parent = dailyPanel })
+
+local function dailyReady()
+	return os.time() >= (player:GetAttribute("DailyNextAt") or 0)
+end
+
+local function refreshDaily()
+	local streak = player:GetAttribute("DailyStreak") or 0
+	local ready = dailyReady()
+	local today = ready and math.min(streak + 1, #Config.DailyRewards) or math.min(streak, #Config.DailyRewards)
+	for day, box in dayBoxes do
+		local s = box:FindFirstChildOfClass("UIStroke")
+		if day == today then
+			box.BackgroundColor3 = Color3.fromRGB(110, 80, 30)
+			s.Color = Ui.GOLD
+		elseif day < today then
+			box.BackgroundColor3 = Color3.fromRGB(40, 70, 45)
+			s.Color = Color3.fromRGB(90, 160, 90)
+		else
+			box.BackgroundColor3 = Ui.PANEL
+			s.Color = Color3.fromRGB(120, 90, 170)
+		end
+	end
+	if ready then
+		claimButton.Text = "Claim!"
+		claimButton.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
+	else
+		local left = math.max(0, (player:GetAttribute("DailyNextAt") or 0) - os.time())
+		claimButton.Text = string.format("Come back in %dh %dm", left // 3600, (left % 3600) // 60)
+		claimButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+	end
+	dailyDot.Visible = ready
+end
+
+dailyButton.Activated:Connect(function()
+	dailyPanel.Visible = not dailyPanel.Visible
+	refreshDaily()
+end)
+dailyClose.Activated:Connect(function()
+	dailyPanel.Visible = false
+end)
+claimButton.Activated:Connect(function()
+	local ok, result = Remotes.ClaimDaily:InvokeServer()
+	if ok then
+		showBanner("+" .. result .. " GEMS", "Daily reward claimed. Come back tomorrow!", Ui.GEM)
+		Ui.playSound("Coin")
+		dailyPanel.Visible = false
+	else
+		showMessage(result or "Not yet", Ui.BAD)
+	end
+	refreshDaily()
+end)
+task.spawn(function()
+	-- show the daily reward by itself when it's ready
+	task.wait(4)
+	if dailyReady() and player:GetAttribute("DailyNextAt") then
+		dailyPanel.Visible = true
+		refreshDaily()
+	end
+	while true do
+		task.wait(30)
+		refreshDaily()
+	end
+end)
 
 -------------------------------------------------------------------------------
 -- keep the screen up to date
 -------------------------------------------------------------------------------
+local lastGold = GameState:GetAttribute("Gold") or 0
+local lastPortal = GameState:GetAttribute("PortalHealth") or 100
+local lastWave = GameState:GetAttribute("Wave") or 0
+local lastBoss = GameState:GetAttribute("BossAlert") or 0
+local lastKills = GameState:GetAttribute("Kills") or 0
+local combo, lastKillTime, comboStep = 0, 0, 0
+
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
-	goldLabel.Text = gold .. " gold"
-	waveLabel.Text = "Wave " .. (GameState:GetAttribute("Wave") or 0) .. "/" .. (GameState:GetAttribute("MaxWave") or 10)
+	goldLabel.Text = math.floor(gold) .. " gold"
+	if gold > lastGold then
+		Ui.pop(goldLabel, 1.15)
+	end
+	lastGold = gold
+
+	local wave = GameState:GetAttribute("Wave") or 0
+	waveLabel.Text = "Wave " .. wave .. "/" .. (GameState:GetAttribute("MaxWave") or 10)
+	if wave > lastWave and wave > 0 then
+		local maxWave = GameState:GetAttribute("MaxWave") or 10
+		showBanner(wave == maxWave and "FINAL WAVE" or "WAVE " .. wave, GameState:GetAttribute("WaveTitle") or "",
+			wave == maxWave and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(255, 200, 90))
+		shake(0.6)
+	end
+	lastWave = wave
+
+	local boss = GameState:GetAttribute("BossAlert") or 0
+	if boss > lastBoss then
+		task.delay(1.5, function()
+			showBanner("BOSS INCOMING", "The Goblin King has entered the chat", Color3.fromRGB(220, 120, 255))
+			shake(2)
+		end)
+	end
+	lastBoss = boss
+
 	local hp = GameState:GetAttribute("PortalHealth") or 0
 	local maxHp = GameState:GetAttribute("MaxPortalHealth") or 100
 	portalFill.Size = UDim2.fromScale(math.clamp(hp / maxHp, 0, 1), 1)
+	portalFill.BackgroundColor3 = hp / maxHp > 0.3 and Color3.fromRGB(150, 90, 255) or Color3.fromRGB(255, 70, 90)
 	portalText.Text = hp .. " / " .. maxHp
+	if hp < lastPortal then
+		flash.BackgroundTransparency = 0.65
+		TweenService:Create(flash, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
+		shake(0.8)
+		Ui.pop(portalBack, 1.1)
+		if math.random() < 0.25 then
+			showMessage(Memes.Pick(Memes.Portal), Ui.BAD)
+		end
+	end
+	lastPortal = hp
+
+	-- combo: kills that happen close together
+	local kills = GameState:GetAttribute("Kills") or 0
+	if kills > lastKills then
+		local now = os.clock()
+		if now - lastKillTime < 1.6 then
+			combo += kills - lastKills
+		else
+			combo = kills - lastKills
+			comboStep = 0
+		end
+		lastKillTime = now
+		if combo >= 3 then
+			comboLabel.Text = "x" .. combo .. " COMBO"
+			comboLabel.TextTransparency = 0
+			comboLabel.TextStrokeTransparency = 0
+			Ui.pop(comboLabel, 1.2)
+		end
+		local shout = Memes.Combo[comboStep + 1]
+		if shout and combo >= shout.Count then
+			comboStep += 1
+			comboShout.Text = shout.Text
+			comboShout.TextTransparency = 0
+			comboShout.TextStrokeTransparency = 0.1
+			Ui.pop(comboShout, 1.4)
+		end
+	end
+	lastKills = kills
 
 	local s = GameState:GetAttribute("State")
 	startButton.Visible = s == "Break"
+	speedButton.Visible = s == "Break" or s == "Wave"
+	speedButton.Text = "Speed " .. (GameState:GetAttribute("Speed") or 1) .. "x"
 	if s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"
 	elseif s == "Wave" then
@@ -266,41 +759,93 @@ local function refreshTop()
 		stateLabel.Text = ""
 	end
 
-	endPanel.Visible = s == "Won" or s == "Lost"
-	if s == "Won" then
-		endTitle.Text = "VICTORY!"
-		endTitle.TextColor3 = GOLD
-		endText.Text = "All waves beaten · " .. (GameState:GetAttribute("Kills") or 0) .. " goblins defeated"
-	elseif s == "Lost" then
-		endTitle.Text = "The portal has fallen"
-		endTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
-		endText.Text = "You reached wave " .. (GameState:GetAttribute("Wave") or 0)
+	diffPanel.Visible = wave == 0 and s == "Break"
+	local currentDiff = GameState:GetAttribute("Difficulty")
+	for id, b in diffButtons do
+		local st = b:FindFirstChildOfClass("UIStroke")
+		st.Color = id == currentDiff and Ui.GOLD or Color3.fromRGB(120, 90, 170)
+		st.Thickness = id == currentDiff and 4 or 2
 	end
 
-	for towerType, b in towerButtons do
+	local over = s == "Won" or s == "Lost"
+	if over and not endPanel.Visible then
+		Ui.pop(endPanel, 0.7)
+		shake(s == "Won" and 1 or 1.5)
+	end
+	endPanel.Visible = over
+	endMeme.Text = GameState:GetAttribute("EndMeme") or ""
+	if s == "Won" then
+		endTitle.Text = "VICTORY!"
+		endTitle.TextColor3 = Ui.GOLD
+		endText.Text = "All waves beaten · " .. kills .. " goblins bonked"
+	elseif s == "Lost" then
+		endTitle.Text = "DEFEAT"
+		endTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+		endText.Text = "You made it to wave " .. wave .. " · " .. kills .. " goblins bonked"
+	end
+
+	for towerType, t in towerButtons do
+		local unlocked = isUnlocked(towerType)
+		t.lock.Visible = not unlocked
 		local affordable = gold >= Config.Towers[towerType].Cost
-		b.BackgroundColor3 = affordable and PANEL or Color3.fromRGB(45, 40, 45)
+		t.button.BackgroundColor3 = (affordable and unlocked) and Ui.PANEL or Color3.fromRGB(45, 40, 45)
+		t.cost.TextColor3 = affordable and Ui.GOLD or Ui.BAD
 	end
 end
 GameState.AttributeChanged:Connect(refreshTop)
 refreshTop()
 
-local function refreshHero()
+-- combo fades after a moment without kills
+RunService.Heartbeat:Connect(function()
+	if combo > 0 and os.clock() - lastKillTime > 1.6 then
+		combo = 0
+		comboStep = 0
+		TweenService:Create(comboLabel, TweenInfo.new(0.4), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		TweenService:Create(comboShout, TweenInfo.new(0.4), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	end
+end)
+
+local lastGems = nil
+local function refreshPlayer()
 	local level = player:GetAttribute("HeroLevel") or 1
 	heroName.Text = Config.Hero.Name .. "  Lv " .. level
 	local needed = player:GetAttribute("HeroXpNeeded") or 1
 	local xp = player:GetAttribute("HeroXp") or 0
 	xpFill.Size = UDim2.fromScale(level >= Config.Hero.MaxLevel and 1 or math.clamp(xp / needed, 0, 1), 1)
+
+	local gems = player:GetAttribute("Gems") or 0
+	gemsLabel.Text = gems .. " gems"
+	shopGems.Text = gems .. " gems"
+	if lastGems and gems > lastGems then
+		Ui.pop(gemsLabel, 1.3)
+	end
+	lastGems = gems
+	endGems.Text = "+" .. (player:GetAttribute("LastReward") or 0) .. " gems"
+
+	local json = player:GetAttribute("Owned")
+	if json then
+		local ok, data = pcall(function()
+			return HttpService:JSONDecode(json)
+		end)
+		if ok and type(data) == "table" then
+			owned = data
+			owned.Towers = owned.Towers or {}
+		end
+	end
+	refreshDaily()
+	refreshTop()
 end
-player.AttributeChanged:Connect(refreshHero)
-refreshHero()
+player.AttributeChanged:Connect(refreshPlayer)
+refreshPlayer()
 
 RunService.RenderStepped:Connect(function()
 	local now = workspace:GetServerTimeNow()
-	local attackLeft = (player:GetAttribute("AttackReadyAt") or 0) - now
-	attackShade.Size = UDim2.fromScale(1, math.clamp(attackLeft / Config.Hero.Attack.Cooldown, 0, 1))
-	local whirlLeft = (player:GetAttribute("WhirlwindReadyAt") or 0) - now
-	whirlShade.Size = UDim2.fromScale(1, math.clamp(whirlLeft / Config.Hero.Whirlwind.Cooldown, 0, 1))
+	local function fill(shade, attr, cooldown)
+		shade.Size = UDim2.fromScale(1, math.clamp(((player:GetAttribute(attr) or 0) - now) / cooldown, 0, 1))
+	end
+	fill(attackShade, "AttackReadyAt", Config.Hero.Attack.Cooldown)
+	fill(whirlShade, "WhirlwindReadyAt", Config.Hero.Whirlwind.Cooldown)
+	fill(leapShade, "LeapReadyAt", Config.Hero.Leap.Cooldown)
 end)
 
 -------------------------------------------------------------------------------
@@ -308,6 +853,7 @@ end)
 -------------------------------------------------------------------------------
 local placing = nil -- the defender type we're placing, or nil
 local ghost = nil
+local ghostPos = nil -- phones: the spot that was tapped
 local selected = nil -- the defender model whose info panel is open
 local rangeCircle = nil
 
@@ -326,13 +872,16 @@ local function makeDisc(radius, color)
 	})
 end
 
-local function mouseRay(include)
-	local mouse = UserInputService:GetMouseLocation()
-	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
+local function screenRay(screenPos, include)
+	local ray = camera:ViewportPointToRay(screenPos.X, screenPos.Y)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = include
 	return workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+end
+
+local function mouseRay(include)
+	return screenRay(UserInputService:GetMouseLocation(), include)
 end
 
 -- same rules as the server, so the ghost shows green or red
@@ -360,6 +909,9 @@ end
 
 local function stopPlacing()
 	placing = nil
+	ghostPos = nil
+	confirmBar.Visible = false
+	tapHint.Visible = false
 	if ghost then
 		ghost:Destroy()
 		ghost = nil
@@ -379,8 +931,13 @@ local function startPlacing(towerType)
 	closeInfo()
 	stopPlacing()
 	local info = Config.Towers[towerType]
+	if not isUnlocked(towerType) then
+		showMessage("Unlock the " .. info.DisplayName .. " in the Shop (" .. info.UnlockGems .. " gems)", Ui.GEM)
+		openShop("Towers")
+		return
+	end
 	if (GameState:GetAttribute("Gold") or 0) < info.Cost then
-		showMessage("Not enough gold for a " .. info.DisplayName, Color3.fromRGB(255, 120, 120))
+		showMessage("Not enough gold for a " .. info.DisplayName, Ui.BAD)
 		return
 	end
 	placing = towerType
@@ -401,10 +958,20 @@ local function startPlacing(towerType)
 	disc.Name = "Range"
 	disc.Parent = ghost
 	ghost.Parent = workspace
+	if isTouch then
+		tapHint.Visible = true
+		-- start the ghost in front of the hero
+		local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if r then
+			local p = r.Position + r.CFrame.LookVector * 10
+			ghostPos = Vector3.new(p.X, 0, p.Z)
+			confirmBar.Visible = true
+		end
+	end
 end
 
-local function placeGhostPosition()
-	local hit = mouseRay({ workspace.Map.Ground, workspace.Map.Path })
+local function groundUnder(screenPos)
+	local hit = screenRay(screenPos, { workspace.Map.Ground, workspace.Map.Path })
 	if not hit then
 		return nil
 	end
@@ -415,10 +982,14 @@ RunService.RenderStepped:Connect(function()
 	if not placing or not ghost then
 		return
 	end
-	local pos = placeGhostPosition()
+	local pos = isTouch and ghostPos or groundUnder(UserInputService:GetMouseLocation())
 	if not pos then
+		ghost.Body.Transparency = 1
+		ghost.Range.Transparency = 1
 		return
 	end
+	ghost.Body.Transparency = 0.5
+	ghost.Range.Transparency = 0.75
 	local ok = canPlaceHere(pos)
 	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
 	ghost.Range.CFrame = CFrame.new(pos + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
@@ -427,22 +998,26 @@ RunService.RenderStepped:Connect(function()
 	ghost.Body.Color = ok and Config.Towers[placing].Color or color
 end)
 
-local function tryPlace()
-	local pos = placeGhostPosition()
-	if not pos then
+local function tryPlace(pos)
+	if not pos or not placing then
 		return
 	end
-	local towerType = placing
-	local ok, reason = Remotes.PlaceTower:InvokeServer(towerType, pos)
+	local ok, reason = Remotes.PlaceTower:InvokeServer(placing, pos)
 	if ok then
-		-- keep placing the same defender while holding Shift
-		if not UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+		shake(0.3)
+		-- keep placing the same defender while holding Shift (PC)
+		if isTouch or not UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
 			stopPlacing()
 		end
 	else
-		showMessage(reason or "Can't place here", Color3.fromRGB(255, 120, 120))
+		showMessage(reason or "Can't place here", Ui.BAD)
 	end
 end
+
+confirmButton.Activated:Connect(function()
+	tryPlace(ghostPos)
+end)
+cancelButton.Activated:Connect(stopPlacing)
 
 -------------------------------------------------------------------------------
 -- clicking your defenders: upgrade and sell
@@ -460,17 +1035,18 @@ local function refreshInfo()
 	infoStats.Text = "Damage " .. stats.Damage .. " · Range " .. stats.Range .. " · every " .. stats.Cooldown .. "s"
 	local nextLevel = info.Levels[level + 1]
 	if nextLevel then
+		local gold = GameState:GetAttribute("Gold") or 0
 		upgradeButton.Text = "Upgrade (" .. nextLevel.Cost .. " gold)"
-		upgradeButton.AutoButtonColor = true
+		upgradeButton.BackgroundColor3 = gold >= nextLevel.Cost and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
 	else
 		upgradeButton.Text = "Max level"
-		upgradeButton.AutoButtonColor = false
+		upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 	end
-	sellButton.Text = "Sell (+" .. math.floor(selected:GetAttribute("Spent") * Config.SellRefund) .. " gold)"
+	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " gold)"
 	if rangeCircle then
 		rangeCircle:Destroy()
 	end
-	local base = selected.PrimaryPart.Position
+	local base = selected.PrimaryPart and selected.PrimaryPart.Position or Vector3.zero
 	rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
 	rangeCircle.CFrame = CFrame.new(base.X, 0.2, base.Z) * CFrame.Angles(0, 0, math.pi / 2)
 	rangeCircle.Parent = workspace
@@ -480,6 +1056,7 @@ local function selectTower(model)
 	stopPlacing()
 	selected = model
 	infoPanel.Visible = true
+	Ui.pop(infoPanel, 0.9)
 	refreshInfo()
 end
 
@@ -488,8 +1065,10 @@ upgradeButton.Activated:Connect(function()
 		return
 	end
 	local ok, reason = Remotes.UpgradeTower:InvokeServer(selected)
-	if not ok then
-		showMessage(reason or "Can't upgrade", Color3.fromRGB(255, 120, 120))
+	if ok then
+		Ui.playSound("Coin")
+	else
+		showMessage(reason or "Can't upgrade", Ui.BAD)
 	end
 	refreshInfo()
 end)
@@ -502,11 +1081,68 @@ sellButton.Activated:Connect(function()
 	closeInfo()
 end)
 
+-- a click or tap in the world: place, or pick a defender
+local function worldClick(screenPos)
+	if placing then
+		if isTouch then
+			local pos = groundUnder(screenPos)
+			if pos then
+				ghostPos = pos
+				confirmBar.Visible = true
+				tapHint.Visible = false
+			end
+		else
+			tryPlace(groundUnder(screenPos))
+		end
+		return
+	end
+	local hit = screenRay(screenPos, { workspace.Towers })
+	local model = hit and hit.Instance:FindFirstAncestorOfClass("Model")
+	while model and model.Parent ~= workspace.Towers do
+		model = model.Parent:FindFirstAncestorOfClass("Model")
+	end
+	if model then
+		selectTower(model)
+	else
+		closeInfo()
+	end
+end
+
+-------------------------------------------------------------------------------
+-- hero abilities
+-------------------------------------------------------------------------------
+local function doLeap()
+	if workspace:GetServerTimeNow() < (player:GetAttribute("LeapReadyAt") or 0) then
+		return
+	end
+	local character = player.Character
+	local r = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not r or not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	-- our computer moves our own character, the server does the damage on landing
+	humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	local forward = Vector3.new(r.CFrame.LookVector.X, 0, r.CFrame.LookVector.Z).Unit
+	r.AssemblyLinearVelocity = forward * (Config.Hero.Leap.Distance * 1.8) + Vector3.new(0, 55, 0)
+	Remotes.HeroLeap:FireServer()
+	task.delay(0.6, function()
+		shake(1)
+	end)
+end
+
+local function doWhirl()
+	Remotes.HeroWhirlwind:FireServer()
+	if workspace:GetServerTimeNow() >= (player:GetAttribute("WhirlwindReadyAt") or 0) then
+		shake(0.4)
+	end
+end
+
 -------------------------------------------------------------------------------
 -- buttons and keys
 -------------------------------------------------------------------------------
-for towerType, b in towerButtons do
-	b.Activated:Connect(function()
+for towerType, t in towerButtons do
+	t.button.Activated:Connect(function()
 		if placing == towerType then
 			stopPlacing()
 		else
@@ -517,43 +1153,50 @@ end
 startButton.Activated:Connect(function()
 	Remotes.StartWave:FireServer()
 end)
+speedButton.Activated:Connect(function()
+	local current = GameState:GetAttribute("Speed") or 1
+	local idx = table.find(Config.Speeds, current) or 1
+	Remotes.SetSpeed:FireServer(Config.Speeds[idx % #Config.Speeds + 1])
+end)
 playAgainButton.Activated:Connect(function()
 	Remotes.PlayAgain:FireServer()
 end)
 attackButton.Activated:Connect(function()
 	Remotes.HeroAttack:FireServer()
 end)
-whirlButton.Activated:Connect(function()
-	Remotes.HeroWhirlwind:FireServer()
-end)
+whirlButton.Activated:Connect(doWhirl)
+leapButton.Activated:Connect(doLeap)
 
-local NUMBER_KEYS = { [Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3 }
+local NUMBER_KEYS = {
+	[Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3,
+	[Enum.KeyCode.Four] = 4, [Enum.KeyCode.Five] = 5,
+}
 
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		if placing then
-			tryPlace()
-		else
-			local hit = mouseRay({ workspace.Towers })
-			local model = hit and hit.Instance:FindFirstAncestorOfClass("Model")
-			if model and model.Parent == workspace.Towers then
-				selectTower(model)
-			else
-				closeInfo()
-			end
-		end
+		worldClick(UserInputService:GetMouseLocation())
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 		stopPlacing()
 	elseif input.KeyCode == Enum.KeyCode.Q then
 		stopPlacing()
 		closeInfo()
+		shopPanel.Visible = false
+		dailyPanel.Visible = false
 	elseif input.KeyCode == Enum.KeyCode.F then
 		Remotes.HeroAttack:FireServer()
 	elseif input.KeyCode == Enum.KeyCode.E then
-		Remotes.HeroWhirlwind:FireServer()
+		doWhirl()
+	elseif input.KeyCode == Enum.KeyCode.R then
+		doLeap()
+	elseif input.KeyCode == Enum.KeyCode.B then
+		if shopPanel.Visible then
+			shopPanel.Visible = false
+		else
+			openShop()
+		end
 	elseif NUMBER_KEYS[input.KeyCode] then
 		local towerType = Config.TowerOrder[NUMBER_KEYS[input.KeyCode]]
 		if towerType then
@@ -566,11 +1209,28 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
--- keep the info panel right when gold or the defender changes
+-- taps on phones (not on buttons)
+UserInputService.TouchTapInWorld:Connect(function(position, processedByUI)
+	if processedByUI then
+		return
+	end
+	-- TouchTapInWorld gives a position without the top bar inset, so add it back
+	local inset = game:GetService("GuiService"):GetGuiInset()
+	worldClick(Vector2.new(position.X, position.Y + inset.Y))
+end)
+
+-- keep the info panel right when gold changes
 GameState:GetAttributeChangedSignal("Gold"):Connect(function()
 	if selected then
 		refreshInfo()
 	end
 end)
+
+if not isTouch then
+	label({ Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 0, 8), AnchorPoint = Vector2.new(1, 0),
+		Text = "1-5 build · click a defender to upgrade · Shift builds more · B shop · Q cancel",
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextStrokeTransparency = 0.5, TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+end
 
 print("Welcome to Realm Guardians!")

@@ -3,8 +3,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local EVENTS = { "StartWave", "HeroAttack", "HeroWhirlwind", "PlayAgain", "Notify" }
-local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower" }
+local EVENTS = {
+	"StartWave", "HeroAttack", "HeroWhirlwind", "HeroLeap", "PlayAgain", "Notify",
+	"SetSpeed", "PickDifficulty",
+}
+local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily" }
 
 local Remotes = {}
 

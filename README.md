@@ -18,6 +18,24 @@ The scripts live in `src/` as normal files. Rojo copies them into Roblox Studio 
 - 10 waves: Goblins, fast Goblin Runners, big Goblin Brutes, and the **Goblin King** boss in wave 10.
 - Win or lose, press **Play again** to start over.
 
+## New in the big update
+
+- Sounds, hit flashes, damage numbers, gold/gem pops, screen shake, wave banners, combo counter
+- Talking goblins, the **Loot Goblin** (catch it for gems), meme wave names, GG / skill issue end screens
+- **Storm Obelisk** (key 4) and **Ballista** (key 5): unlock them in the Shop with gems
+- Hero **Leap Strike** (R), sword skins (yes, a baguette) and titles over your head
+- **Gems** are saved between games: from drops (walk over them), every wave and wins
+- **Shop** (B), **Daily reward** with a 7-day streak, **Wins / Gems / Best Wave** in the player list
+- **Difficulty** (Easy / Normal / Hard, before wave 1) and a **2x speed** button
+- **Phones**: tap a defender, tap the ground, press "Build here"; round attack buttons on the right
+
+Saving gems in Studio needs: Game Settings > Security > Enable Studio Access to API Services (after publishing once).
+
+## Publish without Studio
+
+Put the game's ids in `scripts/publish.json` and your Open Cloud API key in `tools/roblox-api-key.txt`, then run
+`powershell -ExecutionPolicy Bypass -File scripts\publish.ps1`.
+
 ## Files
 
 - `src/shared/Config.luau`: all the numbers (path, gold, enemies, waves, defenders, hero). Change balance here.

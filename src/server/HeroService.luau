@@ -721,6 +721,10 @@ local function selectHero(player, heroId)
 	if State.Get("State") == "Wave" then
 		return false, "Wait for the break between waves"
 	end
+	local info = Config.Heroes[heroId]
+	if info.UnlockWins and (profile.Wins or 0) < info.UnlockWins then
+		return false, info.UnlockText or "Locked"
+	end
 	profile.SelectedHero = heroId
 	publish(player)
 	local e, r = abilityCooldowns(heroId)

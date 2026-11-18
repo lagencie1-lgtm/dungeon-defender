@@ -384,6 +384,7 @@ Config.Heroes = {
 	},
 	Engineer = {
 		Name = "Machine Engineer", Color = Color3.fromRGB(255, 170, 60),
+		UnlockWins = 1, UnlockText = "Win one run to unlock",
 		Role = "Makes defenders stronger, builds turrets",
 		Abilities = { F = "Wrench", E = "Overclock", R = "Turret" },
 		Help = "F: wrench smack  E: defenders near you shoot 60% faster for 6s  R: build a mini turret for 20s",
@@ -401,7 +402,8 @@ Config.Heroes.BeastHunter = {
 	Net = { Radius = 9, Range = 40, Time = 2.5, Cooldown = 10 },
 	Wolf = { Damage = 16, Range = 14, Every = 0.6, Time = 15, Cooldown = 20 },
 }
-Config.HeroOrder = { "Swordmaster", "RuneMage", "Engineer", "BeastHunter" }
+-- free from the start: one of each type (melee, ranged, mage). Others unlock by playing.
+Config.HeroOrder = { "Swordmaster", "BeastHunter", "RuneMage", "Engineer" }
 
 -- goblins hurt heroes that stand in their way (damage per second)
 Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45,

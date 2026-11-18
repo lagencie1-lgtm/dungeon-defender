@@ -131,8 +131,10 @@ local function refresh()
 	local hero = Config.Heroes[heroId] or Config.Heroes.Swordmaster
 	for id, c in cards do
 		local picked = id == heroId
-		c.state.Text = picked and "PLAYING" or "Pick"
-		c.state.TextColor3 = picked and Color3.fromRGB(120, 255, 120) or Ui.GOLD
+		local info = Config.Heroes[id]
+		local locked = info.UnlockWins and (player:GetAttribute("Wins") or 0) < info.UnlockWins
+		c.state.Text = picked and "PLAYING" or (locked and ("Locked: " .. (info.UnlockText or "")) or "Pick")
+		c.state.TextColor3 = picked and Color3.fromRGB(120, 255, 120) or (locked and Ui.TEXT_DIM or Ui.GOLD)
 		c.button:FindFirstChildOfClass("UIStroke").Thickness = picked and 5 or 2
 	end
 	helpLabel.Text = hero.Help

@@ -547,7 +547,8 @@ local list = make("ScrollingFrame", {
 }, { make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
 
 local shopTab = "Towers"
-local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "Swords", Name = "Swords" }, { Id = "Titles", Name = "Titles" } }
+local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "Swords", Name = "Swords" }, { Id = "Titles", Name = "Titles" },
+	{ Id = "Codes", Name = "Codes" } }
 local tabButtons = {}
 
 local function shopItems(kind)
@@ -628,8 +629,28 @@ function refreshShop()
 			child:Destroy()
 		end
 	end
-	for i, item in shopItems(shopTab) do
-		rowFor(shopTab, item, i)
+	if shopTab == "Codes" then
+		local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, ZIndex = 22, Parent = list }, { corner(10) })
+		local box = make("TextBox", { Size = UDim2.new(1, -190, 0, 44), Position = UDim2.fromOffset(10, 10), PlaceholderText = "Type a code",
+			Text = "", ClearTextOnFocus = false, Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Color3.new(1, 1, 1),
+			BackgroundColor3 = Color3.fromRGB(30, 25, 40), ZIndex = 23, Parent = row }, { corner(8) })
+		local go = button({ Size = UDim2.fromOffset(160, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+			Text = "Redeem", BackgroundColor3 = Color3.fromRGB(60, 130, 60), ZIndex = 23, Parent = row })
+		local hint = make("Frame", { Size = UDim2.new(1, -10, 0, 40), BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 22, Parent = list })
+		local hintText = label({ Size = UDim2.fromScale(1, 1), Text = "New codes come with every update!", Font = Enum.Font.Gotham,
+			TextColor3 = Ui.TEXT_DIM, ZIndex = 23, Parent = hint })
+		go.Activated:Connect(function()
+			local ok, result = Remotes.RedeemCode:InvokeServer(box.Text)
+			hintText.Text = ok and ("Code worked: " .. tostring(result)) or (result or "Didn't work")
+			hintText.TextColor3 = ok and Ui.GEM or Ui.BAD
+			if ok then
+				Ui.playSound("Coin")
+			end
+		end)
+	else
+		for i, item in shopItems(shopTab) do
+			rowFor(shopTab, item, i)
+		end
 	end
 	for id, b in tabButtons do
 		b.BackgroundColor3 = id == shopTab and Color3.fromRGB(90, 70, 150) or Ui.PANEL
@@ -637,7 +658,7 @@ function refreshShop()
 end
 
 for i, tab in TABS do
-	local b = button({ Size = UDim2.fromOffset(160, 40), Text = tab.Name, LayoutOrder = i, ZIndex = 22, Parent = tabBar })
+	local b = button({ Size = UDim2.fromOffset(120, 40), Text = tab.Name, LayoutOrder = i, ZIndex = 22, Parent = tabBar })
 	b.Activated:Connect(function()
 		shopTab = tab.Id
 		refreshShop()

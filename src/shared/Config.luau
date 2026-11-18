@@ -64,6 +64,14 @@ Config.Quests = {
 }
 Config.QuestsPerDay = 3
 
+-- codes players can type in the shop (Codes tab). Each works once per player.
+-- Put a new one in every update note!
+Config.Codes = {
+	RELEASE = { Gems = 50, Text = "+50 gems" },
+	GOBLINMODE = { Gold = 500, Text = "+500 gold" },
+	BAGUETTE = { Gems = 25, Gold = 250, Text = "+25 gems and 250 gold" },
+}
+
 -------------------------------------------------------------------------------
 -- Pets: hatch from eggs bought with gold (gold can't be bought, only earned).
 -- Bonus is a percent that grows 10% per pet level. Evolving doubles it.

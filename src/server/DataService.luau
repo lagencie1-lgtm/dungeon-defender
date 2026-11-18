@@ -78,6 +78,7 @@ local function publish(player)
 	player:SetAttribute("Gold", p.Gold)
 	player:SetAttribute("Scrap", p.Scrap)
 	player:SetAttribute("BestEndless", p.BestEndless or 0)
+	player:SetAttribute("TutorialDone", p.TutorialDone == true or (p.GamesPlayed or 0) > 0)
 
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
@@ -252,6 +253,28 @@ local function equip(player, kind, id)
 	return true
 end
 
+local function redeemCode(player, text)
+	local p = profiles[player]
+	if not p or type(text) ~= "string" then
+		return false, "Still loading"
+	end
+	local code = string.upper((text:gsub("%s", "")))
+	local info = Config.Codes[code]
+	if not info then
+		return false, "That code doesn't exist (yet)"
+	end
+	p.UsedCodes = p.UsedCodes or {}
+	if p.UsedCodes[code] then
+		return false, "You already used this code"
+	end
+	p.UsedCodes[code] = true
+	p.Gems += info.Gems or 0
+	p.Gold += info.Gold or 0
+	publish(player)
+	task.spawn(save, player)
+	return true, info.Text
+end
+
 local function claimDaily(player)
 	local p = profiles[player]
 	if not p then
@@ -277,6 +300,14 @@ function DataService.Start()
 	Remotes.BuyItem.OnServerInvoke = buy
 	Remotes.EquipItem.OnServerInvoke = equip
 	Remotes.ClaimDaily.OnServerInvoke = claimDaily
+	Remotes.RedeemCode.OnServerInvoke = redeemCode
+	Remotes.FinishTutorial.OnServerEvent:Connect(function(player)
+		local p = profiles[player]
+		if p then
+			p.TutorialDone = true
+			player:SetAttribute("TutorialDone", true)
+		end
+	end)
 
 	Players.PlayerAdded:Connect(load)
 	for _, player in Players:GetPlayers() do

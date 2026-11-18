@@ -426,10 +426,12 @@ end
 -- melee hit in front of the hero (sword or wrench)
 local function melee(player, root, damage, range, targets, color)
 	local front = root.Position + root.CFrame.LookVector * (range * 0.5)
-	Effects.Burst(front, range * 0.35, color, 0.2, 0.5)
+	Effects.Arc(root.CFrame * CFrame.new(0, -0.5, 0), range * 0.55, color, targets >= 5)
 	Sound.Play("Swing", root.Position)
 	local hits = 0
 	for _, e in EnemyService.InRange(front, range * 0.6) do
+		Effects.Particles(e.position + Vector3.new(0, e.stats.Size * 0.6, 0), { Texture = "Sparks", Color = color, Count = 8,
+			Size = 0.8, Speed = 14, Life = 0.35 })
 		hit(player, e, damage)
 		hits += 1
 		if hits >= targets then
@@ -457,8 +459,15 @@ local ABILITIES = {
 			if not ready(player, "WhirlwindReadyAt", Hero.Whirlwind.Cooldown) then
 				return
 			end
-			Effects.Ring(root.Position - Vector3.new(0, 2.5, 0), Hero.Whirlwind.Radius, Color3.fromRGB(200, 220, 255), 0.45)
-			Effects.Burst(root.Position, Hero.Whirlwind.Radius * 0.6, Color3.fromRGB(220, 230, 255), 0.35, 0.6)
+			local color = Color3.fromRGB(200, 220, 255)
+			for i = 0, 2 do
+				task.delay(i * 0.08, function()
+					Effects.Arc(root.CFrame * CFrame.Angles(0, i * math.pi * 2 / 3, 0), Hero.Whirlwind.Radius * 0.7, color, true)
+				end)
+			end
+			Effects.Ring(root.Position - Vector3.new(0, 2.5, 0), Hero.Whirlwind.Radius, color, 0.45)
+			Effects.Particles(root.Position, { Texture = "Smoke", Color = Color3.fromRGB(230, 235, 255), Count = 18, Size = 3,
+				EndSize = 2, Speed = 25, Life = 0.5, Spread = 90, LightEmission = 0.3 })
 			Sound.Play("Swing", root.Position)
 			for _, e in EnemyService.InRange(root.Position, Hero.Whirlwind.Radius) do
 				hit(player, e, Hero.Whirlwind.Damage)
@@ -476,8 +485,10 @@ local ABILITIES = {
 					return
 				end
 				local ground = r.Position - Vector3.new(0, 2.8, 0)
-				Effects.Ring(ground, Hero.Leap.Radius, Color3.fromRGB(255, 200, 120), 0.4)
-				Effects.Burst(ground, Hero.Leap.Radius * 0.7, Color3.fromRGB(255, 220, 160), 0.3, 0.5)
+				Effects.Shockwave(ground, Hero.Leap.Radius, Color3.fromRGB(255, 210, 140))
+				Effects.Shards(ground, Hero.Leap.Radius * 0.7, Color3.fromRGB(120, 100, 80), 10, Enum.Material.Slate)
+				Effects.Particles(ground + Vector3.new(0, 1, 0), { Texture = "Sparks", Color = Color3.fromRGB(255, 220, 160), Count = 25,
+					Size = 1, Speed = 30, Life = 0.5 })
 				Sound.Play("Land", ground)
 				Sound.Play("Explosion", ground)
 				for _, e in EnemyService.InRange(ground, Hero.Leap.Radius) do
@@ -498,11 +509,11 @@ local ABILITIES = {
 				return
 			end
 			local to = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-			Effects.Bolt(root.Position + Vector3.new(0, 2, 0), to, Color3.fromRGB(190, 140, 255), 0.6, 0.15)
+			local from = root.Position + root.CFrame.RightVector * 1.2 + Vector3.new(0, 3, 0)
+			Effects.Particles(from, { Color = Color3.fromRGB(200, 150, 255), Count = 6, Size = 0.8, Speed = 5, Life = 0.3 })
 			Sound.Play("Zap", root.Position)
-			task.delay(0.15, function()
+			Effects.Projectile(from, to, Color3.fromRGB(190, 140, 255), 1.1, math.clamp((to - from).Magnitude / 90, 0.1, 0.35), function()
 				hit(player, target, info.Damage)
-				Effects.Burst(to, 2, Color3.fromRGB(190, 140, 255), 0.2)
 			end)
 		end,
 		E = function(player, root)
@@ -510,8 +521,12 @@ local ABILITIES = {
 			if not ready(player, "WhirlwindReadyAt", info.Cooldown) then
 				return
 			end
-			Effects.Ring(root.Position - Vector3.new(0, 2.5, 0), info.Radius, Color3.fromRGB(150, 220, 255), 0.5)
-			Effects.Burst(root.Position, info.Radius * 0.5, Color3.fromRGB(200, 240, 255), 0.4, 0.5)
+			local ground = root.Position - Vector3.new(0, 2.5, 0)
+			Effects.Ring(ground, info.Radius, Color3.fromRGB(150, 220, 255), 0.5)
+			Effects.Shards(ground + Vector3.new(0, 1, 0), info.Radius, Color3.fromRGB(170, 230, 255), 16, Enum.Material.Ice)
+			Effects.Particles(root.Position, { Texture = "Sparkle", Color = Color3.fromRGB(200, 240, 255), Count = 40, Size = 1.4,
+				Speed = info.Radius * 2.5, Life = 0.6, Spread = 100, Drag = 3 })
+			Effects.Burst(root.Position, info.Radius * 0.4, Color3.fromRGB(200, 240, 255), 0.3, 0.6)
 			Sound.Play("Frost", root.Position)
 			for _, e in EnemyService.InRange(root.Position, info.Radius) do
 				hit(player, e, info.Damage)
@@ -532,23 +547,63 @@ local ABILITIES = {
 				return
 			end
 			local spot = best.position
+			-- a warning circle on the ground first
+			Effects.Ring(spot + Vector3.new(0, 0.3, 0), info.Radius, Color3.fromRGB(255, 80, 40), 0.9)
 			local rock = Instance.new("Part")
 			rock.Shape = Enum.PartType.Ball
-			rock.Size = Vector3.one * 5
-			rock.Material = Enum.Material.Neon
-			rock.Color = Color3.fromRGB(255, 110, 40)
+			rock.Size = Vector3.one * 6
+			rock.Material = Enum.Material.Basalt
+			rock.Color = Color3.fromRGB(70, 40, 30)
 			rock.Anchored = true
 			rock.CanCollide = false
 			rock.CanQuery = false
-			rock.Position = spot + Vector3.new(15, 60, 0)
+			rock.Position = spot + Vector3.new(25, 70, 10)
 			rock.Parent = workspace:FindFirstChild("Effects") or workspace
-			Instance.new("Fire", rock).Size = 10
-			TweenService:Create(rock, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			local core = Instance.new("PointLight")
+			core.Color = Color3.fromRGB(255, 120, 40)
+			core.Range = 30
+			core.Brightness = 4
+			core.Parent = rock
+			local fire = Instance.new("ParticleEmitter")
+			fire.Texture = Effects.Textures.Fire
+			fire.Color = ColorSequence.new(Color3.fromRGB(255, 200, 80), Color3.fromRGB(255, 60, 20))
+			fire.LightEmission = 1
+			fire.Size = NumberSequence.new(5, 1)
+			fire.Lifetime = NumberRange.new(0.4, 0.7)
+			fire.Rate = 120
+			fire.Speed = NumberRange.new(2, 6)
+			fire.Parent = rock
+			local smoke = Instance.new("ParticleEmitter")
+			smoke.Texture = Effects.Textures.Smoke
+			smoke.Color = ColorSequence.new(Color3.fromRGB(60, 50, 50))
+			smoke.Size = NumberSequence.new(4, 8)
+			smoke.Transparency = NumberSequence.new(0.3, 1)
+			smoke.Lifetime = NumberRange.new(0.8, 1.2)
+			smoke.Rate = 40
+			smoke.Parent = rock
+			TweenService:Create(rock, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 				{ Position = spot + Vector3.new(0, 2, 0) }):Play()
-			task.delay(0.8, function()
+			task.delay(0.9, function()
 				rock:Destroy()
 				Effects.Burst(spot + Vector3.new(0, 2, 0), info.Radius, Color3.fromRGB(255, 120, 40), 0.5)
-				Effects.Ring(spot + Vector3.new(0, 0.5, 0), info.Radius, Color3.fromRGB(255, 180, 80), 0.5)
+				Effects.Shockwave(spot, info.Radius * 1.2, Color3.fromRGB(255, 160, 60))
+				Effects.Shards(spot + Vector3.new(0, 1, 0), info.Radius * 0.8, Color3.fromRGB(60, 40, 35), 12, Enum.Material.Basalt)
+				Effects.Particles(spot + Vector3.new(0, 2, 0), { Texture = "Fire", Color = Color3.fromRGB(255, 180, 60),
+					Color2 = Color3.fromRGB(255, 60, 20), Count = 40, Size = 4, EndSize = 0.5, Speed = 30, Life = 0.7 })
+				-- burning ground for a moment
+				local scorch = Instance.new("Part")
+				scorch.Shape = Enum.PartType.Cylinder
+				scorch.Size = Vector3.new(0.2, info.Radius * 1.6, info.Radius * 1.6)
+				scorch.CFrame = CFrame.new(spot + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+				scorch.Color = Color3.fromRGB(255, 90, 30)
+				scorch.Material = Enum.Material.Neon
+				scorch.Transparency = 0.3
+				scorch.Anchored = true
+				scorch.CanCollide = false
+				scorch.CanQuery = false
+				scorch.Parent = workspace:FindFirstChild("Effects") or workspace
+				TweenService:Create(scorch, TweenInfo.new(2.5), { Transparency = 1 }):Play()
+				game:GetService("Debris"):AddItem(scorch, 2.6)
 				Sound.Play("Explosion", spot)
 				for _, e in EnemyService.InRange(spot, info.Radius) do
 					hit(player, e, info.Damage)
@@ -572,6 +627,8 @@ local ABILITIES = {
 				return
 			end
 			Effects.Ring(root.Position - Vector3.new(0, 2.5, 0), info.Radius, Color3.fromRGB(255, 170, 60), 0.6)
+			Effects.Particles(root.Position, { Texture = "Sparks", Color = Color3.fromRGB(255, 190, 80), Count = 30, Size = 1,
+				Speed = 30, Life = 0.6, Gravity = -20 })
 			Sound.Play("Zap", root.Position)
 			local count = TowerService.Overclock(root.Position, info.Radius, info.Speed, info.Time)
 			Effects.Text(root.Position + Vector3.new(0, 5, 0), "OVERCLOCK x" .. count, Color3.fromRGB(255, 190, 90), 1.2)
@@ -597,10 +654,10 @@ ABILITIES.BeastHunter = {
 			return
 		end
 		local to = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-		Effects.Bolt(root.Position + Vector3.new(0, 1.5, 0), to, Color3.fromRGB(230, 220, 170), 0.25, 0.12)
-		task.delay(0.12, function()
-			hit(player, target, info.Damage)
-		end)
+		Effects.Projectile(root.Position + Vector3.new(0, 1.5, 0), to, Color3.fromRGB(240, 230, 180), 0.45,
+			math.clamp((to - root.Position).Magnitude / 140, 0.08, 0.25), function()
+				hit(player, target, info.Damage)
+			end)
 	end,
 	E = function(player, root)
 		local info = Config.Heroes.BeastHunter.Net
@@ -616,8 +673,27 @@ ABILITIES.BeastHunter = {
 			return
 		end
 		local spot = best.position
-		Effects.Bolt(root.Position + Vector3.new(0, 2, 0), spot + Vector3.new(0, 1, 0), Color3.fromRGB(200, 190, 150), 0.8, 0.25)
+		Effects.Projectile(root.Position + Vector3.new(0, 2, 0), spot + Vector3.new(0, 1, 0), Color3.fromRGB(200, 190, 150), 1.2, 0.25)
 		task.delay(0.25, function()
+			-- a rope grid that drops onto the goblins and stays while they're held
+			local net = Instance.new("Model")
+			net.Name = "Net"
+			local size = info.Radius * 1.8
+			for i = -3, 3 do
+				for _, dirX in { true, false } do
+					local rope = Instance.new("Part")
+					rope.Anchored = true
+					rope.CanCollide = false
+					rope.CanQuery = false
+					rope.Color = Color3.fromRGB(190, 170, 120)
+					rope.Material = Enum.Material.Fabric
+					rope.Size = dirX and Vector3.new(size, 0.2, 0.2) or Vector3.new(0.2, 0.2, size)
+					rope.Position = spot + (dirX and Vector3.new(0, 1.5, i * size / 7) or Vector3.new(i * size / 7, 1.5, 0))
+					rope.Parent = net
+				end
+			end
+			net.Parent = workspace:FindFirstChild("Effects") or workspace
+			game:GetService("Debris"):AddItem(net, info.Time)
 			Effects.Ring(spot + Vector3.new(0, 0.5, 0), info.Radius, Color3.fromRGB(200, 190, 150), 0.6)
 			for _, e in EnemyService.InRange(spot, info.Radius) do
 				if e.stats.Boss then
@@ -647,9 +723,28 @@ ABILITIES.BeastHunter = {
 			p.Parent = wolf
 			return p
 		end
-		local body = wp({ Name = "Body", Size = Vector3.new(1.4, 1.4, 3), Color = Color3.fromRGB(120, 120, 130) })
-		local head = wp({ Name = "Head", Size = Vector3.new(1.1, 1.1, 1.3), Color = Color3.fromRGB(130, 130, 140) })
+		local fur = Color3.fromRGB(120, 120, 130)
+		local body = wp({ Name = "Body", Size = Vector3.new(1.4, 1.4, 3), Color = fur, Material = Enum.Material.Fabric })
+		local head = wp({ Name = "Head", Size = Vector3.new(1.1, 1.1, 1.3), Color = Color3.fromRGB(135, 135, 145),
+			Material = Enum.Material.Fabric })
 		wolf.PrimaryPart = body
+		-- legs, ears, snout, tail and glowing eyes (offsets from the body)
+		local extras = {}
+		local function extra(props, offset)
+			extras[wp(props)] = offset
+		end
+		for _, x in { -0.45, 0.45 } do
+			for _, z in { -1, 1 } do
+				extra({ Size = Vector3.new(0.35, 1, 0.35), Color = fur }, CFrame.new(x, -1, z))
+			end
+			extra({ Size = Vector3.new(0.3, 0.5, 0.2), Color = fur }, CFrame.new(x * 0.8, 1.3, -1.5))
+			extra({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.25, Color = Color3.fromRGB(120, 220, 255),
+				Material = Enum.Material.Neon }, CFrame.new(x * 0.6, 0.65, -2.3))
+		end
+		extra({ Size = Vector3.new(0.6, 0.5, 0.7), Color = Color3.fromRGB(100, 100, 110) }, CFrame.new(0, 0.3, -2.6))
+		extra({ Size = Vector3.new(0.3, 0.3, 1.4), Color = fur }, CFrame.new(0, 0.6, 2) * CFrame.Angles(math.rad(35), 0, 0))
+		Effects.Particles(root.Position, { Texture = "Smoke", Color = Color3.fromRGB(200, 200, 210), Count = 12, Size = 2,
+			Speed = 8, Life = 0.6, LightEmission = 0 })
 		wolf.Parent = workspace:FindFirstChild("Effects") or workspace
 		Sound.Play("Land", root.Position)
 		local ends = Clock.now + info.Time
@@ -672,6 +767,9 @@ ABILITIES.BeastHunter = {
 				local look = target and target.position or (pos + r.CFrame.LookVector)
 				body.CFrame = CFrame.lookAt(pos, Vector3.new(look.X, pos.Y, look.Z))
 				head.CFrame = body.CFrame * CFrame.new(0, 0.5, -1.8)
+				for part, offset in extras do
+					part.CFrame = body.CFrame * offset
+				end
 				task.wait()
 			end
 			Effects.Burst(body.Position, 3, Color3.fromRGB(150, 150, 160), 0.3)

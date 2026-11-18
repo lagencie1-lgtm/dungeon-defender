@@ -15,7 +15,7 @@ local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.la
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local PICKUP_RANGE = 9
+local PICKUP_RANGE = 6 -- walk right up to it
 
 -------------------------------------------------------------------------------
 -- screen (same scaling as the main game screen)
@@ -69,44 +69,114 @@ local function toast(text, color)
 end
 
 -------------------------------------------------------------------------------
--- drops in the world
+-- drops in the world: they pop out of the goblin, land, and glow more the
+-- rarer they are. Walk over them to pick them up (they don't come by themselves).
 -------------------------------------------------------------------------------
-local drops = {} -- [dropId] = { model, position, asked }
+local drops = {} -- [dropId] = { model, base, rarity, asked, landed }
 local dropFolder = make("Folder", { Name = "MyLoot", Parent = workspace })
+local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+
+-- how loud each rarity is: light range, beam height and width, sparkles per second
+local LOUDNESS = {
+	{ light = 6, beam = 0, width = 0, sparkles = 0, ring = 2.5 },
+	{ light = 9, beam = 0, width = 0, sparkles = 4, ring = 3 },
+	{ light = 12, beam = 28, width = 0.8, sparkles = 10, ring = 3.5 },
+	{ light = 16, beam = 50, width = 1.3, sparkles = 18, ring = 4.5 },
+	{ light = 22, beam = 80, width = 2, sparkles = 30, ring = 6 },
+	{ light = 30, beam = 120, width = 3, sparkles = 50, ring = 8 },
+}
+
+local function lootPart(model, props)
+	local p = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	for k, v in props do
+		p[k] = v
+	end
+	p.Parent = model
+	return p
+end
+
+-- a little object that looks like the kind of item it is
+local function itemShape(model, slot, color, material)
+	local parts = {}
+	local function add(props, offset)
+		local p = lootPart(model, props)
+		table.insert(parts, { part = p, offset = offset })
+	end
+	if slot == "Weapon" then
+		add({ Size = Vector3.new(0.35, 0.15, 3), Material = material, Color = color }, CFrame.new(0, 0, -0.6))
+		add({ Size = Vector3.new(1.2, 0.25, 0.25), Color = Color3.fromRGB(120, 80, 40) }, CFrame.new(0, 0, 0.95))
+		add({ Size = Vector3.new(0.25, 0.25, 0.8), Color = Color3.fromRGB(90, 60, 30) }, CFrame.new(0, 0, 1.45))
+	elseif slot == "Helmet" then
+		add({ Shape = Enum.PartType.Ball, Size = Vector3.one * 1.6, Material = material, Color = color }, CFrame.new())
+		add({ Size = Vector3.new(1.8, 0.3, 1.8), Material = material, Color = color }, CFrame.new(0, -0.5, 0))
+	elseif slot == "Armor" then
+		add({ Size = Vector3.new(1.6, 1.8, 0.8), Material = material, Color = color }, CFrame.new())
+		add({ Size = Vector3.new(2.4, 0.5, 0.9), Material = material, Color = color }, CFrame.new(0, 0.75, 0))
+	elseif slot == "Boots" then
+		for _, x in { -0.45, 0.45 } do
+			add({ Size = Vector3.new(0.6, 1, 0.6), Material = material, Color = color }, CFrame.new(x, 0.2, 0))
+			add({ Size = Vector3.new(0.6, 0.4, 1.1), Material = material, Color = color }, CFrame.new(x, -0.3, -0.25))
+		end
+	else -- Trinket: a ring with a gem
+		add({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 1.4, 1.4), Material = material, Color = color },
+			CFrame.Angles(0, math.pi / 2, 0))
+		add({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6, Material = Enum.Material.Neon, Color = Color3.new(1, 1, 1) },
+			CFrame.new(0, 0.7, 0))
+	end
+	return parts
+end
 
 Remotes.LootDrop.OnClientEvent:Connect(function(dropId, position, rarityIndex, name, slot)
 	local r = Items.Rarities[rarityIndex] or Items.Rarities[1]
+	local loud = LOUDNESS[rarityIndex] or LOUDNESS[1]
 	local model = make("Model", { Name = "Loot" })
-	local base = Vector3.new(position.X, 1.5, position.Z)
-	local piece = make("Part", {
-		Name = "Piece",
-		Size = slot == "Weapon" and Vector3.new(0.4, 0.4, 3) or Vector3.new(1.4, 1.4, 1.4),
-		Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
-		Material = Enum.Material.Neon, Color = r.Color,
-		CFrame = CFrame.new(base),
-		Parent = model,
-	})
-	make("PointLight", { Color = r.Color, Range = 10, Brightness = 2, Parent = piece })
-	if r.Beam then
-		-- a tall light beam so you see rare loot from far away
-		make("Part", {
-			Name = "Beam",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(40, 1.2, 1.2),
-			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-			Material = Enum.Material.Neon, Color = r.Color, Transparency = 0.45,
-			CFrame = CFrame.new(base + Vector3.new(0, 20, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-			Parent = model,
-		})
+	local base = Vector3.new(position.X, 1.6, position.Z)
+	local material = rarityIndex >= 3 and Enum.Material.Neon or Enum.Material.Metal
+	local parts = itemShape(model, slot, r.Color, material)
+	local core = parts[1].part
+	make("PointLight", { Color = r.Color, Range = loud.light, Brightness = 1 + rarityIndex * 0.5, Parent = core })
+
+	-- glowing circle on the ground
+	local ring = lootPart(model, { Name = "Ring", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, loud.ring, loud.ring),
+		CFrame = CFrame.new(base.X, 0.12, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
+		Material = Enum.Material.Neon, Transparency = 0.5 })
+	-- sparkles
+	if loud.sparkles > 0 then
+		make("ParticleEmitter", { Texture = SPARKLE, Color = ColorSequence.new(r.Color), LightEmission = 1, Rate = loud.sparkles,
+			Lifetime = NumberRange.new(0.6, 1.2), Speed = NumberRange.new(1, 3), SpreadAngle = Vector2.new(180, 180),
+			Size = NumberSequence.new(0.5 + rarityIndex * 0.15, 0), Parent = core })
 	end
-	local tag = make("BillboardGui", { Size = UDim2.fromOffset(200, 24), StudsOffset = Vector3.new(0, 2.2, 0),
-		AlwaysOnTop = true, MaxDistance = 120, Parent = piece })
-	label({ Size = UDim2.fromScale(1, 1), Text = name, TextColor3 = r.Color, TextStrokeTransparency = 0.2, Parent = tag })
+	-- a light beam you see from far away (Rare and up)
+	local beam = nil
+	if loud.beam > 0 then
+		beam = lootPart(model, { Name = "Beam", Shape = Enum.PartType.Cylinder, Size = Vector3.new(loud.beam, loud.width, loud.width),
+			CFrame = CFrame.new(base.X, loud.beam / 2, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
+			Material = Enum.Material.Neon, Transparency = 0.4 })
+	end
+	local tag = make("BillboardGui", { Size = UDim2.fromOffset(240, 40), StudsOffset = Vector3.new(0, 2.6, 0),
+		AlwaysOnTop = true, MaxDistance = 60 + rarityIndex * 25, Parent = core })
+	label({ Size = UDim2.new(1, 0, 0.45, 0), Text = r.Name, Font = Enum.Font.GothamBlack, TextColor3 = r.Color,
+		TextStrokeTransparency = 0.1, Parent = tag })
+	label({ Size = UDim2.new(1, 0, 0.55, 0), Position = UDim2.fromScale(0, 0.45), Text = name, TextColor3 = Color3.new(1, 1, 1),
+		TextStrokeColor3 = r.Color, TextStrokeTransparency = 0.2, Parent = tag })
 	model.Parent = dropFolder
-	drops[dropId] = { model = model, base = base, asked = 0 }
-	if r.Beam then
+
+	-- it pops out of the goblin and lands
+	drops[dropId] = { model = model, parts = parts, ring = ring, beam = beam, base = base, rarity = rarityIndex,
+		asked = 0, born = os.clock(), from = base + Vector3.new(0, 4, 0) }
+	if rarityIndex >= 3 then
 		toast(r.Name .. " drop! " .. name, r.Color)
 		Ui.playSound("Coin")
+	end
+	if rarityIndex >= 5 then
+		-- Legendary and Mythic: a big moment
+		local big = label({ Size = UDim2.fromOffset(700, 60), Position = UDim2.fromScale(0.5, 0.28), AnchorPoint = Vector2.new(0.5, 0.5),
+			Text = string.upper(r.Name) .. " DROP!", Font = Enum.Font.GothamBlack, TextColor3 = r.Color, TextStrokeTransparency = 0,
+			Parent = root })
+		Ui.pop(big, 1.8)
+		task.delay(2.5, function()
+			big:Destroy()
+		end)
 	end
 end)
 
@@ -127,11 +197,29 @@ RunService.Heartbeat:Connect(function()
 	local now = os.clock()
 	local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	for dropId, d in drops do
-		local piece = d.model:FindFirstChild("Piece")
-		if piece then
-			piece.CFrame = CFrame.new(d.base + Vector3.new(0, math.sin(now * 3) * 0.3, 0)) * CFrame.Angles(math.rad(30), now * 2, 0)
+		-- pop out in an arc for the first half second, then float and spin
+		local t = math.min(1, (now - d.born) / 0.5)
+		local pos
+		if t < 1 then
+			local flat = d.from:Lerp(d.base, t)
+			pos = flat + Vector3.new(0, math.sin(t * math.pi) * 4, 0)
+		else
+			pos = d.base + Vector3.new(0, math.sin(now * 3) * 0.3, 0)
 		end
-		if rootPart and now - d.asked > 1 then
+		local cf = CFrame.new(pos) * CFrame.Angles(math.rad(20), now * 1.5, 0)
+		for _, item in d.parts do
+			item.part.CFrame = cf * item.offset
+		end
+		if d.beam and d.rarity >= 5 then
+			-- Legendary and Mythic beams pulse (Mythic in rainbow colours)
+			d.beam.Transparency = 0.3 + math.sin(now * 4) * 0.15
+			if d.rarity >= 6 then
+				local c = Color3.fromHSV((now * 0.3) % 1, 0.8, 1)
+				d.beam.Color = c
+				d.ring.Color = c
+			end
+		end
+		if rootPart and now - d.asked > 0.5 then
 			local flat = Vector3.new(rootPart.Position.X, 0, rootPart.Position.Z)
 			if (flat - Vector3.new(d.base.X, 0, d.base.Z)).Magnitude <= PICKUP_RANGE then
 				d.asked = now
@@ -141,20 +229,21 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
+-- remind players to grab their loot before leaving the battlefield
+local GameState = ReplicatedStorage:WaitForChild("GameState")
+GameState:GetAttributeChangedSignal("State"):Connect(function()
+	local s = GameState:GetAttribute("State")
+	if (s == "Won" or s == "Lost") and next(drops) then
+		toast("Grab your loot before going back to the Outpost!", Ui.GOLD)
+	end
+end)
+
 -------------------------------------------------------------------------------
 -- backpack screen
 -------------------------------------------------------------------------------
 local inventory, gear = {}, {}
 
-local bagButton = button({
-	Size = UDim2.fromOffset(150, 46),
-	Position = UDim2.fromOffset(10, isTouch and 252 or 242),
-	BackgroundColor3 = Color3.fromRGB(120, 80, 40),
-	Text = "Backpack",
-	Parent = root,
-})
-local newDot = make("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -8, 0, -6),
-	BackgroundColor3 = Color3.fromRGB(255, 60, 60), Visible = false, ZIndex = 3, Parent = bagButton }, { corner(8) })
+local bagButton, newDot = require(script.Parent.Menu).Add("Backpack", "🎒", 3)
 
 local panel = make("Frame", {
 	Size = UDim2.fromOffset(820, 500),
@@ -366,7 +455,7 @@ function refresh()
 		else
 			box.name.Text = "empty"
 			box.name.TextColor3 = Ui.TEXT_DIM
-			box.button:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(120, 90, 170)
+			box.button:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(200, 160, 80)
 		end
 	end
 	local equippedList = {}

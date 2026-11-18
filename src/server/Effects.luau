@@ -92,6 +92,126 @@ function Effects.Text(position, text, color, scale)
 	Debris:AddItem(anchor, 0.9)
 end
 
+-------------------------------------------------------------------------------
+-- particles (textures that come with Roblox)
+-------------------------------------------------------------------------------
+Effects.Textures = {
+	Sparkle = "rbxasset://textures/particles/sparkles_main.dds",
+	Fire = "rbxasset://textures/particles/fire_main.dds",
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+	Sparks = "rbxasset://textures/particles/fire_sparks_main.dds",
+	Shockwave = "rbxasset://textures/particles/explosion01_shockwave_main.dds",
+	Glow = "rbxasset://textures/particles/forcefield_glow_main.dds",
+}
+
+-- a one-time puff of particles at a spot
+-- opts: Texture, Color, Count, Size, Speed, Life, Spread (degrees), Drag, Gravity
+function Effects.Particles(position, opts)
+	local holder = fxPart({ Size = Vector3.one * 0.2, Position = position, Transparency = 1 })
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = Effects.Textures[opts.Texture or "Sparkle"] or opts.Texture
+	e.Color = ColorSequence.new(opts.Color or Color3.new(1, 1, 1), opts.Color2 or opts.Color or Color3.new(1, 1, 1))
+	e.LightEmission = opts.LightEmission or 1
+	local size = opts.Size or 1
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size), NumberSequenceKeypoint.new(1, size * (opts.EndSize or 0.2)) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	local life = opts.Life or 0.6
+	e.Lifetime = NumberRange.new(life * 0.6, life)
+	local speed = opts.Speed or 12
+	e.Speed = NumberRange.new(speed * 0.5, speed)
+	e.SpreadAngle = Vector2.new(opts.Spread or 180, opts.Spread or 180)
+	e.Drag = opts.Drag or 2
+	e.Acceleration = Vector3.new(0, opts.Gravity or 0, 0)
+	e.Rotation = NumberRange.new(0, 360)
+	e.RotSpeed = NumberRange.new(-180, 180)
+	e.Rate = 0
+	e.Parent = holder
+	e:Emit(opts.Count or 20)
+	Debris:AddItem(holder, life + 0.5)
+end
+
+-- a glowing ball that flies with a trail, then pops with sparks
+function Effects.Projectile(from, to, color, size, time, onHit)
+	time = time or 0.25
+	size = size or 1
+	local ball = fxPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * size, Position = from, Color = color })
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, size * 0.35, 0)
+	a0.Parent = ball
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -size * 0.35, 0)
+	a1.Parent = ball
+	local trail = Instance.new("Trail")
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Color = ColorSequence.new(color)
+	trail.LightEmission = 1
+	trail.Lifetime = 0.25
+	trail.Transparency = NumberSequence.new(0.2, 1)
+	trail.Parent = ball
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = size * 8
+	light.Brightness = 2
+	light.Parent = ball
+	TweenService:Create(ball, TweenInfo.new(time, Enum.EasingStyle.Linear), { Position = to }):Play()
+	task.delay(time, function()
+		ball.Transparency = 1
+		light.Enabled = false
+		Effects.Particles(to, { Color = color, Count = math.floor(10 + size * 8), Size = size * 0.8, Speed = 10 + size * 4, Life = 0.4 })
+		Debris:AddItem(ball, 0.3)
+		if onHit then
+			onHit()
+		end
+	end)
+end
+
+-- pieces that fly outwards from a spot and fade (ice shards, rocks, splinters)
+function Effects.Shards(position, radius, color, count, material)
+	for i = 1, count or 10 do
+		local angle = (i / (count or 10)) * math.pi * 2 + math.random() * 0.4
+		local dir = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local shard = fxPart({
+			Size = Vector3.new(0.5, 0.5 + math.random() * 1.2, 0.5),
+			CFrame = CFrame.lookAt(position, position + dir) * CFrame.Angles(math.rad(-60), 0, 0),
+			Color = color,
+			Material = material or Enum.Material.Neon,
+			Transparency = 0.1,
+		})
+		local target = CFrame.lookAt(position + dir * radius + Vector3.new(0, math.random() * 2, 0), position + dir * (radius + 1))
+			* CFrame.Angles(math.rad(-80), 0, 0)
+		TweenService:Create(shard, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ CFrame = target, Transparency = 1 }):Play()
+		Debris:AddItem(shard, 0.5)
+	end
+end
+
+-- a sword swing: a glowing arc in front of the hero
+function Effects.Arc(cframe, radius, color, wide)
+	local segments = 9
+	local spread = wide and math.rad(220) or math.rad(140)
+	for i = 0, segments - 1 do
+		local a = -spread / 2 + spread * i / (segments - 1)
+		local piece = fxPart({
+			Size = Vector3.new(0.25, 0.6, radius * spread / segments * 1.2),
+			CFrame = cframe * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -radius) * CFrame.Angles(0, math.pi / 2, 0),
+			Color = color,
+			Transparency = 1,
+		})
+		task.delay(i * 0.012, function()
+			piece.Transparency = 0.15
+			TweenService:Create(piece, TweenInfo.new(0.22), { Transparency = 1, Size = piece.Size * Vector3.new(1, 0.2, 1) }):Play()
+		end)
+		Debris:AddItem(piece, 0.4)
+	end
+end
+
+-- a shockwave ring + smoke on the ground
+function Effects.Shockwave(position, radius, color)
+	Effects.Ring(position + Vector3.new(0, 0.3, 0), radius, color, 0.45)
+	Effects.Particles(position + Vector3.new(0, 0.5, 0), { Texture = "Smoke", Color = Color3.fromRGB(180, 170, 160), Count = 16,
+		Size = radius * 0.35, EndSize = 1.5, Speed = radius * 1.5, Life = 0.8, Spread = 80, LightEmission = 0 })
+end
+
 -- a zig-zag lightning bolt
 function Effects.Lightning(from, to, color)
 	local points = { from }

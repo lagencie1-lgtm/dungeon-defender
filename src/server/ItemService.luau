@@ -16,7 +16,7 @@ local QuestService = require(script.Parent.QuestService)
 local ItemService = {}
 
 local pending = {} -- [player] = { [dropId] = { item, position } }
-local PICKUP_RANGE = 14 -- a bit bigger than the client's, for lag
+local PICKUP_RANGE = 10 -- a bit bigger than the client's, for lag
 
 -- drop chances per goblin type (the boss always gives the Victory Chest)
 local DROP_CHANCE = { Goblin = 0.018, Runner = 0.018, Brute = 0.09, LootGoblin = 0.6, GoblinKing = 0 }
@@ -251,6 +251,23 @@ function ItemService.CollectAll(player)
 	if count > 0 then
 		Remotes.Notify:FireClient(player, count .. " dropped item" .. (count == 1 and " was" or "s were") .. " put in your backpack",
 			Color3.fromRGB(200, 220, 255))
+	end
+end
+
+-- end of a run: drops nobody picked up are gone
+function ItemService.LeaveBehindAll()
+	for _, player in Players:GetPlayers() do
+		local list = pending[player]
+		local count = 0
+		for dropId in list or {} do
+			Remotes.LootPicked:FireClient(player, dropId)
+			count += 1
+		end
+		pending[player] = {}
+		if count > 0 then
+			Remotes.Notify:FireClient(player, count .. " item" .. (count == 1 and " was" or "s were") .. " left on the battlefield",
+				Color3.fromRGB(255, 160, 120))
+		end
 	end
 end
 

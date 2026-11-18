@@ -11,9 +11,9 @@ Ui.GOLD = Color3.fromRGB(255, 210, 70)
 Ui.MANA = Color3.fromRGB(170, 150, 255) -- the building money during a run
 Ui.SCRAP = Color3.fromRGB(190, 170, 150)
 Ui.GEM = Color3.fromRGB(90, 220, 255)
-Ui.DARK = Color3.fromRGB(25, 20, 35)
-Ui.PANEL = Color3.fromRGB(45, 36, 62)
-Ui.TEXT_DIM = Color3.fromRGB(200, 190, 225)
+Ui.DARK = Color3.fromRGB(38, 27, 20) -- dark wood
+Ui.PANEL = Color3.fromRGB(64, 45, 32) -- lighter wood
+Ui.TEXT_DIM = Color3.fromRGB(225, 205, 175)
 Ui.BAD = Color3.fromRGB(255, 120, 120)
 
 function Ui.make(className, props, children)
@@ -37,7 +37,7 @@ end
 
 function Ui.stroke(color, thickness)
 	return Ui.make("UIStroke", {
-		Color = color or Color3.fromRGB(120, 90, 170),
+		Color = color or Color3.fromRGB(200, 160, 80), -- brass
 		Thickness = thickness or 2,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	})

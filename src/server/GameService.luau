@@ -113,7 +113,6 @@ function GameService.EndGame(won)
 	local diff = difficulty()
 	local mapInfo = Config.Maps[State.Get("Map") or ""] or Config.Maps.CursedForest
 	local reward = math.floor((cleared * Config.GemsPerWave + (won and Config.GemsForWin or 0)) * diff.Gems * mapInfo.Gems + 0.5)
-	ItemService.CollectAllPlayers()
 	for _, player in Players:GetPlayers() do
 		DataService.AddGems(player, reward)
 		-- gold (kept between games) for the upgrades at the blacksmith
@@ -251,7 +250,6 @@ local function runGame(myRun)
 
 		local bonus = Config.WaveBonusGold + wave * 10
 		State.AddGold(bonus)
-		ItemService.CollectAllPlayers()
 		QuestService.AddAll("Waves", 1)
 		SeasonService.AddXpAll(Store.Season.XpPerWave)
 		if wave == 1 then
@@ -270,7 +268,7 @@ local function cleanUp()
 	EnemyService.Clear()
 	TowerService.Clear()
 	LootService.Clear()
-	ItemService.CollectAllPlayers()
+	ItemService.LeaveBehindAll() -- loot you didn't pick up stays on the battlefield
 	Clock.scale = 1
 	State.Set("Speed", 1)
 end

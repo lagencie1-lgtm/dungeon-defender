@@ -122,20 +122,10 @@ end
 -------------------------------------------------------------------------------
 -- left side: gems, shop, daily reward
 -------------------------------------------------------------------------------
-local side = make("Frame", {
-	Size = UDim2.fromOffset(150, 170),
-	Position = UDim2.fromOffset(10, isTouch and 70 or 60),
-	BackgroundTransparency = 1,
-	Parent = root,
-}, { make("UIListLayout", { Padding = UDim.new(0, 8) }) })
-local gemsLabel = label({ Size = UDim2.fromOffset(150, 34), Text = "0 gems", TextColor3 = Ui.GEM,
-	TextStrokeTransparency = 0.4, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1, Parent = side })
-local shopButton = button({ Size = UDim2.fromOffset(150, 46), BackgroundColor3 = Color3.fromRGB(60, 110, 170),
-	Text = "Shop", LayoutOrder = 2, Parent = side })
-local dailyButton = button({ Size = UDim2.fromOffset(150, 46), BackgroundColor3 = Color3.fromRGB(170, 120, 40),
-	Text = "Daily reward", LayoutOrder = 3, Parent = side })
-local dailyDot = make("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -8, 0, -6),
-	BackgroundColor3 = Color3.fromRGB(255, 60, 60), Visible = false, ZIndex = 3, Parent = dailyButton }, { corner(8) })
+local Menu = require(script.Parent.Menu)
+local shopButton = Menu.Add("Shop", "🛒", 1)
+local dailyButton, dailyDot = Menu.Add("Daily", "🎁", 2)
+local gemsLabel = label({ Size = UDim2.fromOffset(1, 1), Text = "", Visible = false, Parent = root }) -- gems show in the wallet now
 
 -------------------------------------------------------------------------------
 -- messages, banners and combo counter
@@ -281,10 +271,9 @@ for i, towerType in Config.TowerOrder do
 	make("Frame", { Size = UDim2.new(1, -16, 0, 6), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = info.Color,
 		Parent = b }, { corner(3) })
 	label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 18), Text = info.DisplayName, Parent = b })
-	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40), Text = info.Cost .. " mana",
+	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40),
+		Text = info.Cost .. " mana · " .. (Config.BuildPoints[towerType] or 0) .. " bp",
 		TextColor3 = Ui.MANA, Parent = b })
-	label({ Size = UDim2.fromOffset(30, 16), Position = UDim2.new(1, -34, 0, 42), Text = (Config.BuildPoints[towerType] or 0) .. "bp",
-		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
 	label({ Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 62), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = b })
 	if not isTouch then
@@ -420,10 +409,10 @@ local lobbyBar = make("Frame", {
 local runButton = button({ Size = UDim2.fromOffset(240, 60), BackgroundColor3 = Color3.fromRGB(110, 60, 190),
 	Text = "Start run", LayoutOrder = 1, Parent = lobbyBar })
 local mapButton = button({ Size = UDim2.fromOffset(260, 60), BackgroundColor3 = Color3.fromRGB(120, 80, 40),
-	Text = "Map", LayoutOrder = 2, Parent = lobbyBar })
+	Text = "Map and difficulty", LayoutOrder = 2, Parent = lobbyBar })
 
 local mapPanel = make("Frame", {
-	Size = UDim2.fromOffset(560, 300 + #Config.Modes * 42 + 40),
+	Size = UDim2.fromOffset(680, 300 + #Config.Modes * 42 + 150),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -470,11 +459,18 @@ for i, mode in Config.Modes do
 	end)
 	modeButtons[mode.Id] = b
 end
+-- difficulty lives here too, so it never covers the game
+diffPanel.Parent = mapPanel
+diffPanel.AnchorPoint = Vector2.zero
+diffPanel.Position = UDim2.fromOffset(16, 322 + #Config.Modes * 42 + 10)
+diffPanel.BackgroundTransparency = 1
+diffPanel.Visible = true
+
 local function refreshModes()
 	local current = GameState:GetAttribute("Mode") or "Campaign"
 	for id, b in modeButtons do
 		local st = b:FindFirstChildOfClass("UIStroke")
-		st.Color = id == current and Ui.GOLD or Color3.fromRGB(120, 90, 170)
+		st.Color = id == current and Ui.GOLD or Color3.fromRGB(200, 160, 80)
 		st.Thickness = id == current and 4 or 2
 	end
 end
@@ -829,7 +825,7 @@ local function refreshDaily()
 			s.Color = Color3.fromRGB(90, 160, 90)
 		else
 			box.BackgroundColor3 = Ui.PANEL
-			s.Color = Color3.fromRGB(120, 90, 170)
+			s.Color = Color3.fromRGB(200, 160, 80)
 		end
 	end
 	if ready then
@@ -987,11 +983,11 @@ local function refreshTop()
 		stateLabel.Text = ""
 	end
 
-	diffPanel.Visible = inLobby or (wave == 0 and s == "Break")
+	-- the difficulty can only be changed in the Outpost (Map button / Map Board)
 	local currentDiff = GameState:GetAttribute("Difficulty")
 	for id, b in diffButtons do
 		local st = b:FindFirstChildOfClass("UIStroke")
-		st.Color = id == currentDiff and Ui.GOLD or Color3.fromRGB(120, 90, 170)
+		st.Color = id == currentDiff and Ui.GOLD or Color3.fromRGB(200, 160, 80)
 		st.Thickness = id == currentDiff and 4 or 2
 	end
 
@@ -1118,23 +1114,26 @@ end
 local function canPlaceHere(position)
 	local half = Config.MapSize / 2
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
-		return false
+		return false, "Too close to the edge"
 	end
 	if Config.DistanceToPath(position) < Config.PathWidth / 2 + 3 then
-		return false
+		return false, "Not on the path"
 	end
 	if (Vector3.new(position.X, 0, position.Z) - Config.Path[#Config.Path]).Magnitude < 14 then
-		return false
+		return false, "Too close to the portal"
 	end
 	for _, tower in workspace.Towers:GetChildren() do
 		if tower.PrimaryPart then
 			local p = tower.PrimaryPart.Position
 			if (Vector3.new(p.X, 0, p.Z) - position).Magnitude < Config.TowerSpacing then
-				return false
+				return false, "Too close to another defender"
 			end
 		end
 	end
-	return true
+	if (GameState:GetAttribute("BuildUsed") or 0) + (Config.BuildPoints[placing] or 0) > (GameState:GetAttribute("BuildMax") or Config.BuildLimit) then
+		return false, "Build Points full"
+	end
+	return true, nil
 end
 
 local function stopPlacing()
@@ -1172,21 +1171,43 @@ local function startPlacing(towerType)
 	end
 	placing = towerType
 	ghost = make("Model", { Name = "PlacementGhost" })
-	local body = make("Part", {
-		Name = "Body",
-		Size = Vector3.new(4, 6, 4),
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		Transparency = 0.5,
-		Material = Enum.Material.ForceField,
-		Color = info.Color,
-		Parent = ghost,
-	})
+	local function ghostPart(props)
+		local p = make("Part", { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			Material = Enum.Material.Neon })
+		for k, v in props do
+			p[k] = v
+		end
+		p.Parent = ghost
+		return p
+	end
+	-- the tower's shape (a simple stand-in) with a bright outline you see through anything
+	local body = ghostPart({ Name = "Body", Size = Vector3.new(3, 7, 3), Color = info.Color, Transparency = 0.35,
+		Material = Enum.Material.SmoothPlastic })
+	ghostPart({ Name = "Top", Shape = Enum.PartType.Ball, Size = Vector3.one * 3.4, Color = info.Color, Transparency = 0.35 })
+	-- the exact spot it takes: a solid circle on the ground
+	ghostPart({ Name = "Foot", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, Config.TowerSpacing, Config.TowerSpacing),
+		Color = Color3.fromRGB(120, 255, 120), Transparency = 0.25 })
 	ghost.PrimaryPart = body
-	local disc = makeDisc(info.Levels[1].Range, Color3.fromRGB(120, 255, 120))
+	make("Highlight", { FillTransparency = 0.7, OutlineTransparency = 0, OutlineColor = Color3.new(1, 1, 1),
+		DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Parent = ghost })
+	-- the range: a faint disc with a bright edge
+	local range = info.Levels[1].Range
+	local disc = makeDisc(range, Color3.fromRGB(120, 255, 120))
 	disc.Name = "Range"
+	disc.Transparency = 0.85
 	disc.Parent = ghost
+	local edge = make("Folder", { Name = "Edge", Parent = ghost })
+	for i = 1, 40 do
+		local a = i / 40 * math.pi * 2
+		make("Part", { Size = Vector3.new(0.35, 0.35, range * math.pi * 2 / 40 + 0.2), Anchored = true, CanCollide = false,
+			CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(120, 255, 120),
+			Parent = edge }):SetAttribute("Angle", a)
+	end
+	local tagHolder = ghostPart({ Name = "TagHolder", Size = Vector3.one * 0.2, Transparency = 1 })
+	local tag = make("BillboardGui", { Name = "Tag", Size = UDim2.fromOffset(260, 34), StudsOffset = Vector3.new(0, 7, 0),
+		AlwaysOnTop = true, Parent = tagHolder })
+	label({ Name = "Text", Size = UDim2.fromScale(1, 1), Text = "", TextColor3 = Color3.fromRGB(255, 120, 120),
+		TextStrokeTransparency = 0, Parent = tag })
 	ghost.Parent = workspace
 	if isTouch then
 		tapHint.Visible = true
@@ -1214,24 +1235,42 @@ RunService.RenderStepped:Connect(function()
 	end
 	local pos = isTouch and ghostPos or groundUnder(UserInputService:GetMouseLocation())
 	if not pos then
-		ghost.Body.Transparency = 1
-		ghost.Range.Transparency = 1
+		ghost.Parent = nil
 		return
 	end
-	ghost.Body.Transparency = 0.5
-	ghost.Range.Transparency = 0.75
-	local ok = canPlaceHere(pos)
-	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
-	ghost.Range.CFrame = CFrame.new(pos + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	ghost.Parent = workspace
+	pos = Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5)) -- snap to whole studs
+	ghost:SetAttribute("Spot", pos)
+	local ok, reason = canPlaceHere(pos)
 	local color = ok and Color3.fromRGB(120, 255, 120) or Color3.fromRGB(255, 80, 80)
-	ghost.Range.Color = color
+	local bob = math.sin(os.clock() * 4) * 0.2
+	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3.5 + bob, 0))
+	ghost.Top.CFrame = CFrame.new(pos + Vector3.new(0, 7.5 + bob, 0))
+	ghost.Top.Color = ok and Config.Towers[placing].Color or color
 	ghost.Body.Color = ok and Config.Towers[placing].Color or color
+	ghost.Foot.CFrame = CFrame.new(pos + Vector3.new(0, 0.18, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	ghost.Foot.Color = color
+	ghost.Range.CFrame = CFrame.new(pos + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	ghost.Range.Color = color
+	local range = Config.Towers[placing].Levels[1].Range
+	for _, piece in ghost.Edge:GetChildren() do
+		local a = piece:GetAttribute("Angle")
+		local at = pos + Vector3.new(math.cos(a) * range, 0.3, math.sin(a) * range)
+		piece.CFrame = CFrame.lookAt(at, at + Vector3.new(-math.sin(a), 0, math.cos(a)))
+		piece.Color = color
+	end
+	ghost.TagHolder.CFrame = CFrame.new(pos)
+	ghost.TagHolder.Tag.Text.Text = ok and "" or (reason or "")
+	local highlight = ghost:FindFirstChildOfClass("Highlight")
+	highlight.OutlineColor = ok and Color3.new(1, 1, 1) or color
+	highlight.FillColor = color
 end)
 
 local function tryPlace(pos)
 	if not pos or not placing then
 		return
 	end
+	pos = Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5)) -- same spot the preview shows
 	local ok, reason = Remotes.PlaceTower:InvokeServer(placing, pos)
 	if ok then
 		shake(0.3)
@@ -1466,7 +1505,7 @@ GameState:GetAttributeChangedSignal("Gold"):Connect(function()
 end)
 
 if not isTouch then
-	label({ Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 0, 8), AnchorPoint = Vector2.new(1, 0),
+	label({ Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
 		Text = "1-5 build · click a defender to upgrade · Shift builds more · B shop · Q cancel",
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextStrokeTransparency = 0.5, TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Right, Parent = root })

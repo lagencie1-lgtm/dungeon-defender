@@ -153,6 +153,18 @@ function DataService.Save(player)
 	save(player)
 end
 
+-- saves right now and says if it worked (used before confirming a Robux purchase)
+function DataService.SaveNow(player)
+	local p = profiles[player]
+	if not p or player:GetAttribute("SavesOff") or not store then
+		return false
+	end
+	local ok = pcall(function()
+		store:SetAsync("player_" .. player.UserId, p)
+	end)
+	return ok
+end
+
 function DataService.AddGold(player, amount)
 	local p = profiles[player]
 	if not p or amount <= 0 then
@@ -289,6 +301,9 @@ local function claimDaily(player)
 	end
 	p.DailyStreak += 1
 	local reward = Config.DailyRewards[math.min(p.DailyStreak, #Config.DailyRewards)]
+	if player:GetAttribute("PassVIP") then
+		reward = math.floor(reward * 1.5) -- VIP bonus
+	end
 	p.Gems += reward
 	p.DailyLast = now
 	publish(player)

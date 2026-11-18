@@ -10,6 +10,7 @@ local Sound = require(script.Parent.Sound)
 local Clock = require(script.Parent.Clock)
 local DataService = require(script.Parent.DataService)
 local QuestService = require(script.Parent.QuestService)
+local StoreService = require(script.Parent.StoreService)
 
 local TowerService = {}
 
@@ -189,6 +190,9 @@ function TowerService.Place(player, towerType, position)
 	local at = CFrame.new(position)
 	local muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
 	model.PrimaryPart = model:FindFirstChild("Base")
+	if typeof(player) == "Instance" then
+		StoreService.ApplyTowerSkin(model, StoreService.SkinFor(player, towerType))
+	end
 	model:SetAttribute("TowerType", towerType)
 	model:SetAttribute("Level", 1)
 	model:SetAttribute("Range", info.Levels[1].Range)

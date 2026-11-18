@@ -354,7 +354,7 @@ function refresh()
 		anyNew = anyNew or item.new == true
 	end
 	newDot.Visible = anyNew and not panel.Visible
-	countLabel.Text = #inventory .. "/" .. Items.BackpackSize
+	countLabel.Text = #inventory .. "/" .. (player:GetAttribute("BackpackSize") or Items.BackpackSize)
 
 	for slot, box in slotBoxes do
 		local item = equippedIn(slot)

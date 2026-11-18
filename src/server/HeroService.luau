@@ -148,6 +148,9 @@ function HeroService.AddXp(player, amount)
 		return
 	end
 	amount *= 1 + (profile.Rebirths or 0) * Config.RebirthBonus / 100
+	if (player:GetAttribute("BoostXpUntil") or 0) > os.time() then
+		amount *= 2 -- 2x XP boost
+	end
 	if data.Level >= Config.HeroMaxLevel then
 		-- at the cap: xp fills the Ascension bar instead
 		local asc = ascensionOf(profile)
@@ -362,7 +365,8 @@ local function giveNameTag(player, character)
 	gui:FindFirstChild("Title").Text = (titleItem and titleItem.Id ~= "None") and titleItem.Name or ""
 	local hero = Config.Heroes[player:GetAttribute("HeroId") or "Swordmaster"]
 	local rebirths = player:GetAttribute("Rebirths") or 0
-	gui:FindFirstChild("Level").Text = (rebirths > 0 and ("[R" .. rebirths .. "] ") or "") .. player.DisplayName .. " · "
+	gui:FindFirstChild("Level").Text = (player:GetAttribute("PassVIP") and "[VIP] " or "")
+		.. (rebirths > 0 and ("[R" .. rebirths .. "] ") or "") .. player.DisplayName .. " · "
 		.. hero.Name .. " " .. (player:GetAttribute("HeroLevel") or 1)
 end
 
@@ -741,7 +745,7 @@ function HeroService.Start()
 				end
 			end)
 		end
-		for _, attr in { "EquippedTitle", "HeroLevel", "Rebirths" } do
+		for _, attr in { "EquippedTitle", "HeroLevel", "Rebirths", "PassVIP" } do
 			player:GetAttributeChangedSignal(attr):Connect(function()
 				if player.Character then
 					giveNameTag(player, player.Character)

@@ -11,7 +11,7 @@ local EVENTS = {
 }
 local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints",
-	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode",
+	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode", "BuySkin", "EquipSkin",
 	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets" }
 
 local Remotes = {}

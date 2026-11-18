@@ -162,7 +162,9 @@ local function addItem(player, item)
 	if not profile then
 		return false
 	end
-	if #profile.Items >= Items.BackpackSize then
+	local capacity = player:GetAttribute("PassBigBackpack") and Items.BackpackSize * 2 or Items.BackpackSize
+	player:SetAttribute("BackpackSize", capacity)
+	if #profile.Items >= capacity then
 		profile.Scrap += Items.SalvageValue(item)
 		DataService.Publish(player)
 		Remotes.Notify:FireClient(player, "Backpack full! " .. item.name .. " was turned into scrap", Color3.fromRGB(255, 160, 80))
@@ -183,6 +185,12 @@ end
 -- drops in the world (each player sees only their own)
 -------------------------------------------------------------------------------
 local function dropFor(player, item, position)
+	if player:GetAttribute("PassAutoCollect") then
+		-- Auto Collect pass: straight into the backpack
+		addItem(player, item)
+		Remotes.LootPicked:FireClient(player, item.id, item)
+		return
+	end
 	pending[player] = pending[player] or {}
 	local dropId = item.id
 	pending[player][dropId] = { item = item, position = position }

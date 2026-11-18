@@ -12,6 +12,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
+local Store = require(ReplicatedStorage.Shared.Store)
+local MarketplaceService = game:GetService("MarketplaceService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
 workspace:WaitForChild("Map"):WaitForChild("Ground")
@@ -517,7 +519,7 @@ local playAgainButton = button({ Size = UDim2.fromOffset(240, 54), Position = UD
 -- shop
 -------------------------------------------------------------------------------
 local shopPanel = make("Frame", {
-	Size = UDim2.fromOffset(560, 440),
+	Size = UDim2.fromOffset(780, 480),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -548,7 +550,7 @@ local list = make("ScrollingFrame", {
 
 local shopTab = "Towers"
 local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "Swords", Name = "Swords" }, { Id = "Titles", Name = "Titles" },
-	{ Id = "Codes", Name = "Codes" } }
+	{ Id = "Skins", Name = "Skins" }, { Id = "Robux", Name = "Robux" }, { Id = "Codes", Name = "Codes" } }
 local tabButtons = {}
 
 local function shopItems(kind)
@@ -629,7 +631,98 @@ function refreshShop()
 			child:Destroy()
 		end
 	end
-	if shopTab == "Codes" then
+	if shopTab == "Skins" then
+		local ownedSkins, equippedSkins = {}, {}
+		pcall(function()
+			ownedSkins = HttpService:JSONDecode(player:GetAttribute("OwnedSkins") or "{}")
+			equippedSkins = HttpService:JSONDecode(player:GetAttribute("EquippedSkins") or "{}")
+		end)
+		local featured = Store.Featured()
+		for i, id in Store.SkinOrder do
+			local skin = Store.Skins[id]
+			local isOwned = ownedSkins[id] == true
+			if not skin.NotForSale or isOwned then
+				local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 22,
+					Parent = list }, { corner(10) })
+				make("Frame", { Size = UDim2.fromOffset(22, 44), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = skin.Primary,
+					ZIndex = 23, Parent = row }, { corner(4) })
+				make("Frame", { Size = UDim2.fromOffset(22, 44), Position = UDim2.fromOffset(36, 10),
+					BackgroundColor3 = skin.Accent or skin.Primary, ZIndex = 23, Parent = row }, { corner(4) })
+				local isFeatured = table.find(featured, id) ~= nil and not isOwned
+				label({ Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(68, 8),
+					Text = skin.Name .. (isFeatured and "  ·  TODAY -" .. math.floor(Store.FeaturedDiscount * 100) .. "%" or ""),
+					TextColor3 = isFeatured and Ui.GOLD or Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+				local targetName = skin.Target == "Cape" and "Hero cape" or (Config.Towers[skin.Target] and Config.Towers[skin.Target].DisplayName or skin.Target)
+				label({ Size = UDim2.new(1, -260, 0, 18), Position = UDim2.fromOffset(68, 38), Text = skin.Tier .. " skin for: " .. targetName,
+					Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+				local wearing = equippedSkins[skin.Target] == id
+				local text, color
+				if wearing then
+					text, color = "Take off", Color3.fromRGB(110, 60, 60)
+				elseif isOwned then
+					text, color = "Wear", Color3.fromRGB(60, 130, 60)
+				else
+					text, color = "Buy " .. Store.PriceOf(id) .. " gems", Color3.fromRGB(40, 120, 170)
+				end
+				local b = button({ Size = UDim2.fromOffset(170, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+					Text = text, BackgroundColor3 = color, ZIndex = 23, Parent = row })
+				b.Activated:Connect(function()
+					local ok, reason
+					if wearing then
+						ok, reason = Remotes.EquipSkin:InvokeServer("None:" .. skin.Target)
+					elseif isOwned then
+						ok, reason = Remotes.EquipSkin:InvokeServer(id)
+					else
+						ok, reason = Remotes.BuySkin:InvokeServer(id)
+						if ok then
+							showMessage("You got the " .. skin.Name .. "!", Ui.GEM)
+							Ui.playSound("Coin")
+						end
+					end
+					if not ok then
+						showMessage(reason or "Can't do that", Ui.BAD)
+					end
+					task.wait(0.15)
+					refreshShop()
+				end)
+			end
+		end
+	elseif shopTab == "Robux" then
+		local order = 0
+		local function robuxRow(name, text, price, id, isPass, ownedAlready)
+			order += 1
+			local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = order, ZIndex = 22,
+				Parent = list }, { corner(10) })
+			label({ Size = UDim2.new(1, -220, 0, 26), Position = UDim2.fromOffset(14, 8), Text = name,
+				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+			label({ Size = UDim2.new(1, -220, 0, 18), Position = UDim2.fromOffset(14, 38), Text = text or "",
+				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
+			local buttonText = ownedAlready and "Owned" or (id == 0 and "Coming soon" or ("R$ " .. price))
+			local b = button({ Size = UDim2.fromOffset(160, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+				Text = buttonText, ZIndex = 23, Parent = row,
+				BackgroundColor3 = (ownedAlready or id == 0) and Color3.fromRGB(70, 70, 80) or Color3.fromRGB(40, 150, 80) })
+			b.Activated:Connect(function()
+				if ownedAlready or id == 0 then
+					return
+				end
+				if isPass then
+					MarketplaceService:PromptGamePassPurchase(player, id)
+				else
+					MarketplaceService:PromptProductPurchase(player, id)
+				end
+			end)
+		end
+		for _, key in Store.GamePassOrder do
+			local pass = Store.GamePasses[key]
+			robuxRow(pass.Name .. " (pass)", pass.Text, pass.Price, pass.Id, true, player:GetAttribute("Pass" .. key) == true)
+		end
+		for _, key in Store.ProductOrder do
+			local product = Store.Products[key]
+			if not (product.Once and player:GetAttribute("StarterBought")) then
+				robuxRow(product.Name, product.Text, product.Price, product.Id, false, false)
+			end
+		end
+	elseif shopTab == "Codes" then
 		local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, ZIndex = 22, Parent = list }, { corner(10) })
 		local box = make("TextBox", { Size = UDim2.new(1, -190, 0, 44), Position = UDim2.fromOffset(10, 10), PlaceholderText = "Type a code",
 			Text = "", ClearTextOnFocus = false, Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Color3.new(1, 1, 1),
@@ -1296,8 +1389,12 @@ startButton.Activated:Connect(function()
 end)
 speedButton.Activated:Connect(function()
 	local current = GameState:GetAttribute("Speed") or 1
-	local idx = table.find(Config.Speeds, current) or 1
-	Remotes.SetSpeed:FireServer(Config.Speeds[idx % #Config.Speeds + 1])
+	local speeds = table.clone(Config.Speeds)
+	if player:GetAttribute("PassSpeed3x") then
+		table.insert(speeds, 3)
+	end
+	local idx = table.find(speeds, current) or 1
+	Remotes.SetSpeed:FireServer(speeds[idx % #speeds + 1])
 end)
 playAgainButton.Activated:Connect(function()
 	Remotes.PlayAgain:FireServer()

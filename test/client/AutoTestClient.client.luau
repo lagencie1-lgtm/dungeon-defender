@@ -45,6 +45,11 @@ if items and #items > 0 then
 	log("salvage", last.name, Remotes.SalvageGear:InvokeServer(last.id))
 end
 log("buy", Remotes.BuyItem:InvokeServer("Swords", "Baguette"))
+log("buy skin", Remotes.BuySkin:InvokeServer("RangerRoyal"))
+log("buy cape", Remotes.BuySkin:InvokeServer("CapeRed"))
+log("buy VIP cape (should fail)", Remotes.BuySkin:InvokeServer("CapeVIP"))
+log("take cape off", Remotes.EquipSkin:InvokeServer("None:Cape"))
+log("wear cape", Remotes.EquipSkin:InvokeServer("CapeRed"))
 log("buy rebirth sword (should fail)", Remotes.BuyItem:InvokeServer("Swords", "Starforged"))
 for _ = 1, 3 do
 	local ok, pet = Remotes.HatchEgg:InvokeServer("ForestEgg")

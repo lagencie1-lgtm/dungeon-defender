@@ -117,7 +117,8 @@ function GameService.EndGame(won)
 		-- gold (kept between games) for the upgrades at the blacksmith
 		local goldFind = (player:GetAttribute("BonusGoldFind") or 0) / 100
 		local gold = math.floor((cleared * Config.GoldPerWave + (State.Get("Kills") or 0) * Config.GoldPerKill)
-			* diff.Gems * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100))
+			* diff.Gems * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100)
+			* (((player:GetAttribute("BoostGoldUntil") or 0) > os.time()) and 2 or 1))
 		DataService.AddGold(player, gold)
 		player:SetAttribute("LastGold", gold)
 		DataService.RecordGame(player, cleared, won, State.Get("Kills") or 0)
@@ -367,7 +368,8 @@ function GameService.Start()
 		end
 	end)
 	Remotes.SetSpeed.OnServerEvent:Connect(function(_player, speed)
-		if table.find(Config.Speeds, speed) and (State.Get("State") == "Break" or State.Get("State") == "Wave") then
+		local allowed = table.find(Config.Speeds, speed) or (speed == 3 and _player:GetAttribute("PassSpeed3x"))
+		if allowed and (State.Get("State") == "Break" or State.Get("State") == "Wave") then
 			Clock.scale = speed
 			State.Set("Speed", speed)
 		end

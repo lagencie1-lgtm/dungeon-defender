@@ -102,7 +102,11 @@ function LootService.Start()
 					break
 				end
 			end
-			if not taken and now - g.dropped > AUTO_COLLECT_AFTER then
+			local autoCollect = false
+			for _, player in Players:GetPlayers() do
+				autoCollect = autoCollect or player:GetAttribute("PassAutoCollect") == true
+			end
+			if not taken and (now - g.dropped > AUTO_COLLECT_AFTER or (autoCollect and now - g.dropped > 1)) then
 				collect(part, nil)
 			end
 		end

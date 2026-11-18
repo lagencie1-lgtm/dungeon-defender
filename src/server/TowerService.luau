@@ -11,6 +11,7 @@ local Clock = require(script.Parent.Clock)
 local DataService = require(script.Parent.DataService)
 local QuestService = require(script.Parent.QuestService)
 local StoreService = require(script.Parent.StoreService)
+local SeasonService = require(script.Parent.SeasonService)
 
 local TowerService = {}
 
@@ -225,6 +226,7 @@ function TowerService.Place(player, towerType, position)
 	Sound.Play("Build", position)
 	if typeof(player) == "Instance" then
 		QuestService.Add(player, "Build", 1)
+		SeasonService.Funnel(player, 3)
 	end
 	return true
 end

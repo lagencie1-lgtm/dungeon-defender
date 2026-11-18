@@ -43,6 +43,14 @@ Config.Modes = {
 	{ Id = "RangersOnly", Name = "Challenge: Rangers Only", Text = "You can only build Rangers", Challenge = true },
 	{ Id = "Pacifist", Name = "Challenge: Hands Off", Text = "Your hero can't attack. Defenders only", Challenge = true },
 	{ Id = "GlassPortal", Name = "Challenge: Glass Portal", Text = "The portal has only 10 health", Challenge = true, PortalHealth = 10 },
+	{ Id = "BossRush", Name = "Boss Rush", Text = "Bosses back to back. Win for a big chest (Epic or better)", BossRush = true,
+		Waves = {
+			{ Title = "The King returns", { Enemy = "GoblinKing", Count = 1, Gap = 1 }, { Enemy = "Brute", Count = 4, Gap = 1.5 } },
+			{ Title = "Rock and roll", { Enemy = "MoltenGolem", Count = 1, Gap = 1 }, { Enemy = "ObsidianKnight", Count = 4, Gap = 1.5 } },
+			{ Title = "Double trouble", { Enemy = "GoblinKing", Count = 2, Gap = 6 } },
+			{ Title = "Hot rocks", { Enemy = "MoltenGolem", Count = 2, Gap = 6 }, { Enemy = "EmberImp", Count = 15, Gap = 0.4 } },
+			{ Title = "FINAL: everybody, all at once", { Enemy = "GoblinKing", Count = 2, Gap = 3 }, { Enemy = "MoltenGolem", Count = 2, Gap = 3 } },
+		} },
 }
 Config.ChallengeReward = { Gems = 60, MinRarity = 4 } -- first clear of each challenge on each map: gems + an Epic or better item
 Config.EndlessBossEvery = 10
@@ -384,7 +392,16 @@ Config.Heroes = {
 		Turret = { Damage = 9, Range = 24, Cooldown = 0.4, Time = 20, AbilityCooldown = 18 },
 	},
 }
-Config.HeroOrder = { "Swordmaster", "RuneMage", "Engineer" }
+Config.Heroes.BeastHunter = {
+	Name = "Beast Hunter", Color = Color3.fromRGB(150, 200, 90),
+	Role = "Fast single-target damage, nets and a wolf friend",
+	Abilities = { F = "Shot", E = "Net", R = "Wolf" },
+	Help = "F: quick bow shot at the most dangerous goblin  E: net that holds a group in place  R: call a wolf that bites for 15s",
+	Shot = { Damage = 11, Range = 38, Cooldown = 0.35 },
+	Net = { Radius = 9, Range = 40, Time = 2.5, Cooldown = 10 },
+	Wolf = { Damage = 16, Range = 14, Every = 0.6, Time = 15, Cooldown = 20 },
+}
+Config.HeroOrder = { "Swordmaster", "RuneMage", "Engineer", "BeastHunter" }
 
 -- goblins hurt heroes that stand in their way (damage per second)
 Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45,
@@ -408,6 +425,7 @@ Config.Titles = {
 	{ Id = "Bonker", Name = "Professional Goblin Bonker", Price = 75 },
 	{ Id = "Npc", Name = "Main Character Energy", Price = 120 },
 	{ Id = "Legend", Name = "Portal Protector Supreme", Price = 300 },
+	{ Id = "Uprising", Name = "Goblin Uprising Survivor", Price = 0, SeasonOnly = true },
 }
 
 -- daily reward: day 1, 2, 3 ... of your streak (after the last day it stays at the last one)

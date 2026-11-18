@@ -8,6 +8,7 @@ local HttpService = game:GetService("HttpService")
 local Store = require(ReplicatedStorage.Shared.Store)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
+local SeasonService = require(script.Parent.SeasonService)
 
 local StoreService = {}
 
@@ -238,6 +239,9 @@ local function processReceipt(receipt)
 	end
 	if product.Skin then
 		skinsOf(profile)[product.Skin] = true
+	end
+	if product.SeasonPass then
+		SeasonService.UnlockPaid(profile)
 	end
 	if key == "StarterPack" then
 		profile.StarterBought = true

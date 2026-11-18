@@ -17,6 +17,8 @@ local Effects = require(script.Parent.Effects)
 local MapBuilder = require(script.Parent.MapBuilder)
 local QuestService = require(script.Parent.QuestService)
 local PetService = require(script.Parent.PetService)
+local SeasonService = require(script.Parent.SeasonService)
+local Store = require(ReplicatedStorage.Shared.Store)
 local DataStoreService = game:GetService("DataStoreService")
 
 -- the global Endless leaderboard (only works in the real game or with API access on)
@@ -128,7 +130,10 @@ function GameService.EndGame(won)
 	local modeInfo = Config.FindById(Config.Modes, mode)
 	for _, player in Players:GetPlayers() do
 		local profile = DataService.Get(player)
+		SeasonService.LogRunEnded(player, State.Get("Map") or "", mode, cleared, won)
 		if won then
+			SeasonService.AddXp(player, Store.Season.XpPerWin)
+			SeasonService.Funnel(player, 6)
 			QuestService.Add(player, "Win", 1)
 			if diff.Id == "Hard" or diff.Id == "Nightmare" then
 				QuestService.Add(player, "WinHard", 1)
@@ -147,6 +152,10 @@ function GameService.EndGame(won)
 					end)
 				end)
 			end)
+		end
+		-- Boss Rush win: a big chest every time
+		if profile and won and modeInfo and modeInfo.BossRush then
+			ItemService.GiveReward(player, 4, 26 + mapInfo.ItemLevel)
 		end
 		-- first clear of a challenge on this map: gems and an Epic or better item
 		if profile and won and modeInfo and modeInfo.Challenge then
@@ -172,6 +181,10 @@ end
 
 local function runGame(myRun)
 	local waves = Config.Waves
+	local modeNow = Config.FindById(Config.Modes, State.Get("Mode") or "Campaign")
+	if modeNow and modeNow.Waves then
+		waves = modeNow.Waves -- Boss Rush has its own waves
+	end
 	local endless = State.Get("Mode") == "Endless"
 	State.Set("MaxWave", endless and 0 or #waves)
 	local wave = 0
@@ -240,6 +253,12 @@ local function runGame(myRun)
 		State.AddGold(bonus)
 		ItemService.CollectAllPlayers()
 		QuestService.AddAll("Waves", 1)
+		SeasonService.AddXpAll(Store.Season.XpPerWave)
+		if wave == 1 then
+			SeasonService.FunnelAll(4)
+		elseif wave == 5 then
+			SeasonService.FunnelAll(5)
+		end
 		notify("Wave " .. wave .. " cleared! +" .. bonus .. " mana", Color3.fromRGB(120, 255, 120))
 	end
 	GameService.EndGame(true)
@@ -332,7 +351,7 @@ function GameService.StartRun()
 	State.Set("MaxPortalHealth", portalHealth)
 	State.Set("Wave", 0)
 	State.Set("WaveTitle", "")
-	State.Set("MaxWave", State.Get("Mode") == "Endless" and 0 or #Config.Waves)
+	State.Set("MaxWave", State.Get("Mode") == "Endless" and 0 or (modeInfo and modeInfo.Waves and #modeInfo.Waves) or #Config.Waves)
 	State.Set("Kills", 0)
 	State.Set("NextWaveIn", 0)
 	State.Set("EndMeme", "")
@@ -344,6 +363,7 @@ function GameService.StartRun()
 		HeroService.Reset(player)
 		player:SetAttribute("LastReward", 0)
 		MapBuilder.Teleport(player, "Battle")
+		SeasonService.Funnel(player, 2)
 	end
 	notify("To the " .. Config.Maps[mapId].Name .. "! " .. (modeInfo and modeInfo.Text or "Build your defenders."),
 		Color3.fromRGB(200, 200, 255))

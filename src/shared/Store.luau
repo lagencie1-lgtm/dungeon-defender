@@ -30,10 +30,12 @@ Store.Products = {
 	Gems2600 = { Id = 0, Name = "2,600 Gems", Price = 799, Gems = 2600, Text = "30% bonus" },
 	BoostXp = { Id = 0, Name = "2x XP (30 min)", Price = 79, Boost = "Xp", Minutes = 30 },
 	BoostGold = { Id = 0, Name = "2x Gold (30 min)", Price = 79, Boost = "Gold", Minutes = 30 },
+	SeasonPass = { Id = 0, Name = "Season Pass", Price = 399, SeasonPass = true,
+		Text = "Unlocks the paid rewards of this season (skins, titles, gems)" },
 	StarterPack = { Id = 0, Name = "Starter Pack", Price = 99, Gems = 300, Skin = "CapeHero", Once = true,
 		Text = "300 gems + the Hero cape. Only once!" },
 }
-Store.ProductOrder = { "StarterPack", "Gems100", "Gems550", "Gems1200", "Gems2600", "BoostXp", "BoostGold" }
+Store.ProductOrder = { "SeasonPass", "StarterPack", "Gems100", "Gems550", "Gems1200", "Gems2600", "BoostXp", "BoostGold" }
 
 -------------------------------------------------------------------------------
 -- Skins: change looks only. Placeholders for now (colour changes = "Rare").
@@ -63,6 +65,13 @@ Store.Skins = {
 		Primary = Color3.fromRGB(40, 110, 220), Accent = Color3.fromRGB(255, 220, 80) },
 	CapeVIP = { Target = "Cape", Name = "VIP Cape", Tier = "Rare", Price = 0, NotForSale = true,
 		Primary = Color3.fromRGB(255, 200, 40), Accent = Color3.fromRGB(255, 255, 255) },
+	-- season 1 rewards
+	CapeGoblin = { Target = "Cape", Name = "Goblin Hunter Cape", Tier = "Rare", Price = 0, NotForSale = true,
+		Primary = Color3.fromRGB(90, 160, 60), Accent = Color3.fromRGB(255, 60, 60) },
+	RangerGoblin = { Target = "Ranger", Name = "Goblin Ranger", Tier = "Rare", Price = 0, NotForSale = true,
+		Primary = Color3.fromRGB(90, 160, 60), Accent = Color3.fromRGB(255, 220, 80) },
+	BallistaSeason = { Target = "Ballista", Name = "Uprising Ballista", Tier = "Rare", Price = 0, NotForSale = true,
+		Primary = Color3.fromRGB(60, 50, 80), Accent = Color3.fromRGB(120, 255, 120) },
 	-- free ones, so everyone has something to show
 	CapeGreen = { Target = "Cape", Name = "Forest Cape", Tier = "Rare", Price = 0, Free = true, Primary = Color3.fromRGB(50, 120, 60) },
 	RangerForest = { Target = "Ranger", Name = "Forest Ranger", Tier = "Rare", Price = 0, Free = true,
@@ -70,6 +79,39 @@ Store.Skins = {
 }
 Store.SkinOrder = { "CapeGreen", "RangerForest", "CapeRed", "CapeNight", "RangerRoyal", "RangerShadow", "FlameCandy",
 	"FlameGold", "FrostToxic", "StormSunset", "BallistaBone", "CapeHero", "CapeVIP" }
+-------------------------------------------------------------------------------
+-- Season (battle pass). Free track for everyone, paid track with the Season Pass.
+-- Pass XP: waves cleared, wins and claimed quests.
+-------------------------------------------------------------------------------
+Store.Season = {
+	Id = 1,
+	Name = "Season 1: Goblin Uprising",
+	Levels = 30,
+	XpPerLevel = 120,
+	XpPerWave = 10,
+	XpPerWin = 60,
+	XpPerQuest = 50,
+}
+-- reward on each level: { Free = ..., Paid = ... }. Kinds: Gems, Gold, Skin, Title
+function Store.SeasonReward(level)
+	local free, paid
+	if level % 10 == 0 then
+		free = { Kind = "Gems", Amount = 40 }
+		paid = ({ [10] = { Kind = "Skin", Id = "CapeGoblin" }, [20] = { Kind = "Skin", Id = "RangerGoblin" },
+			[30] = { Kind = "Skin", Id = "BallistaSeason" } })[level]
+	elseif level % 5 == 0 then
+		free = { Kind = "Gold", Amount = 500 }
+		paid = level == 15 and { Kind = "Title", Id = "Uprising" } or { Kind = "Gems", Amount = 60 }
+	elseif level % 2 == 0 then
+		free = { Kind = "Gold", Amount = 200 }
+		paid = { Kind = "Gems", Amount = 25 }
+	else
+		free = { Kind = "Gems", Amount = 10 }
+		paid = { Kind = "Gold", Amount = 400 }
+	end
+	return free, paid
+end
+
 Store.FeaturedCount = 4 -- skins on offer each day
 Store.FeaturedDiscount = 0.2 -- 20% off
 

@@ -570,7 +570,8 @@ local function shopItems(kind)
 		end
 	else
 		for _, t in Config.Titles do
-			table.insert(items, { Id = t.Id, Name = t.Name, Price = t.Price, Text = "Shows over your head",
+			table.insert(items, { Id = t.Id, Name = t.Name, Price = t.Price, RebirthOnly = t.SeasonOnly,
+				Text = t.SeasonOnly and "Season reward" or "Shows over your head",
 				Color = Color3.fromRGB(255, 200, 90) })
 		end
 	end
@@ -594,7 +595,7 @@ local function rowFor(kind, item, order)
 		or kind == "Titles" and player:GetAttribute("EquippedTitle") or nil
 	local text, color
 	if not isOwned and item.RebirthOnly then
-		text, color = "Rebirth reward", Color3.fromRGB(70, 70, 80)
+		text, color = "Reward only", Color3.fromRGB(70, 70, 80)
 	elseif not isOwned then
 		text, color = "Buy " .. item.Price .. " gems", Color3.fromRGB(40, 120, 170)
 	elseif kind == "Towers" then

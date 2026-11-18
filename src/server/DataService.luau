@@ -234,6 +234,9 @@ local function buy(player, kind, id)
 	if item.RebirthOnly then
 		return false, "This one is a Rebirth reward"
 	end
+	if item.SeasonOnly then
+		return false, "This one is a Season reward"
+	end
 	if p.Gems < price then
 		return false, "Not enough gems (need " .. price .. ")"
 	end

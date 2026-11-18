@@ -7,11 +7,11 @@ local EVENTS = {
 	"StartWave", "HeroAttack", "HeroWhirlwind", "HeroLeap", "PlayAgain", "Notify",
 	"SetSpeed", "PickDifficulty",
 	"LootDrop", "LootPicked", "PickupLoot", "VictoryChest", "Inventory", "SeenGear",
-	"OpenPanel", "PickMap", "StartRun", "Quests", "PickMode", "Pets", "FinishTutorial",
+	"OpenPanel", "PickMap", "StartRun", "Quests", "PickMode", "Pets", "FinishTutorial", "Season",
 }
 local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints",
-	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode", "BuySkin", "EquipSkin",
+	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode", "BuySkin", "EquipSkin", "ClaimSeason", "GetSeason",
 	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets" }
 
 local Remotes = {}

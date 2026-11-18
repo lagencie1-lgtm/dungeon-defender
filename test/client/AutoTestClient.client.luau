@@ -11,7 +11,7 @@ end
 task.wait(8)
 log("client started, state", GameState:GetAttribute("State"))
 
-local heroes = { "Swordmaster", "RuneMage", "Engineer" }
+local heroes = { "Swordmaster", "RuneMage", "Engineer", "BeastHunter" }
 local i = 0
 task.spawn(function()
 	while true do
@@ -60,6 +60,12 @@ for _ = 1, 3 do
 end
 log("quests", #Remotes.GetQuests:InvokeServer())
 log("claim quest 1", Remotes.ClaimQuest:InvokeServer(1))
+task.delay(150, function()
+	local season = Remotes.GetSeason:InvokeServer()
+	log("season level", season and season.Level, "xp", season and season.Xp)
+	log("claim season free 1", Remotes.ClaimSeason:InvokeServer(1, "Free"))
+	log("claim season paid 1 (should fail)", Remotes.ClaimSeason:InvokeServer(1, "Paid"))
+end)
 task.delay(200, function()
 	log("spend ascension", Remotes.SpendAscension:InvokeServer("Power"))
 	log("rebirth", Remotes.Rebirth:InvokeServer())

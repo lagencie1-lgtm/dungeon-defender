@@ -82,7 +82,7 @@ end
 
 local RUNS = {
 	{ "MagmaFortress", "Campaign", 120 },
-	{ "CursedForest", "RangersOnly", 40 },
+	{ "CursedForest", "BossRush", 60 },
 	{ "CursedForest", "Endless", 40 },
 }
 for _, run in RUNS do

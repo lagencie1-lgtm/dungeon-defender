@@ -302,6 +302,25 @@ local function giveWeapon(player, character)
 				CFrame = head.CFrame * CFrame.new(0, 1.6, 0) * CFrame.Angles(0, math.rad(45), 0) })
 			weld(character, head, tip)
 		end
+	elseif heroId == "BeastHunter" then
+		-- a bow: two bent limbs and a string
+		for _, side in { 1, -1 } do
+			local limb = newPart({ Name = "HeroWeapon", Size = Vector3.new(0.25, 2.2, 0.25), Color = Color3.fromRGB(110, 75, 40),
+				Material = Enum.Material.Wood, CFrame = grip * CFrame.new(0, side * 1, -0.3) * CFrame.Angles(side * math.rad(20), 0, 0) })
+			weld(character, hand, limb)
+		end
+		local bowString = newPart({ Name = "HeroWeapon", Size = Vector3.new(0.05, 3.6, 0.05), Color = color, Material = Enum.Material.Neon,
+			CFrame = grip * CFrame.new(0, 0, 0.05) })
+		weld(character, hand, bowString)
+		if skin.Rainbow then
+			rainbowParts[bowString] = true
+		end
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+		if torso then
+			local quiver = newPart({ Name = "HeroHat", Shape = Enum.PartType.Cylinder, Size = Vector3.new(2.2, 0.7, 0.7),
+				Color = Color3.fromRGB(120, 80, 45), CFrame = torso.CFrame * CFrame.new(0.4, 0.3, 0.75) * CFrame.Angles(0, 0, math.rad(70)) })
+			weld(character, torso, quiver)
+		end
 	elseif heroId == "Engineer" then
 		local handle = newPart({ Name = "HeroWeapon", Size = Vector3.new(0.35, 0.35, 3.2), Color = Color3.fromRGB(90, 90, 100),
 			Material = Enum.Material.Metal, CFrame = grip * CFrame.new(0, 0, -1.6) })
@@ -569,6 +588,98 @@ local ABILITIES = {
 	},
 }
 
+ABILITIES.BeastHunter = {
+	F = function(player, root)
+		local info = Config.Heroes.BeastHunter.Shot
+		player:SetAttribute("AttackCooldown", info.Cooldown)
+		local target = targetNear(root.Position, info.Range)
+		if not target or not ready(player, "AttackReadyAt", info.Cooldown) then
+			return
+		end
+		local to = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
+		Effects.Bolt(root.Position + Vector3.new(0, 1.5, 0), to, Color3.fromRGB(230, 220, 170), 0.25, 0.12)
+		task.delay(0.12, function()
+			hit(player, target, info.Damage)
+		end)
+	end,
+	E = function(player, root)
+		local info = Config.Heroes.BeastHunter.Net
+		-- throw it on the biggest group in range
+		local best, bestCount = nil, 0
+		for _, e in EnemyService.InRange(root.Position, info.Range) do
+			local count = #EnemyService.InRange(e.position, info.Radius)
+			if count > bestCount then
+				best, bestCount = e, count
+			end
+		end
+		if not best or not ready(player, "WhirlwindReadyAt", info.Cooldown) then
+			return
+		end
+		local spot = best.position
+		Effects.Bolt(root.Position + Vector3.new(0, 2, 0), spot + Vector3.new(0, 1, 0), Color3.fromRGB(200, 190, 150), 0.8, 0.25)
+		task.delay(0.25, function()
+			Effects.Ring(spot + Vector3.new(0, 0.5, 0), info.Radius, Color3.fromRGB(200, 190, 150), 0.6)
+			for _, e in EnemyService.InRange(spot, info.Radius) do
+				if e.stats.Boss then
+					EnemyService.Slow(e, 0.4, info.Time)
+				else
+					EnemyService.Freeze(e, info.Time)
+				end
+			end
+		end)
+	end,
+	R = function(player, root)
+		local info = Config.Heroes.BeastHunter.Wolf
+		if not ready(player, "LeapReadyAt", info.Cooldown) then
+			return
+		end
+		-- a grey wolf that stays next to the hero and bites goblins nearby
+		local wolf = Instance.new("Model")
+		wolf.Name = "Wolf"
+		local function wp(props)
+			local p = Instance.new("Part")
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			for k, v in props do
+				p[k] = v
+			end
+			p.Parent = wolf
+			return p
+		end
+		local body = wp({ Name = "Body", Size = Vector3.new(1.4, 1.4, 3), Color = Color3.fromRGB(120, 120, 130) })
+		local head = wp({ Name = "Head", Size = Vector3.new(1.1, 1.1, 1.3), Color = Color3.fromRGB(130, 130, 140) })
+		wolf.PrimaryPart = body
+		wolf.Parent = workspace:FindFirstChild("Effects") or workspace
+		Sound.Play("Land", root.Position)
+		local ends = Clock.now + info.Time
+		local nextBite = 0
+		task.spawn(function()
+			while Clock.now < ends and wolf.Parent do
+				local r = rootOf(player)
+				if not r then
+					break
+				end
+				local pos = r.Position + r.CFrame.RightVector * -3 + Vector3.new(0, -2.2, 0)
+				local target = targetNear(r.Position, info.Range)
+				if target then
+					pos = target.position + Vector3.new(1.5, 0.7, 1.5)
+					if Clock.now >= nextBite then
+						nextBite = Clock.now + info.Every
+						hit(player, target, info.Damage)
+					end
+				end
+				local look = target and target.position or (pos + r.CFrame.LookVector)
+				body.CFrame = CFrame.lookAt(pos, Vector3.new(look.X, pos.Y, look.Z))
+				head.CFrame = body.CFrame * CFrame.new(0, 0.5, -1.8)
+				task.wait()
+			end
+			Effects.Burst(body.Position, 3, Color3.fromRGB(150, 150, 160), 0.3)
+			wolf:Destroy()
+		end)
+	end,
+}
+
 -- cooldowns of each hero's E and R, for the screen
 local function abilityCooldowns(heroId)
 	if heroId == "RuneMage" then
@@ -577,6 +688,9 @@ local function abilityCooldowns(heroId)
 	elseif heroId == "Engineer" then
 		local h = Config.Heroes.Engineer
 		return h.Overclock.Cooldown, h.Turret.AbilityCooldown
+	elseif heroId == "BeastHunter" then
+		local h = Config.Heroes.BeastHunter
+		return h.Net.Cooldown, h.Wolf.Cooldown
 	end
 	return Hero.Whirlwind.Cooldown, Hero.Leap.Cooldown
 end

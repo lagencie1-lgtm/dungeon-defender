@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
+local SeasonService = require(script.Parent.SeasonService)
+local Store = require(ReplicatedStorage.Shared.Store)
 
 local QuestService = {}
 
@@ -94,6 +96,7 @@ local function claim(player, index)
 		return false, "Not done yet"
 	end
 	quest.Claimed = true
+	SeasonService.AddXp(player, Store.Season.XpPerQuest)
 	DataService.AddGold(player, info.Gold)
 	DataService.AddGems(player, info.Gems)
 	publish(player)

@@ -44,7 +44,7 @@ local cardRow = make("Frame", { Size = UDim2.new(1, -32, 0, 150), Position = UDi
 local cards = {}
 for i, heroId in Config.HeroOrder do
 	local hero = Config.Heroes[heroId]
-	local b = make("TextButton", { Size = UDim2.fromOffset(234, 150), Text = "", BackgroundColor3 = Ui.PANEL, AutoButtonColor = true,
+	local b = make("TextButton", { Size = UDim2.fromOffset(173, 150), Text = "", BackgroundColor3 = Ui.PANEL, AutoButtonColor = true,
 		LayoutOrder = i, ZIndex = 32, Parent = cardRow }, { corner(12), stroke(hero.Color, 2) })
 	make("Frame", { Size = UDim2.new(1, -20, 0, 6), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = hero.Color, ZIndex = 33, Parent = b },
 		{ corner(3) })

@@ -3,36 +3,39 @@
 local Art = {}
 
 Art.Icons = {
-	shop = "",
-	daily = "",
-	backpack = "",
-	heroes = "",
-	quests = "",
-	pets = "",
-	season = "",
-	gem = "",
-	gold = "",
-	mana = "",
-	scrap = "",
-	lock = "",
-	tower_ranger = "",
-	tower_flame = "",
+	shop = "87928469399792",
+	daily = "101791243220867",
+	backpack = "123399618508905",
+	heroes = "123510789295477",
+	quests = "95883577356523",
+	pets = "71590920948801",
+	season = "115053825281188",
+	gem = "137070824220084",
+	gold = "97070240905377",
+	mana = "98616273109384",
+	scrap = "124525701613671",
+	lock = "93238414154162",
+	tower_ranger = "137781142830567",
+	tower_flame = "84677455373197",
 	tower_frost = "",
 	tower_storm = "",
 	tower_ballista = "",
-	hero_swordmaster = "",
+	hero_swordmaster = "107097240985907",
 	hero_hunter = "",
 	hero_mage = "",
 	hero_engineer = "",
 }
 
--- "rbxassetid://123" for an icon name, or nil when it isn't uploaded yet
+-- the image for an icon name (filled in by ArtService once loaded), or nil
 function Art.Image(name)
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild("ArtImages")
+	return folder and folder:GetAttribute(string.lower(name or "")) or nil
+end
+
+-- true when this icon was uploaded (its image may still be loading)
+function Art.Has(name)
 	local id = Art.Icons[string.lower(name or "")]
-	if id and id ~= "" then
-		return "rbxassetid://" .. id
-	end
-	return nil
+	return id ~= nil and id ~= ""
 end
 
 return Art

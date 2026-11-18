@@ -134,19 +134,43 @@ function Icons.Draw(parent, name, color, props)
 	aspect.Parent = box
 	box.Parent = parent
 	-- painted icon when it's uploaded, otherwise the simple drawn shape
-	local image = Art.Image(name)
-	if image then
+	local function showImage(image)
+		for _, child in box:GetChildren() do
+			if not child:IsA("UIAspectRatioConstraint") then
+				child:Destroy()
+			end
+		end
 		local img = Instance.new("ImageLabel")
 		img.BackgroundTransparency = 1
 		img.Size = UDim2.fromScale(1, 1)
 		img.Image = image
 		img.ScaleType = Enum.ScaleType.Fit
 		img.Parent = box
+	end
+	local image = Art.Image(name)
+	if image then
+		showImage(image)
 		return box
 	end
 	local draw = DRAW[name]
 	if draw then
 		draw(box, color or Color3.fromRGB(230, 190, 110))
+	end
+	if Art.Has(name) then
+		-- the painting is still loading: swap it in when it arrives
+		task.spawn(function()
+			local folder = ReplicatedStorage:WaitForChild("ArtImages", 30)
+			if not folder then
+				return
+			end
+			local key = string.lower(name)
+			if not folder:GetAttribute(key) then
+				folder:GetAttributeChangedSignal(key):Wait()
+			end
+			if box.Parent then
+				showImage(folder:GetAttribute(key))
+			end
+		end)
 	end
 	return box
 end

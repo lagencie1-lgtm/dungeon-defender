@@ -82,7 +82,7 @@ Config.Enemies = {
 	},
 	MoltenGolem = {
 		DisplayName = "Molten Golem", Look = "Golem", Armor = 10, FireImmune = true, DropChance = 0,
-		Health = 3600, Speed = 3.5, Damage = 100, Gold = 300, Xp = 140, Gems = 50, GemChance = 1,
+		Health = 3000, Speed = 3.5, Damage = 100, Gold = 300, Xp = 140, Gems = 50, GemChance = 1,
 		Color = Color3.fromRGB(90, 50, 40), Size = 8, Boss = true,
 	},
 	GoblinKing = {

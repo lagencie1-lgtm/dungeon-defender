@@ -1,0 +1,121 @@
+-- Only in the test build (test.project.json): plays the game by itself at high
+-- speed and prints [AUTOTEST] lines, so errors show up in Studio's log.
+local Players = game:GetService("Players")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local Server = ServerScriptService:WaitForChild("Server")
+local function log(...)
+	print("[AUTOTEST]", ...)
+end
+
+local function step(name, fn)
+	local ok, err = pcall(fn)
+	log(name, ok and "OK" or ("FAILED: " .. tostring(err)))
+	return ok
+end
+
+task.wait(4)
+local GameService = require(Server.GameService)
+local TowerService = require(Server.TowerService)
+local ItemService = require(Server.ItemService)
+local DataService = require(Server.DataService)
+local State = require(Server.State)
+local Clock = require(Server.Clock)
+local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+
+local player = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
+local waited = 0
+while not DataService.Get(player) and waited < 20 do
+	task.wait(0.5)
+	waited += 0.5
+end
+log("player", player.Name, "profile", DataService.Get(player) ~= nil, "state", State.Get("State"))
+
+step("give gold and unlocks", function()
+	local p = DataService.Get(player)
+	p.Gold = 100000
+	p.Scrap = 1000
+	p.Gems = 1000
+	p.Owned.Towers.StormObelisk = true
+	p.Owned.Towers.Ballista = true
+	DataService.Publish(player)
+end)
+
+step("roll items", function()
+	for _ = 1, 40 do
+		local item = ItemService.Roll(math.random(1, 30), 3)
+		assert(item.name and item.slot and item.rarity)
+	end
+	ItemService.VictoryChest("Hard")
+end)
+
+local function placeTowers()
+	local types = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ranger", "Ranger" }
+	local placed = 0
+	local pts = Config.Path
+	for i = 1, #pts - 1 do
+		local a, b = pts[i], pts[i + 1]
+		local dir = (b - a).Unit
+		local side = Vector3.new(-dir.Z, 0, dir.X)
+		for _, t in { 0.3, 0.7 } do
+			for _, k in { -11, 11 } do
+				local pos = a:Lerp(b, t) + side * k
+				local ok, reason = TowerService.Place(player, types[placed % #types + 1], pos)
+				if ok then
+					placed += 1
+				elseif reason ~= "Can't build on the path" and reason ~= "Too close to another defender"
+					and reason ~= "Too close to the portal" and reason ~= "Too close to the edge" then
+					log("place failed:", reason)
+				end
+			end
+		end
+	end
+	-- upgrade every other defender twice
+	for i, model in workspace.Towers:GetChildren() do
+		if i % 2 == 0 then
+			TowerService.Upgrade(player, model)
+			TowerService.Upgrade(player, model)
+		end
+	end
+	log("placed", placed, "build points", State.Get("BuildUsed"), "/", State.Get("BuildMax"))
+end
+
+for _, mapId in { "MagmaFortress", "CursedForest" } do
+	step("run " .. mapId, function()
+		State.Set("Map", mapId)
+		State.Set("Difficulty", "Easy")
+		GameService.StartRun()
+		task.wait(1)
+		State.Set("Gold", 100000)
+		placeTowers()
+		Clock.scale = 8
+		local started = os.clock()
+		local lastWave = 0
+		while os.clock() - started < 150 do
+			local s = State.Get("State")
+			if s == "Won" or s == "Lost" then
+				break
+			end
+			if State.Get("Wave") ~= lastWave then
+				lastWave = State.Get("Wave")
+				log(mapId, "wave", lastWave, "portal", State.Get("PortalHealth"), "kills", State.Get("Kills"))
+			end
+			task.wait(0.5)
+		end
+		log(mapId, "result", State.Get("State"), "wave", State.Get("Wave"), "kills", State.Get("Kills"),
+			"portal", State.Get("PortalHealth"), "gold", player:GetAttribute("Gold"), "items", #DataService.Get(player).Items)
+		Clock.scale = 1
+		if State.Get("State") == "Won" or State.Get("State") == "Lost" then
+			GameService.ToOutpost()
+		else
+			GameService.EndGame(false)
+			GameService.ToOutpost()
+		end
+		task.wait(2)
+	end)
+end
+
+log("DONE")
+pcall(function()
+	game:GetService("StudioTestService"):EndTest("done")
+end)

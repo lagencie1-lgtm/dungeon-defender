@@ -14,6 +14,7 @@ local TowerService = {}
 
 -- [model] = { type, level, spent, nextShot, position, muzzle, kicker, turners }
 local towers = {}
+local turrets = {} -- the Engineer's mini turrets
 
 local function newPart(model, props)
 	local p = Instance.new("Part")
@@ -345,7 +346,6 @@ function TowerService.Overclock(position, radius, speed, seconds)
 end
 
 -- Engineer's mini turret: shoots on its own for a while, then breaks down
-local turrets = {}
 function TowerService.SpawnTurret(owner, position, info)
 	local model = Instance.new("Model")
 	model.Name = "MiniTurret"

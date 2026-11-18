@@ -1,0 +1,19 @@
+{
+  "name": "htd-autotest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "src/server" },
+      "AutoTest": { "$path": "test/server" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "src/client" },
+        "AutoTestClient": { "$path": "test/client" }
+      }
+    }
+  }
+}

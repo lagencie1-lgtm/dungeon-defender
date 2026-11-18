@@ -10,6 +10,7 @@ local Items = require(ReplicatedStorage.Shared.Items)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Sound = require(script.Parent.Sound)
+local State = require(script.Parent.State)
 
 local ItemService = {}
 
@@ -188,11 +189,12 @@ end
 
 -- called by the game when a goblin dies
 function ItemService.OnEnemyKilled(enemy, difficultyId, wave)
-	local chance = DROP_CHANCE[enemy.name] or 0
+	local chance = enemy.stats.DropChance or DROP_CHANCE[enemy.name] or 0
 	if chance <= 0 then
 		return
 	end
-	local level = wave * 2 + (DIFF_LEVEL[difficultyId] or 0)
+	local map = Config.Maps[State.Get("Map") or ""]
+	local level = wave * 2 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0)
 	local luck = DIFF_LUCK[difficultyId] or 1
 	for _, player in Players:GetPlayers() do
 		if rng:NextNumber() < chance then
@@ -204,7 +206,8 @@ end
 
 -- the Goblin King's chest: a guaranteed Rare or better item for everyone
 function ItemService.VictoryChest(difficultyId)
-	local level = 22 + (DIFF_LEVEL[difficultyId] or 0)
+	local map = Config.Maps[State.Get("Map") or ""]
+	local level = 22 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0)
 	local luck = (DIFF_LUCK[difficultyId] or 1) * 2
 	for _, player in Players:GetPlayers() do
 		local item = ItemService.Roll(level, luck, 3)

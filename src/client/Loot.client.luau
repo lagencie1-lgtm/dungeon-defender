@@ -434,6 +434,11 @@ local function openBag()
 	end
 end
 bagButton.Activated:Connect(openBag)
+Remotes.OpenPanel.OnClientEvent:Connect(function(name)
+	if name == "Backpack" and not panel.Visible then
+		openBag()
+	end
+end)
 closeButton.Activated:Connect(function()
 	if panel.Visible then
 		openBag()

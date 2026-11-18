@@ -21,10 +21,17 @@ EnemyService.OnLeaked = function(_enemy) end
 -- total length of the path, and how far along it each corner is
 local corners = { 0 }
 local pathLength = 0
-for i = 2, #Config.Path do
-	pathLength += (Config.Path[i] - Config.Path[i - 1]).Magnitude
-	corners[i] = pathLength
+
+-- call after Config.SetMap, so enemies follow the new map's path
+function EnemyService.SetPath()
+	corners = { 0 }
+	pathLength = 0
+	for i = 2, #Config.Path do
+		pathLength += (Config.Path[i] - Config.Path[i - 1]).Magnitude
+		corners[i] = pathLength
+	end
 end
+EnemyService.SetPath()
 
 -- where an enemy stands after walking `distance` studs, and which way it faces
 local function positionAt(distance)
@@ -52,6 +59,46 @@ local function newPart(model, props)
 	return p
 end
 
+-- health bar (and the name for bosses) over the head. Returns the fill bar.
+function EnemyService.HealthBar(model, head, stats)
+	local s = stats.Size
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "HealthBar"
+	gui.Size = stats.Boss and UDim2.fromOffset(180, 30) or UDim2.fromOffset(50, 6)
+	gui.StudsOffset = Vector3.new(0, s * 0.9, 0)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 150
+	gui.Adornee = head
+	gui.Parent = model
+	local back = Instance.new("Frame")
+	back.Size = stats.Boss and UDim2.new(1, 0, 0, 14) or UDim2.fromScale(1, 1)
+	back.Position = stats.Boss and UDim2.fromOffset(0, 16) or UDim2.new()
+	back.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
+	back.BorderSizePixel = 0
+	back.Parent = gui
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = stats.Boss and Color3.fromRGB(200, 60, 255)
+		or stats.Loot and Color3.fromRGB(255, 210, 60)
+		or Color3.fromRGB(80, 220, 80)
+	fill.BorderSizePixel = 0
+	fill.Parent = back
+	if stats.Boss then
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, 0, 0, 16)
+		title.BackgroundTransparency = 1
+		title.Font = Enum.Font.GothamBlack
+		title.TextScaled = true
+		title.TextColor3 = Color3.fromRGB(255, 220, 90)
+		title.TextStrokeTransparency = 0.3
+		title.Text = stats.DisplayName
+		title.Parent = gui
+	end
+
+	return fill
+end
+
 -- builds a goblin out of blocks. Big ones get a club, the king a crown,
 -- the Loot Goblin a big bag of gems.
 local function makeGoblin(name, stats)
@@ -59,30 +106,70 @@ local function makeGoblin(name, stats)
 	local model = Instance.new("Model")
 	model.Name = name
 
-	local body = newPart(model, { Name = "Body", Size = Vector3.new(s, s, s * 0.8), Color = stats.Color })
+	local look = stats.Look or "Goblin"
+	if look == "Slime" then
+		-- a wobbly blob with two eyes
+		local body = newPart(model, { Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.new(s, s, s), Color = stats.Color,
+			Material = Enum.Material.Neon, Transparency = 0.15 })
+		model.PrimaryPart = body
+		local head = newPart(model, { Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.5, Color = stats.Color,
+			Material = Enum.Material.Neon, CFrame = body.CFrame * CFrame.new(0, s * 0.35, 0) })
+		for side = -1, 1, 2 do
+			newPart(model, { Name = "Eye", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.18, Color = Color3.new(0, 0, 0),
+				CFrame = body.CFrame * CFrame.new(side * s * 0.18, s * 0.15, -s * 0.42) })
+		end
+		return model, EnemyService.HealthBar(model, head, stats), head
+	end
+	local body = newPart(model, { Name = "Body", Size = Vector3.new(s, s, s * 0.8), Color = stats.Color,
+		Material = look == "Golem" and Enum.Material.Basalt or look == "Knight" and Enum.Material.Metal or Enum.Material.Plastic })
 	model.PrimaryPart = body
 	local head = newPart(model, {
 		Name = "Head",
-		Shape = Enum.PartType.Ball,
+		Shape = look == "Knight" and Enum.PartType.Block or Enum.PartType.Ball,
 		Size = Vector3.one * s * 0.7,
 		Color = stats.Color,
 		CFrame = body.CFrame * CFrame.new(0, s * 0.8, 0),
 	})
 	for side = -1, 1, 2 do
-		newPart(model, { -- pointy ear
-			ClassName = "WedgePart",
-			Name = "Ear",
-			Size = Vector3.new(0.3, s * 0.3, s * 0.4),
-			Color = stats.Color,
-			CFrame = head.CFrame * CFrame.new(side * s * 0.4, s * 0.1, 0) * CFrame.Angles(0, 0, side * math.rad(-30)),
-		})
+		if look == "Imp" then
+			newPart(model, { -- little horn
+				Name = "Horn",
+				Size = Vector3.new(s * 0.12, s * 0.35, s * 0.12),
+				Color = Color3.fromRGB(40, 30, 30),
+				CFrame = head.CFrame * CFrame.new(side * s * 0.2, s * 0.38, 0) * CFrame.Angles(0, 0, side * math.rad(-20)),
+			})
+		elseif look == "Knight" then
+			newPart(model, { -- shoulder plate
+				Name = "Shoulder",
+				Size = Vector3.new(s * 0.4, s * 0.2, s * 0.6),
+				Color = Color3.fromRGB(120, 110, 130),
+				Material = Enum.Material.Metal,
+				CFrame = body.CFrame * CFrame.new(side * s * 0.6, s * 0.45, 0),
+			})
+		elseif look == "Golem" then
+			newPart(model, { -- huge rock fist
+				Name = "Fist",
+				Size = Vector3.one * s * 0.45,
+				Color = stats.Color,
+				Material = Enum.Material.Basalt,
+				CFrame = body.CFrame * CFrame.new(side * s * 0.75, -s * 0.1, -s * 0.2),
+			})
+		else
+			newPart(model, { -- pointy ear
+				ClassName = "WedgePart",
+				Name = "Ear",
+				Size = Vector3.new(0.3, s * 0.3, s * 0.4),
+				Color = stats.Color,
+				CFrame = head.CFrame * CFrame.new(side * s * 0.4, s * 0.1, 0) * CFrame.Angles(0, 0, side * math.rad(-30)),
+			})
+		end
 		newPart(model, { -- red eye
 			Name = "Eye",
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.one * s * 0.15,
-			Color = Color3.fromRGB(255, 40, 40),
+			Color = (look == "Golem" or look == "Imp") and Color3.fromRGB(255, 200, 40) or Color3.fromRGB(255, 40, 40),
 			Material = Enum.Material.Neon,
-			CFrame = head.CFrame * CFrame.new(side * s * 0.15, s * 0.05, -s * 0.32),
+			CFrame = head.CFrame * CFrame.new(side * s * 0.15, s * 0.05, -s * 0.36),
 		})
 		newPart(model, { -- leg
 			Name = "Leg",
@@ -99,7 +186,19 @@ local function makeGoblin(name, stats)
 		Color = stats.Color:Lerp(Color3.new(0, 0, 0), 0.25),
 		CFrame = head.CFrame * CFrame.new(0, -s * 0.08, -s * 0.36),
 	})
-	if s >= 4 then
+	if look == "Golem" then
+		-- glowing lava cracks
+		newPart(model, { Name = "Core", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.45, Color = Color3.fromRGB(255, 120, 30),
+			Material = Enum.Material.Neon, CFrame = body.CFrame * CFrame.new(0, 0, -s * 0.3) })
+		Instance.new("Fire", body).Size = s
+	elseif look == "Knight" then
+		newPart(model, { Name = "Visor", Size = Vector3.new(s * 0.5, s * 0.08, 0.2), Color = Color3.fromRGB(255, 120, 40),
+			Material = Enum.Material.Neon, CFrame = head.CFrame * CFrame.new(0, s * 0.05, -s * 0.36) })
+		newPart(model, { Name = "Shield", Size = Vector3.new(0.3, s * 0.8, s * 0.6), Color = Color3.fromRGB(110, 100, 120),
+			Material = Enum.Material.Metal, CFrame = body.CFrame * CFrame.new(-s * 0.65, 0, -s * 0.2) })
+	elseif look == "Imp" then
+		Instance.new("Fire", head).Size = s * 0.8
+	elseif s >= 4 then
 		newPart(model, { -- club
 			Name = "Club",
 			Size = Vector3.new(s * 0.25, s * 0.25, s * 1.1),
@@ -146,45 +245,10 @@ local function makeGoblin(name, stats)
 		light.Parent = body
 	end
 
-	-- health bar (and name for special goblins) over the head
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "HealthBar"
-	gui.Size = stats.Boss and UDim2.fromOffset(180, 30) or UDim2.fromOffset(50, 6)
-	gui.StudsOffset = Vector3.new(0, s * 0.9, 0)
-	gui.AlwaysOnTop = true
-	gui.MaxDistance = 150
-	gui.Adornee = head
-	gui.Parent = model
-	local back = Instance.new("Frame")
-	back.Size = stats.Boss and UDim2.new(1, 0, 0, 14) or UDim2.fromScale(1, 1)
-	back.Position = stats.Boss and UDim2.fromOffset(0, 16) or UDim2.new()
-	back.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
-	back.BorderSizePixel = 0
-	back.Parent = gui
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.Size = UDim2.fromScale(1, 1)
-	fill.BackgroundColor3 = stats.Boss and Color3.fromRGB(200, 60, 255)
-		or stats.Loot and Color3.fromRGB(255, 210, 60)
-		or Color3.fromRGB(80, 220, 80)
-	fill.BorderSizePixel = 0
-	fill.Parent = back
-	if stats.Boss then
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, 16)
-		title.BackgroundTransparency = 1
-		title.Font = Enum.Font.GothamBlack
-		title.TextScaled = true
-		title.TextColor3 = Color3.fromRGB(255, 220, 90)
-		title.TextStrokeTransparency = 0.3
-		title.Text = stats.DisplayName
-		title.Parent = gui
-	end
-
-	return model, fill, head
+	return model, EnemyService.HealthBar(model, head, stats), head
 end
 
-function EnemyService.Spawn(name, healthMultiplier)
+function EnemyService.Spawn(name, healthMultiplier, startDistance)
 	local stats = Config.Enemies[name]
 	local model, fill, head = makeGoblin(name, stats)
 	local hp = math.floor(stats.Health * (healthMultiplier or 1))
@@ -200,7 +264,8 @@ function EnemyService.Spawn(name, healthMultiplier)
 		stats = stats,
 		health = hp,
 		maxHealth = hp,
-		distance = 0,
+		distance = startDistance or 0,
+		healthMultiplier = healthMultiplier or 1,
 		position = Config.Path[1],
 		slowUntil = 0,
 		slowFactor = 1,
@@ -239,6 +304,14 @@ local function kill(enemy, player)
 		Sound.Play("GoblinDie", center)
 	end
 	EnemyService.OnKilled(enemy, player)
+	-- slimes split into smaller slimes
+	local split = enemy.stats.SplitInto
+	if split and Config.Enemies[split] then
+		for i = 1, enemy.stats.SplitCount or 2 do
+			local bit = EnemyService.Spawn(split, enemy.healthMultiplier, math.max(0, enemy.distance - i * 2))
+			bit.position = enemy.position
+		end
+	end
 end
 
 -- player is optional: who hit it (the hero), for xp.
@@ -246,6 +319,11 @@ end
 function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	if enemy.dead then
 		return
+	end
+	-- armor takes a flat bite out of every hit (but never more than 75%)
+	local armor = enemy.stats.Armor
+	if armor and amount >= 1 then
+		amount = math.max(amount - armor, amount * 0.25)
 	end
 	enemy.health -= amount
 	enemy.model:SetAttribute("Health", enemy.health)
@@ -282,6 +360,9 @@ function EnemyService.Freeze(enemy, seconds)
 end
 
 function EnemyService.Burn(enemy, dps, seconds)
+	if enemy.stats.FireImmune then
+		return
+	end
 	enemy.burnDps = math.max(enemy.burnDps, dps)
 	enemy.burnUntil = math.max(enemy.burnUntil, Clock.now + seconds)
 end

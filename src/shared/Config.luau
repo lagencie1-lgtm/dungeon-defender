@@ -2,7 +2,7 @@
 local Config = {}
 
 -- The Cursed Forest path. Goblins walk from the first point to the last one.
-Config.Path = {
+local ForestPath = {
 	Vector3.new(-90, 0, -60), -- start (goblin camp)
 	Vector3.new(-40, 0, -60),
 	Vector3.new(-40, 0, 20),
@@ -14,7 +14,7 @@ Config.Path = {
 }
 Config.PathWidth = 10
 Config.MapSize = Vector2.new(240, 180) -- ground size (X, Z)
-Config.SpawnPoint = Vector3.new(-10, 0, -20) -- where players appear
+Config.OutpostCenter = Vector3.new(0, 0, -215) -- the hub, south of the battlefield
 
 Config.StartGold = 200
 Config.PortalHealth = 100
@@ -59,6 +59,32 @@ Config.Enemies = {
 		Health = 70, Speed = 13, Damage = 0, Gold = 60, Xp = 10, Gems = 12, GemChance = 1,
 		Color = Color3.fromRGB(255, 200, 50), Size = 2.6, Loot = true,
 	},
+	-- Magma Fortress
+	EmberImp = {
+		DisplayName = "Ember Imp", Look = "Imp", FireImmune = true, DropChance = 0.018,
+		Health = 22, Speed = 15, Damage = 1, Gold = 4, Xp = 2, Gems = 1, GemChance = 0.03,
+		Color = Color3.fromRGB(255, 120, 40), Size = 2.4,
+	},
+	ObsidianKnight = {
+		DisplayName = "Obsidian Knight", Look = "Knight", Armor = 6, DropChance = 0.08,
+		Health = 120, Speed = 6.5, Damage = 4, Gold = 14, Xp = 7, Gems = 2, GemChance = 0.3,
+		Color = Color3.fromRGB(70, 62, 85), Size = 4,
+	},
+	MagmaSlime = {
+		DisplayName = "Magma Slime", Look = "Slime", FireImmune = true, SplitInto = "SlimeBit", SplitCount = 2, DropChance = 0.03,
+		Health = 70, Speed = 8, Damage = 2, Gold = 8, Xp = 4, Gems = 1, GemChance = 0.08,
+		Color = Color3.fromRGB(255, 90, 30), Size = 3.5,
+	},
+	SlimeBit = {
+		DisplayName = "Slime Bit", Look = "Slime", FireImmune = true, DropChance = 0,
+		Health = 20, Speed = 11, Damage = 1, Gold = 2, Xp = 1,
+		Color = Color3.fromRGB(255, 140, 60), Size = 1.8,
+	},
+	MoltenGolem = {
+		DisplayName = "Molten Golem", Look = "Golem", Armor = 10, FireImmune = true, DropChance = 0,
+		Health = 3600, Speed = 3.5, Damage = 100, Gold = 300, Xp = 140, Gems = 50, GemChance = 1,
+		Color = Color3.fromRGB(90, 50, 40), Size = 8, Boss = true,
+	},
 	GoblinKing = {
 		DisplayName = "Goblin King",
 		Health = 2600, Speed = 4, Damage = 100, Gold = 250, Xp = 100, Gems = 40, GemChance = 1,
@@ -70,7 +96,7 @@ Config.Enemies = {
 -- Waves: each wave is a list of groups that come one after another.
 -- Count = how many, Gap = seconds between each one.
 -------------------------------------------------------------------------------
-Config.Waves = {
+local ForestWaves = {
 	{ Title = "The tutorial nobody asked for",
 		{ Enemy = "Goblin", Count = 8, Gap = 1.2 } },
 	{ Title = "They brought friends",
@@ -92,6 +118,63 @@ Config.Waves = {
 	{ Title = "FINAL BOSS: the Goblin King",
 		{ Enemy = "Goblin", Count = 10, Gap = 0.5 }, { Enemy = "GoblinKing", Count = 1, Gap = 2 }, { Enemy = "Brute", Count = 5, Gap = 1.5 } },
 }
+
+local MagmaWaves = {
+	{ Title = "Spicy start",
+		{ Enemy = "EmberImp", Count = 10, Gap = 1 } },
+	{ Title = "Slime time",
+		{ Enemy = "EmberImp", Count = 12, Gap = 0.8 }, { Enemy = "MagmaSlime", Count = 3, Gap = 2 } },
+	{ Title = "Knights in shiny armor (not shiny)",
+		{ Enemy = "ObsidianKnight", Count = 3, Gap = 3 }, { Enemy = "EmberImp", Count = 12, Gap = 0.7 } },
+	{ Title = "The floor is lava. For real",
+		{ Enemy = "MagmaSlime", Count = 8, Gap = 1.5 }, { Enemy = "LootGoblin", Count = 1, Gap = 1 } },
+	{ Title = "Somebody turn on the AC",
+		{ Enemy = "EmberImp", Count = 20, Gap = 0.4 }, { Enemy = "ObsidianKnight", Count = 4, Gap = 2.5 } },
+	{ Title = "Heavy metal",
+		{ Enemy = "MagmaSlime", Count = 10, Gap = 1.2 }, { Enemy = "ObsidianKnight", Count = 5, Gap = 2 } },
+	{ Title = "Lava lamp party",
+		{ Enemy = "EmberImp", Count = 25, Gap = 0.35 }, { Enemy = "MagmaSlime", Count = 6, Gap = 1.2 }, { Enemy = "LootGoblin", Count = 1, Gap = 1 } },
+	{ Title = "Tin can army",
+		{ Enemy = "ObsidianKnight", Count = 10, Gap = 1.6 }, { Enemy = "EmberImp", Count = 15, Gap = 0.5 } },
+	{ Title = "Hot take incoming",
+		{ Enemy = "MagmaSlime", Count = 14, Gap = 0.9 }, { Enemy = "ObsidianKnight", Count = 8, Gap = 1.4 }, { Enemy = "EmberImp", Count = 20, Gap = 0.35 } },
+	{ Title = "FINAL BOSS: the Molten Golem",
+		{ Enemy = "EmberImp", Count = 12, Gap = 0.5 }, { Enemy = "MoltenGolem", Count = 1, Gap = 2 }, { Enemy = "ObsidianKnight", Count = 6, Gap = 1.5 } },
+}
+
+-------------------------------------------------------------------------------
+-- Maps. Each has its own path, waves, look and spawn point.
+-- Health / Gems / ItemLevel make harder maps more rewarding.
+-------------------------------------------------------------------------------
+Config.Maps = {
+	CursedForest = {
+		Name = "Cursed Forest", Description = "Goblins. Lots of goblins. The starter map",
+		Theme = "Forest", Path = ForestPath, Waves = ForestWaves, SpawnPoint = Vector3.new(-10, 0, -20),
+		Health = 1, Gems = 1, ItemLevel = 0, Color = Color3.fromRGB(90, 160, 60),
+	},
+	MagmaFortress = {
+		Name = "Magma Fortress", Description = "Fire-proof imps, armored knights, slimes that split. Bring a Ballista",
+		Theme = "Magma",
+		Path = {
+			Vector3.new(-100, 0, 60), Vector3.new(-60, 0, 60), Vector3.new(-60, 0, -50), Vector3.new(-10, 0, -50),
+			Vector3.new(-10, 0, 40), Vector3.new(40, 0, 40), Vector3.new(40, 0, -60), Vector3.new(80, 0, -60),
+			Vector3.new(80, 0, 20), Vector3.new(100, 0, 20),
+		},
+		Waves = MagmaWaves, SpawnPoint = Vector3.new(15, 0, -5),
+		Health = 1.25, Gems = 1.4, ItemLevel = 6, Color = Color3.fromRGB(255, 110, 40),
+	},
+}
+Config.MapOrder = { "CursedForest", "MagmaFortress" }
+
+-- switch every map-related setting to another map (server and screens both call this)
+function Config.SetMap(mapId)
+	local map = Config.Maps[mapId] or Config.Maps.CursedForest
+	Config.CurrentMap = Config.Maps[mapId] and mapId or "CursedForest"
+	Config.Path = map.Path
+	Config.Waves = map.Waves
+	Config.SpawnPoint = map.SpawnPoint
+	return map
+end
 
 -------------------------------------------------------------------------------
 -- Defenders. Levels[1] is what you get when you place it.
@@ -227,7 +310,8 @@ Config.Heroes = {
 Config.HeroOrder = { "Swordmaster", "RuneMage", "Engineer" }
 
 -- goblins hurt heroes that stand in their way (damage per second)
-Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45 }
+Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45,
+	EmberImp = 5, ObsidianKnight = 16, MagmaSlime = 8, SlimeBit = 3, MoltenGolem = 50 }
 
 -------------------------------------------------------------------------------
 -- Things to buy with gems. Gems are saved between games.
@@ -291,6 +375,8 @@ function Config.DistanceToPath(pos)
 	end
 	return best
 end
+
+Config.SetMap("CursedForest")
 
 function Config.FindById(list, id)
 	for _, item in list do

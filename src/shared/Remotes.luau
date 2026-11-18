@@ -7,6 +7,7 @@ local EVENTS = {
 	"StartWave", "HeroAttack", "HeroWhirlwind", "HeroLeap", "PlayAgain", "Notify",
 	"SetSpeed", "PickDifficulty",
 	"LootDrop", "LootPicked", "PickupLoot", "VictoryChest", "Inventory", "SeenGear",
+	"OpenPanel", "PickMap", "StartRun",
 }
 local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints" }

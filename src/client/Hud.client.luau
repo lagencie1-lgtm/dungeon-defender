@@ -404,6 +404,64 @@ local tapHint = label({ Size = UDim2.fromOffset(400, 26), Position = UDim2.new(0
 	Text = "Tap the ground where it should go", TextStrokeTransparency = 0.3, Visible = false, Parent = root })
 
 -------------------------------------------------------------------------------
+-- in the hub: start a run and pick a map
+-------------------------------------------------------------------------------
+local lobbyBar = make("Frame", {
+	Size = UDim2.fromOffset(520, 60),
+	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -12),
+	AnchorPoint = Vector2.new(0.5, 1),
+	BackgroundTransparency = 1,
+	Visible = false,
+	Parent = root,
+}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 12),
+	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
+local runButton = button({ Size = UDim2.fromOffset(240, 60), BackgroundColor3 = Color3.fromRGB(110, 60, 190),
+	Text = "Start run", LayoutOrder = 1, Parent = lobbyBar })
+local mapButton = button({ Size = UDim2.fromOffset(260, 60), BackgroundColor3 = Color3.fromRGB(120, 80, 40),
+	Text = "Map", LayoutOrder = 2, Parent = lobbyBar })
+
+local mapPanel = make("Frame", {
+	Size = UDim2.fromOffset(560, 300),
+	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	BackgroundColor3 = Ui.DARK,
+	Visible = false,
+	ZIndex = 20,
+	Parent = root,
+}, { corner(18), stroke(Color3.fromRGB(255, 160, 80), 3) })
+label({ Size = UDim2.new(1, -80, 0, 36), Position = UDim2.fromOffset(16, 10), Text = "Choose a map",
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = mapPanel })
+local mapClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = mapPanel })
+for i, mapId in Config.MapOrder do
+	local info = Config.Maps[mapId]
+	local b = button({ Size = UDim2.new(1, -32, 0, 104), Position = UDim2.fromOffset(16, 56 + (i - 1) * 114), Text = "",
+		BackgroundColor3 = Ui.PANEL, ZIndex = 21, Parent = mapPanel })
+	make("Frame", { Size = UDim2.new(0, 8, 1, -20), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = info.Color,
+		ZIndex = 22, Parent = b }, { corner(4) })
+	label({ Size = UDim2.new(1, -40, 0, 30), Position = UDim2.fromOffset(28, 10), Text = info.Name, TextColor3 = info.Color,
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	label({ Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(28, 44), Text = info.Description,
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	label({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(28, 72),
+		Text = string.format("Goblin health x%.2f · gems x%.1f · better loot +%d", info.Health, info.Gems, info.ItemLevel),
+		Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	b.Activated:Connect(function()
+		Remotes.PickMap:FireServer(mapId)
+		mapPanel.Visible = false
+	end)
+end
+mapButton.Activated:Connect(function()
+	mapPanel.Visible = not mapPanel.Visible
+end)
+mapClose.Activated:Connect(function()
+	mapPanel.Visible = false
+end)
+runButton.Activated:Connect(function()
+	Remotes.StartRun:FireServer()
+end)
+
+-------------------------------------------------------------------------------
 -- end screen
 -------------------------------------------------------------------------------
 local endPanel = make("Frame", {
@@ -424,7 +482,7 @@ local endText = label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOf
 local endGems = label({ Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 148), Text = "",
 	TextColor3 = Ui.GEM, ZIndex = 11, Parent = endPanel })
 local playAgainButton = button({ Size = UDim2.fromOffset(240, 54), Position = UDim2.new(0.5, 0, 1, -18),
-	AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Color3.fromRGB(100, 60, 170), Text = "Play again", ZIndex = 11,
+	AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Color3.fromRGB(100, 60, 170), Text = "Back to the Outpost", ZIndex = 11,
 	Parent = endPanel })
 
 -------------------------------------------------------------------------------
@@ -755,10 +813,24 @@ local function refreshTop()
 	lastKills = kills
 
 	local s = GameState:GetAttribute("State")
+	local mapId = GameState:GetAttribute("Map") or "CursedForest"
+	if mapId ~= Config.CurrentMap then
+		Config.SetMap(mapId) -- so the build ghost knows the new path
+	end
+	local inLobby = s == "Lobby"
+	lobbyBar.Visible = inLobby
+	towerBar.Visible = not inLobby
+	top.Visible = true
+	portalBack.Visible = not inLobby
 	startButton.Visible = s == "Break"
 	speedButton.Visible = s == "Break" or s == "Wave"
 	speedButton.Text = "Speed " .. (GameState:GetAttribute("Speed") or 1) .. "x"
-	if s == "Break" then
+	if inLobby then
+		local mapInfo = Config.Maps[mapId] or Config.Maps.CursedForest
+		waveLabel.Text = "The Outpost"
+		stateLabel.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
+		mapButton.Text = "Map: " .. mapInfo.Name
+	elseif s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"
 	elseif s == "Wave" then
 		stateLabel.Text = "Goblins attacking!"
@@ -766,7 +838,7 @@ local function refreshTop()
 		stateLabel.Text = ""
 	end
 
-	diffPanel.Visible = wave == 0 and s == "Break"
+	diffPanel.Visible = inLobby or (wave == 0 and s == "Break")
 	local currentDiff = GameState:GetAttribute("Difficulty")
 	for id, b in diffButtons do
 		local st = b:FindFirstChildOfClass("UIStroke")
@@ -1246,5 +1318,17 @@ if not isTouch then
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextStrokeTransparency = 0.5, TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
 end
+
+-- stalls in the Outpost open these screens
+Remotes.OpenPanel.OnClientEvent:Connect(function(name)
+	if name == "Shop" then
+		openShop()
+	elseif name == "Daily" then
+		dailyPanel.Visible = true
+		refreshDaily()
+	elseif name == "Maps" then
+		mapPanel.Visible = true
+	end
+end)
 
 print("Welcome to Heroes Tower Defense!")

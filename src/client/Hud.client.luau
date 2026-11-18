@@ -111,7 +111,7 @@ for i, diff in Config.Difficulties do
 		Text = "", BackgroundColor3 = Ui.PANEL, Parent = diffPanel })
 	label({ Size = UDim2.new(1, -10, 0, 26), Position = UDim2.fromOffset(5, 4), Text = diff.Name,
 		TextColor3 = diff.Color, Parent = b })
-	label({ Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 32),
+	label({ Name = "Sub", Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 32),
 		Text = diff.Subtitle .. " · gems x" .. diff.Gems, Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
 	b.Activated:Connect(function()
 		Remotes.PickDifficulty:FireServer(diff.Id)
@@ -408,11 +408,15 @@ local lobbyBar = make("Frame", {
 	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
 local runButton = button({ Size = UDim2.fromOffset(240, 60), BackgroundColor3 = Color3.fromRGB(110, 60, 190),
 	Text = "Start run", LayoutOrder = 1, Parent = lobbyBar })
+local eventInfo = Config.WeeklyEvent()
+local eventLabel = label({ Size = UDim2.fromOffset(760, 24), Position = UDim2.new(0.5, 0, 1, -80), AnchorPoint = Vector2.new(0.5, 1),
+	Text = "This week: " .. eventInfo.Name .. " · " .. eventInfo.Text, Visible = false,
+	TextColor3 = Color3.fromRGB(255, 200, 120), TextStrokeTransparency = 0.2, Parent = root })
 local mapButton = button({ Size = UDim2.fromOffset(260, 60), BackgroundColor3 = Color3.fromRGB(120, 80, 40),
 	Text = "Map and difficulty", LayoutOrder = 2, Parent = lobbyBar })
 
 local mapPanel = make("Frame", {
-	Size = UDim2.fromOffset(680, 300 + #Config.Modes * 42 + 150),
+	Size = UDim2.fromOffset(900, 56 + math.max(#Config.MapOrder * 92, 32 + #Config.Modes * 42) + 120),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -426,15 +430,15 @@ local mapClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = mapPanel })
 for i, mapId in Config.MapOrder do
 	local info = Config.Maps[mapId]
-	local b = button({ Size = UDim2.new(1, -32, 0, 104), Position = UDim2.fromOffset(16, 56 + (i - 1) * 114), Text = "",
+	local b = button({ Size = UDim2.fromOffset(420, 86), Position = UDim2.fromOffset(16, 56 + (i - 1) * 92), Text = "",
 		BackgroundColor3 = Ui.PANEL, ZIndex = 21, Parent = mapPanel })
 	make("Frame", { Size = UDim2.new(0, 8, 1, -20), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = info.Color,
 		ZIndex = 22, Parent = b }, { corner(4) })
-	label({ Size = UDim2.new(1, -40, 0, 30), Position = UDim2.fromOffset(28, 10), Text = info.Name, TextColor3 = info.Color,
+	label({ Size = UDim2.new(1, -40, 0, 26), Position = UDim2.fromOffset(28, 6), Text = info.Name, TextColor3 = info.Color,
 		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
-	label({ Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(28, 44), Text = info.Description,
+	label({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(28, 36), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
-	label({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(28, 72),
+	label({ Size = UDim2.new(1, -40, 0, 18), Position = UDim2.fromOffset(28, 60),
 		Text = string.format("Goblin health x%.2f · gems x%.1f · better loot +%d", info.Health, info.Gems, info.ItemLevel),
 		Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
 	b.Activated:Connect(function()
@@ -443,11 +447,12 @@ for i, mapId in Config.MapOrder do
 	end)
 end
 -- modes under the maps
-label({ Size = UDim2.new(1, -32, 0, 28), Position = UDim2.fromOffset(16, 290), Text = "Mode",
+local MODES_TOP = 52
+label({ Size = UDim2.fromOffset(434, 28), Position = UDim2.fromOffset(450, MODES_TOP), Text = "Mode",
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = mapPanel })
 local modeButtons = {}
 for i, mode in Config.Modes do
-	local b = button({ Size = UDim2.new(1, -32, 0, 36), Position = UDim2.fromOffset(16, 322 + (i - 1) * 42), Text = "",
+	local b = button({ Size = UDim2.fromOffset(434, 36), Position = UDim2.fromOffset(450, MODES_TOP + 32 + (i - 1) * 42), Text = "",
 		BackgroundColor3 = Ui.PANEL, ZIndex = 21, Parent = mapPanel })
 	label({ Size = UDim2.new(0.42, -10, 1, -10), Position = UDim2.fromOffset(10, 5), Text = mode.Name,
 		TextColor3 = mode.Challenge and Color3.fromRGB(255, 160, 90) or Color3.new(1, 1, 1),
@@ -462,7 +467,7 @@ end
 -- difficulty lives here too, so it never covers the game
 diffPanel.Parent = mapPanel
 diffPanel.AnchorPoint = Vector2.zero
-diffPanel.Position = UDim2.fromOffset(16, 322 + #Config.Modes * 42 + 10)
+diffPanel.Position = UDim2.fromOffset(16, 56 + math.max(#Config.MapOrder * 92, 32 + #Config.Modes * 42) + 6)
 diffPanel.BackgroundTransparency = 1
 diffPanel.Visible = true
 
@@ -962,6 +967,7 @@ local function refreshTop()
 	end
 	local inLobby = s == "Lobby"
 	lobbyBar.Visible = inLobby
+	eventLabel.Visible = inLobby
 	towerBar.Visible = not inLobby
 	top.Visible = true
 	portalBack.Visible = not inLobby
@@ -974,6 +980,7 @@ local function refreshTop()
 		local modeInfo = Config.FindById(Config.Modes, GameState:GetAttribute("Mode") or "Campaign")
 		stateLabel.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
 			.. (modeInfo and modeInfo.Id ~= "Campaign" and (" · " .. modeInfo.Name) or "")
+
 		mapButton.Text = "Map: " .. mapInfo.Name
 	elseif s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"
@@ -985,7 +992,18 @@ local function refreshTop()
 
 	-- the difficulty can only be changed in the Outpost (Map button / Map Board)
 	local currentDiff = GameState:GetAttribute("Difficulty")
+	local cleared = {}
+	pcall(function()
+		cleared = HttpService:JSONDecode(player:GetAttribute("Cleared") or "{}")[GameState:GetAttribute("Map") or "CursedForest"] or {}
+	end)
 	for id, b in diffButtons do
+		local d = Config.FindById(Config.Difficulties, id)
+		local locked = d.Unlock and not cleared[d.Unlock]
+		local sub = b:FindFirstChild("Sub")
+		if sub then
+			sub.Text = locked and ("🔒 Beat " .. d.Unlock .. " here first") or (d.Subtitle .. " · gems x" .. d.Gems)
+		end
+		b.BackgroundColor3 = locked and Color3.fromRGB(45, 38, 34) or Ui.PANEL
 		local st = b:FindFirstChildOfClass("UIStroke")
 		st.Color = id == currentDiff and Ui.GOLD or Color3.fromRGB(200, 160, 80)
 		st.Thickness = id == currentDiff and 4 or 2

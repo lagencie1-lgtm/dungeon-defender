@@ -51,7 +51,16 @@ local function setupLighting(theme)
 		atmosphere.Parent = Lighting
 	end
 	Lighting.Brightness = 2
-	if theme == "Magma" then
+	if theme == "Crystal" then
+		Lighting.ClockTime = 0
+		Lighting.Brightness = 1
+		Lighting.Ambient = Color3.fromRGB(60, 60, 110)
+		Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 120)
+		Lighting.FogColor = Color3.fromRGB(20, 20, 45)
+		atmosphere.Density = 0.45
+		atmosphere.Color = Color3.fromRGB(90, 100, 180)
+		atmosphere.Decay = Color3.fromRGB(30, 30, 80)
+	elseif theme == "Magma" then
 		Lighting.ClockTime = 19
 		Lighting.Ambient = Color3.fromRGB(110, 60, 50)
 		Lighting.OutdoorAmbient = Color3.fromRGB(120, 70, 60)
@@ -100,6 +109,28 @@ local function forestDecor(parent, rng, pos)
 	end
 end
 
+local function crystalDecor(parent, rng, pos)
+	-- a cluster of glowing crystals
+	local colors = { Color3.fromRGB(120, 220, 255), Color3.fromRGB(200, 120, 255), Color3.fromRGB(120, 255, 210) }
+	local color = colors[rng:NextInteger(1, #colors)]
+	for _ = 1, rng:NextInteger(2, 4) do
+		local h = rng:NextNumber(4, 12)
+		local offset = Vector3.new(rng:NextNumber(-2, 2), 0, rng:NextNumber(-2, 2))
+		part({ Name = "Crystal", Size = Vector3.new(rng:NextNumber(1.5, 3), h, rng:NextNumber(1.5, 3)),
+			CFrame = CFrame.new(pos + offset + Vector3.new(0, h / 2 - 0.5, 0)) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6), rng:NextNumber(-0.3, 0.3)),
+			Color = color, Material = Enum.Material.Neon, Transparency = 0.25, Parent = parent })
+	end
+	if rng:NextNumber() < 0.4 then
+		local glow = part({ Name = "Glow", Size = Vector3.one * 0.5, Position = pos + Vector3.new(0, 3, 0), Transparency = 1,
+			CanCollide = false, Parent = parent })
+		local light = Instance.new("PointLight")
+		light.Color = color
+		light.Range = 18
+		light.Brightness = 1.5
+		light.Parent = glow
+	end
+end
+
 local function magmaDecor(parent, rng, pos)
 	if rng:NextNumber() < 0.45 then
 		-- a lava pool
@@ -135,6 +166,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	end
 	local mapInfo = Config.SetMap(mapId)
 	local magma = mapInfo.Theme == "Magma"
+	local crystal = mapInfo.Theme == "Crystal"
 	setupLighting(mapInfo.Theme)
 
 	local map = folder("Map", workspace)
@@ -142,8 +174,8 @@ function MapBuilder.BuildBattlefield(mapId)
 		Name = "Ground",
 		Size = Vector3.new(Config.MapSize.X, 2, Config.MapSize.Y),
 		Position = Vector3.new(0, -1, 0),
-		Color = magma and Color3.fromRGB(45, 35, 35) or Color3.fromRGB(45, 70, 40),
-		Material = magma and Enum.Material.Basalt or Enum.Material.Grass,
+		Color = crystal and Color3.fromRGB(40, 40, 60) or magma and Color3.fromRGB(45, 35, 35) or Color3.fromRGB(45, 70, 40),
+		Material = crystal and Enum.Material.Slate or magma and Enum.Material.Basalt or Enum.Material.Grass,
 		Parent = map,
 	})
 	walls(map, Vector3.zero, Config.MapSize.X, Config.MapSize.Y)
@@ -157,7 +189,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			Name = "Segment" .. i,
 			Size = Vector3.new(Config.PathWidth, 0.2, (b - a).Magnitude + Config.PathWidth),
 			CFrame = CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, 0.1, 0),
-			Color = magma and Color3.fromRGB(95, 70, 60) or Color3.fromRGB(110, 85, 55),
+			Color = crystal and Color3.fromRGB(80, 80, 105) or magma and Color3.fromRGB(95, 70, 60) or Color3.fromRGB(110, 85, 55),
 			Material = magma and Enum.Material.Slate or Enum.Material.Ground,
 			CanCollide = false,
 			Parent = pathFolder,
@@ -227,7 +259,7 @@ function MapBuilder.BuildBattlefield(mapId)
 
 	-- decorations, kept off the path and the spawn
 	local decor = folder("Decor", map)
-	local rng = Random.new(magma and 11 or 7)
+	local rng = Random.new(crystal and 23 or magma and 11 or 7)
 	local half = Config.MapSize / 2
 	local placed, tries = 0, 0
 	while placed < 70 and tries < 2000 do
@@ -235,7 +267,9 @@ function MapBuilder.BuildBattlefield(mapId)
 		local pos = Vector3.new(rng:NextNumber(-half.X + 5, half.X - 5), 0, rng:NextNumber(-half.Y + 5, half.Y - 5))
 		if Config.DistanceToPath(pos) > Config.PathWidth + 6 and (pos - Config.SpawnPoint).Magnitude > 14
 			and (pos - camp).Magnitude > 14 then
-			if magma then
+			if crystal then
+				crystalDecor(decor, rng, pos)
+			elseif magma then
 				magmaDecor(decor, rng, pos)
 			else
 				forestDecor(decor, rng, pos)

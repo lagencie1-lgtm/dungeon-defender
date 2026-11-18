@@ -78,6 +78,7 @@ local function publish(player)
 	player:SetAttribute("Gold", p.Gold)
 	player:SetAttribute("Scrap", p.Scrap)
 	player:SetAttribute("BestEndless", p.BestEndless or 0)
+	player:SetAttribute("Cleared", HttpService:JSONEncode(p.Cleared or {}))
 	player:SetAttribute("TutorialDone", p.TutorialDone == true or (p.GamesPlayed or 0) > 0)
 
 	local stats = player:FindFirstChild("leaderstats")

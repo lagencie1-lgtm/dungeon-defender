@@ -28,11 +28,17 @@ Config.Speeds = { 1, 2 } -- the speed button switches between these
 -- Difficulty: picked before wave 1. Harder = tougher goblins, more gems.
 -------------------------------------------------------------------------------
 Config.Difficulties = {
-	{ Id = "Easy", Name = "Easy", Subtitle = "Just vibing", Health = 0.7, Gems = 0.6, Color = Color3.fromRGB(90, 200, 110) },
-	{ Id = "Normal", Name = "Normal", Subtitle = "The intended experience", Health = 1, Gems = 1, Color = Color3.fromRGB(240, 190, 70) },
-	{ Id = "Hard", Name = "Hard", Subtitle = "No cap, it's hard", Health = 1.5, Gems = 1.8, Color = Color3.fromRGB(230, 80, 80) },
-	{ Id = "Nightmare", Name = "Nightmare", Subtitle = "Absolutely cooked", Health = 2.3, Gems = 2.8, Color = Color3.fromRGB(180, 60, 220) },
+	{ Id = "Easy", Name = "Easy", Subtitle = "Just vibing. Weak loot", Health = 0.55, Gems = 0.5, Gold = 0.5,
+		Color = Color3.fromRGB(90, 200, 110) },
+	{ Id = "Normal", Name = "Normal", Subtitle = "The real game", Health = 1, Gems = 1, Gold = 1,
+		Color = Color3.fromRGB(240, 190, 70) },
+	{ Id = "Hard", Name = "Hard", Subtitle = "No cap, it's hard", Health = 1.6, Gems = 1.8, Gold = 1.5, Unlock = "Normal",
+		Color = Color3.fromRGB(230, 80, 80) },
+	{ Id = "Insane", Name = "Insane", Subtitle = "Bring gear, pets and upgrades", Health = 2.6, Gems = 3, Gold = 2.2, Unlock = "Hard",
+		Color = Color3.fromRGB(180, 60, 220) },
 }
+Config.DefaultDifficulty = "Normal"
+
 
 -------------------------------------------------------------------------------
 -- Modes: the normal 10 waves, Endless, or a challenge with a twist
@@ -62,7 +68,7 @@ Config.Quests = {
 	{ Id = "Kills", Text = "Defeat %d enemies", Goal = 250, Gold = 200, Gems = 10 },
 	{ Id = "Waves", Text = "Clear %d waves", Goal = 15, Gold = 200, Gems = 10 },
 	{ Id = "Win", Text = "Win %d run", Goal = 1, Gold = 300, Gems = 15 },
-	{ Id = "WinHard", Text = "Win %d run on Hard or Nightmare", Goal = 1, Gold = 500, Gems = 25 },
+	{ Id = "WinHard", Text = "Win %d run on Hard or Insane", Goal = 1, Gold = 500, Gems = 25 },
 	{ Id = "Build", Text = "Build %d defenders", Goal = 20, Gold = 150, Gems = 8 },
 	{ Id = "Loot", Text = "Pick up %d items", Goal = 4, Gold = 200, Gems = 10 },
 	{ Id = "Upgrade", Text = "Upgrade gear %d times", Goal = 3, Gold = 150, Gems = 10 },
@@ -170,6 +176,28 @@ Config.Enemies = {
 		Health = 3000, Speed = 3.5, Damage = 100, Gold = 300, Xp = 140, Gems = 50, GemChance = 1,
 		Color = Color3.fromRGB(90, 50, 40), Size = 8, Boss = true,
 	},
+	-- Crystal Caves: shadow creatures
+	Gloomling = {
+		DisplayName = "Gloomling", Look = "Shade", DropChance = 0.01,
+		Health = 12, Speed = 13, Damage = 1, Gold = 2, Xp = 1, Gems = 1, GemChance = 0.02,
+		Color = Color3.fromRGB(70, 50, 110), Size = 1.8,
+	},
+	Shade = {
+		DisplayName = "Shade", Look = "Shade", Blink = { Every = 4, Distance = 14 }, DropChance = 0.03,
+		Health = 45, Speed = 8, Damage = 2, Gold = 6, Xp = 3, Gems = 1, GemChance = 0.06,
+		Color = Color3.fromRGB(40, 30, 70), Size = 3,
+	},
+	CrystalBrute = {
+		DisplayName = "Crystal Brute", Look = "Golem", Armor = 5, DropChance = 0.08,
+		Health = 150, Speed = 6, Damage = 4, Gold = 14, Xp = 7, Gems = 2, GemChance = 0.3,
+		Color = Color3.fromRGB(120, 200, 230), Size = 4.2,
+	},
+	ShadowQueen = {
+		DisplayName = "Shadow Queen", Look = "Shade", Boss = true, DropChance = 0,
+		Blink = { Every = 6, Distance = 18 }, Summon = { Every = 7, Enemy = "Gloomling", Count = 4 },
+		Health = 2800, Speed = 4.5, Damage = 100, Gold = 300, Xp = 150, Gems = 55, GemChance = 1,
+		Color = Color3.fromRGB(120, 40, 160), Size = 6.5,
+	},
 	GoblinKing = {
 		DisplayName = "Goblin King",
 		Health = 2600, Speed = 4, Damage = 100, Gold = 250, Xp = 100, Gems = 40, GemChance = 1,
@@ -227,6 +255,21 @@ local MagmaWaves = {
 		{ Enemy = "EmberImp", Count = 12, Gap = 0.5 }, { Enemy = "MoltenGolem", Count = 1, Gap = 2 }, { Enemy = "ObsidianKnight", Count = 6, Gap = 1.5 } },
 }
 
+local CaveWaves = {
+	{ Title = "Something is in the dark", { Enemy = "Gloomling", Count = 20, Gap = 0.5 } },
+	{ Title = "Now you see me", { Enemy = "Shade", Count = 8, Gap = 1.2 }, { Enemy = "Gloomling", Count = 15, Gap = 0.4 } },
+	{ Title = "Crystal clear threat", { Enemy = "CrystalBrute", Count = 3, Gap = 3 }, { Enemy = "Gloomling", Count = 25, Gap = 0.35 } },
+	{ Title = "Who turned off the lights", { Enemy = "Shade", Count = 14, Gap = 0.9 }, { Enemy = "LootGoblin", Count = 1, Gap = 1 } },
+	{ Title = "Swarm season", { Enemy = "Gloomling", Count = 50, Gap = 0.2 } },
+	{ Title = "Rock solid", { Enemy = "CrystalBrute", Count = 7, Gap = 2 }, { Enemy = "Shade", Count = 10, Gap = 0.8 } },
+	{ Title = "Teleport spam", { Enemy = "Shade", Count = 22, Gap = 0.6 }, { Enemy = "Gloomling", Count = 25, Gap = 0.25 } },
+	{ Title = "Crystal crowd", { Enemy = "CrystalBrute", Count = 10, Gap = 1.4 }, { Enemy = "LootGoblin", Count = 1, Gap = 1 } },
+	{ Title = "Everything, everywhere", { Enemy = "Gloomling", Count = 60, Gap = 0.15 }, { Enemy = "Shade", Count = 16, Gap = 0.6 },
+		{ Enemy = "CrystalBrute", Count = 6, Gap = 1.2 } },
+	{ Title = "FINAL BOSS: the Shadow Queen", { Enemy = "Shade", Count = 10, Gap = 0.6 }, { Enemy = "ShadowQueen", Count = 1, Gap = 2 },
+		{ Enemy = "CrystalBrute", Count = 5, Gap = 1.5 } },
+}
+
 -------------------------------------------------------------------------------
 -- Maps. Each has its own path, waves, look and spawn point.
 -- Health / Gems / ItemLevel make harder maps more rewarding.
@@ -249,7 +292,18 @@ Config.Maps = {
 		Health = 1.25, Gems = 1.4, ItemLevel = 6, Color = Color3.fromRGB(255, 110, 40),
 	},
 }
-Config.MapOrder = { "CursedForest", "MagmaFortress" }
+Config.Maps.CrystalCaves = {
+	Name = "Crystal Caves", Description = "Tight tunnels, swarms and shadows that teleport. Area damage wins here",
+	Theme = "Crystal",
+	Path = {
+		Vector3.new(-105, 0, -70), Vector3.new(-105, 0, 60), Vector3.new(-65, 0, 60), Vector3.new(-65, 0, -60),
+		Vector3.new(-25, 0, -60), Vector3.new(-25, 0, 60), Vector3.new(15, 0, 60), Vector3.new(15, 0, -60),
+		Vector3.new(55, 0, -60), Vector3.new(55, 0, 40), Vector3.new(100, 0, 40),
+	},
+	Waves = CaveWaves, SpawnPoint = Vector3.new(80, 0, -20),
+	Health = 1.35, Gems = 1.6, ItemLevel = 10, Color = Color3.fromRGB(130, 210, 255),
+}
+Config.MapOrder = { "CursedForest", "MagmaFortress", "CrystalCaves" }
 
 -- switch every map-related setting to another map (server and screens both call this)
 function Config.SetMap(mapId)
@@ -407,7 +461,8 @@ Config.HeroOrder = { "Swordmaster", "BeastHunter", "RuneMage", "Engineer" }
 
 -- goblins hurt heroes that stand in their way (damage per second)
 Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45,
-	EmberImp = 5, ObsidianKnight = 16, MagmaSlime = 8, SlimeBit = 3, MoltenGolem = 50 }
+	EmberImp = 5, ObsidianKnight = 16, MagmaSlime = 8, SlimeBit = 3, MoltenGolem = 50,
+	Gloomling = 3, Shade = 7, CrystalBrute = 15, ShadowQueen = 50 }
 
 -------------------------------------------------------------------------------
 -- Things to buy with gems. Gems are saved between games.
@@ -472,6 +527,22 @@ function Config.DistanceToPath(pos)
 		best = math.min(best, (flat - (a + (b - a) * t)).Magnitude)
 	end
 	return best
+end
+
+-------------------------------------------------------------------------------
+-- Weekly event: one twist for every run, changes each week (Monday, UTC)
+-------------------------------------------------------------------------------
+Config.WeeklyEvents = {
+	{ Id = "GoldRush", Name = "Goblin Gold Rush", Text = "+50% mana from every kill", Mana = 1.5 },
+	{ Id = "Zoomies", Name = "Zoomies Week", Text = "Enemies are 25% faster, +30% gems", Speed = 1.25, Gems = 1.3 },
+	{ Id = "Chonky", Name = "Chonky Week", Text = "Enemies have 40% more health, better loot", Health = 1.4, Luck = 1.6 },
+	{ Id = "GlassCannons", Name = "Glass Cannons", Text = "Defenders deal +30% damage, the portal has 50 health",
+		TowerDamage = 1.3, PortalHealth = 50 },
+}
+function Config.WeeklyEvent()
+	-- weeks counted from a Monday so the event changes on Monday
+	local week = (os.time() - 4 * 86400) // (7 * 86400)
+	return Config.WeeklyEvents[week % #Config.WeeklyEvents + 1]
 end
 
 Config.SetMap("CursedForest")

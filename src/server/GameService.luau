@@ -49,7 +49,8 @@ end
 
 local function onKilled(enemy, player)
 	local stats = enemy.stats
-	State.AddGold(stats.Gold)
+	local event = Config.WeeklyEvent()
+	State.AddGold(math.floor(stats.Gold * (event.Mana or 1) + 0.5))
 	State.Set("Kills", (State.Get("Kills") or 0) + 1)
 	Effects.Text(enemy.position + Vector3.new(0, stats.Size + 2, 0), "+" .. stats.Gold, Color3.fromRGB(170, 150, 255))
 	if player then
@@ -87,7 +88,9 @@ local function onLeaked(enemy)
 		notify("The Loot Goblin escaped with the gems...", Color3.fromRGB(255, 200, 80))
 		return
 	end
-	local health = math.max(0, State.Get("PortalHealth") - enemy.stats.Damage)
+	-- Easy is for fun: the portal only takes half damage
+	local damage = enemy.stats.Damage * ((State.Get("Difficulty") == "Easy") and 0.5 or 1)
+	local health = math.max(0, State.Get("PortalHealth") - math.ceil(damage))
 	State.Set("PortalHealth", health)
 	local portal = workspace.Map:FindFirstChild("Portal")
 	if portal then
@@ -112,13 +115,14 @@ function GameService.EndGame(won)
 	local cleared = won and wave or math.max(0, wave - 1)
 	local diff = difficulty()
 	local mapInfo = Config.Maps[State.Get("Map") or ""] or Config.Maps.CursedForest
-	local reward = math.floor((cleared * Config.GemsPerWave + (won and Config.GemsForWin or 0)) * diff.Gems * mapInfo.Gems + 0.5)
+	local reward = math.floor((cleared * Config.GemsPerWave + (won and Config.GemsForWin or 0)) * diff.Gems * mapInfo.Gems
+		* (Config.WeeklyEvent().Gems or 1) + 0.5)
 	for _, player in Players:GetPlayers() do
 		DataService.AddGems(player, reward)
 		-- gold (kept between games) for the upgrades at the blacksmith
 		local goldFind = (player:GetAttribute("BonusGoldFind") or 0) / 100
 		local gold = math.floor((cleared * Config.GoldPerWave + (State.Get("Kills") or 0) * Config.GoldPerKill)
-			* diff.Gems * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100)
+			* (diff.Gold or 1) * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100)
 			* (((player:GetAttribute("BoostGoldUntil") or 0) > os.time()) and 2 or 1))
 		DataService.AddGold(player, gold)
 		player:SetAttribute("LastGold", gold)
@@ -134,9 +138,23 @@ function GameService.EndGame(won)
 			SeasonService.AddXp(player, Store.Season.XpPerWin)
 			SeasonService.Funnel(player, 6)
 			QuestService.Add(player, "Win", 1)
-			if diff.Id == "Hard" or diff.Id == "Nightmare" then
+			if diff.Id == "Hard" or diff.Id == "Insane" then
 				QuestService.Add(player, "WinHard", 1)
 			end
+		end
+		if profile and won and mode == "Campaign" then
+			profile.Cleared = profile.Cleared or {}
+			local mapId = State.Get("Map") or "CursedForest"
+			profile.Cleared[mapId] = profile.Cleared[mapId] or {}
+			if not profile.Cleared[mapId][diff.Id] then
+				profile.Cleared[mapId][diff.Id] = true
+				for _, d in Config.Difficulties do
+					if d.Unlock == diff.Id then
+						Remotes.Notify:FireClient(player, d.Name .. " unlocked on " .. mapInfo.Name .. "!", d.Color)
+					end
+				end
+			end
+			DataService.Publish(player)
 		end
 		if profile and mode == "Endless" then
 			if cleared > (profile.BestEndless or 0) then
@@ -223,7 +241,7 @@ local function runGame(myRun)
 		local extraPlayers = math.max(0, #Players:GetPlayers() - 1)
 		local mapInfo = Config.Maps[State.Get("Map") or ""] or Config.Maps.CursedForest
 		local healthMultiplier = (1 + (wave - 1) * Config.WaveHealthGrowth) * difficulty().Health
-			* (1 + extraPlayers * Config.HealthPerExtraPlayer) * mapInfo.Health
+			* (1 + extraPlayers * Config.HealthPerExtraPlayer) * mapInfo.Health * (Config.WeeklyEvent().Health or 1)
 		for _, group in ipairs(waveInfo) do
 			local enemyStats = Config.Enemies[group.Enemy]
 			if enemyStats.Boss then
@@ -236,7 +254,8 @@ local function runGame(myRun)
 				if myRun ~= runId or isOver() then
 					return
 				end
-				EnemyService.Spawn(group.Enemy, healthMultiplier)
+				local spawned = EnemyService.Spawn(group.Enemy, healthMultiplier)
+				spawned.speedMult = Config.WeeklyEvent().Speed or 1
 				Clock.Wait(group.Gap)
 			end
 		end
@@ -344,7 +363,7 @@ function GameService.StartRun()
 	EnemyService.SetPath()
 	State.Set("Gold", Config.StartGold)
 	local modeInfo = Config.FindById(Config.Modes, State.Get("Mode") or "Campaign")
-	local portalHealth = modeInfo and modeInfo.PortalHealth or Config.PortalHealth
+	local portalHealth = modeInfo and modeInfo.PortalHealth or Config.WeeklyEvent().PortalHealth or Config.PortalHealth
 	State.Set("PortalHealth", portalHealth)
 	State.Set("MaxPortalHealth", portalHealth)
 	State.Set("Wave", 0)
@@ -365,7 +384,16 @@ function GameService.StartRun()
 	end
 	notify("To the " .. Config.Maps[mapId].Name .. "! " .. (modeInfo and modeInfo.Text or "Build your defenders."),
 		Color3.fromRGB(200, 200, 255))
+	local event = Config.WeeklyEvent()
+	notify("This week: " .. event.Name .. " (" .. event.Text .. ")", Color3.fromRGB(255, 200, 120))
 	task.spawn(runGame, runId)
+end
+
+-- has this player won the given difficulty on this map?
+function GameService.HasCleared(player, mapId, difficultyId)
+	local profile = DataService.Get(player)
+	local cleared = profile and profile.Cleared and profile.Cleared[mapId or "CursedForest"]
+	return cleared ~= nil and cleared[difficultyId] == true
 end
 
 local function onPrompt(player, action)
@@ -395,6 +423,10 @@ function GameService.Start()
 	-- difficulty and map can only be changed before the first wave
 	Remotes.PickDifficulty.OnServerEvent:Connect(function(player, id)
 		local diff = Config.FindById(Config.Difficulties, id)
+		if diff and diff.Unlock and not GameService.HasCleared(player, State.Get("Map"), diff.Unlock) then
+			Remotes.Notify:FireClient(player, "Beat this map on " .. diff.Unlock .. " to unlock " .. diff.Name, Color3.fromRGB(255, 140, 140))
+			return
+		end
 		if diff and (State.Get("Wave") or 0) == 0 and State.Get("Difficulty") ~= id then
 			State.Set("Difficulty", id)
 			notify(player.DisplayName .. " picked " .. diff.Name .. ": " .. diff.Subtitle, diff.Color)
@@ -405,6 +437,10 @@ function GameService.Start()
 		if mapInfo and State.Get("State") == "Lobby" and State.Get("Map") ~= mapId then
 			State.Set("Map", mapId)
 			notify(player.DisplayName .. " picked the " .. mapInfo.Name, mapInfo.Color)
+			local diff = Config.FindById(Config.Difficulties, State.Get("Difficulty"))
+			if diff and diff.Unlock and not GameService.HasCleared(player, mapId, diff.Unlock) then
+				State.Set("Difficulty", Config.DefaultDifficulty)
+			end
 		end
 	end)
 	Remotes.PickMode.OnServerEvent:Connect(function(player, modeId)
@@ -423,7 +459,7 @@ function GameService.Start()
 		GameService.StartRun()
 	end)
 
-	State.Set("Difficulty", "Normal")
+	State.Set("Difficulty", Config.DefaultDifficulty)
 	State.Set("Map", "CursedForest")
 	State.Set("Mode", "Campaign")
 	task.spawn(function()

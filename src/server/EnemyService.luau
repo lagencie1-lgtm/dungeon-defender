@@ -107,6 +107,31 @@ local function makeGoblin(name, stats)
 	model.Name = name
 
 	local look = stats.Look or "Goblin"
+	if look == "Shade" then
+		local body = newPart(model, { Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.one * s, Color = stats.Color,
+			Material = Enum.Material.Neon, Transparency = 0.35 })
+		model.PrimaryPart = body
+		local head = newPart(model, { Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.55, Color = stats.Color,
+			Transparency = 0.2, CFrame = body.CFrame * CFrame.new(0, s * 0.35, -s * 0.1) })
+		for side = -1, 1, 2 do
+			newPart(model, { Name = "Eye", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.16, Color = Color3.fromRGB(180, 120, 255),
+				Material = Enum.Material.Neon, CFrame = body.CFrame * CFrame.new(side * s * 0.16, s * 0.35, -s * 0.38) })
+		end
+		newPart(model, { Name = "Tail", ClassName = "WedgePart", Size = Vector3.new(s * 0.3, s * 0.5, s * 0.9), Color = stats.Color,
+			Material = Enum.Material.Neon, Transparency = 0.5, CFrame = body.CFrame * CFrame.new(0, -s * 0.2, s * 0.6) })
+		if stats.Boss then
+			for i = 0, 4 do
+				local angle = i / 5 * math.pi * 2
+				newPart(model, { Name = "Crown", Size = Vector3.new(s * 0.1, s * 0.3, s * 0.1), Color = Color3.fromRGB(200, 140, 255),
+					Material = Enum.Material.Neon, CFrame = head.CFrame * CFrame.new(math.cos(angle) * s * 0.2, s * 0.35, math.sin(angle) * s * 0.2) })
+			end
+		end
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(160, 100, 255)
+		light.Range = s * 3
+		light.Parent = body
+		return model, EnemyService.HealthBar(model, head, stats), head
+	end
 	if look == "Slime" then
 		-- a wobbly blob with two eyes
 		local body = newPart(model, { Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.new(s, s, s), Color = stats.Color,
@@ -415,7 +440,7 @@ function EnemyService.Start()
 				continue
 			end
 
-			local speed = e.stats.Speed
+			local speed = e.stats.Speed * (e.speedMult or 1)
 			if now < e.frozenUntil then
 				speed = 0
 			elseif now < e.slowUntil then
@@ -424,6 +449,28 @@ function EnemyService.Start()
 				e.slowFactor = 1
 			end
 			e.distance += speed * dt
+			-- shadows teleport forward now and then
+			local blink = e.stats.Blink
+			if blink and speed > 0 then
+				e.nextBlink = e.nextBlink or (now + blink.Every)
+				if now >= e.nextBlink then
+					e.nextBlink = now + blink.Every
+					Effects.Burst(e.position + Vector3.new(0, e.stats.Size * 0.5, 0), e.stats.Size, Color3.fromRGB(140, 80, 220), 0.3)
+					e.distance += blink.Distance
+				end
+			end
+			-- the Shadow Queen calls helpers
+			local summon = e.stats.Summon
+			if summon then
+				e.nextSummon = e.nextSummon or (now + summon.Every)
+				if now >= e.nextSummon then
+					e.nextSummon = now + summon.Every
+					for i = 1, summon.Count do
+						EnemyService.Spawn(summon.Enemy, e.healthMultiplier, math.max(0, e.distance - i * 3))
+					end
+					Effects.Ring(e.position + Vector3.new(0, 0.5, 0), 10, Color3.fromRGB(160, 80, 255), 0.5)
+				end
+			end
 
 			if e.distance >= pathLength then
 				-- it reached the portal

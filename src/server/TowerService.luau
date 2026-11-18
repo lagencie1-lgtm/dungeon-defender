@@ -324,11 +324,12 @@ local function boosted(t)
 		engineering = (owner:GetAttribute("BonusEngineering") or 0) / 100
 	end
 	local overclock = (t.overclockUntil and Clock.now < t.overclockUntil) and t.overclockSpeed or 1
-	if command == 0 and engineering == 0 and overclock == 1 then
+	local eventDamage = Config.WeeklyEvent().TowerDamage or 1
+	if command == 0 and engineering == 0 and overclock == 1 and eventDamage == 1 then
 		return base
 	end
 	local stats = table.clone(base)
-	stats.Damage = base.Damage * (1 + command)
+	stats.Damage = base.Damage * (1 + command) * eventDamage
 	stats.Cooldown = base.Cooldown / (1 + engineering) / overclock
 	stats.Range = base.Range * (1 + engineering / 2)
 	return stats

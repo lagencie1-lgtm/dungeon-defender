@@ -21,8 +21,10 @@ local PICKUP_RANGE = 10 -- a bit bigger than the client's, for lag
 -- drop chances per goblin type (the boss always gives the Victory Chest)
 local DROP_CHANCE = { Goblin = 0.018, Runner = 0.018, Brute = 0.09, LootGoblin = 0.6, GoblinKing = 0 }
 -- item level bonus and rarity luck per difficulty
-local DIFF_LEVEL = { Easy = 0, Normal = 3, Hard = 8, Nightmare = 14 }
-local DIFF_LUCK = { Easy = 0.6, Normal = 1, Hard = 1.8, Nightmare = 3 }
+-- Easy drops much worse loot; Insane the best
+local DIFF_LEVEL = { Easy = -4, Normal = 3, Hard = 9, Insane = 16 }
+local DIFF_LUCK = { Easy = 0.25, Normal = 1, Hard = 1.8, Insane = 3.2 }
+local DIFF_DROPS = { Easy = 0.5, Normal = 1, Hard = 1.2, Insane = 1.5 }
 
 local rng = Random.new()
 
@@ -204,8 +206,9 @@ function ItemService.OnEnemyKilled(enemy, difficultyId, wave)
 		return
 	end
 	local map = Config.Maps[State.Get("Map") or ""]
-	local level = wave * 2 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0)
-	local luck = DIFF_LUCK[difficultyId] or 1
+	local level = math.max(1, wave * 2 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0))
+	chance *= DIFF_DROPS[difficultyId] or 1
+	local luck = (DIFF_LUCK[difficultyId] or 1) * (Config.WeeklyEvent().Luck or 1)
 	for _, player in Players:GetPlayers() do
 		if rng:NextNumber() < chance then
 			local offset = Vector3.new(rng:NextNumber(-3, 3), 0, rng:NextNumber(-3, 3))

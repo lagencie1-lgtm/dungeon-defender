@@ -269,14 +269,11 @@ local towerButtons = {}
 for i, towerType in Config.TowerOrder do
 	local info = Config.Towers[towerType]
 	local b = button({ Size = UDim2.fromOffset(BUTTON_W, 100), Text = "", LayoutOrder = i, Parent = towerBar })
-	make("Frame", { Size = UDim2.new(1, -16, 0, 6), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = info.Color,
-		Parent = b }, { corner(3) })
-	label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 18), Text = info.DisplayName, Parent = b })
-	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40),
+	Icons.Draw(b, Config.TowerIcons[towerType], info.Color, { Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0.5, -26, 0, 4) })
+	label({ Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 58), Text = info.DisplayName, Parent = b })
+	local cost = label({ Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 78),
 		Text = info.Cost .. " mana · " .. (Config.BuildPoints[towerType] or 0) .. " bp",
 		TextColor3 = Ui.MANA, Parent = b })
-	label({ Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 62), Text = info.Description,
-		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = b })
 	if not isTouch then
 		label({ Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -18, 0, -8), Text = tostring(i),
 			BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(90, 70, 130), ZIndex = 3, Parent = b }, {})
@@ -305,9 +302,11 @@ local heroPanel = make("Frame", {
 	BackgroundTransparency = 0.15,
 	Parent = root,
 }, { corner(12), stroke() })
-local heroName = label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 4),
+local heroPortrait = Icons.Draw(heroPanel, Config.HeroIcons.Swordmaster, nil,
+	{ Size = UDim2.fromOffset(46, 46), Position = UDim2.fromOffset(4, 3) })
+local heroName = label({ Size = UDim2.new(1, -66, 0, 24), Position = UDim2.fromOffset(56, 4),
 	Text = Config.Hero.Name .. "  Lv 1", TextXAlignment = Enum.TextXAlignment.Left, Parent = heroPanel })
-local xpBack = make("Frame", { Size = UDim2.new(1, -20, 0, 10), Position = UDim2.fromOffset(10, 34),
+local xpBack = make("Frame", { Size = UDim2.new(1, -66, 0, 10), Position = UDim2.fromOffset(56, 34),
 	BackgroundColor3 = Color3.fromRGB(50, 45, 60), Parent = heroPanel }, { corner(4) })
 local xpFill = make("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(110, 200, 255),
 	Parent = xpBack }, { corner(4) })
@@ -1101,6 +1100,13 @@ local function refreshPlayer()
 	local level = player:GetAttribute("HeroLevel") or 1
 	local hero = Config.Heroes[player:GetAttribute("HeroId") or "Swordmaster"] or Config.Heroes.Swordmaster
 	heroName.Text = hero.Name .. "  Lv " .. level
+	local heroId = player:GetAttribute("HeroId") or "Swordmaster"
+	if heroPortrait:GetAttribute("Hero") ~= heroId then
+		heroPortrait:Destroy()
+		heroPortrait = Icons.Draw(heroPanel, Config.HeroIcons[heroId], nil,
+			{ Size = UDim2.fromOffset(46, 46), Position = UDim2.fromOffset(4, 3) })
+		heroPortrait:SetAttribute("Hero", heroId)
+	end
 	attackName.Text, whirlName.Text, leapName.Text = hero.Abilities.F, hero.Abilities.E, hero.Abilities.R
 	local needed = player:GetAttribute("HeroXpNeeded") or 1
 	local xp = player:GetAttribute("HeroXp") or 0

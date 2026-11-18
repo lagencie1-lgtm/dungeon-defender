@@ -385,6 +385,12 @@ Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObeli
 -- more players = tougher goblins (+35% health for each extra player)
 Config.HealthPerExtraPlayer = 0.35
 
+-- which painted icon belongs to which defender / hero (src/shared/Art.luau)
+Config.TowerIcons = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
+	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
+Config.HeroIcons = { Swordmaster = "hero_swordmaster", BeastHunter = "hero_hunter", RuneMage = "hero_mage",
+	Engineer = "hero_engineer" }
+
 Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" }
 Config.SellRefund = 0.7 -- you get back 70% of what you paid
 Config.TowerSpacing = 6 -- defenders can't stand closer than this

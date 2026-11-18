@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
+local Icons = require(script.Parent.Icons)
 local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.label, Ui.button
 
 local player = Players.LocalPlayer
@@ -43,10 +44,9 @@ for i, heroId in Config.HeroOrder do
 	local hero = Config.Heroes[heroId]
 	local b = make("TextButton", { Size = UDim2.fromOffset(173, 150), Text = "", BackgroundColor3 = Ui.PANEL, AutoButtonColor = true,
 		LayoutOrder = i, ZIndex = 32, Parent = cardRow }, { corner(12), stroke(hero.Color, 2) })
-	make("Frame", { Size = UDim2.new(1, -20, 0, 6), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = hero.Color, ZIndex = 33, Parent = b },
-		{ corner(3) })
-	label({ Size = UDim2.new(1, -20, 0, 28), Position = UDim2.fromOffset(10, 22), Text = hero.Name, TextColor3 = hero.Color,
-		ZIndex = 33, Parent = b })
+	Icons.Draw(b, Config.HeroIcons[heroId], hero.Color, { Size = UDim2.fromOffset(56, 56), Position = UDim2.fromOffset(6, 4), ZIndex = 33 })
+	label({ Size = UDim2.new(1, -70, 0, 40), Position = UDim2.fromOffset(64, 10), Text = hero.Name, TextColor3 = hero.Color,
+		TextWrapped = true, ZIndex = 33, Parent = b })
 	label({ Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 54), Text = hero.Role, Font = Enum.Font.Gotham,
 		TextColor3 = Ui.TEXT_DIM, TextWrapped = true, ZIndex = 33, Parent = b })
 	label({ Size = UDim2.new(1, -20, 0, 18), Position = UDim2.fromOffset(10, 98),

@@ -17,13 +17,13 @@ Art.Icons = {
 	lock = "93238414154162",
 	tower_ranger = "137781142830567",
 	tower_flame = "84677455373197",
-	tower_frost = "",
-	tower_storm = "",
-	tower_ballista = "",
+	tower_frost = "140456354843254",
+	tower_storm = "138499479214660",
+	tower_ballista = "109131683987177",
 	hero_swordmaster = "107097240985907",
-	hero_hunter = "",
-	hero_mage = "",
-	hero_engineer = "",
+	hero_hunter = "77953179182389",
+	hero_mage = "99257200114899",
+	hero_engineer = "124423861529707",
 }
 
 -- the image for an icon name (filled in by ArtService once loaded), or nil

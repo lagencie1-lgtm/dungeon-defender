@@ -28,6 +28,9 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	tower_storm = "93542704210272",
+	tower_frost = "119917165190696",
+	tower_ballista = "97849324321352",
 	tower_flame = "122997798823358",
 	tower_ranger = "101150947788778",
 }

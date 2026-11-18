@@ -83,7 +83,7 @@ task.delay(25, function()
 		local cam = workspace.CurrentCamera
 		cam.CameraType = Enum.CameraType.Scriptable
 		local p = ranger.PrimaryPart.Position
-		cam.CFrame = CFrame.lookAt(p + Vector3.new(14, 12, 14), p + Vector3.new(0, 6, 0))
+		cam.CFrame = CFrame.lookAt(p + Vector3.new(26, 22, 26), p + Vector3.new(0, 4, 0))
 		local hidden = {}
 		for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
 			if g:IsA("ScreenGui") and g.Enabled then

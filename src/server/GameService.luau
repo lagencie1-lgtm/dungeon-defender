@@ -407,6 +407,10 @@ end
 function GameService.Start()
 	EnemyService.OnKilled = onKilled
 	EnemyService.OnLeaked = onLeaked
+	EnemyService.OnBossSlam = function(position, radius)
+		HeroService.DamageArea(position, radius, 35)
+		TowerService.Stun(position, radius, 2.5)
+	end
 
 	Remotes.StartWave.OnServerEvent:Connect(function()
 		if State.Get("State") == "Break" then

@@ -206,9 +206,23 @@ local function damageFor(player, base)
 	return damage, false
 end
 
-local function hit(player, enemy, base)
+local function hit(player, enemy, base, knock)
 	local damage, crit = damageFor(player, base)
 	EnemyService.Damage(enemy, damage, player, true, crit)
+	EnemyService.HitStop(enemy, crit and 0.11 or 0.06)
+	EnemyService.Knockback(enemy, knock or 1.5)
+end
+
+-- the boss slam: hurts heroes standing in the circle
+function HeroService.DamageArea(position, radius, damage)
+	for _, player in Players:GetPlayers() do
+		local root = rootOf(player)
+		if root and (Vector3.new(root.Position.X, 0, root.Position.Z) - Vector3.new(position.X, 0, position.Z)).Magnitude <= radius then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			humanoid:TakeDamage(damage)
+			root.AssemblyLinearVelocity += (root.Position - position).Unit * 40 + Vector3.new(0, 30, 0)
+		end
+	end
 end
 
 local function weaponOf(player)
@@ -424,7 +438,7 @@ local function ready(player, attr, cooldown)
 end
 
 -- melee hit in front of the hero (sword or wrench)
-local function melee(player, root, damage, range, targets, color)
+local function melee(player, root, damage, range, targets, color, knock)
 	local front = root.Position + root.CFrame.LookVector * (range * 0.5)
 	Effects.Arc(root.CFrame * CFrame.new(0, -0.5, 0), range * 0.55, color, targets >= 5)
 	Sound.Play("Swing", root.Position)
@@ -432,7 +446,7 @@ local function melee(player, root, damage, range, targets, color)
 	for _, e in EnemyService.InRange(front, range * 0.6) do
 		Effects.Particles(e.position + Vector3.new(0, e.stats.Size * 0.6, 0), { Texture = "Sparks", Color = color, Count = 8,
 			Size = 0.8, Speed = 14, Life = 0.35 })
-		hit(player, e, damage)
+		hit(player, e, damage, knock or (targets >= 5 and 4 or 2.5))
 		hits += 1
 		if hits >= targets then
 			break
@@ -470,7 +484,7 @@ local ABILITIES = {
 				EndSize = 2, Speed = 25, Life = 0.5, Spread = 90, LightEmission = 0.3 })
 			Sound.Play("Swing", root.Position)
 			for _, e in EnemyService.InRange(root.Position, Hero.Whirlwind.Radius) do
-				hit(player, e, Hero.Whirlwind.Damage)
+				hit(player, e, Hero.Whirlwind.Damage, 4)
 			end
 		end,
 		-- the player's own computer makes the jump, the server waits for the landing
@@ -492,7 +506,7 @@ local ABILITIES = {
 				Sound.Play("Land", ground)
 				Sound.Play("Explosion", ground)
 				for _, e in EnemyService.InRange(ground, Hero.Leap.Radius) do
-					hit(player, e, Hero.Leap.Damage)
+					hit(player, e, Hero.Leap.Damage, 6)
 					if not e.stats.Boss then
 						EnemyService.Freeze(e, 0.6) -- stunned
 					end
@@ -513,7 +527,7 @@ local ABILITIES = {
 			Effects.Particles(from, { Color = Color3.fromRGB(200, 150, 255), Count = 6, Size = 0.8, Speed = 5, Life = 0.3 })
 			Sound.Play("Zap", root.Position)
 			Effects.Projectile(from, to, Color3.fromRGB(190, 140, 255), 1.1, math.clamp((to - from).Magnitude / 90, 0.1, 0.35), function()
-				hit(player, target, info.Damage)
+				hit(player, target, info.Damage, 1)
 			end)
 		end,
 		E = function(player, root)
@@ -529,7 +543,7 @@ local ABILITIES = {
 			Effects.Burst(root.Position, info.Radius * 0.4, Color3.fromRGB(200, 240, 255), 0.3, 0.6)
 			Sound.Play("Frost", root.Position)
 			for _, e in EnemyService.InRange(root.Position, info.Radius) do
-				hit(player, e, info.Damage)
+				hit(player, e, info.Damage, 2)
 				EnemyService.Slow(e, info.Slow, info.SlowTime)
 			end
 		end,
@@ -606,7 +620,7 @@ local ABILITIES = {
 				game:GetService("Debris"):AddItem(scorch, 2.6)
 				Sound.Play("Explosion", spot)
 				for _, e in EnemyService.InRange(spot, info.Radius) do
-					hit(player, e, info.Damage)
+					hit(player, e, info.Damage, 5)
 					EnemyService.Burn(e, 6, 3)
 				end
 			end)

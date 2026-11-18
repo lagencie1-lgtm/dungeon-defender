@@ -123,8 +123,9 @@ end
 -- left side: gems, shop, daily reward
 -------------------------------------------------------------------------------
 local Menu = require(script.Parent.Menu)
-local shopButton = Menu.Add("Shop", "🛒", 1)
-local dailyButton, dailyDot = Menu.Add("Daily", "🎁", 2)
+local shopButton = Menu.Add("Shop", "Shop", 1)
+local dailyButton, dailyDot = Menu.Add("Daily", "Daily", 2)
+local Icons = require(script.Parent.Icons)
 local gemsLabel = label({ Size = UDim2.fromOffset(1, 1), Text = "", Visible = false, Parent = root }) -- gems show in the wallet now
 
 -------------------------------------------------------------------------------
@@ -282,7 +283,7 @@ for i, towerType in Config.TowerOrder do
 	end
 	local lock = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 0.35, Visible = false, ZIndex = 4, Parent = b }, { corner(10) })
-	label({ Size = UDim2.new(1, -10, 0, 30), Position = UDim2.fromOffset(5, 20), Text = "🔒", ZIndex = 5, Parent = lock })
+	Icons.Draw(lock, "Lock", Color3.fromRGB(230, 200, 140), { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0.5, -15, 0, 18), ZIndex = 5 })
 	label({ Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56),
 		Text = (info.UnlockGems or 0) .. " gems", TextColor3 = Ui.GEM, ZIndex = 5, Parent = lock })
 	towerButtons[towerType] = { button = b, cost = cost, lock = lock }
@@ -491,6 +492,54 @@ end)
 runButton.Activated:Connect(function()
 	Remotes.StartRun:FireServer()
 end)
+
+-------------------------------------------------------------------------------
+-- the next goal: always one clear thing to do next
+-------------------------------------------------------------------------------
+local goalLabel = label({ Size = UDim2.fromOffset(760, 22), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
+	Text = "", TextColor3 = Color3.fromRGB(255, 235, 190), TextStrokeTransparency = 0.25, Parent = root })
+
+local function nextGoal()
+	local s = GameState:GetAttribute("State")
+	local mapId = GameState:GetAttribute("Map") or "CursedForest"
+	local mapInfo = Config.Maps[mapId] or Config.Maps.CursedForest
+	if s == "Lobby" then
+		local free = player:GetAttribute("StatPointsFree") or 0
+		if free > 0 then
+			return "Next: spend your " .. free .. " stat point" .. (free == 1 and "" or "s") .. " (Heroes)"
+		end
+		if (player:GetAttribute("Wins") or 0) == 0 then
+			return "Next: win your first run (it unlocks the Machine Engineer)"
+		end
+		local cleared = {}
+		pcall(function()
+			cleared = HttpService:JSONDecode(player:GetAttribute("Cleared") or "{}")[mapId] or {}
+		end)
+		for _, d in Config.Difficulties do
+			if d.Id ~= "Easy" and not cleared[d.Id] then
+				local unlocks = nil
+				for _, other in Config.Difficulties do
+					if other.Unlock == d.Id then
+						unlocks = other.Name
+					end
+				end
+				return "Next: beat " .. mapInfo.Name .. " on " .. d.Name .. (unlocks and (" to unlock " .. unlocks) or "")
+			end
+		end
+		return "Next: try another map, or see how far you get in Endless"
+	elseif s == "Break" or s == "Wave" then
+		local wave = GameState:GetAttribute("Wave") or 0
+		local maxWave = GameState:GetAttribute("MaxWave") or 10
+		if maxWave == 0 then
+			return "Goal: beat your best Endless wave (" .. (player:GetAttribute("BestEndless") or 0) .. ")"
+		end
+		if wave >= maxWave then
+			return "Goal: defeat the boss!"
+		end
+		return "Goal: survive " .. maxWave .. " waves, then defeat the boss"
+	end
+	return ""
+end
 
 -------------------------------------------------------------------------------
 -- end screen
@@ -903,15 +952,14 @@ local function refreshTop()
 		local maxWave = GameState:GetAttribute("MaxWave") or 10
 		showBanner(wave == maxWave and "FINAL WAVE" or "WAVE " .. wave, GameState:GetAttribute("WaveTitle") or "",
 			wave == maxWave and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(255, 200, 90))
-		shake(0.6)
 	end
 	lastWave = wave
 
 	local boss = GameState:GetAttribute("BossAlert") or 0
 	if boss > lastBoss then
 		task.delay(1.5, function()
-			showBanner("BOSS INCOMING", "The Goblin King has entered the chat", Color3.fromRGB(220, 120, 255))
-			shake(2)
+			showBanner("BOSS INCOMING", "The boss has entered the chat", Color3.fromRGB(220, 120, 255))
+			shake(0.6)
 		end)
 	end
 	lastBoss = boss
@@ -924,7 +972,7 @@ local function refreshTop()
 	if hp < lastPortal then
 		flash.BackgroundTransparency = 0.65
 		TweenService:Create(flash, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
-		shake(0.8)
+		shake(0.35)
 		Ui.pop(portalBack, 1.1)
 		if math.random() < 0.25 then
 			showMessage(Memes.Pick(Memes.Portal), Ui.BAD)
@@ -968,6 +1016,8 @@ local function refreshTop()
 	local inLobby = s == "Lobby"
 	lobbyBar.Visible = inLobby
 	eventLabel.Visible = inLobby
+	goalLabel.Text = nextGoal()
+	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 1, -108) or UDim2.new(0.5, 0, 1, -116)
 	towerBar.Visible = not inLobby
 	top.Visible = true
 	portalBack.Visible = not inLobby
@@ -1001,7 +1051,7 @@ local function refreshTop()
 		local locked = d.Unlock and not cleared[d.Unlock]
 		local sub = b:FindFirstChild("Sub")
 		if sub then
-			sub.Text = locked and ("🔒 Beat " .. d.Unlock .. " here first") or (d.Subtitle .. " · gems x" .. d.Gems)
+			sub.Text = locked and ("Locked: beat " .. d.Unlock .. " here first") or (d.Subtitle .. " · gems x" .. d.Gems)
 		end
 		b.BackgroundColor3 = locked and Color3.fromRGB(45, 38, 34) or Ui.PANEL
 		local st = b:FindFirstChildOfClass("UIStroke")
@@ -1012,7 +1062,6 @@ local function refreshTop()
 	local over = s == "Won" or s == "Lost"
 	if over and not endPanel.Visible then
 		Ui.pop(endPanel, 0.7)
-		shake(s == "Won" and 1 or 1.5)
 	end
 	endPanel.Visible = over
 	endMeme.Text = GameState:GetAttribute("EndMeme") or ""
@@ -1291,7 +1340,6 @@ local function tryPlace(pos)
 	pos = Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5)) -- same spot the preview shows
 	local ok, reason = Remotes.PlaceTower:InvokeServer(placing, pos)
 	if ok then
-		shake(0.3)
 		-- keep placing the same defender while holding Shift (PC)
 		if isTouch or not UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
 			stopPlacing()
@@ -1419,15 +1467,13 @@ local function doLeap()
 	r.AssemblyLinearVelocity = forward * (Config.Hero.Leap.Distance * 1.8) + Vector3.new(0, 55, 0)
 	Remotes.HeroLeap:FireServer()
 	task.delay(0.6, function()
-		shake(1)
+		shake(0.5)
 	end)
 end
 
 local function doWhirl()
 	Remotes.HeroWhirlwind:FireServer()
-	if workspace:GetServerTimeNow() >= (player:GetAttribute("WhirlwindReadyAt") or 0) then
-		shake(0.4)
-	end
+
 end
 
 -------------------------------------------------------------------------------

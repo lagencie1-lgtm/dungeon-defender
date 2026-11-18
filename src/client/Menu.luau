@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Ui = require(script.Parent.Ui)
+local Icons = require(script.Parent.Icons)
 local make, corner, label = Ui.make, Ui.corner, Ui.label
 
 local Menu = {}
@@ -60,8 +61,8 @@ function Menu.Add(name, icon, order, color)
 		make("UIStroke", { Color = color or BRASS, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		make("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(170, 160, 150)), Rotation = 90 }),
 	})
-	label({ Name = "Icon", Size = UDim2.new(1, 0, 0, SIZE - 20), Position = UDim2.fromOffset(0, 3), Text = icon,
-		Font = Enum.Font.GothamBold, Parent = b })
+	Icons.Draw(b, icon, color or Color3.fromRGB(235, 195, 115), {
+		Size = UDim2.new(1, -18, 1, -24), Position = UDim2.fromOffset(9, 4) })
 	label({ Name = "Caption", Size = UDim2.new(1, -4, 0, 13), Position = UDim2.new(0, 2, 1, -15), Text = name,
 		Font = Enum.Font.GothamBold, TextColor3 = Color3.fromRGB(255, 230, 180), TextStrokeTransparency = 0.4, Parent = b })
 	local dot = make("Frame", { Name = "Dot", Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -10, 0, -6),
@@ -89,17 +90,52 @@ local wallet = make("Frame", {
 	BackgroundColor3 = WOOD,
 	Parent = root,
 }, { corner(10), make("UIStroke", { Color = BRASS, Thickness = 2 }) })
-local gemsText = label({ Size = UDim2.new(0.5, -8, 1, -8), Position = UDim2.fromOffset(8, 4), Text = "0",
+Icons.Draw(wallet, "Gem", Ui.GEM, { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5) })
+Icons.Draw(wallet, "Gold", Ui.GOLD, { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0.5, 0, 0, 5) })
+local gemsText = label({ Size = UDim2.new(0.5, -40, 1, -8), Position = UDim2.fromOffset(34, 4), Text = "0",
 	TextColor3 = Ui.GEM, TextXAlignment = Enum.TextXAlignment.Left, Parent = wallet })
-local goldText = label({ Size = UDim2.new(0.5, -8, 1, -8), Position = UDim2.new(0.5, 0, 0, 4), Text = "0",
+local goldText = label({ Size = UDim2.new(0.5, -40, 1, -8), Position = UDim2.new(0.5, 28, 0, 4), Text = "0",
 	TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, Parent = wallet })
+local TweenService = game:GetService("TweenService")
+local shownGems = player:GetAttribute("Gems")
 local function refreshWallet()
-	gemsText.Text = "💎 " .. (player:GetAttribute("Gems") or 0)
-	goldText.Text = "💰 " .. (player:GetAttribute("Gold") or 0)
+	gemsText.Text = tostring(shownGems or player:GetAttribute("Gems") or 0)
+	goldText.Text = tostring(player:GetAttribute("Gold") or 0)
 end
+
+-- a few gems fly from the middle of the screen into the wallet, then the number counts
+local function flyGems(count)
+	local target = gemsText.AbsolutePosition - root.AbsolutePosition
+	local scale = rootScale.Scale
+	local finish = UDim2.fromOffset(target.X / scale - 14, target.Y / scale)
+	for i = 1, math.clamp(count, 1, 6) do
+		local holder = make("Frame", { Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, ZIndex = 50,
+			Position = UDim2.new(0.5, math.random(-60, 60), 0.62, math.random(-30, 30)), Parent = root })
+		Icons.Draw(holder, "Gem", Ui.GEM)
+		task.delay((i - 1) * 0.035, function()
+			local tween = TweenService:Create(holder, TweenInfo.new(0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{ Position = finish })
+			tween:Play()
+			tween.Completed:Wait()
+			holder:Destroy()
+		end)
+	end
+end
+
 player:GetAttributeChangedSignal("Gems"):Connect(function()
-	refreshWallet()
-	Ui.pop(gemsText, 1.2)
+	local new = player:GetAttribute("Gems") or 0
+	local old = shownGems or new
+	if new > old then
+		flyGems(new - old)
+		task.delay(0.45, function()
+			shownGems = player:GetAttribute("Gems")
+			refreshWallet()
+			Ui.pop(gemsText, 1.19)
+		end)
+	else
+		shownGems = new
+		refreshWallet()
+	end
 end)
 player:GetAttributeChangedSignal("Gold"):Connect(refreshWallet)
 refreshWallet()

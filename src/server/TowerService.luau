@@ -285,6 +285,17 @@ function TowerService.Sell(_player, model)
 	return true, refund
 end
 
+-- a boss slam knocks defenders out for a moment
+function TowerService.Stun(position, radius, seconds)
+	local flat = Vector3.new(position.X, 0, position.Z)
+	for _, t in towers do
+		if (t.position - flat).Magnitude <= radius then
+			t.nextShot = math.max(t.nextShot, Clock.now + seconds)
+			Effects.Text(t.position + Vector3.new(0, 9, 0), "Stunned", Color3.fromRGB(255, 200, 120), 0.9)
+		end
+	end
+end
+
 function TowerService.Clear()
 	for model in towers do
 		model:Destroy()

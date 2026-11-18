@@ -4,6 +4,10 @@ local TweenService = game:GetService("TweenService")
 
 local Effects = {}
 
+-- 6A restraint: effects are smaller and lighter than the first instinct
+Effects.SizeScale = 0.6
+Effects.CountScale = 0.5
+
 local function folder()
 	return workspace:FindFirstChild("Effects") or workspace
 end
@@ -38,6 +42,7 @@ end
 -- a ball that grows and fades (explosions, whirlwind, frost)
 function Effects.Burst(position, radius, color, time, transparency)
 	time = time or 0.35
+	radius *= Effects.SizeScale
 	local p = fxPart({
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.one,
@@ -112,7 +117,7 @@ function Effects.Particles(position, opts)
 	e.Texture = Effects.Textures[opts.Texture or "Sparkle"] or opts.Texture
 	e.Color = ColorSequence.new(opts.Color or Color3.new(1, 1, 1), opts.Color2 or opts.Color or Color3.new(1, 1, 1))
 	e.LightEmission = opts.LightEmission or 1
-	local size = opts.Size or 1
+	local size = (opts.Size or 1) * Effects.SizeScale
 	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size), NumberSequenceKeypoint.new(1, size * (opts.EndSize or 0.2)) })
 	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
 	local life = opts.Life or 0.6
@@ -126,7 +131,7 @@ function Effects.Particles(position, opts)
 	e.RotSpeed = NumberRange.new(-180, 180)
 	e.Rate = 0
 	e.Parent = holder
-	e:Emit(opts.Count or 20)
+	e:Emit(math.max(1, math.floor((opts.Count or 20) * Effects.CountScale)))
 	Debris:AddItem(holder, life + 0.5)
 end
 

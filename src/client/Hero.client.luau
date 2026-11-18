@@ -25,7 +25,7 @@ end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
-local heroButton, pointDot = require(script.Parent.Menu).Add("Heroes", "⚔️", 4)
+local heroButton, pointDot = require(script.Parent.Menu).Add("Heroes", "Heroes", 4)
 
 local panel = make("Frame", { Size = UDim2.fromOffset(760, 600), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 30, Parent = root },

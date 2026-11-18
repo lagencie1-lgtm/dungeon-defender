@@ -243,7 +243,7 @@ end)
 -------------------------------------------------------------------------------
 local inventory, gear = {}, {}
 
-local bagButton, newDot = require(script.Parent.Menu).Add("Backpack", "🎒", 3)
+local bagButton, newDot = require(script.Parent.Menu).Add("Backpack", "Backpack", 3)
 
 local panel = make("Frame", {
 	Size = UDim2.fromOffset(820, 500),

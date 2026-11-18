@@ -25,7 +25,7 @@ end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
-local questButton, readyDot = require(script.Parent.Menu).Add("Quests", "📜", 5)
+local questButton, readyDot = require(script.Parent.Menu).Add("Quests", "Quests", 5)
 
 local panel = make("Frame", { Size = UDim2.fromOffset(600, 330), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 30, Parent = root },

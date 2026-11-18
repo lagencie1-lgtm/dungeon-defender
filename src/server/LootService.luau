@@ -53,10 +53,6 @@ end
 
 local function give(player, amount, from)
 	DataService.AddGems(player, amount)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if root then
-		Effects.Text(root.Position + Vector3.new(0, 4, 0), "+" .. amount .. " gems", GEM_COLOR, 1.1)
-	end
 	Sound.Play("Coin", from)
 end
 

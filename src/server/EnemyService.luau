@@ -372,6 +372,25 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	end
 end
 
+-- pushes an enemy back along the path, eased over about 0.28 s (bosses barely move)
+function EnemyService.Knockback(enemy, studs)
+	if enemy.dead or not studs or studs <= 0 then
+		return
+	end
+	if enemy.stats.Boss then
+		studs *= 0.15
+	end
+	enemy.knockLeft = (enemy.knockLeft or 0) + studs
+end
+
+-- a tiny freeze on heavy hits so they feel solid
+function EnemyService.HitStop(enemy, seconds)
+	enemy.hitStopUntil = math.max(enemy.hitStopUntil or 0, Clock.now + (seconds or 0.07))
+end
+
+-- set by GameService: a boss slam hits heroes and stuns defenders near it
+EnemyService.OnBossSlam = function(_position, _radius) end
+
 function EnemyService.Slow(enemy, factor, seconds)
 	local now = Clock.now
 	if factor <= enemy.slowFactor or now > enemy.slowUntil then
@@ -440,7 +459,47 @@ function EnemyService.Start()
 				continue
 			end
 
-			local speed = e.stats.Speed * (e.speedMult or 1)
+			local speed = e.stats.Speed * (e.speedMult or 1) * (e.enraged and 1.4 or 1)
+			if e.knockLeft and e.knockLeft > 0.01 then
+				-- knockback: ease backwards (1 - exp(-k*dt), about 0.28 s to settle)
+				local move = e.knockLeft * (1 - math.exp(-12 * dt))
+				e.knockLeft -= move
+				e.distance = math.max(0, e.distance - move)
+				speed = 0
+			end
+			if now < (e.hitStopUntil or 0) then
+				speed = 0
+			end
+			-- bosses: get angry at half health, and slam the ground every few seconds
+			if e.stats.Boss then
+				if not e.enraged and e.health < e.maxHealth * 0.5 then
+					e.enraged = true
+					e.nextSlam = math.min(e.nextSlam or now, now + 1.5)
+					Effects.Text(e.position + Vector3.new(0, e.stats.Size * 1.6, 0), "ENRAGED!", Color3.fromRGB(255, 80, 80), 1.6)
+					Sound.Play("PortalHit", e.position)
+				end
+				e.nextSlam = e.nextSlam or (now + 5)
+				if now >= e.nextSlam and not e.slamming then
+					e.slamming = true
+					local spot = e.position
+					local radius = 14
+					-- the warning: a red circle 0.9 s before the hit, escapable by stepping out
+					Effects.Ring(spot + Vector3.new(0, 0.3, 0), radius, Color3.fromRGB(255, 40, 40), 0.9)
+					task.delay(0.9, function()
+						e.slamming = false
+						e.nextSlam = Clock.now + (e.enraged and 3.5 or 6)
+						if e.dead then
+							return
+						end
+						Effects.Shockwave(spot, radius, Color3.fromRGB(255, 120, 80))
+						Sound.Play("Explosion", spot)
+						EnemyService.OnBossSlam(spot, radius)
+					end)
+				end
+				if e.slamming then
+					speed = 0 -- it stops to wind up the slam
+				end
+			end
 			if now < e.frozenUntil then
 				speed = 0
 			elseif now < e.slowUntil then

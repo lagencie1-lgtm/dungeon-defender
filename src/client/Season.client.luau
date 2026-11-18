@@ -28,7 +28,7 @@ end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
-local seasonButton, dot = require(script.Parent.Menu).Add("Season", "🏆", 7)
+local seasonButton, dot = require(script.Parent.Menu).Add("Season", "Season", 7)
 
 local panel = make("Frame", { Size = UDim2.fromOffset(900, 400), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 30, Parent = root },

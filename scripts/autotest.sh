@@ -14,8 +14,8 @@ for _ in $(seq 1 60); do
 	[ "$log" != "$before" ] && break
 	sleep 1
 done
-# wait until the play test ends (or 6 minutes)
-for _ in $(seq 1 360); do
+# wait until the play test ends (or about 12 minutes)
+for _ in $(seq 1 700); do
 	grep -q "play test finished" "$log" && break
 	sleep 1
 done

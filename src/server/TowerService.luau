@@ -9,6 +9,7 @@ local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local Clock = require(script.Parent.Clock)
 local DataService = require(script.Parent.DataService)
+local QuestService = require(script.Parent.QuestService)
 
 local TowerService = {}
 
@@ -161,6 +162,9 @@ function TowerService.Place(player, towerType, position)
 	if gameState == "Won" or gameState == "Lost" then
 		return false, "The game is over"
 	end
+	if State.Get("Mode") == "RangersOnly" and towerType ~= "Ranger" then
+		return false, "Challenge: Rangers only!"
+	end
 	if info.UnlockGems and not DataService.Owns(player, "Towers", towerType) then
 		return false, "Unlock the " .. info.DisplayName .. " in the Shop first"
 	end
@@ -215,6 +219,9 @@ function TowerService.Place(player, towerType, position)
 	Effects.Ring(position + Vector3.new(0, 0.3, 0), 6, Color3.fromRGB(255, 230, 150), 0.4)
 	Effects.Burst(position + Vector3.new(0, 1, 0), 4, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
 	Sound.Play("Build", position)
+	if typeof(player) == "Instance" then
+		QuestService.Add(player, "Build", 1)
+	end
 	return true
 end
 

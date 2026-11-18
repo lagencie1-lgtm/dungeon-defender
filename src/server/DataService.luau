@@ -77,6 +77,7 @@ local function publish(player)
 	player:SetAttribute("DailyNextAt", p.DailyLast + Config.DailyCooldownHours * 3600)
 	player:SetAttribute("Gold", p.Gold)
 	player:SetAttribute("Scrap", p.Scrap)
+	player:SetAttribute("BestEndless", p.BestEndless or 0)
 
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
@@ -216,6 +217,9 @@ local function buy(player, kind, id)
 	end
 	if p.Owned[kind][id] then
 		return false, "You already own this"
+	end
+	if item.RebirthOnly then
+		return false, "This one is a Rebirth reward"
 	end
 	if p.Gems < price then
 		return false, "Not enough gems (need " .. price .. ")"

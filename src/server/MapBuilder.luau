@@ -361,6 +361,27 @@ function MapBuilder.BuildOutpost(onPrompt)
 	nameTag(chest, "Daily Chest", Color3.fromRGB(255, 210, 90), 4)
 	prompt(chest, "Daily reward", "Daily Chest", "Daily")
 
+	-- pet corner: a nest with eggs
+	local nest = part({ Name = "PetNest", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.5, 8, 8),
+		CFrame = CFrame.new(c + Vector3.new(26, 0.75, 4)) * CFrame.Angles(0, 0, math.pi / 2),
+		Color = Color3.fromRGB(130, 100, 60), Material = Enum.Material.Grass, Parent = hub })
+	for i, egg in Config.Eggs do
+		part({ Name = "Egg", Shape = Enum.PartType.Ball, Size = Vector3.new(2, 2.6, 2), Position = c + Vector3.new(24 + i * 1.6, 2.5, 4),
+			Color = egg.Color, Material = Enum.Material.SmoothPlastic, Parent = hub })
+	end
+	nameTag(nest, "Pet Corner", Color3.fromRGB(160, 255, 160), 5)
+	prompt(nest, "Hatch eggs", "Pet Corner", "Pets")
+
+	-- quest board
+	local questBoard = part({ Name = "QuestBoard", Size = Vector3.new(7, 6, 1), Position = c + Vector3.new(-14, 3.5, 22),
+		Color = Color3.fromRGB(140, 100, 60), Material = Enum.Material.WoodPlanks, Parent = hub })
+	for i = 1, 3 do
+		part({ Name = "Note", Size = Vector3.new(1.6, 2, 0.1), Position = c + Vector3.new(-16.5 + i * 1.8, 3.8, 21.4),
+			Color = Color3.fromRGB(240, 230, 200), Material = Enum.Material.SmoothPlastic, Parent = hub })
+	end
+	nameTag(questBoard, "Quest Board", Color3.fromRGB(255, 220, 140), 5)
+	prompt(questBoard, "Daily quests", "Quest Board", "Quests")
+
 	-- trophy wall with the best players on this server
 	local wall = part({ Name = "TrophyWall", Size = Vector3.new(26, 12, 1), Position = c + Vector3.new(0, 6, -36),
 		Color = Color3.fromRGB(60, 45, 35), Material = Enum.Material.WoodPlanks, Parent = hub })

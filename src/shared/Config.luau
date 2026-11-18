@@ -31,6 +31,75 @@ Config.Difficulties = {
 	{ Id = "Easy", Name = "Easy", Subtitle = "Just vibing", Health = 0.7, Gems = 0.6, Color = Color3.fromRGB(90, 200, 110) },
 	{ Id = "Normal", Name = "Normal", Subtitle = "The intended experience", Health = 1, Gems = 1, Color = Color3.fromRGB(240, 190, 70) },
 	{ Id = "Hard", Name = "Hard", Subtitle = "No cap, it's hard", Health = 1.5, Gems = 1.8, Color = Color3.fromRGB(230, 80, 80) },
+	{ Id = "Nightmare", Name = "Nightmare", Subtitle = "Absolutely cooked", Health = 2.3, Gems = 2.8, Color = Color3.fromRGB(180, 60, 220) },
+}
+
+-------------------------------------------------------------------------------
+-- Modes: the normal 10 waves, Endless, or a challenge with a twist
+-------------------------------------------------------------------------------
+Config.Modes = {
+	{ Id = "Campaign", Name = "Campaign", Text = "10 waves and a boss" },
+	{ Id = "Endless", Name = "Endless", Text = "Waves never stop. How far can you get? Best wave goes on the leaderboard" },
+	{ Id = "RangersOnly", Name = "Challenge: Rangers Only", Text = "You can only build Rangers", Challenge = true },
+	{ Id = "Pacifist", Name = "Challenge: Hands Off", Text = "Your hero can't attack. Defenders only", Challenge = true },
+	{ Id = "GlassPortal", Name = "Challenge: Glass Portal", Text = "The portal has only 10 health", Challenge = true, PortalHealth = 10 },
+}
+Config.ChallengeReward = { Gems = 60, MinRarity = 4 } -- first clear of each challenge on each map: gems + an Epic or better item
+Config.EndlessBossEvery = 10
+
+-------------------------------------------------------------------------------
+-- Daily quests: 3 new ones every day (UTC midnight)
+-------------------------------------------------------------------------------
+Config.Quests = {
+	{ Id = "Kills", Text = "Defeat %d enemies", Goal = 250, Gold = 200, Gems = 10 },
+	{ Id = "Waves", Text = "Clear %d waves", Goal = 15, Gold = 200, Gems = 10 },
+	{ Id = "Win", Text = "Win %d run", Goal = 1, Gold = 300, Gems = 15 },
+	{ Id = "WinHard", Text = "Win %d run on Hard or Nightmare", Goal = 1, Gold = 500, Gems = 25 },
+	{ Id = "Build", Text = "Build %d defenders", Goal = 20, Gold = 150, Gems = 8 },
+	{ Id = "Loot", Text = "Pick up %d items", Goal = 4, Gold = 200, Gems = 10 },
+	{ Id = "Upgrade", Text = "Upgrade gear %d times", Goal = 3, Gold = 150, Gems = 10 },
+	{ Id = "Boss", Text = "Defeat %d boss", Goal = 1, Gold = 300, Gems = 15 },
+	{ Id = "Abilities", Text = "Use hero abilities %d times", Goal = 60, Gold = 150, Gems = 8 },
+	{ Id = "LootGoblin", Text = "Catch %d Loot Goblins", Goal = 2, Gold = 250, Gems = 12 },
+}
+Config.QuestsPerDay = 3
+
+-------------------------------------------------------------------------------
+-- Pets: hatch from eggs bought with gold (gold can't be bought, only earned).
+-- Bonus is a percent that grows 10% per pet level. Evolving doubles it.
+-------------------------------------------------------------------------------
+Config.Pets = {
+	Slimey = { Name = "Slimey", Rarity = 1, Stat = "GoldFind", Bonus = 5, Color = Color3.fromRGB(110, 220, 110), Shape = "Blob" },
+	Leafling = { Name = "Leafling", Rarity = 1, Stat = "Power", Bonus = 3, Color = Color3.fromRGB(90, 170, 70), Shape = "Sprout" },
+	Stonepup = { Name = "Stonepup", Rarity = 2, Stat = "Command", Bonus = 4, Color = Color3.fromRGB(140, 130, 120), Shape = "Pup" },
+	Glowbug = { Name = "Glowbug", Rarity = 3, Stat = "Crit", Bonus = 3, Color = Color3.fromRGB(255, 240, 120), Shape = "Bug" },
+	EmberFox = { Name = "Ember Fox", Rarity = 3, Stat = "Engineering", Bonus = 5, Color = Color3.fromRGB(255, 120, 40), Shape = "Pup" },
+	MiniGolem = { Name = "Mini Golem", Rarity = 4, Stat = "Command", Bonus = 8, Color = Color3.fromRGB(100, 70, 60), Shape = "Golem" },
+	BabyDragon = { Name = "Baby Dragon", Rarity = 5, Stat = "Power", Bonus = 9, Color = Color3.fromRGB(170, 60, 220), Shape = "Dragon" },
+}
+-- the chances are shown in the game before buying
+Config.Eggs = {
+	{ Id = "ForestEgg", Name = "Forest Egg", Price = 600, Color = Color3.fromRGB(120, 200, 100),
+		Chances = { { "Slimey", 40 }, { "Leafling", 35 }, { "Stonepup", 17 }, { "Glowbug", 6 }, { "MiniGolem", 1.8 }, { "BabyDragon", 0.2 } } },
+	{ Id = "MagmaEgg", Name = "Magma Egg", Price = 1500, Color = Color3.fromRGB(255, 110, 40),
+		Chances = { { "Stonepup", 40 }, { "EmberFox", 35 }, { "Glowbug", 15 }, { "MiniGolem", 8 }, { "BabyDragon", 2 } } },
+}
+Config.PetMaxLevel = 10
+Config.PetXpPerLevel = 60 -- pet xp per level (pets get 1 xp per enemy defeated)
+Config.PetEvolveGold = 2500
+Config.PetBagSize = 30
+Config.PetReleaseGold = { 50, 80, 150, 400, 1000 }
+
+-------------------------------------------------------------------------------
+-- Rebirth and Ascension (for heroes at the level cap)
+-------------------------------------------------------------------------------
+Config.RebirthBonus = 10 -- +10% xp and gold per rebirth, forever
+Config.AscensionXp = 2500 -- xp for one Ascension Point after the level cap
+Config.AscensionPerks = {
+	{ Id = "Power", Name = "Hero damage", Per = 1 },
+	{ Id = "Command", Name = "Defender damage", Per = 1 },
+	{ Id = "GoldFind", Name = "Gold find", Per = 2 },
+	{ Id = "Crit", Name = "Crit chance", Per = 0.5 },
 }
 
 -------------------------------------------------------------------------------
@@ -322,6 +391,7 @@ Config.Swords = {
 	{ Id = "Toxic", Name = "Toxic Blade", Price = 80, Color = Color3.fromRGB(80, 255, 80) },
 	{ Id = "Baguette", Name = "Le Baguette", Price = 120, Color = Color3.fromRGB(215, 160, 90), Baguette = true },
 	{ Id = "Rainbow", Name = "RGB Gamer Blade", Price = 250, Color = Color3.fromRGB(255, 0, 255), Rainbow = true },
+	{ Id = "Starforged", Name = "Starforged (Rebirth)", Price = 0, RebirthOnly = true, Color = Color3.fromRGB(255, 250, 200) },
 }
 Config.Titles = {
 	{ Id = "None", Name = "No title", Price = 0 },

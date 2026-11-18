@@ -80,9 +80,16 @@ local function placeTowers()
 	log("placed", placed, "build points", State.Get("BuildUsed"), "/", State.Get("BuildMax"))
 end
 
-for _, mapId in { "MagmaFortress", "CursedForest" } do
-	step("run " .. mapId, function()
+local RUNS = {
+	{ "MagmaFortress", "Campaign", 120 },
+	{ "CursedForest", "RangersOnly", 40 },
+	{ "CursedForest", "Endless", 40 },
+}
+for _, run in RUNS do
+	local mapId, mode, seconds = run[1], run[2], run[3]
+	step("run " .. mapId .. " " .. mode, function()
 		State.Set("Map", mapId)
+		State.Set("Mode", mode)
 		State.Set("Difficulty", "Easy")
 		GameService.StartRun()
 		task.wait(1)
@@ -91,7 +98,7 @@ for _, mapId in { "MagmaFortress", "CursedForest" } do
 		Clock.scale = 8
 		local started = os.clock()
 		local lastWave = 0
-		while os.clock() - started < 150 do
+		while os.clock() - started < seconds do
 			local s = State.Get("State")
 			if s == "Won" or s == "Lost" then
 				break
@@ -115,6 +122,21 @@ for _, mapId in { "MagmaFortress", "CursedForest" } do
 	end)
 end
 
+step("rebirth and ascension", function()
+	local HeroService = require(Server.HeroService)
+	local p = DataService.Get(player)
+	local hero = p.Heroes[p.SelectedHero or "Swordmaster"]
+	hero.Level = Config.HeroMaxLevel
+	HeroService.AddXp(player, Config.AscensionXp * 2 + 5)
+	log("ascension points", player:GetAttribute("AscensionPoints"), "rebirths", player:GetAttribute("Rebirths"))
+end)
+
+step("quests", function()
+	local q = DataService.Get(player).Quests
+	for _, quest in q.List do
+		log("quest", quest.Id, quest.Progress, quest.Claimed)
+	end
+end)
 log("DONE")
 pcall(function()
 	game:GetService("StudioTestService"):EndTest("done")

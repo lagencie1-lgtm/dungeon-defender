@@ -42,6 +42,20 @@ Saving gems in Studio needs: Game Settings > Security > Enable Studio Access to 
 - Gold is earned at the end of every run and kept. The building money during a run is now called **mana**.
 - Harder difficulty = better items.
 
+## Roadmap phase 2 and 3
+
+- **The Outpost** hub: start pad, Blacksmith (backpack), Gem Shop, Hero Altar, Map Board, Pet Corner, Quest Board, Daily Chest, Trophy Wall.
+- **Heroes**: Swordmaster, Rune Mage, Machine Engineer. Levels (up to 50) and stat points are saved per hero (Power, Vitality, Command, Engineering).
+- Goblins now hurt heroes standing in their way; heroes respawn after a few seconds.
+- **Maps**: Cursed Forest and Magma Fortress (fire-proof imps, armored knights, splitting slimes, Molten Golem boss).
+- **Build Points** limit how many defenders the team can build; more players = tougher goblins.
+- **Modes**: Campaign, Endless (world leaderboard on the Trophy Wall), and 3 challenges with a first-clear reward.
+- **Nightmare** difficulty, **daily quests**, **pets** (eggs cost gold, chances shown), **Rebirth** at level 50 and **Ascension** points after it.
+
+## Testing
+
+`bash scripts/autotest.sh` plays the game by itself in Studio at 8x speed and prints any script errors.
+
 ## Publish without Studio
 
 Put the game's ids in `scripts/publish.json` and your Open Cloud API key in `tools/roblox-api-key.txt`, then run

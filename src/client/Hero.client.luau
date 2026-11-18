@@ -30,7 +30,7 @@ local heroButton = button({ Size = UDim2.fromOffset(150, 46), Position = UDim2.f
 local pointDot = make("Frame", { Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -8, 0, -6),
 	BackgroundColor3 = Color3.fromRGB(255, 60, 60), Visible = false, ZIndex = 3, Parent = heroButton }, { corner(8) })
 
-local panel = make("Frame", { Size = UDim2.fromOffset(760, 470), Position = UDim2.fromScale(0.5, 0.5),
+local panel = make("Frame", { Size = UDim2.fromOffset(760, 600), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 30, Parent = root },
 	{ corner(18), stroke(Color3.fromRGB(120, 200, 120), 3) })
 label({ Size = UDim2.fromOffset(300, 36), Position = UDim2.fromOffset(16, 10), Text = "Heroes",
@@ -93,6 +93,32 @@ for i, s in Config.StatPoints do
 	end)
 	rows[s.Id] = { value = value, plus = plus }
 end
+-- Rebirth and Ascension (for heroes at the level cap)
+local rebirthLabel = label({ Size = UDim2.fromOffset(440, 24), Position = UDim2.fromOffset(16, 446), Text = "",
+	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(255, 240, 170), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
+local rebirthButton = button({ Size = UDim2.fromOffset(220, 32), Position = UDim2.new(1, -16, 0, 442), AnchorPoint = Vector2.new(1, 0),
+	Text = "Rebirth", BackgroundColor3 = Color3.fromRGB(150, 120, 40), ZIndex = 31, Parent = panel })
+rebirthButton.Activated:Connect(function()
+	local ok, result = Remotes.Rebirth:InvokeServer()
+	freeLabel.Text = ok and ("Reborn! Rebirth " .. tostring(result)) or (result or "Can't")
+end)
+local ascLabel = label({ Size = UDim2.new(1, -32, 0, 22), Position = UDim2.fromOffset(16, 482), Text = "",
+	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 220, 255), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
+local ascRow = make("Frame", { Size = UDim2.new(1, -32, 0, 34), Position = UDim2.fromOffset(16, 508), BackgroundTransparency = 1,
+	ZIndex = 31, Parent = panel }, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
+local ascButtons = {}
+for i, perk in Config.AscensionPerks do
+	local b = button({ Size = UDim2.fromOffset(176, 34), Text = "", BackgroundColor3 = Color3.fromRGB(60, 70, 120), LayoutOrder = i,
+		ZIndex = 32, Parent = ascRow })
+	b.Activated:Connect(function()
+		local ok, reason = Remotes.SpendAscension:InvokeServer(perk.Id)
+		if not ok then
+			freeLabel.Text = reason or "Can't"
+		end
+	end)
+	ascButtons[perk.Id] = b
+end
+
 local resetButton = button({ Size = UDim2.fromOffset(260, 32), Position = UDim2.new(0.5, 0, 1, -12), AnchorPoint = Vector2.new(0.5, 1),
 	Text = "Reset points", BackgroundColor3 = Color3.fromRGB(110, 60, 60), ZIndex = 31, Parent = panel })
 resetButton.Activated:Connect(function()
@@ -121,9 +147,23 @@ local function refresh()
 		rows[s.Id].plus.BackgroundColor3 = free > 0 and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
 	end
 	resetButton.Text = "Reset points (" .. level * Config.StatResetGoldPerLevel .. " gold)"
+	local rebirths = player:GetAttribute("Rebirths") or 0
+	rebirthLabel.Text = "Rebirths: " .. rebirths .. " (+" .. rebirths * Config.RebirthBonus .. "% xp and gold forever)"
+	local canRebirth = level >= Config.HeroMaxLevel
+	rebirthButton.Text = canRebirth and "Rebirth now!" or ("Rebirth at level " .. Config.HeroMaxLevel)
+	rebirthButton.BackgroundColor3 = canRebirth and Color3.fromRGB(150, 120, 40) or Color3.fromRGB(70, 70, 80)
+	local ascPoints = player:GetAttribute("AscensionPoints") or 0
+	ascLabel.Text = "Ascension: " .. ascPoints .. " point(s) to spend"
+		.. (canRebirth and string.format(" · next point %d/%d xp", player:GetAttribute("AscensionXp") or 0, Config.AscensionXp)
+			or " · earned with xp after level " .. Config.HeroMaxLevel)
+	for _, perk in Config.AscensionPerks do
+		local n = player:GetAttribute("Asc" .. perk.Id) or 0
+		ascButtons[perk.Id].Text = perk.Name .. " +" .. (n * perk.Per) .. "%"
+	end
 end
 player.AttributeChanged:Connect(function(attr)
-	if attr:sub(1, 4) == "Hero" or attr:sub(1, 4) == "Stat" then
+	local prefix = attr:sub(1, 3)
+	if prefix == "Her" or prefix == "Sta" or prefix == "Reb" or prefix == "Asc" then
 		refresh()
 	end
 end)

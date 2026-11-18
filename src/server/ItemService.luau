@@ -11,6 +11,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Sound = require(script.Parent.Sound)
 local State = require(script.Parent.State)
+local QuestService = require(script.Parent.QuestService)
 
 local ItemService = {}
 
@@ -20,8 +21,8 @@ local PICKUP_RANGE = 14 -- a bit bigger than the client's, for lag
 -- drop chances per goblin type (the boss always gives the Victory Chest)
 local DROP_CHANCE = { Goblin = 0.018, Runner = 0.018, Brute = 0.09, LootGoblin = 0.6, GoblinKing = 0 }
 -- item level bonus and rarity luck per difficulty
-local DIFF_LEVEL = { Easy = 0, Normal = 3, Hard = 8 }
-local DIFF_LUCK = { Easy = 0.6, Normal = 1, Hard = 1.8 }
+local DIFF_LEVEL = { Easy = 0, Normal = 3, Hard = 8, Nightmare = 14 }
+local DIFF_LUCK = { Easy = 0.6, Normal = 1, Hard = 1.8, Nightmare = 3 }
 
 local rng = Random.new()
 
@@ -168,6 +169,7 @@ local function addItem(player, item)
 		return false
 	end
 	table.insert(profile.Items, item)
+	QuestService.Add(player, "Loot", 1)
 	-- nothing in that slot yet? put it on straight away
 	if not profile.Gear[item.slot] then
 		profile.Gear[item.slot] = item.id
@@ -215,6 +217,14 @@ function ItemService.VictoryChest(difficultyId)
 		Remotes.VictoryChest:FireClient(player, item, kept)
 		task.spawn(DataService.Save, player)
 	end
+end
+
+-- a reward item straight into the backpack, shown like the Victory Chest
+function ItemService.GiveReward(player, minRarity, itemLevel)
+	local item = ItemService.Roll(itemLevel or 20, 2, minRarity)
+	local kept = addItem(player, item)
+	Remotes.VictoryChest:FireClient(player, item, kept)
+	task.spawn(DataService.Save, player)
 end
 
 -- picks up everything still lying around (end of a wave or game, leaving)
@@ -299,6 +309,7 @@ local function upgrade(player, id)
 	profile.Scrap -= scrap
 	item.plus = (item.plus or 0) + 1
 	item.new = nil
+	QuestService.Add(player, "Upgrade", 1)
 	DataService.Publish(player)
 	ItemService.ApplyBonuses(player)
 	sendInventory(player)

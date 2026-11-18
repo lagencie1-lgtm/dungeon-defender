@@ -45,4 +45,18 @@ if items and #items > 0 then
 	log("salvage", last.name, Remotes.SalvageGear:InvokeServer(last.id))
 end
 log("buy", Remotes.BuyItem:InvokeServer("Swords", "Baguette"))
+log("buy rebirth sword (should fail)", Remotes.BuyItem:InvokeServer("Swords", "Starforged"))
+for _ = 1, 3 do
+	local ok, pet = Remotes.HatchEgg:InvokeServer("ForestEgg")
+	log("hatch", ok, ok and pet.kind or pet)
+	if ok then
+		log("equip pet", Remotes.EquipPet:InvokeServer(pet.id))
+	end
+end
+log("quests", #Remotes.GetQuests:InvokeServer())
+log("claim quest 1", Remotes.ClaimQuest:InvokeServer(1))
+task.delay(200, function()
+	log("spend ascension", Remotes.SpendAscension:InvokeServer("Power"))
+	log("rebirth", Remotes.Rebirth:InvokeServer())
+end)
 log("daily", Remotes.ClaimDaily:InvokeServer())

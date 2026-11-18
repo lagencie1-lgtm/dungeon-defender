@@ -15,6 +15,8 @@ local State = require(script.Parent.State)
 local Clock = require(script.Parent.Clock)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
+local QuestService = require(script.Parent.QuestService)
+local PetService = require(script.Parent.PetService)
 
 local HeroService = {}
 local Hero = Config.Hero
@@ -53,7 +55,21 @@ local function pointsUsed(data)
 	return n
 end
 
--- adds gear + stat points together into the numbers the game uses
+local function ascensionOf(profile)
+	profile.Ascension = profile.Ascension or { Xp = 0, Points = 0, Spent = {} }
+	profile.Ascension.Spent = profile.Ascension.Spent or {}
+	return profile.Ascension
+end
+
+local function ascensionSpent(asc)
+	local n = 0
+	for _, v in asc.Spent do
+		n += v
+	end
+	return n
+end
+
+-- adds gear + stat points + pet + Ascension together into the numbers the game uses
 function HeroService.RefreshStats(player)
 	local data = heroData(player)
 	local points = data and data.Points or {}
@@ -61,11 +77,32 @@ function HeroService.RefreshStats(player)
 	for _, s in Config.StatPoints do
 		per[s.Id] = (points[s.Id] or 0) * s.Per
 	end
-	player:SetAttribute("BonusPower", (player:GetAttribute("GearPower") or 0) + per.Power)
-	player:SetAttribute("BonusCommand", (player:GetAttribute("GearCommand") or 0) + per.Command)
-	player:SetAttribute("BonusEngineering", (player:GetAttribute("GearEngineering") or 0) + per.Engineering)
-	player:SetAttribute("BonusCrit", player:GetAttribute("GearCrit") or 0)
-	player:SetAttribute("BonusGoldFind", player:GetAttribute("GearGoldFind") or 0)
+	local extra = { Power = 0, Command = 0, Engineering = 0, Crit = 0, GoldFind = 0 }
+	local pet = PetService.EquippedPet(player)
+	if pet then
+		local stat, value = PetService.BonusOf(pet)
+		if stat and extra[stat] then
+			extra[stat] += value
+		end
+	end
+	local profile = DataService.Get(player)
+	if profile then
+		local asc = ascensionOf(profile)
+		for _, perk in Config.AscensionPerks do
+			extra[perk.Id] += (asc.Spent[perk.Id] or 0) * perk.Per
+		end
+		player:SetAttribute("Rebirths", profile.Rebirths or 0)
+		player:SetAttribute("AscensionPoints", asc.Points - ascensionSpent(asc))
+		player:SetAttribute("AscensionXp", asc.Xp)
+		for _, perk in Config.AscensionPerks do
+			player:SetAttribute("Asc" .. perk.Id, asc.Spent[perk.Id] or 0)
+		end
+	end
+	player:SetAttribute("BonusPower", (player:GetAttribute("GearPower") or 0) + per.Power + extra.Power)
+	player:SetAttribute("BonusCommand", (player:GetAttribute("GearCommand") or 0) + per.Command + extra.Command)
+	player:SetAttribute("BonusEngineering", (player:GetAttribute("GearEngineering") or 0) + per.Engineering + extra.Engineering)
+	player:SetAttribute("BonusCrit", (player:GetAttribute("GearCrit") or 0) + extra.Crit)
+	player:SetAttribute("BonusGoldFind", (player:GetAttribute("GearGoldFind") or 0) + extra.GoldFind)
 	local level = data and data.Level or 1
 	local maxHealth = Config.HeroBaseHealth + per.Vitality + (level - 1) * 2
 	player:SetAttribute("HeroMaxHealth", maxHealth)
@@ -106,7 +143,21 @@ end
 
 function HeroService.AddXp(player, amount)
 	local data = heroData(player)
-	if not data or data.Level >= Config.HeroMaxLevel then
+	local profile = DataService.Get(player)
+	if not data or not profile then
+		return
+	end
+	amount *= 1 + (profile.Rebirths or 0) * Config.RebirthBonus / 100
+	if data.Level >= Config.HeroMaxLevel then
+		-- at the cap: xp fills the Ascension bar instead
+		local asc = ascensionOf(profile)
+		asc.Xp += amount
+		while asc.Xp >= Config.AscensionXp do
+			asc.Xp -= Config.AscensionXp
+			asc.Points += 1
+			Remotes.Notify:FireClient(player, "Ascension Point earned! Spend it in the Heroes screen", Color3.fromRGB(255, 220, 90))
+		end
+		HeroService.RefreshStats(player)
 		return
 	end
 	data.Xp += amount
@@ -310,7 +361,9 @@ local function giveNameTag(player, character)
 	local titleItem = Config.FindById(Config.Titles, player:GetAttribute("EquippedTitle") or "None")
 	gui:FindFirstChild("Title").Text = (titleItem and titleItem.Id ~= "None") and titleItem.Name or ""
 	local hero = Config.Heroes[player:GetAttribute("HeroId") or "Swordmaster"]
-	gui:FindFirstChild("Level").Text = player.DisplayName .. " · " .. hero.Name .. " " .. (player:GetAttribute("HeroLevel") or 1)
+	local rebirths = player:GetAttribute("Rebirths") or 0
+	gui:FindFirstChild("Level").Text = (rebirths > 0 and ("[R" .. rebirths .. "] ") or "") .. player.DisplayName .. " · "
+		.. hero.Name .. " " .. (player:GetAttribute("HeroLevel") or 1)
 end
 
 local function onCharacter(player, character)
@@ -343,6 +396,7 @@ local function ready(player, attr, cooldown)
 		return false
 	end
 	player:SetAttribute(attr, now + cooldown)
+	QuestService.Add(player, "Abilities", 1)
 	return true
 end
 
@@ -528,6 +582,9 @@ local function useAbility(player, slot)
 	if not root then
 		return
 	end
+	if State.Get("Mode") == "Pacifist" and State.Get("State") ~= "Lobby" then
+		return -- challenge: hands off!
+	end
 	local heroId = selectedId(player)
 	local ability = ABILITIES[heroId] and ABILITIES[heroId][slot]
 	if ability then
@@ -579,6 +636,43 @@ local function spendPoint(player, statId)
 	return true
 end
 
+-- Rebirth: a max-level hero goes back to level 1 for a permanent bonus
+local function rebirth(player)
+	local data = heroData(player)
+	local profile = DataService.Get(player)
+	if not data or not profile then
+		return false, "Still loading"
+	end
+	if data.Level < Config.HeroMaxLevel then
+		return false, "Reach level " .. Config.HeroMaxLevel .. " first"
+	end
+	if State.Get("State") == "Wave" then
+		return false, "Wait for the break between waves"
+	end
+	data.Level, data.Xp, data.Points = 1, 0, {}
+	profile.Rebirths = (profile.Rebirths or 0) + 1
+	profile.Owned.Swords.Starforged = true
+	DataService.Publish(player)
+	publish(player)
+	task.spawn(DataService.Save, player)
+	Remotes.Notify:FireAllClients(player.DisplayName .. " was reborn! (Rebirth " .. profile.Rebirths .. ")", Color3.fromRGB(255, 240, 160))
+	return true, profile.Rebirths
+end
+
+local function spendAscension(player, perkId)
+	local profile = DataService.Get(player)
+	if not profile or not Config.FindById(Config.AscensionPerks, perkId) then
+		return false, "Unknown perk"
+	end
+	local asc = ascensionOf(profile)
+	if asc.Points - ascensionSpent(asc) <= 0 then
+		return false, "No Ascension Points"
+	end
+	asc.Spent[perkId] = (asc.Spent[perkId] or 0) + 1
+	HeroService.RefreshStats(player)
+	return true
+end
+
 local function resetPoints(player)
 	local data = heroData(player)
 	local profile = DataService.Get(player)
@@ -615,6 +709,9 @@ function HeroService.Start()
 	Remotes.SelectHero.OnServerInvoke = selectHero
 	Remotes.SpendPoint.OnServerInvoke = spendPoint
 	Remotes.ResetPoints.OnServerInvoke = resetPoints
+	Remotes.Rebirth.OnServerInvoke = rebirth
+	Remotes.SpendAscension.OnServerInvoke = spendAscension
+	PetService.OnPetChanged = HeroService.RefreshStats
 
 	ItemService.OnGearChanged = HeroService.RefreshStats
 	table.insert(DataService.OnLoaded, function(player)
@@ -644,7 +741,7 @@ function HeroService.Start()
 				end
 			end)
 		end
-		for _, attr in { "EquippedTitle", "HeroLevel" } do
+		for _, attr in { "EquippedTitle", "HeroLevel", "Rebirths" } do
 			player:GetAttributeChangedSignal(attr):Connect(function()
 				if player.Character then
 					giveNameTag(player, player.Character)

@@ -94,7 +94,7 @@ local speedButton = button({ Size = UDim2.fromOffset(110, 44), BackgroundColor3 
 
 -- difficulty picker, only before the first wave
 local diffPanel = make("Frame", {
-	Size = UDim2.fromOffset(480, 92),
+	Size = UDim2.fromOffset(#Config.Difficulties * 156 + 12, 92),
 	Position = UDim2.new(0.5, 0, 0, 132),
 	AnchorPoint = Vector2.new(0.5, 0),
 	BackgroundColor3 = Ui.DARK,
@@ -421,7 +421,7 @@ local mapButton = button({ Size = UDim2.fromOffset(260, 60), BackgroundColor3 = 
 	Text = "Map", LayoutOrder = 2, Parent = lobbyBar })
 
 local mapPanel = make("Frame", {
-	Size = UDim2.fromOffset(560, 300),
+	Size = UDim2.fromOffset(560, 300 + #Config.Modes * 42 + 40),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -451,6 +451,34 @@ for i, mapId in Config.MapOrder do
 		mapPanel.Visible = false
 	end)
 end
+-- modes under the maps
+label({ Size = UDim2.new(1, -32, 0, 28), Position = UDim2.fromOffset(16, 290), Text = "Mode",
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = mapPanel })
+local modeButtons = {}
+for i, mode in Config.Modes do
+	local b = button({ Size = UDim2.new(1, -32, 0, 36), Position = UDim2.fromOffset(16, 322 + (i - 1) * 42), Text = "",
+		BackgroundColor3 = Ui.PANEL, ZIndex = 21, Parent = mapPanel })
+	label({ Size = UDim2.new(0.42, -10, 1, -10), Position = UDim2.fromOffset(10, 5), Text = mode.Name,
+		TextColor3 = mode.Challenge and Color3.fromRGB(255, 160, 90) or Color3.new(1, 1, 1),
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	label({ Size = UDim2.new(0.58, -10, 1, -12), Position = UDim2.new(0.42, 0, 0, 6), Text = mode.Text,
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	b.Activated:Connect(function()
+		Remotes.PickMode:FireServer(mode.Id)
+	end)
+	modeButtons[mode.Id] = b
+end
+local function refreshModes()
+	local current = GameState:GetAttribute("Mode") or "Campaign"
+	for id, b in modeButtons do
+		local st = b:FindFirstChildOfClass("UIStroke")
+		st.Color = id == current and Ui.GOLD or Color3.fromRGB(120, 90, 170)
+		st.Thickness = id == current and 4 or 2
+	end
+end
+GameState:GetAttributeChangedSignal("Mode"):Connect(refreshModes)
+refreshModes()
+
 mapButton.Activated:Connect(function()
 	mapPanel.Visible = not mapPanel.Visible
 end)
@@ -534,7 +562,8 @@ local function shopItems(kind)
 		end
 	elseif kind == "Swords" then
 		for _, s in Config.Swords do
-			table.insert(items, { Id = s.Id, Name = s.Name, Price = s.Price, Text = "A new look for your sword", Color = s.Color })
+			table.insert(items, { Id = s.Id, Name = s.Name, Price = s.Price, Color = s.Color, RebirthOnly = s.RebirthOnly,
+				Text = s.RebirthOnly and "Unlocked by your first Rebirth" or "A new look for your sword" })
 		end
 	else
 		for _, t in Config.Titles do
@@ -561,7 +590,9 @@ local function rowFor(kind, item, order)
 	local equippedId = kind == "Swords" and player:GetAttribute("EquippedSword")
 		or kind == "Titles" and player:GetAttribute("EquippedTitle") or nil
 	local text, color
-	if not isOwned then
+	if not isOwned and item.RebirthOnly then
+		text, color = "Rebirth reward", Color3.fromRGB(70, 70, 80)
+	elseif not isOwned then
 		text, color = "Buy " .. item.Price .. " gems", Color3.fromRGB(40, 120, 170)
 	elseif kind == "Towers" then
 		text, color = "Unlocked", Color3.fromRGB(60, 60, 70)
@@ -750,7 +781,8 @@ local function refreshTop()
 	lastGold = gold
 
 	local wave = GameState:GetAttribute("Wave") or 0
-	waveLabel.Text = "Wave " .. wave .. "/" .. (GameState:GetAttribute("MaxWave") or 10)
+	local maxWave = GameState:GetAttribute("MaxWave") or 10
+	waveLabel.Text = maxWave == 0 and ("Wave " .. wave .. " (Endless)") or ("Wave " .. wave .. "/" .. maxWave)
 	if wave > lastWave and wave > 0 then
 		local maxWave = GameState:GetAttribute("MaxWave") or 10
 		showBanner(wave == maxWave and "FINAL WAVE" or "WAVE " .. wave, GameState:GetAttribute("WaveTitle") or "",
@@ -828,7 +860,9 @@ local function refreshTop()
 	if inLobby then
 		local mapInfo = Config.Maps[mapId] or Config.Maps.CursedForest
 		waveLabel.Text = "The Outpost"
+		local modeInfo = Config.FindById(Config.Modes, GameState:GetAttribute("Mode") or "Campaign")
 		stateLabel.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
+			.. (modeInfo and modeInfo.Id ~= "Campaign" and (" · " .. modeInfo.Name) or "")
 		mapButton.Text = "Map: " .. mapInfo.Name
 	elseif s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"

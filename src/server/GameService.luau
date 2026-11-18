@@ -15,6 +15,16 @@ local LootService = require(script.Parent.LootService)
 local ItemService = require(script.Parent.ItemService)
 local Effects = require(script.Parent.Effects)
 local MapBuilder = require(script.Parent.MapBuilder)
+local QuestService = require(script.Parent.QuestService)
+local PetService = require(script.Parent.PetService)
+local DataStoreService = game:GetService("DataStoreService")
+
+-- the global Endless leaderboard (only works in the real game or with API access on)
+local endlessBoard = nil
+pcall(function()
+	endlessBoard = DataStoreService:GetOrderedDataStore("EndlessBestWave_v1")
+end)
+local globalTop = {} -- lines for the trophy wall
 local Sound = require(script.Parent.Sound)
 
 local GameService = {}
@@ -52,6 +62,13 @@ local function onKilled(enemy, player)
 		LootService.DropGems(enemy.position, math.max(1, math.floor(stats.Gems * difficulty().Gems + 0.5)))
 	end
 	ItemService.OnEnemyKilled(enemy, State.Get("Difficulty"), State.Get("Wave") or 1)
+	QuestService.AddAll("Kills", 1)
+	PetService.AddXpAll(1)
+	if stats.Boss then
+		QuestService.AddAll("Boss", 1)
+	elseif stats.Loot then
+		QuestService.AddAll("LootGoblin", 1)
+	end
 	if stats.Boss then
 		notify("The " .. stats.DisplayName .. " has been absolutely bonked!", Color3.fromRGB(255, 220, 90))
 		ItemService.VictoryChest(State.Get("Difficulty"))
@@ -100,11 +117,48 @@ function GameService.EndGame(won)
 		-- gold (kept between games) for the upgrades at the blacksmith
 		local goldFind = (player:GetAttribute("BonusGoldFind") or 0) / 100
 		local gold = math.floor((cleared * Config.GoldPerWave + (State.Get("Kills") or 0) * Config.GoldPerKill)
-			* diff.Gems * mapInfo.Gems * (1 + goldFind))
+			* diff.Gems * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100))
 		DataService.AddGold(player, gold)
 		player:SetAttribute("LastGold", gold)
 		DataService.RecordGame(player, cleared, won, State.Get("Kills") or 0)
 		player:SetAttribute("LastReward", reward)
+	end
+	local mode = State.Get("Mode") or "Campaign"
+	local modeInfo = Config.FindById(Config.Modes, mode)
+	for _, player in Players:GetPlayers() do
+		local profile = DataService.Get(player)
+		if won then
+			QuestService.Add(player, "Win", 1)
+			if diff.Id == "Hard" or diff.Id == "Nightmare" then
+				QuestService.Add(player, "WinHard", 1)
+			end
+		end
+		if profile and mode == "Endless" then
+			if cleared > (profile.BestEndless or 0) then
+				profile.BestEndless = cleared
+				Remotes.Notify:FireClient(player, "New Endless record: wave " .. cleared .. "!", Color3.fromRGB(255, 220, 90))
+			end
+			player:SetAttribute("BestEndless", profile.BestEndless)
+			task.spawn(function()
+				pcall(function()
+					endlessBoard:UpdateAsync(tostring(player.UserId), function(old)
+						return math.max(old or 0, cleared)
+					end)
+				end)
+			end)
+		end
+		-- first clear of a challenge on this map: gems and an Epic or better item
+		if profile and won and modeInfo and modeInfo.Challenge then
+			profile.ChallengesDone = profile.ChallengesDone or {}
+			local key = (State.Get("Map") or "") .. "_" .. mode
+			if not profile.ChallengesDone[key] then
+				profile.ChallengesDone[key] = true
+				DataService.AddGems(player, Config.ChallengeReward.Gems)
+				ItemService.GiveReward(player, Config.ChallengeReward.MinRarity, 24 + mapInfo.ItemLevel)
+				Remotes.Notify:FireClient(player, "Challenge beaten for the first time! +" .. Config.ChallengeReward.Gems .. " gems",
+					Color3.fromRGB(255, 220, 90))
+			end
+		end
 	end
 	GameService.UpdateTrophies()
 	State.Set("EndMeme", Memes.Pick(won and Memes.Win or Memes.Lose))
@@ -117,8 +171,14 @@ end
 
 local function runGame(myRun)
 	local waves = Config.Waves
-	State.Set("MaxWave", #waves)
-	for wave = 1, #waves do
+	local endless = State.Get("Mode") == "Endless"
+	State.Set("MaxWave", endless and 0 or #waves)
+	local wave = 0
+	while true do
+		wave += 1
+		if wave > #waves and not endless then
+			break
+		end
 		-- break before the wave: build and upgrade defenders
 		State.Set("State", "Break")
 		skipBreak = false
@@ -134,6 +194,16 @@ local function runGame(myRun)
 
 		-- the wave itself
 		local waveInfo = waves[wave]
+		if not waveInfo then
+			-- Endless: the map's waves again, with more enemies every round
+			local base = waves[(wave - 1) % #waves + 1]
+			local round = (wave - 1) // #waves
+			waveInfo = { Title = "Endless wave " .. wave .. ": " .. (base.Title or "") }
+			for _, group in ipairs(base) do
+				table.insert(waveInfo, { Enemy = group.Enemy, Gap = group.Gap / (1 + round * 0.3),
+					Count = Config.Enemies[group.Enemy].Boss and group.Count or math.ceil(group.Count * (1 + round * 0.5)) })
+			end
+		end
 		State.Set("Wave", wave)
 		State.Set("WaveTitle", waveInfo.Title or "")
 		State.Set("State", "Wave")
@@ -168,6 +238,7 @@ local function runGame(myRun)
 		local bonus = Config.WaveBonusGold + wave * 10
 		State.AddGold(bonus)
 		ItemService.CollectAllPlayers()
+		QuestService.AddAll("Waves", 1)
 		notify("Wave " .. wave .. " cleared! +" .. bonus .. " mana", Color3.fromRGB(120, 255, 120))
 	end
 	GameService.EndGame(true)
@@ -197,11 +268,37 @@ function GameService.UpdateTrophies()
 		return a.best > b.best
 	end)
 	local lines = {}
-	for i = 1, math.min(6, #list) do
+	for i = 1, math.min(4, #list) do
 		local e = list[i]
 		table.insert(lines, i .. ". " .. e.name .. "  ·  " .. e.wins .. " wins  ·  best wave " .. e.best)
 	end
+	if #globalTop > 0 then
+		table.insert(lines, "")
+		table.insert(lines, "ENDLESS · BEST IN THE WORLD")
+		for _, line in globalTop do
+			table.insert(lines, line)
+		end
+	end
 	MapBuilder.UpdateTrophies(lines)
+end
+
+-- reads the top 5 of the Endless leaderboard (in the background)
+local function refreshGlobalTop()
+	if not endlessBoard then
+		return
+	end
+	pcall(function()
+		local page = endlessBoard:GetSortedAsync(false, 5):GetCurrentPage()
+		local lines = {}
+		for i, entry in page do
+			local name = entry.key
+			pcall(function()
+				name = Players:GetNameFromUserIdAsync(tonumber(entry.key))
+			end)
+			table.insert(lines, i .. ". " .. name .. "  ·  wave " .. entry.value)
+		end
+		globalTop = lines
+	end)
 end
 
 -- back to the hub: pick a map, a hero, upgrade gear, then start a run
@@ -228,11 +325,13 @@ function GameService.StartRun()
 	MapBuilder.BuildBattlefield(mapId)
 	EnemyService.SetPath()
 	State.Set("Gold", Config.StartGold)
-	State.Set("PortalHealth", Config.PortalHealth)
-	State.Set("MaxPortalHealth", Config.PortalHealth)
+	local modeInfo = Config.FindById(Config.Modes, State.Get("Mode") or "Campaign")
+	local portalHealth = modeInfo and modeInfo.PortalHealth or Config.PortalHealth
+	State.Set("PortalHealth", portalHealth)
+	State.Set("MaxPortalHealth", portalHealth)
 	State.Set("Wave", 0)
 	State.Set("WaveTitle", "")
-	State.Set("MaxWave", #Config.Waves)
+	State.Set("MaxWave", State.Get("Mode") == "Endless" and 0 or #Config.Waves)
 	State.Set("Kills", 0)
 	State.Set("NextWaveIn", 0)
 	State.Set("EndMeme", "")
@@ -245,7 +344,8 @@ function GameService.StartRun()
 		player:SetAttribute("LastReward", 0)
 		MapBuilder.Teleport(player, "Battle")
 	end
-	notify("To the " .. Config.Maps[mapId].Name .. "! Build your defenders.", Color3.fromRGB(200, 200, 255))
+	notify("To the " .. Config.Maps[mapId].Name .. "! " .. (modeInfo and modeInfo.Text or "Build your defenders."),
+		Color3.fromRGB(200, 200, 255))
 	task.spawn(runGame, runId)
 end
 
@@ -287,6 +387,13 @@ function GameService.Start()
 			notify(player.DisplayName .. " picked the " .. mapInfo.Name, mapInfo.Color)
 		end
 	end)
+	Remotes.PickMode.OnServerEvent:Connect(function(player, modeId)
+		local modeInfo = Config.FindById(Config.Modes, modeId)
+		if modeInfo and State.Get("State") == "Lobby" and State.Get("Mode") ~= modeId then
+			State.Set("Mode", modeId)
+			notify(player.DisplayName .. " picked " .. modeInfo.Name, Color3.fromRGB(200, 200, 255))
+		end
+	end)
 	Remotes.PlayAgain.OnServerEvent:Connect(function()
 		if isOver() then
 			GameService.ToOutpost()
@@ -298,6 +405,14 @@ function GameService.Start()
 
 	State.Set("Difficulty", "Normal")
 	State.Set("Map", "CursedForest")
+	State.Set("Mode", "Campaign")
+	task.spawn(function()
+		while true do
+			refreshGlobalTop()
+			GameService.UpdateTrophies()
+			task.wait(120)
+		end
+	end)
 	MapBuilder.BuildOutpost(onPrompt)
 	MapBuilder.BuildBattlefield("CursedForest")
 	-- new players start in the hub, or join the run that's going on

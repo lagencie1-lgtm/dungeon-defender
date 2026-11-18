@@ -6,8 +6,10 @@ local RunService = game:GetService("RunService")
 local EVENTS = {
 	"StartWave", "HeroAttack", "HeroWhirlwind", "HeroLeap", "PlayAgain", "Notify",
 	"SetSpeed", "PickDifficulty",
+	"LootDrop", "LootPicked", "PickupLoot", "VictoryChest", "Inventory", "SeenGear",
 }
-local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily" }
+local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
+	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory" }
 
 local Remotes = {}
 

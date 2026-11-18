@@ -65,8 +65,8 @@ local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fro
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
 local stateLabel = label({ Size = UDim2.fromOffset(180, 20), Position = UDim2.fromOffset(14, 38), Text = "",
 	TextColor3 = Ui.TEXT_DIM, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-local goldLabel = label({ Size = UDim2.fromOffset(150, 36), Position = UDim2.fromOffset(200, 14), Text = "200 gold",
-	TextColor3 = Ui.GOLD, Parent = top })
+local goldLabel = label({ Size = UDim2.fromOffset(150, 36), Position = UDim2.fromOffset(200, 14), Text = "200 mana",
+	TextColor3 = Ui.MANA, Parent = top })
 label({ Size = UDim2.fromOffset(220, 16), Position = UDim2.fromOffset(366, 6), Text = "Portal",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 170, 255), Parent = top })
 local portalBack = make("Frame", { Size = UDim2.fromOffset(220, 24), Position = UDim2.fromOffset(366, 26),
@@ -277,8 +277,8 @@ for i, towerType in Config.TowerOrder do
 	make("Frame", { Size = UDim2.new(1, -16, 0, 6), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = info.Color,
 		Parent = b }, { corner(3) })
 	label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 18), Text = info.DisplayName, Parent = b })
-	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40), Text = info.Cost .. " gold",
-		TextColor3 = Ui.GOLD, Parent = b })
+	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40), Text = info.Cost .. " mana",
+		TextColor3 = Ui.MANA, Parent = b })
 	label({ Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 62), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = b })
 	if not isTouch then
@@ -678,7 +678,7 @@ local combo, lastKillTime, comboStep = 0, 0, 0
 
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
-	goldLabel.Text = math.floor(gold) .. " gold"
+	goldLabel.Text = math.floor(gold) .. " mana"
 	if gold > lastGold then
 		Ui.pop(goldLabel, 1.15)
 	end
@@ -789,7 +789,7 @@ local function refreshTop()
 		t.lock.Visible = not unlocked
 		local affordable = gold >= Config.Towers[towerType].Cost
 		t.button.BackgroundColor3 = (affordable and unlocked) and Ui.PANEL or Color3.fromRGB(45, 40, 45)
-		t.cost.TextColor3 = affordable and Ui.GOLD or Ui.BAD
+		t.cost.TextColor3 = affordable and Ui.MANA or Ui.BAD
 	end
 end
 GameState.AttributeChanged:Connect(refreshTop)
@@ -843,7 +843,7 @@ RunService.RenderStepped:Connect(function()
 	local function fill(shade, attr, cooldown)
 		shade.Size = UDim2.fromScale(1, math.clamp(((player:GetAttribute(attr) or 0) - now) / cooldown, 0, 1))
 	end
-	fill(attackShade, "AttackReadyAt", Config.Hero.Attack.Cooldown)
+	fill(attackShade, "AttackReadyAt", player:GetAttribute("AttackCooldown") or Config.Hero.Attack.Cooldown)
 	fill(whirlShade, "WhirlwindReadyAt", Config.Hero.Whirlwind.Cooldown)
 	fill(leapShade, "LeapReadyAt", Config.Hero.Leap.Cooldown)
 end)
@@ -937,7 +937,7 @@ local function startPlacing(towerType)
 		return
 	end
 	if (GameState:GetAttribute("Gold") or 0) < info.Cost then
-		showMessage("Not enough gold for a " .. info.DisplayName, Ui.BAD)
+		showMessage("Not enough mana for a " .. info.DisplayName, Ui.BAD)
 		return
 	end
 	placing = towerType
@@ -1036,13 +1036,13 @@ local function refreshInfo()
 	local nextLevel = info.Levels[level + 1]
 	if nextLevel then
 		local gold = GameState:GetAttribute("Gold") or 0
-		upgradeButton.Text = "Upgrade (" .. nextLevel.Cost .. " gold)"
+		upgradeButton.Text = "Upgrade (" .. nextLevel.Cost .. " mana)"
 		upgradeButton.BackgroundColor3 = gold >= nextLevel.Cost and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
 	else
 		upgradeButton.Text = "Max level"
 		upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 	end
-	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " gold)"
+	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " mana)"
 	if rangeCircle then
 		rangeCircle:Destroy()
 	end

@@ -30,6 +30,10 @@ local function defaultProfile()
 		Equipped = { Sword = "Classic", Title = "None" },
 		DailyLast = 0,
 		DailyStreak = 0,
+		Gold = 0, -- earned only by playing, never bought
+		Scrap = 0, -- from salvaging gear
+		Items = {}, -- the backpack: a list of items (see shared/Items)
+		Gear = {}, -- [slot] = id of the equipped item
 	}
 end
 
@@ -40,6 +44,9 @@ local function fixUp(data)
 		if data[k] == nil then
 			data[k] = v
 		end
+	end
+	if type(data.Gear) ~= "table" then
+		data.Gear = {}
 	end
 	for k, v in fresh.Owned do
 		if type(data.Owned[k]) ~= "table" then
@@ -63,6 +70,8 @@ local function publish(player)
 	player:SetAttribute("EquippedTitle", p.Equipped.Title)
 	player:SetAttribute("DailyStreak", p.DailyStreak)
 	player:SetAttribute("DailyNextAt", p.DailyLast + Config.DailyCooldownHours * 3600)
+	player:SetAttribute("Gold", p.Gold)
+	player:SetAttribute("Scrap", p.Scrap)
 
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
@@ -100,6 +109,9 @@ local function load(player)
 	profiles[player] = fixUp(type(data) == "table" and data or defaultProfile())
 	makeLeaderstats(player)
 	publish(player)
+	for _, callback in DataService.OnLoaded do
+		task.spawn(callback, player, profiles[player])
+	end
 	if player:GetAttribute("SavesOff") then
 		task.delay(4, function()
 			Remotes.Notify:FireClient(player, "Saving is off in Studio (turn on API access to save gems)", Color3.fromRGB(200, 200, 200))
@@ -109,12 +121,38 @@ end
 
 local function save(player)
 	local p = profiles[player]
-	if not p or player:GetAttribute("SavesOff") or not store then
+	if not p then
+		return
+	end
+	for _, callback in DataService.BeforeSave do
+		pcall(callback, player, p)
+	end
+	if player:GetAttribute("SavesOff") or not store then
 		return
 	end
 	pcall(function()
 		store:SetAsync("player_" .. player.UserId, p)
 	end)
+end
+
+DataService.OnLoaded = {} -- functions called with (player, profile) once a profile is loaded
+DataService.BeforeSave = {} -- functions called with (player, profile) just before saving
+
+function DataService.Publish(player)
+	publish(player)
+end
+
+function DataService.Save(player)
+	save(player)
+end
+
+function DataService.AddGold(player, amount)
+	local p = profiles[player]
+	if not p or amount <= 0 then
+		return
+	end
+	p.Gold += math.floor(amount)
+	publish(player)
 end
 
 function DataService.Get(player)
@@ -236,6 +274,7 @@ function DataService.Start()
 		task.spawn(load, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		player:SetAttribute("Leaving", true)
 		save(player)
 		profiles[player] = nil
 	end)
@@ -244,10 +283,10 @@ function DataService.Start()
 			save(player)
 		end
 	end)
-	-- save everyone every 2 minutes, just in case
+	-- save everyone every minute, just in case
 	task.spawn(function()
 		while true do
-			task.wait(120)
+			task.wait(60)
 			for _, player in Players:GetPlayers() do
 				save(player)
 			end

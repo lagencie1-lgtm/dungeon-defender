@@ -12,6 +12,7 @@ local TowerService = require(script.Parent.TowerService)
 local HeroService = require(script.Parent.HeroService)
 local DataService = require(script.Parent.DataService)
 local LootService = require(script.Parent.LootService)
+local ItemService = require(script.Parent.ItemService)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 
@@ -37,7 +38,7 @@ local function onKilled(enemy, player)
 	local stats = enemy.stats
 	State.AddGold(stats.Gold)
 	State.Set("Kills", (State.Get("Kills") or 0) + 1)
-	Effects.Text(enemy.position + Vector3.new(0, stats.Size + 2, 0), "+" .. stats.Gold, Color3.fromRGB(255, 215, 0))
+	Effects.Text(enemy.position + Vector3.new(0, stats.Size + 2, 0), "+" .. stats.Gold, Color3.fromRGB(170, 150, 255))
 	if player then
 		HeroService.AddXp(player, stats.Xp)
 	else
@@ -49,8 +50,10 @@ local function onKilled(enemy, player)
 	if stats.Gems and math.random() < (stats.GemChance or 0) then
 		LootService.DropGems(enemy.position, math.max(1, math.floor(stats.Gems * difficulty().Gems + 0.5)))
 	end
+	ItemService.OnEnemyKilled(enemy, State.Get("Difficulty"), State.Get("Wave") or 1)
 	if stats.Boss then
 		notify("The " .. stats.DisplayName .. " has been absolutely bonked!", Color3.fromRGB(255, 220, 90))
+		ItemService.VictoryChest(State.Get("Difficulty"))
 	elseif stats.Loot then
 		notify("Loot Goblin caught! Grab the gems!", Color3.fromRGB(120, 230, 255))
 	end
@@ -89,8 +92,15 @@ function GameService.EndGame(won)
 	local cleared = won and wave or math.max(0, wave - 1)
 	local diff = difficulty()
 	local reward = math.floor((cleared * Config.GemsPerWave + (won and Config.GemsForWin or 0)) * diff.Gems + 0.5)
+	ItemService.CollectAllPlayers()
 	for _, player in Players:GetPlayers() do
 		DataService.AddGems(player, reward)
+		-- gold (kept between games) for the upgrades at the blacksmith
+		local goldFind = (player:GetAttribute("BonusGoldFind") or 0) / 100
+		local gold = math.floor((cleared * Config.GoldPerWave + (State.Get("Kills") or 0) * Config.GoldPerKill)
+			* diff.Gems * (1 + goldFind))
+		DataService.AddGold(player, gold)
+		player:SetAttribute("LastGold", gold)
 		DataService.RecordGame(player, cleared, won, State.Get("Kills") or 0)
 		player:SetAttribute("LastReward", reward)
 	end
@@ -151,7 +161,8 @@ local function runGame(myRun)
 
 		local bonus = Config.WaveBonusGold + wave * 10
 		State.AddGold(bonus)
-		notify("Wave " .. wave .. " cleared! +" .. bonus .. " gold", Color3.fromRGB(120, 255, 120))
+		ItemService.CollectAllPlayers()
+		notify("Wave " .. wave .. " cleared! +" .. bonus .. " mana", Color3.fromRGB(120, 255, 120))
 	end
 	GameService.EndGame(true)
 end

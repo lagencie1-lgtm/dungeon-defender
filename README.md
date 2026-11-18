@@ -31,6 +31,17 @@ The scripts live in `src/` as normal files. Rojo copies them into Roblox Studio 
 
 Saving gems in Studio needs: Game Settings > Security > Enable Studio Access to API Services (after publishing once).
 
+## Loot (roadmap phase 1)
+
+- Goblins sometimes drop gear for you (everyone gets their own drops). Walk over it to pick it up. Rare and better drops have a light beam.
+- The Goblin King always gives a **Victory Chest** with a Rare or better item.
+- 6 rarities: Common, Uncommon, Rare, Epic, Legendary, Mythic. 5 slots: Weapon, Helmet, Armor, Boots, Trinket.
+- Stats: Power (hero damage), Command (your defenders' damage), Engineering (your defenders' speed and range), Crit, Gold Find.
+- Weapons change the sword hit: Longsword (balanced), Greatsword (slow, hits a crowd), Twin Blades (very fast, one goblin).
+- **Backpack** (button or I): equip, compare, upgrade +1 to +10 with **gold**, salvage into **scrap** (needed from +8).
+- Gold is earned at the end of every run and kept. The building money during a run is now called **mana**.
+- Harder difficulty = better items.
+
 ## Publish without Studio
 
 Put the game's ids in `scripts/publish.json` and your Open Cloud API key in `tools/roblox-api-key.txt`, then run

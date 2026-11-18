@@ -202,6 +202,10 @@ Config.DailyRewards = { 20, 30, 40, 50, 60, 80, 150 }
 Config.DailyCooldownHours = 20 -- how long until you can claim again
 Config.DailyStreakHours = 48 -- miss it longer than this and the streak resets
 
+-- gold (kept between games, spent on gear upgrades) at the end of a game
+Config.GoldPerWave = 25
+Config.GoldPerKill = 1
+
 -- gems at the end of a game
 Config.GemsPerWave = 3
 Config.GemsForWin = 40

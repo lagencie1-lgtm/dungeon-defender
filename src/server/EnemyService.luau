@@ -243,7 +243,7 @@ end
 
 -- player is optional: who hit it (the hero), for xp.
 -- showNumber shows a floating damage number.
-function EnemyService.Damage(enemy, amount, player, showNumber)
+function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	if enemy.dead then
 		return
 	end
@@ -254,9 +254,10 @@ function EnemyService.Damage(enemy, amount, player, showNumber)
 		enemy.flashUntil = Clock.now + 0.08 -- quick white flash
 	end
 	if showNumber then
-		local big = amount >= 60
+		local big = amount >= 60 or crit
+		local color = crit and Color3.fromRGB(255, 230, 60) or big and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(255, 255, 255)
 		Effects.Text(enemy.position + Vector3.new(math.random() * 2 - 1, enemy.stats.Size * 1.3, 0),
-			tostring(math.floor(amount)), big and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(255, 255, 255), big and 1.4 or 0.8)
+			(crit and "CRIT " or "") .. tostring(math.floor(amount)), color, big and 1.4 or 0.8)
 	end
 	if enemy.health <= 0 then
 		kill(enemy, player)

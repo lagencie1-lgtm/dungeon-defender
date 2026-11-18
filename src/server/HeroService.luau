@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage.Shared.Config)
+local Items = require(ReplicatedStorage.Shared.Items)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local EnemyService = require(script.Parent.EnemyService)
 local Effects = require(script.Parent.Effects)
@@ -15,9 +16,19 @@ local Hero = Config.Hero
 
 local rainbowBlades = {} -- blades that cycle through colours
 
+-- hero damage: level, gear Power, and a chance to crit (double damage)
 local function damageFor(player, base)
 	local level = player:GetAttribute("HeroLevel") or 1
-	return base * (1 + (level - 1) * Hero.DamagePerLevel)
+	local power = (player:GetAttribute("BonusPower") or 0) / 100
+	local damage = base * (1 + (level - 1) * Hero.DamagePerLevel) * (1 + power)
+	if math.random() * 100 < (player:GetAttribute("BonusCrit") or 0) then
+		return damage * 2, true
+	end
+	return damage, false
+end
+
+local function weaponOf(player)
+	return Items.WeaponTypes[player:GetAttribute("WeaponType") or "Longsword"] or Items.WeaponTypes.Longsword
 end
 
 local function rootOf(player)
@@ -63,7 +74,52 @@ function HeroService.Reset(player)
 	player:SetAttribute("LeapReadyAt", 0)
 end
 
--- the sword in the right hand, in the look the player picked in the shop
+-- one sword (blade + hilt) welded to a hand
+local function makeBlade(character, hand, skin, color, length, thick)
+	local blade = Instance.new("Part")
+	blade.Name = "HeroSword"
+	blade.CanCollide = false
+	blade.CanQuery = false
+	blade.Massless = true
+	blade.Color = color
+	if skin.Baguette then
+		blade.Shape = Enum.PartType.Cylinder
+		blade.Size = Vector3.new(length + 0.5, 0.9 * thick, 0.9 * thick)
+		blade.Material = Enum.Material.Sand
+	else
+		blade.Size = Vector3.new(0.3 * thick, 0.3 * thick, length)
+		blade.Material = Enum.Material.Neon
+	end
+	local hilt = Instance.new("Part")
+	hilt.Name = "HeroSwordHilt"
+	hilt.Size = Vector3.new(1.2 * thick, 0.3, 0.3)
+	hilt.Color = Color3.fromRGB(120, 80, 40)
+	hilt.CanCollide = false
+	hilt.CanQuery = false
+	hilt.Massless = true
+	hilt.Transparency = skin.Baguette and 1 or 0
+
+	local grip = hand.CFrame * CFrame.new(0, -hand.Size.Y / 2, 0)
+	hilt.CFrame = grip
+	if skin.Baguette then
+		blade.CFrame = grip * CFrame.new(0, 0, -length / 2 - 0.2) * CFrame.Angles(0, math.pi / 2, 0)
+	else
+		blade.CFrame = grip * CFrame.new(0, 0, -length / 2 - 0.2)
+	end
+	for _, p in { blade, hilt } do
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = hand
+		weld.Part1 = p
+		weld.Parent = p
+		p.Parent = character
+	end
+	if skin.Rainbow then
+		rainbowBlades[blade] = true
+	end
+end
+
+-- the sword(s): shape from the equipped weapon type, colour from the shop skin
+-- (the Classic skin glows in the weapon's rarity colour)
 local function giveSword(player, character)
 	for _, old in character:GetChildren() do
 		if old.Name == "HeroSword" or old.Name == "HeroSwordHilt" then
@@ -76,46 +132,22 @@ local function giveSword(player, character)
 		return
 	end
 	local skin = Config.FindById(Config.Swords, player:GetAttribute("EquippedSword") or "Classic") or Config.Swords[1]
-
-	local blade = Instance.new("Part")
-	blade.Name = "HeroSword"
-	blade.CanCollide = false
-	blade.CanQuery = false
-	blade.Massless = true
-	blade.Color = skin.Color
-	if skin.Baguette then
-		blade.Shape = Enum.PartType.Cylinder
-		blade.Size = Vector3.new(5, 0.9, 0.9)
-		blade.Material = Enum.Material.Sand
+	local color = skin.Color
+	local rarity = Items.Rarities[player:GetAttribute("WeaponRarity") or 0]
+	if skin.Id == "Classic" and rarity then
+		color = rarity.Color
+	end
+	local weaponType = player:GetAttribute("WeaponType") or "Longsword"
+	if weaponType == "Greatsword" then
+		makeBlade(character, hand, skin, color, 6.5, 1.8)
+	elseif weaponType == "TwinBlades" then
+		makeBlade(character, hand, skin, color, 3.2, 0.9)
+		local left = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+		if left then
+			makeBlade(character, left, skin, color, 3.2, 0.9)
+		end
 	else
-		blade.Size = Vector3.new(0.3, 0.3, 4.5)
-		blade.Material = Enum.Material.Neon
-	end
-	local hilt = Instance.new("Part")
-	hilt.Name = "HeroSwordHilt"
-	hilt.Size = Vector3.new(1.2, 0.3, 0.3)
-	hilt.Color = Color3.fromRGB(120, 80, 40)
-	hilt.CanCollide = false
-	hilt.CanQuery = false
-	hilt.Massless = true
-	hilt.Transparency = skin.Baguette and 1 or 0
-
-	local grip = hand.CFrame * CFrame.new(0, -hand.Size.Y / 2, 0)
-	hilt.CFrame = grip
-	if skin.Baguette then
-		blade.CFrame = grip * CFrame.new(0, 0, -2.4) * CFrame.Angles(0, math.pi / 2, 0)
-	else
-		blade.CFrame = grip * CFrame.new(0, 0, -2.4)
-	end
-	for _, p in { blade, hilt } do
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = hand
-		weld.Part1 = p
-		weld.Parent = p
-		p.Parent = character
-	end
-	if skin.Rainbow then
-		rainbowBlades[blade] = true
+		makeBlade(character, hand, skin, color, 4.5, 1)
 	end
 end
 
@@ -179,17 +211,19 @@ local function attack(player)
 	if not root then
 		return
 	end
-	player:SetAttribute("AttackReadyAt", now + Hero.Attack.Cooldown)
-	local front = root.Position + root.CFrame.LookVector * (Hero.Attack.Range * 0.5)
-	Effects.Burst(front, 3.5, Color3.fromRGB(200, 220, 255), 0.2, 0.5)
+	local weapon = weaponOf(player)
+	player:SetAttribute("AttackReadyAt", now + weapon.Cooldown)
+	player:SetAttribute("AttackCooldown", weapon.Cooldown)
+	local front = root.Position + root.CFrame.LookVector * (weapon.Range * 0.5)
+	Effects.Burst(front, weapon.Range * 0.35, Color3.fromRGB(200, 220, 255), 0.2, 0.5)
 	Sound.Play("Swing", root.Position)
-	local damage = damageFor(player, Hero.Attack.Damage)
-	-- hits the goblins in front of the hero, up to 3 at once
+	-- hits the goblins in front of the hero (how many depends on the weapon)
 	local hits = 0
-	for _, e in EnemyService.InRange(front, Hero.Attack.Range * 0.6) do
-		EnemyService.Damage(e, damage, player, true)
+	for _, e in EnemyService.InRange(front, weapon.Range * 0.6) do
+		local damage, crit = damageFor(player, Hero.Attack.Damage * weapon.Damage)
+		EnemyService.Damage(e, damage, player, true, crit)
 		hits += 1
-		if hits >= 3 then
+		if hits >= weapon.Targets then
 			break
 		end
 	end
@@ -208,9 +242,9 @@ local function whirlwind(player)
 	Effects.Ring(root.Position - Vector3.new(0, 2.5, 0), Hero.Whirlwind.Radius, Color3.fromRGB(200, 220, 255), 0.45)
 	Effects.Burst(root.Position, Hero.Whirlwind.Radius * 0.6, Color3.fromRGB(220, 230, 255), 0.35, 0.6)
 	Sound.Play("Swing", root.Position)
-	local damage = damageFor(player, Hero.Whirlwind.Damage)
 	for _, e in EnemyService.InRange(root.Position, Hero.Whirlwind.Radius) do
-		EnemyService.Damage(e, damage, player, true)
+		local damage, crit = damageFor(player, Hero.Whirlwind.Damage)
+		EnemyService.Damage(e, damage, player, true, crit)
 	end
 end
 
@@ -237,9 +271,9 @@ local function leap(player)
 		Effects.Burst(ground, Hero.Leap.Radius * 0.7, Color3.fromRGB(255, 220, 160), 0.3, 0.5)
 		Sound.Play("Land", ground)
 		Sound.Play("Explosion", ground)
-		local damage = damageFor(player, Hero.Leap.Damage)
 		for _, e in EnemyService.InRange(ground, Hero.Leap.Radius) do
-			EnemyService.Damage(e, damage, player, true)
+			local damage, crit = damageFor(player, Hero.Leap.Damage)
+			EnemyService.Damage(e, damage, player, true, crit)
 			if not e.stats.Boss then
 				EnemyService.Freeze(e, 0.6) -- stunned
 			end
@@ -261,11 +295,13 @@ function HeroService.Start()
 			task.spawn(onCharacter, player, player.Character)
 		end
 		-- new look picked in the shop: swap the sword / title right away
-		player:GetAttributeChangedSignal("EquippedSword"):Connect(function()
-			if player.Character then
-				giveSword(player, player.Character)
-			end
-		end)
+		for _, attr in { "EquippedSword", "WeaponType", "WeaponRarity" } do
+			player:GetAttributeChangedSignal(attr):Connect(function()
+				if player.Character then
+					giveSword(player, player.Character)
+				end
+			end)
+		end
 		for _, attr in { "EquippedTitle", "HeroLevel" } do
 			player:GetAttributeChangedSignal(attr):Connect(function()
 				if player.Character then

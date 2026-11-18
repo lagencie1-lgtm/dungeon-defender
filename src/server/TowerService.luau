@@ -169,7 +169,7 @@ function TowerService.Place(player, towerType, position)
 		return false, reason
 	end
 	if not State.TrySpend(info.Cost) then
-		return false, "Not enough gold"
+		return false, "Not enough mana"
 	end
 
 	local model = Instance.new("Model")
@@ -194,6 +194,7 @@ function TowerService.Place(player, towerType, position)
 		end
 	end
 	towers[model] = {
+		owner = player,
 		type = towerType,
 		level = 1,
 		spent = info.Cost,
@@ -220,7 +221,7 @@ function TowerService.Upgrade(_player, model)
 		return false, "Already at max level"
 	end
 	if not State.TrySpend(nextLevel.Cost) then
-		return false, "Not enough gold"
+		return false, "Not enough mana"
 	end
 	t.level += 1
 	t.spent += nextLevel.Cost
@@ -254,7 +255,7 @@ function TowerService.Sell(_player, model)
 	end
 	local refund = math.floor(t.spent * Config.SellRefund)
 	State.AddGold(refund)
-	Effects.Text(t.position + Vector3.new(0, 6, 0), "+" .. refund .. " gold", Color3.fromRGB(255, 215, 0))
+	Effects.Text(t.position + Vector3.new(0, 6, 0), "+" .. refund .. " mana", Color3.fromRGB(170, 150, 255))
 	Effects.Burst(t.position + Vector3.new(0, 2, 0), 5, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
 	Sound.Play("Coin", t.position)
 	towers[model] = nil
@@ -284,11 +285,30 @@ local function faceTarget(t, targetPos)
 	end
 end
 
+-- the owner's gear (Command = damage, Engineering = speed and range)
+local function boosted(t)
+	local base = Config.Towers[t.type].Levels[t.level]
+	local owner = t.owner
+	if not owner or not owner.Parent then
+		return base
+	end
+	local command = (owner:GetAttribute("BonusCommand") or 0) / 100
+	local engineering = (owner:GetAttribute("BonusEngineering") or 0) / 100
+	if command == 0 and engineering == 0 then
+		return base
+	end
+	local stats = table.clone(base)
+	stats.Damage = base.Damage * (1 + command)
+	stats.Cooldown = base.Cooldown / (1 + engineering)
+	stats.Range = base.Range * (1 + engineering / 2)
+	return stats
+end
+
 local function shoot(t, now)
-	local stats = Config.Towers[t.type].Levels[t.level]
 	if now < t.nextShot then
 		return
 	end
+	local stats = boosted(t)
 	local targets = EnemyService.InRange(t.position, stats.Range)
 	if #targets == 0 then
 		return

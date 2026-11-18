@@ -8,6 +8,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Ui = {}
 
 Ui.GOLD = Color3.fromRGB(255, 210, 70)
+Ui.MANA = Color3.fromRGB(170, 150, 255) -- the building money during a run
+Ui.SCRAP = Color3.fromRGB(190, 170, 150)
 Ui.GEM = Color3.fromRGB(90, 220, 255)
 Ui.DARK = Color3.fromRGB(25, 20, 35)
 Ui.PANEL = Color3.fromRGB(45, 36, 62)

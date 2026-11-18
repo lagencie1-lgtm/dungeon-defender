@@ -42,13 +42,14 @@ end
 -- a ball that grows and fades (explosions, whirlwind, frost)
 function Effects.Burst(position, radius, color, time, transparency)
 	time = time or 0.35
-	radius *= Effects.SizeScale
+	-- 6A: never a wall of colour; capped and see-through
+	radius = math.min(radius * Effects.SizeScale, 6)
 	local p = fxPart({
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.one,
 		Position = position,
 		Color = color,
-		Transparency = transparency or 0.3,
+		Transparency = math.max(transparency or 0.3, 0.55),
 	})
 	TweenService:Create(p, TweenInfo.new(time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Size = Vector3.one * radius * 2,

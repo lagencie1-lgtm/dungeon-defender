@@ -14,12 +14,14 @@ import json
 import os
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEY_FILE = os.path.join(ROOT, "tools", "gemini-api-key.txt")
 OUT_DIR = os.path.join(ROOT, "reviews")
-MODEL = "gemini-2.5-pro"
+MODELS = ["gemini-pro-latest", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest"]  # first one that works
+MODEL = MODELS[0]
 WINDOW = os.path.join(ROOT, "tools", "htd-autotest.rbxl") + " - Roblox Studio"
 
 PROMPT = """You are a harsh, independent game reviewer. You never saw the design intent. The owner thinks parts of
@@ -43,8 +45,8 @@ Answer in plain English."""
 
 def record(seconds, out):
     ffmpeg = glob.glob(os.path.join(ROOT, "tools", "ffmpeg", "*", "bin", "ffmpeg.exe"))[0]
-    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", "30", "-i", "title=" + WINDOW,
-                    "-t", str(seconds), "-vf", "scale=-2:720", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", "15", "-i", "title=" + WINDOW,
+                    "-t", str(seconds), "-vf", "scale=-2:540", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
                     "-pix_fmt", "yuv420p", out], check=True)
 
 
@@ -53,12 +55,31 @@ def review(video):
     data = base64.b64encode(open(video, "rb").read()).decode()
     body = {"contents": [{"parts": [{"inline_data": {"mime_type": "video/mp4", "data": data}}, {"text": PROMPT}]}],
             "generationConfig": {"temperature": 0.2}}
-    req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
-        data=json.dumps(body).encode(), method="POST",
-        headers={"Content-Type": "application/json", "x-goog-api-key": key})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        result = json.loads(r.read())
+    global MODEL
+    result, last_error = None, None
+    # the free tier is often "busy": go through the models a few times with a pause
+    for model in [m for _ in range(6) for m in MODELS[1:]] if "--patient" in sys.argv else MODELS:
+        if result is not None:
+            break
+        if last_error and "--patient" in sys.argv:
+            import time
+            time.sleep(40)
+        req = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            data=json.dumps(body).encode(), method="POST",
+            headers={"Content-Type": "application/json", "x-goog-api-key": key})
+        try:
+            with urllib.request.urlopen(req, timeout=240) as r:
+                result = json.loads(r.read())
+            MODEL = model
+        except urllib.error.HTTPError as e:
+            last_error = f"{model}: {e.code} {e.read()[:200]}"
+            print("model failed:", last_error)
+        except Exception as e:  # timeouts and dropped connections: try the next model
+            last_error = f"{model}: {e}"
+            print("model failed:", last_error)
+    if result is None:
+        raise RuntimeError(last_error)
     parts = result["candidates"][0]["content"]["parts"]
     return "".join(p.get("text", "") for p in parts)
 

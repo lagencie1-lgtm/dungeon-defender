@@ -468,7 +468,10 @@ local function shoot(t, now)
 		Effects.Kick(t.kicker, 0.5)
 		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(255, 140, 40), 1, 0.2)
 		task.delay(0.2, function()
-			Effects.Burst(hitAt, stats.Radius, Color3.fromRGB(255, 110, 30), 0.4)
+			-- fire and sparks instead of a solid ball
+			Effects.Ring(hitAt - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
+			Effects.Particles(hitAt, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
+				Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
 			Sound.Play("Explosion", hitAt)
 			for _, e in EnemyService.InRange(hitAt, stats.Radius) do
 				EnemyService.Damage(e, stats.Damage)

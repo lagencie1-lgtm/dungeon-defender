@@ -52,7 +52,10 @@ local function onKilled(enemy, player)
 	local event = Config.WeeklyEvent()
 	State.AddGold(math.floor(stats.Gold * (event.Mana or 1) + 0.5))
 	State.Set("Kills", (State.Get("Kills") or 0) + 1)
-	Effects.Text(enemy.position + Vector3.new(0, stats.Size + 2, 0), "+" .. stats.Gold, Color3.fromRGB(170, 150, 255))
+	-- 6A: the payout shows once, in the mana counter; only big ones float up in the world
+	if stats.Gold >= 10 then
+		Effects.Text(enemy.position + Vector3.new(0, stats.Size + 2, 0), "+" .. stats.Gold, Color3.fromRGB(170, 150, 255))
+	end
 	if player then
 		HeroService.AddXp(player, stats.Xp)
 	else

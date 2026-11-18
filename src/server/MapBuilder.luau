@@ -51,27 +51,31 @@ local function setupLighting(theme)
 		atmosphere.Parent = Lighting
 	end
 	Lighting.Brightness = 2
+	-- 6A: maps stay bright and readable on a phone; mood comes from colour, not darkness
+	Lighting.ExposureCompensation = 0.25
 	if theme == "Crystal" then
 		Lighting.ClockTime = 0
-		Lighting.Brightness = 1
-		Lighting.Ambient = Color3.fromRGB(60, 60, 110)
-		Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 120)
+		Lighting.Brightness = 2
+		Lighting.Ambient = Color3.fromRGB(105, 105, 165)
+		Lighting.OutdoorAmbient = Color3.fromRGB(120, 120, 180)
 		Lighting.FogColor = Color3.fromRGB(20, 20, 45)
 		atmosphere.Density = 0.45
 		atmosphere.Color = Color3.fromRGB(90, 100, 180)
 		atmosphere.Decay = Color3.fromRGB(30, 30, 80)
 	elseif theme == "Magma" then
-		Lighting.ClockTime = 19
-		Lighting.Ambient = Color3.fromRGB(110, 60, 50)
-		Lighting.OutdoorAmbient = Color3.fromRGB(120, 70, 60)
+		Lighting.ClockTime = 17.2
+		Lighting.Brightness = 2.6
+		Lighting.Ambient = Color3.fromRGB(135, 95, 85)
+		Lighting.OutdoorAmbient = Color3.fromRGB(165, 115, 100)
 		Lighting.FogColor = Color3.fromRGB(80, 30, 20)
 		atmosphere.Density = 0.4
 		atmosphere.Color = Color3.fromRGB(200, 100, 70)
 		atmosphere.Decay = Color3.fromRGB(120, 40, 20)
 	else
-		Lighting.ClockTime = 17.6
-		Lighting.Ambient = Color3.fromRGB(70, 60, 90)
-		Lighting.OutdoorAmbient = Color3.fromRGB(90, 80, 110)
+		Lighting.ClockTime = 16.8
+		Lighting.Brightness = 2.6
+		Lighting.Ambient = Color3.fromRGB(110, 100, 125)
+		Lighting.OutdoorAmbient = Color3.fromRGB(140, 130, 150)
 		Lighting.FogColor = Color3.fromRGB(40, 35, 60)
 		atmosphere.Density = 0.35
 		atmosphere.Color = Color3.fromRGB(110, 90, 140)

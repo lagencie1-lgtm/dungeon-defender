@@ -74,3 +74,28 @@ log("daily", Remotes.ClaimDaily:InvokeServer())
 log("code", Remotes.RedeemCode:InvokeServer("goblinmode"))
 log("code again", Remotes.RedeemCode:InvokeServer("GOBLINMODE"))
 log("bad code", Remotes.RedeemCode:InvokeServer("nope"))
+
+-- look at a Ranger for a screenshot check (test build only)
+task.delay(25, function()
+	local towers = workspace:FindFirstChild("Towers")
+	local ranger = towers and towers:FindFirstChild("Ranger")
+	if ranger and ranger.PrimaryPart then
+		local cam = workspace.CurrentCamera
+		cam.CameraType = Enum.CameraType.Scriptable
+		local p = ranger.PrimaryPart.Position
+		cam.CFrame = CFrame.lookAt(p + Vector3.new(14, 12, 14), p + Vector3.new(0, 6, 0))
+		local hidden = {}
+		for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
+			if g:IsA("ScreenGui") and g.Enabled then
+				g.Enabled = false
+				table.insert(hidden, g)
+			end
+		end
+		log("camera on a Ranger")
+		task.wait(20)
+		for _, g in hidden do
+			g.Enabled = true
+		end
+		cam.CameraType = Enum.CameraType.Custom
+	end
+end)

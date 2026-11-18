@@ -10,6 +10,7 @@ local Sound = require(script.Parent.Sound)
 local Clock = require(script.Parent.Clock)
 local DataService = require(script.Parent.DataService)
 local QuestService = require(script.Parent.QuestService)
+local ArtService = require(script.Parent.ArtService)
 local StoreService = require(script.Parent.StoreService)
 local SeasonService = require(script.Parent.SeasonService)
 
@@ -112,6 +113,36 @@ local BUILDERS = {
 	end,
 }
 
+-- the Blender-built look of a defender, scaled to its height, standing on `at`.
+-- Returns true when the model was used (otherwise the part-built look is used).
+local MODEL_HEIGHT = { Ranger = 12.8, FlameCannon = 6.5 }
+local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame" }
+local MODEL_MUZZLE = { Ranger = Vector3.new(0, 11.2, 0), FlameCannon = Vector3.new(0, 4.8, -3) }
+local function useModel(model, towerType, at)
+	local template = MODEL_NAME[towerType] and ArtService.Model(MODEL_NAME[towerType])
+	local height = MODEL_HEIGHT[towerType]
+	if not template or not height then
+		return false
+	end
+	local look = template:Clone()
+	look.Name = "Look"
+	local _, size = look:GetBoundingBox()
+	look:ScaleTo(look:GetScale() * height / size.Y)
+	-- stand it on the spot: move the bottom centre of its box to `at`
+	local box, newSize = look:GetBoundingBox()
+	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
+	look:PivotTo(look:GetPivot() + (at.Position - bottom))
+	for _, part in look:GetChildren() do
+		part.Anchored = true
+		part.CanCollide = true
+	end
+	look.Parent = model
+	-- an invisible base keeps upgrades, labels and effects working
+	newPart(model, { Name = "Base", Size = Vector3.new(5, 1, 5), CFrame = at * CFrame.new(0, 0.5, 0), Transparency = 1,
+		CanCollide = false })
+	return true
+end
+
 local function setLevelLabel(model, level)
 	local gui = model:FindFirstChild("LevelLabel")
 	if not gui then
@@ -189,7 +220,12 @@ function TowerService.Place(player, towerType, position)
 	local model = Instance.new("Model")
 	model.Name = info.DisplayName
 	local at = CFrame.new(position)
-	local muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
+	local muzzle, kicker, turners
+	if useModel(model, towerType, at) then
+		muzzle = MODEL_MUZZLE[towerType]
+	else
+		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
+	end
 	model.PrimaryPart = model:FindFirstChild("Base")
 	if typeof(player) == "Instance" then
 		StoreService.ApplyTowerSkin(model, StoreService.SkinFor(player, towerType))

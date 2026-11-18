@@ -8,14 +8,15 @@ import math
 import bpy
 import bmesh
 
-# the game's palette (art/STYLE.md)
-WOOD_DARK = (0.27, 0.19, 0.12)
-WOOD = (0.45, 0.31, 0.19)
+# the game's palette (art/STYLE.md), a bit lighter than the paintings because
+# the game's maps are lit at dusk and night (6A: never let a map go too dark)
+WOOD_DARK = (0.45, 0.31, 0.19)
+WOOD = (0.66, 0.46, 0.28)
 BRASS = (0.84, 0.67, 0.31)
 CREAM = (0.95, 0.90, 0.78)
-STONE = (0.47, 0.44, 0.42)
-STONE_DARK = (0.33, 0.31, 0.30)
-GREEN = (0.37, 0.71, 0.35)
+STONE = (0.66, 0.63, 0.60)
+STONE_DARK = (0.52, 0.50, 0.48)
+GREEN = (0.45, 0.82, 0.40)
 FIRE = (1.0, 0.48, 0.16)
 FROST = (0.55, 0.82, 1.0)
 STORM = (0.59, 0.47, 1.0)
@@ -26,6 +27,7 @@ def reset():
 
 
 def _paint(obj, color):
+    obj["htd_color"] = list(color)
     mesh = obj.data
     if not mesh.color_attributes:
         mesh.color_attributes.new(name="Col", type="FLOAT_COLOR", domain="CORNER")
@@ -78,19 +80,36 @@ def sphere(name, radius, location, color, segments=12):
 
 
 def join_all(name):
-    """Joins every mesh into one object (one MeshPart in Roblox), origin at the base centre."""
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
-    bpy.ops.object.join()
-    obj = bpy.context.active_object
-    obj.name = name
+    """Joins the meshes into one object per colour (Roblox shows colours per MeshPart, not per vertex).
+    Each part is named c_R_G_B so the game can colour it. Returns the parts; origin at the base centre."""
+    groups = {}
+    for obj in list(bpy.context.scene.objects):
+        if obj.type != "MESH":
+            continue
+        c = obj.get("htd_color", (0.5, 0.5, 0.5))
+        key = "c_%d_%d_%d" % tuple(round(max(0, min(1, v)) * 255) for v in c[:3])
+        groups.setdefault(key, []).append(obj)
+    parts = []
     bpy.context.scene.cursor.location = (0, 0, 0)
-    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
-    return obj
+    for key, objs in groups.items():
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in objs:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = objs[0]
+        if len(objs) > 1:
+            bpy.ops.object.join()
+        obj = bpy.context.active_object
+        obj.name = key
+        obj.data.name = key
+        bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+        parts.append(obj)
+    return parts
 
 
-def triangles(obj):
-    return sum(len(p.vertices) - 2 for p in obj.data.polygons)
+def triangles(objs):
+    if not isinstance(objs, list):
+        objs = [objs]
+    return sum(len(p.vertices) - 2 for o in objs for p in o.data.polygons)
 
 
 def export_fbx(path):

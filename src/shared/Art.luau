@@ -26,6 +26,12 @@ Art.Icons = {
 	hero_engineer = "124423861529707",
 }
 
+-- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
+Art.Models = {
+	tower_flame = "122997798823358",
+	tower_ranger = "101150947788778",
+}
+
 -- the image for an icon name (filled in by ArtService once loaded), or nil
 function Art.Image(name)
 	local folder = game:GetService("ReplicatedStorage"):FindFirstChild("ArtImages")

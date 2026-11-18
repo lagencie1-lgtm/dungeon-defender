@@ -28,6 +28,7 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	enemy_goblin = "96884241329919",
 	tower_storm = "93542704210272",
 	tower_frost = "119917165190696",
 	tower_ballista = "97849324321352",

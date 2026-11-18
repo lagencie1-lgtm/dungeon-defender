@@ -55,9 +55,9 @@ local function setupLighting(theme)
 	Lighting.ExposureCompensation = 0.25
 	if theme == "Crystal" then
 		Lighting.ClockTime = 0
-		Lighting.Brightness = 2
-		Lighting.Ambient = Color3.fromRGB(105, 105, 165)
-		Lighting.OutdoorAmbient = Color3.fromRGB(120, 120, 180)
+		Lighting.Brightness = 3
+		Lighting.Ambient = Color3.fromRGB(150, 150, 205)
+		Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 215)
 		Lighting.FogColor = Color3.fromRGB(20, 20, 45)
 		atmosphere.Density = 0.45
 		atmosphere.Color = Color3.fromRGB(90, 100, 180)

@@ -99,3 +99,42 @@ task.delay(25, function()
 		cam.CameraType = Enum.CameraType.Custom
 	end
 end)
+
+-- and at a goblin-type enemy, for the model look check
+task.spawn(function()
+	for _ = 1, 400 do
+		task.wait(0.5)
+		local enemies = workspace:FindFirstChild("Enemies")
+		local gob = nil
+		for _, e in enemies and enemies:GetChildren() or {} do
+			if e:GetAttribute("Mesh") and e.PrimaryPart then
+				gob = e
+				break
+			end
+		end
+		if gob then
+			local cam = workspace.CurrentCamera
+			cam.CameraType = Enum.CameraType.Scriptable
+			local hidden = {}
+			for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
+				if g:IsA("ScreenGui") and g.Enabled then
+					g.Enabled = false
+					table.insert(hidden, g)
+				end
+			end
+			log("camera on a goblin")
+			for _ = 1, 500 do
+				if gob.PrimaryPart then
+					local p = gob.PrimaryPart.Position
+					cam.CFrame = CFrame.lookAt(p + Vector3.new(8, 5, 8), p)
+				end
+				task.wait(0.05)
+			end
+			for _, g in hidden do
+				g.Enabled = true
+			end
+			cam.CameraType = Enum.CameraType.Custom
+			return
+		end
+	end
+end)

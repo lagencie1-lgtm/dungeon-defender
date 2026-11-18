@@ -8,6 +8,38 @@ local Memes = require(ReplicatedStorage.Shared.Memes)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local Clock = require(script.Parent.Clock)
+local ArtService = require(script.Parent.ArtService)
+
+-- the Blender goblin, scaled to a goblin's size and painted in its colour.
+-- Returns the skin parts (for hit flashes) or nil when the model isn't loaded.
+local SKIN_MARKER = "c_0_255_0"
+local function goblinMesh(model, body, stats)
+	local template = ArtService.Model("enemy_goblin")
+	if not template then
+		return nil
+	end
+	local s = stats.Size
+	local look = template:Clone()
+	look.Name = "Look"
+	local _, size = look:GetBoundingBox()
+	look:ScaleTo(look:GetScale() * (s * 1.95) / size.Y)
+	local box, newSize = look:GetBoundingBox()
+	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
+	look:PivotTo(look:GetPivot() + ((body.Position - Vector3.new(0, s * 0.8, 0)) - bottom))
+	local skin = {}
+	for _, part in look:GetChildren() do
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		if part.Name == SKIN_MARKER then
+			part.Color = stats.Color
+			table.insert(skin, part)
+		end
+	end
+	look.Parent = model
+	return skin
+end
 
 local EnemyService = {}
 
@@ -155,7 +187,24 @@ local function makeGoblin(name, stats)
 		Color = stats.Color,
 		CFrame = body.CFrame * CFrame.new(0, s * 0.8, 0),
 	})
+	local skin = nil
+	if look == "Goblin" then
+		local ok, result = pcall(goblinMesh, model, body, stats)
+		if ok then
+			skin = result
+		else
+			warn("Art: goblin mesh failed: " .. tostring(result))
+		end
+	end
+	if skin then
+		body.Transparency = 1
+		head.Transparency = 1
+		model:SetAttribute("Mesh", true)
+	end
 	for side = -1, 1, 2 do
+		if skin then
+			break -- the mesh already has ears, eyes and legs
+		end
 		if look == "Imp" then
 			newPart(model, { -- little horn
 				Name = "Horn",
@@ -205,6 +254,7 @@ local function makeGoblin(name, stats)
 	end
 	-- a big goofy nose
 	newPart(model, {
+		Transparency = skin and 1 or 0,
 		Name = "Nose",
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.one * s * 0.2,
@@ -270,12 +320,12 @@ local function makeGoblin(name, stats)
 		light.Parent = body
 	end
 
-	return model, EnemyService.HealthBar(model, head, stats), head
+	return model, EnemyService.HealthBar(model, head, stats), head, skin
 end
 
 function EnemyService.Spawn(name, healthMultiplier, startDistance)
 	local stats = Config.Enemies[name]
-	local model, fill, head = makeGoblin(name, stats)
+	local model, fill, head, skin = makeGoblin(name, stats)
 	local hp = math.floor(stats.Health * (healthMultiplier or 1))
 	model:SetAttribute("Health", hp)
 	model:SetAttribute("MaxHealth", hp)
@@ -286,6 +336,7 @@ function EnemyService.Spawn(name, healthMultiplier, startDistance)
 		model = model,
 		fill = fill,
 		head = head,
+		skin = skin,
 		stats = stats,
 		health = hp,
 		maxHealth = hp,
@@ -574,6 +625,11 @@ function EnemyService.Start()
 					e.tint = tint
 					e.model.Body.Color = tint
 					e.head.Color = tint
+					if e.skin then
+						for _, part in e.skin do
+							part.Color = tint
+						end
+					end
 				end
 			end
 		end

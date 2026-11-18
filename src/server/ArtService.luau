@@ -23,7 +23,9 @@ function ArtService.Start()
 	local models = Instance.new("Folder")
 	models.Name = "ArtModels"
 	models.Parent = ServerStorage
-	-- 3D models first: defenders need them as soon as a run starts
+	-- 3D models load in the background so the game starts right away
+	-- (a defender built before its model arrives keeps the simple look)
+	task.spawn(function()
 	for name, id in Art.Models or {} do
 		if id ~= "" then
 			local ok, asset = pcall(function()
@@ -58,6 +60,7 @@ function ArtService.Start()
 			end
 		end
 	end
+	end)
 	task.spawn(function()
 		for name, decalId in Art.Icons do
 			if decalId ~= "" then

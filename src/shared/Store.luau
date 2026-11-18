@@ -9,13 +9,13 @@ local Store = {}
 -- Game passes: bought once, kept forever
 -------------------------------------------------------------------------------
 Store.GamePasses = {
-	VIP = { Id = 0, Name = "VIP", Price = 399,
+	VIP = { Id = 2094525044, Name = "VIP", Price = 399,
 		Text = "VIP name tag, +50% daily reward gems, VIP cape" },
-	BigBackpack = { Id = 0, Name = "Bigger Backpack", Price = 199,
+	BigBackpack = { Id = 2092377025, Name = "Bigger Backpack", Price = 199,
 		Text = "Backpack holds 120 items instead of 60" },
-	AutoCollect = { Id = 0, Name = "Auto Collect", Price = 149,
+	AutoCollect = { Id = 2094050984, Name = "Auto Collect", Price = 149,
 		Text = "Loot and gems are picked up for you" },
-	Speed3x = { Id = 0, Name = "3x Speed", Price = 249,
+	Speed3x = { Id = 2092245079, Name = "3x Speed", Price = 249,
 		Text = "Adds a 3x step to the speed button" },
 }
 Store.GamePassOrder = { "VIP", "BigBackpack", "AutoCollect", "Speed3x" }
@@ -24,15 +24,15 @@ Store.GamePassOrder = { "VIP", "BigBackpack", "AutoCollect", "Speed3x" }
 -- Developer products: can be bought again and again
 -------------------------------------------------------------------------------
 Store.Products = {
-	Gems100 = { Id = 0, Name = "100 Gems", Price = 49, Gems = 100 },
-	Gems550 = { Id = 0, Name = "550 Gems", Price = 199, Gems = 550, Text = "10% bonus" },
-	Gems1200 = { Id = 0, Name = "1,200 Gems", Price = 399, Gems = 1200, Text = "20% bonus" },
-	Gems2600 = { Id = 0, Name = "2,600 Gems", Price = 799, Gems = 2600, Text = "30% bonus" },
-	BoostXp = { Id = 0, Name = "2x XP (30 min)", Price = 79, Boost = "Xp", Minutes = 30 },
-	BoostGold = { Id = 0, Name = "2x Gold (30 min)", Price = 79, Boost = "Gold", Minutes = 30 },
-	SeasonPass = { Id = 0, Name = "Season Pass", Price = 399, SeasonPass = true,
+	Gems100 = { Id = 3733004851, Name = "100 Gems", Price = 49, Gems = 100 },
+	Gems550 = { Id = 3733004852, Name = "550 Gems", Price = 199, Gems = 550, Text = "10% bonus" },
+	Gems1200 = { Id = 3733004856, Name = "1,200 Gems", Price = 399, Gems = 1200, Text = "20% bonus" },
+	Gems2600 = { Id = 3733004858, Name = "2,600 Gems", Price = 799, Gems = 2600, Text = "30% bonus" },
+	BoostXp = { Id = 3733004860, Name = "2x XP (30 min)", Price = 79, Boost = "Xp", Minutes = 30 },
+	BoostGold = { Id = 3733004862, Name = "2x Gold (30 min)", Price = 79, Boost = "Gold", Minutes = 30 },
+	SeasonPass = { Id = 3733004863, Name = "Season Pass", Price = 399, SeasonPass = true,
 		Text = "Unlocks the paid rewards of this season (skins, titles, gems)" },
-	StarterPack = { Id = 0, Name = "Starter Pack", Price = 99, Gems = 300, Skin = "CapeHero", Once = true,
+	StarterPack = { Id = 3733004864, Name = "Starter Pack", Price = 99, Gems = 300, Skin = "CapeHero", Once = true,
 		Text = "300 gems + the Hero cape. Only once!" },
 }
 Store.ProductOrder = { "SeasonPass", "StarterPack", "Gems100", "Gems550", "Gems1200", "Gems2600", "BoostXp", "BoostGold" }

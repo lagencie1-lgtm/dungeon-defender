@@ -134,7 +134,9 @@ local function runGame(myRun)
 		State.Set("Wave", wave)
 		State.Set("WaveTitle", waveInfo.Title or "")
 		State.Set("State", "Wave")
+		local extraPlayers = math.max(0, #Players:GetPlayers() - 1)
 		local healthMultiplier = (1 + (wave - 1) * Config.WaveHealthGrowth) * difficulty().Health
+			* (1 + extraPlayers * Config.HealthPerExtraPlayer)
 		for _, group in ipairs(waveInfo) do
 			local enemyStats = Config.Enemies[group.Enemy]
 			if enemyStats.Boss then

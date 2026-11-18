@@ -168,9 +168,16 @@ function TowerService.Place(player, towerType, position)
 	if not ok then
 		return false, reason
 	end
+	local points = Config.BuildPoints[towerType] or 0
+	local used = State.Get("BuildUsed") or 0
+	local limit = State.Get("BuildMax") or Config.BuildLimit
+	if used + points > limit then
+		return false, "Build Points full (" .. used .. "/" .. limit .. "). Sell a defender first"
+	end
 	if not State.TrySpend(info.Cost) then
 		return false, "Not enough mana"
 	end
+	State.Set("BuildUsed", used + points)
 
 	local model = Instance.new("Model")
 	model.Name = info.DisplayName
@@ -258,6 +265,7 @@ function TowerService.Sell(_player, model)
 	Effects.Text(t.position + Vector3.new(0, 6, 0), "+" .. refund .. " mana", Color3.fromRGB(170, 150, 255))
 	Effects.Burst(t.position + Vector3.new(0, 2, 0), 5, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
 	Sound.Play("Coin", t.position)
+	State.Set("BuildUsed", math.max(0, (State.Get("BuildUsed") or 0) - (Config.BuildPoints[t.type] or 0)))
 	towers[model] = nil
 	model:Destroy()
 	return true, refund
@@ -268,6 +276,12 @@ function TowerService.Clear()
 		model:Destroy()
 	end
 	table.clear(towers)
+	for _, tur in turrets do
+		tur.model:Destroy()
+	end
+	table.clear(turrets)
+	State.Set("BuildUsed", 0)
+	State.Set("BuildMax", Config.BuildLimit)
 end
 
 local function faceTarget(t, targetPos)
@@ -285,23 +299,89 @@ local function faceTarget(t, targetPos)
 	end
 end
 
--- the owner's gear (Command = damage, Engineering = speed and range)
+-- the owner's gear and stat points (Command = damage, Engineering = speed and range),
+-- plus the Engineer's Overclock
 local function boosted(t)
 	local base = Config.Towers[t.type].Levels[t.level]
 	local owner = t.owner
-	if not owner or not owner.Parent then
-		return base
+	local command, engineering = 0, 0
+	if owner and owner.Parent then
+		command = (owner:GetAttribute("BonusCommand") or 0) / 100
+		engineering = (owner:GetAttribute("BonusEngineering") or 0) / 100
 	end
-	local command = (owner:GetAttribute("BonusCommand") or 0) / 100
-	local engineering = (owner:GetAttribute("BonusEngineering") or 0) / 100
-	if command == 0 and engineering == 0 then
+	local overclock = (t.overclockUntil and Clock.now < t.overclockUntil) and t.overclockSpeed or 1
+	if command == 0 and engineering == 0 and overclock == 1 then
 		return base
 	end
 	local stats = table.clone(base)
 	stats.Damage = base.Damage * (1 + command)
-	stats.Cooldown = base.Cooldown / (1 + engineering)
+	stats.Cooldown = base.Cooldown / (1 + engineering) / overclock
 	stats.Range = base.Range * (1 + engineering / 2)
 	return stats
+end
+
+-- Engineer's Overclock: defenders near a spot shoot faster for a while
+function TowerService.Overclock(position, radius, speed, seconds)
+	local count = 0
+	for model, t in towers do
+		if (t.position - Vector3.new(position.X, 0, position.Z)).Magnitude <= radius then
+			t.overclockUntil = Clock.now + seconds
+			t.overclockSpeed = speed
+			count += 1
+			Effects.Burst(t.position + Vector3.new(0, 5, 0), 4, Color3.fromRGB(255, 170, 60), 0.4)
+			local base = model.PrimaryPart
+			if base and not base:FindFirstChild("OverclockFire") then
+				local fire = Instance.new("Sparkles")
+				fire.Name = "OverclockFire"
+				fire.SparkleColor = Color3.fromRGB(255, 170, 60)
+				fire.Parent = base
+				task.delay(seconds, function()
+					fire:Destroy()
+				end)
+			end
+		end
+	end
+	return count
+end
+
+-- Engineer's mini turret: shoots on its own for a while, then breaks down
+local turrets = {}
+function TowerService.SpawnTurret(owner, position, info)
+	local model = Instance.new("Model")
+	model.Name = "MiniTurret"
+	local base = newPart(model, { Name = "Base", Size = Vector3.new(3, 1, 3), CFrame = CFrame.new(position + Vector3.new(0, 0.5, 0)),
+		Color = Color3.fromRGB(90, 90, 100), Material = Enum.Material.Metal })
+	newPart(model, { Name = "Leg", Size = Vector3.new(0.8, 2, 0.8), CFrame = CFrame.new(position + Vector3.new(0, 2, 0)),
+		Color = Color3.fromRGB(70, 70, 80), Material = Enum.Material.Metal })
+	local head = newPart(model, { Name = "Head", Size = Vector3.new(1.6, 1.2, 2.2), CFrame = CFrame.new(position + Vector3.new(0, 3.4, 0)),
+		Color = Color3.fromRGB(255, 170, 60), Material = Enum.Material.Metal })
+	model.PrimaryPart = base
+	model.Parent = workspace:FindFirstChild("Effects") or workspace
+	Effects.Burst(position + Vector3.new(0, 2, 0), 4, Color3.fromRGB(255, 190, 90), 0.3)
+	table.insert(turrets, { owner = owner, model = model, head = head, position = position, info = info,
+		expires = Clock.now + info.Time, nextShot = 0 })
+end
+
+local function runTurrets(now)
+	for i = #turrets, 1, -1 do
+		local tur = turrets[i]
+		if now > tur.expires or not tur.model.Parent then
+			Effects.Burst(tur.position + Vector3.new(0, 2, 0), 4, Color3.fromRGB(150, 150, 150), 0.3)
+			tur.model:Destroy()
+			table.remove(turrets, i)
+		elseif now >= tur.nextShot then
+			local target = EnemyService.InRange(tur.position, tur.info.Range)[1]
+			if target then
+				tur.nextShot = now + tur.info.Cooldown
+				local from = tur.position + Vector3.new(0, 3.4, 0)
+				local to = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
+				tur.head.CFrame = CFrame.lookAt(from, Vector3.new(to.X, from.Y, to.Z))
+				Effects.Bolt(from, to, Color3.fromRGB(255, 200, 90), 0.25, 0.1)
+				local command = tur.owner.Parent and (tur.owner:GetAttribute("BonusCommand") or 0) / 100 or 0
+				EnemyService.Damage(target, tur.info.Damage * (1 + command))
+			end
+		end
+	end
 end
 
 local function shoot(t, now)
@@ -395,6 +475,7 @@ function TowerService.Start()
 
 	RunService.Heartbeat:Connect(function()
 		local now = Clock.now
+		runTurrets(now)
 		for model, t in towers do
 			if model.Parent then
 				shoot(t, now)

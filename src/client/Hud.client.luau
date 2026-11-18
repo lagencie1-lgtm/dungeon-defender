@@ -65,8 +65,10 @@ local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fro
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
 local stateLabel = label({ Size = UDim2.fromOffset(180, 20), Position = UDim2.fromOffset(14, 38), Text = "",
 	TextColor3 = Ui.TEXT_DIM, Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
-local goldLabel = label({ Size = UDim2.fromOffset(150, 36), Position = UDim2.fromOffset(200, 14), Text = "200 mana",
+local goldLabel = label({ Size = UDim2.fromOffset(150, 30), Position = UDim2.fromOffset(200, 6), Text = "200 mana",
 	TextColor3 = Ui.MANA, Parent = top })
+local buildLabel = label({ Size = UDim2.fromOffset(150, 18), Position = UDim2.fromOffset(200, 40), Text = "Build 0/30",
+	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = top })
 label({ Size = UDim2.fromOffset(220, 16), Position = UDim2.fromOffset(366, 6), Text = "Portal",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 170, 255), Parent = top })
 local portalBack = make("Frame", { Size = UDim2.fromOffset(220, 24), Position = UDim2.fromOffset(366, 26),
@@ -279,6 +281,8 @@ for i, towerType in Config.TowerOrder do
 	label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 18), Text = info.DisplayName, Parent = b })
 	local cost = label({ Size = UDim2.new(1, -10, 0, 20), Position = UDim2.fromOffset(5, 40), Text = info.Cost .. " mana",
 		TextColor3 = Ui.MANA, Parent = b })
+	label({ Size = UDim2.fromOffset(30, 16), Position = UDim2.new(1, -34, 0, 42), Text = (Config.BuildPoints[towerType] or 0) .. "bp",
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
 	label({ Size = UDim2.new(1, -10, 0, 32), Position = UDim2.fromOffset(5, 62), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = b })
 	if not isTouch then
@@ -343,7 +347,7 @@ local function abilityButton(text, key, order)
 	if isTouch then
 		b:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
 	end
-	label({ Size = UDim2.new(1, -8, 0.45, 0), Position = UDim2.fromScale(0, 0.12), AnchorPoint = Vector2.new(0, 0),
+	local nameLabel = label({ Size = UDim2.new(1, -8, 0.45, 0), Position = UDim2.fromScale(0, 0.12), AnchorPoint = Vector2.new(0, 0),
 		Text = text, Parent = b })
 	if not isTouch then
 		label({ Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0, 4, 1, -20), Text = "[" .. key .. "]",
@@ -352,11 +356,11 @@ local function abilityButton(text, key, order)
 	local shade = make("Frame", { Size = UDim2.fromScale(1, 0), Position = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, ZIndex = 3, Parent = b },
 		{ corner(isTouch and 46 or 8) })
-	return b, shade
+	return b, shade, nameLabel
 end
-local attackButton, attackShade = abilityButton("Sword", "F", 3)
-local whirlButton, whirlShade = abilityButton("Whirl", "E", 2)
-local leapButton, leapShade = abilityButton("Leap", "R", 1)
+local attackButton, attackShade, attackName = abilityButton("Sword", "F", 3)
+local whirlButton, whirlShade, whirlName = abilityButton("Whirl", "E", 2)
+local leapButton, leapShade, leapName = abilityButton("Leap", "R", 1)
 if not isTouch then
 	-- on PC the order left to right is Sword, Whirl, Leap
 	attackButton.LayoutOrder, whirlButton.LayoutOrder, leapButton.LayoutOrder = 1, 2, 3
@@ -679,6 +683,9 @@ local combo, lastKillTime, comboStep = 0, 0, 0
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
 	goldLabel.Text = math.floor(gold) .. " mana"
+	local used, maxBuild = GameState:GetAttribute("BuildUsed") or 0, GameState:GetAttribute("BuildMax") or Config.BuildLimit
+	buildLabel.Text = "Build Points " .. used .. "/" .. maxBuild
+	buildLabel.TextColor3 = used >= maxBuild and Ui.BAD or Ui.TEXT_DIM
 	if gold > lastGold then
 		Ui.pop(goldLabel, 1.15)
 	end
@@ -808,10 +815,12 @@ end)
 local lastGems = nil
 local function refreshPlayer()
 	local level = player:GetAttribute("HeroLevel") or 1
-	heroName.Text = Config.Hero.Name .. "  Lv " .. level
+	local hero = Config.Heroes[player:GetAttribute("HeroId") or "Swordmaster"] or Config.Heroes.Swordmaster
+	heroName.Text = hero.Name .. "  Lv " .. level
+	attackName.Text, whirlName.Text, leapName.Text = hero.Abilities.F, hero.Abilities.E, hero.Abilities.R
 	local needed = player:GetAttribute("HeroXpNeeded") or 1
 	local xp = player:GetAttribute("HeroXp") or 0
-	xpFill.Size = UDim2.fromScale(level >= Config.Hero.MaxLevel and 1 or math.clamp(xp / needed, 0, 1), 1)
+	xpFill.Size = UDim2.fromScale(level >= Config.HeroMaxLevel and 1 or math.clamp(xp / needed, 0, 1), 1)
 
 	local gems = player:GetAttribute("Gems") or 0
 	gemsLabel.Text = gems .. " gems"
@@ -844,8 +853,8 @@ RunService.RenderStepped:Connect(function()
 		shade.Size = UDim2.fromScale(1, math.clamp(((player:GetAttribute(attr) or 0) - now) / cooldown, 0, 1))
 	end
 	fill(attackShade, "AttackReadyAt", player:GetAttribute("AttackCooldown") or Config.Hero.Attack.Cooldown)
-	fill(whirlShade, "WhirlwindReadyAt", Config.Hero.Whirlwind.Cooldown)
-	fill(leapShade, "LeapReadyAt", Config.Hero.Leap.Cooldown)
+	fill(whirlShade, "WhirlwindReadyAt", player:GetAttribute("CooldownE") or Config.Hero.Whirlwind.Cooldown)
+	fill(leapShade, "LeapReadyAt", player:GetAttribute("CooldownR") or Config.Hero.Leap.Cooldown)
 end)
 
 -------------------------------------------------------------------------------
@@ -1113,6 +1122,11 @@ end
 -------------------------------------------------------------------------------
 local function doLeap()
 	if workspace:GetServerTimeNow() < (player:GetAttribute("LeapReadyAt") or 0) then
+		return
+	end
+	-- only the Swordmaster jumps, other heroes' R happens on the server
+	if (player:GetAttribute("HeroId") or "Swordmaster") ~= "Swordmaster" then
+		Remotes.HeroLeap:FireServer()
 		return
 	end
 	local character = player.Character

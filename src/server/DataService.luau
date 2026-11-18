@@ -34,6 +34,8 @@ local function defaultProfile()
 		Scrap = 0, -- from salvaging gear
 		Items = {}, -- the backpack: a list of items (see shared/Items)
 		Gear = {}, -- [slot] = id of the equipped item
+		Heroes = {}, -- [heroId] = { Level, Xp, Points = { Power, Vitality, Command, Engineering } }
+		SelectedHero = "Swordmaster",
 	}
 end
 
@@ -47,6 +49,9 @@ local function fixUp(data)
 	end
 	if type(data.Gear) ~= "table" then
 		data.Gear = {}
+	end
+	if type(data.Heroes) ~= "table" then
+		data.Heroes = {}
 	end
 	for k, v in fresh.Owned do
 		if type(data.Owned[k]) ~= "table" then

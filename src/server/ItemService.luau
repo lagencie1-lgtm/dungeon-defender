@@ -136,12 +136,16 @@ function ItemService.ApplyBonuses(player)
 	local equipped = equippedItems(profile)
 	local totals = Items.Totals(equipped)
 	for stat, value in totals do
-		player:SetAttribute("Bonus" .. stat, value)
+		player:SetAttribute("Gear" .. stat, value)
 	end
 	local weapon = equipped.Weapon
 	player:SetAttribute("WeaponType", weapon and weapon.base or "Longsword")
 	player:SetAttribute("WeaponRarity", weapon and weapon.rarity or 0)
+	ItemService.OnGearChanged(player)
 end
+
+-- set by HeroService: adds gear and stat points together
+ItemService.OnGearChanged = function(_player) end
 
 local function sendInventory(player)
 	local profile = DataService.Get(player)

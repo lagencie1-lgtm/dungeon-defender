@@ -157,6 +157,12 @@ Config.Towers = {
 		},
 	},
 }
+-- Build Points: every defender uses some, each map has a limit for the whole team
+Config.BuildLimit = 30
+Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObelisk = 4, Ballista = 5 }
+-- more players = tougher goblins (+35% health for each extra player)
+Config.HealthPerExtraPlayer = 0.35
+
 Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" }
 Config.SellRefund = 0.7 -- you get back 70% of what you paid
 Config.TowerSpacing = 6 -- defenders can't stand closer than this
@@ -174,9 +180,54 @@ Config.Hero = {
 	WalkSpeed = 20,
 	GemPickupRange = 10,
 }
+-- hero levels are kept between games (one level and set of stat points per hero)
+Config.HeroMaxLevel = 50
+Config.DamagePerHeroLevel = 0.03 -- +3% hero damage for every level
 function Config.XpForLevel(level)
-	return 20 + level * 15
+	return 40 + level * 25
 end
+
+-- 1 stat point per level. What one point gives:
+Config.StatPoints = {
+	{ Id = "Power", Name = "Power", Per = 2, Text = "% hero damage" },
+	{ Id = "Vitality", Name = "Vitality", Per = 10, Text = " hero health" },
+	{ Id = "Command", Name = "Command", Per = 2, Text = "% defender damage" },
+	{ Id = "Engineering", Name = "Engineering", Per = 1.5, Text = "% defender speed and range" },
+}
+Config.HeroBaseHealth = 100
+Config.StatResetGoldPerLevel = 20
+
+-- the heroes. Abilities are on F, E and R.
+Config.Heroes = {
+	Swordmaster = {
+		Name = "Swordmaster", Color = Color3.fromRGB(200, 220, 255),
+		Role = "Close-range fighter, strong against bosses",
+		Abilities = { F = "Sword", E = "Whirl", R = "Leap" },
+		Help = "F: sword hit (depends on your weapon)  E: spin and hit everything around you  R: jump forward and slam",
+	},
+	RuneMage = {
+		Name = "Rune Mage", Color = Color3.fromRGB(170, 120, 255),
+		Role = "Area damage from range, slows groups",
+		Abilities = { F = "Bolt", E = "Nova", R = "Meteor" },
+		Help = "F: magic bolt at the closest goblin  E: frost nova that slows everything near you  R: meteor on the biggest group",
+		Bolt = { Damage = 14, Range = 34, Cooldown = 0.6 },
+		Nova = { Damage = 18, Radius = 18, Slow = 0.4, SlowTime = 3, Cooldown = 9 },
+		Meteor = { Damage = 80, Radius = 12, Range = 50, Cooldown = 12 },
+	},
+	Engineer = {
+		Name = "Machine Engineer", Color = Color3.fromRGB(255, 170, 60),
+		Role = "Makes defenders stronger, builds turrets",
+		Abilities = { F = "Wrench", E = "Overclock", R = "Turret" },
+		Help = "F: wrench smack  E: defenders near you shoot 60% faster for 6s  R: build a mini turret for 20s",
+		Wrench = { Damage = 10, Range = 9, Targets = 2, Cooldown = 0.55 },
+		Overclock = { Radius = 26, Speed = 1.6, Time = 6, Cooldown = 14 },
+		Turret = { Damage = 9, Range = 24, Cooldown = 0.4, Time = 20, AbilityCooldown = 18 },
+	},
+}
+Config.HeroOrder = { "Swordmaster", "RuneMage", "Engineer" }
+
+-- goblins hurt heroes that stand in their way (damage per second)
+Config.ContactDamage = { Goblin = 6, Runner = 4, Brute = 18, LootGoblin = 0, GoblinKing = 45 }
 
 -------------------------------------------------------------------------------
 -- Things to buy with gems. Gems are saved between games.

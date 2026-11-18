@@ -9,7 +9,7 @@ local EVENTS = {
 	"LootDrop", "LootPicked", "PickupLoot", "VictoryChest", "Inventory", "SeenGear",
 }
 local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
-	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory" }
+	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints" }
 
 local Remotes = {}
 

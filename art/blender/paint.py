@@ -131,7 +131,7 @@ def _flat_texture():
         img.save()
 
 
-def bake(name, texture_out, size=1024):
+def bake(name, texture_out, size=1024, triangles=None):
     """Joins the painted parts into one mesh called Body with the baked texture; glowing parts become c_R_G_B
     parts. Saves the texture to texture_out and returns all parts."""
     scene = bpy.context.scene
@@ -150,6 +150,13 @@ def bake(name, texture_out, size=1024):
     body = bpy.context.active_object
     body.name = "Body"
     body.data.name = "Body"
+    if triangles:
+        # one clean skin: overlapping shapes are merged into a single surface, then reduced to the triangle budget
+        count = sum(len(p.vertices) - 2 for p in body.data.polygons)
+        if count > triangles:
+            mod = body.modifiers.new("decimate", "DECIMATE")
+            mod.ratio = triangles / count
+            bpy.ops.object.modifier_apply(modifier=mod.name)
     # unwrap into one atlas
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")

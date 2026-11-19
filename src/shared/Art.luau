@@ -65,6 +65,7 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	dragon_v2 = "140069131074571",
 	boss_molten_golem = "95710681858156",
 	boss_shadow_queen = "137114150271438",
 	boss_goblin_king = "131411003492233",
@@ -166,7 +167,7 @@ Art.Textures = {
 	paint_pet_glowbug = "122442785080074",
 	paint_pet_emberfox = "89073558865562",
 	paint_pet_minigolem = "105844711612561",
-	paint_pet_babydragon = "72593395056139",
+	paint_pet_babydragon = "96415206433521",
 	paint_pet_crystalowl = "124436472742459",
 	paint_pet_starunicorn = "98910743560236",
 	paint_pet_phoenix = "109098220014722",

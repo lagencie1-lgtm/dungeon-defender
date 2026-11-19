@@ -85,6 +85,7 @@ mesh.materials.clear()
 mesh.materials.append(mat)
 scene = bpy.context.scene
 scene.render.engine = "BLENDER_EEVEE"
+scene.view_settings.view_transform = "Standard"  # true colours (the default look washes them out)
 scene.render.resolution_x, scene.render.resolution_y = 700, 700
 scene.world = bpy.data.worlds.new("w")
 scene.world.color = (0.16, 0.16, 0.18)

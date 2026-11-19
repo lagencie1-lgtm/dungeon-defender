@@ -14,7 +14,7 @@ local ArtService = require(script.Parent.ArtService)
 -- Returns the skin parts (for hit flashes) or nil when the model isn't loaded.
 local SKIN_MARKER = "c_0_255_0"
 local function goblinMesh(model, body, stats)
-	local template = ArtService.Model("enemy_goblin")
+	local template = ArtService.Model("enemy_" .. string.lower(stats.Look or "Goblin"))
 	if not template then
 		return nil
 	end
@@ -139,6 +139,33 @@ local function makeGoblin(name, stats)
 	model.Name = name
 
 	local look = stats.Look or "Goblin"
+	-- the painted Blender model, when it has loaded (every look has one); the block looks below are the fallback
+	if ArtService.Model("enemy_" .. string.lower(look)) then
+		local body = newPart(model, { Name = "Body", Size = Vector3.new(s, s, s * 0.8), Transparency = 1 })
+		model.PrimaryPart = body
+		local head = newPart(model, { Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.7, Transparency = 1,
+			CFrame = body.CFrame * CFrame.new(0, s * 0.8, 0) })
+		local ok, skin = pcall(goblinMesh, model, body, stats)
+		if ok and skin then
+			model:SetAttribute("Mesh", true)
+			if stats.Boss then
+				-- a floating golden crown and a glow, so the boss stands out in a crowd
+				for i = 0, 5 do
+					local angle = i / 6 * math.pi * 2
+					newPart(model, { Name = "Crown", Size = Vector3.new(s * 0.1, s * 0.28, s * 0.1), Color = Color3.fromRGB(255, 205, 60),
+						Material = Enum.Material.Neon,
+						CFrame = head.CFrame * CFrame.new(math.cos(angle) * s * 0.24, s * 0.62, math.sin(angle) * s * 0.24) })
+				end
+				local light = Instance.new("PointLight")
+				light.Color = stats.Color
+				light.Range = s * 3
+				light.Brightness = 1.5
+				light.Parent = body
+			end
+			return model, EnemyService.HealthBar(model, head, stats), head, skin
+		end
+		model:ClearAllChildren()
+	end
 	if look == "Shade" then
 		local body = newPart(model, { Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.one * s, Color = stats.Color,
 			Material = Enum.Material.Neon, Transparency = 0.35 })
@@ -188,7 +215,7 @@ local function makeGoblin(name, stats)
 		CFrame = body.CFrame * CFrame.new(0, s * 0.8, 0),
 	})
 	local skin = nil
-	if look == "Goblin" then
+	do -- every enemy type has a painted Blender model (the block look is only the fallback while it loads)
 		local ok, result = pcall(goblinMesh, model, body, stats)
 		if ok then
 			skin = result

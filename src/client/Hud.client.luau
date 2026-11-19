@@ -131,16 +131,17 @@ local gemsLabel = label({ Size = UDim2.fromOffset(1, 1), Text = "", Visible = fa
 -------------------------------------------------------------------------------
 -- messages, banners and combo counter
 -------------------------------------------------------------------------------
+-- (6A: one or two short lines just under the wave panel, never a stack over the middle of the fight)
 local messages = make("Frame", {
-	Size = UDim2.fromOffset(640, 170),
-	Position = UDim2.new(0.5, 0, 0, 232),
+	Size = UDim2.fromOffset(560, 56),
+	Position = UDim2.new(0.5, 0, 0, isTouch and 150 or 160),
 	AnchorPoint = Vector2.new(0.5, 0),
 	BackgroundTransparency = 1,
 	Parent = root,
 }, { make("UIListLayout", { HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4) }) })
 
 local function showMessage(text, color)
-	local l = label({ Size = UDim2.fromOffset(640, 28), Text = text, TextColor3 = color or Color3.new(1, 1, 1),
+	local l = label({ Size = UDim2.fromOffset(560, 24), Text = text, TextColor3 = color or Color3.new(1, 1, 1),
 		TextStrokeTransparency = 0.2, Parent = messages })
 	Ui.pop(l, 1.15)
 	task.delay(3.2, function()
@@ -154,7 +155,7 @@ local function showMessage(text, color)
 			count += 1
 		end
 	end
-	if count > 5 then
+	if count > 2 then
 		for _, child in messages:GetChildren() do
 			if child:IsA("TextLabel") then
 				child:Destroy()
@@ -207,8 +208,8 @@ local function showBanner(title, subtitle, color)
 end
 
 local comboLabel = label({
-	Size = UDim2.fromOffset(300, 46),
-	Position = UDim2.new(1, -20, 0, isTouch and 80 or 150),
+	Size = UDim2.fromOffset(200, 32),
+	Position = UDim2.new(1, -16, 0, isTouch and 150 or 160),
 	AnchorPoint = Vector2.new(1, 0),
 	Text = "",
 	Font = Enum.Font.GothamBlack,
@@ -218,8 +219,8 @@ local comboLabel = label({
 	Parent = root,
 })
 local comboShout = label({
-	Size = UDim2.fromOffset(420, 30),
-	Position = UDim2.new(1, -20, 0, isTouch and 128 or 198),
+	Size = UDim2.fromOffset(300, 20),
+	Position = UDim2.new(1, -16, 0, isTouch and 184 or 194),
 	AnchorPoint = Vector2.new(1, 0),
 	Text = "",
 	TextColor3 = Color3.fromRGB(255, 140, 220),
@@ -830,7 +831,7 @@ end)
 -- daily reward
 -------------------------------------------------------------------------------
 local dailyPanel = make("Frame", {
-	Size = UDim2.fromOffset(560, 250),
+	Size = UDim2.fromOffset(640, 290),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -842,19 +843,21 @@ label({ Size = UDim2.new(1, -80, 0, 36), Position = UDim2.fromOffset(16, 10), Te
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = dailyPanel })
 local dailyClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = dailyPanel })
-local dayRow = make("Frame", { Size = UDim2.new(1, -32, 0, 90), Position = UDim2.fromOffset(16, 56),
+local dayRow = make("Frame", { Size = UDim2.new(1, -32, 0, 118), Position = UDim2.fromOffset(16, 56),
 	BackgroundTransparency = 1, ZIndex = 21, Parent = dailyPanel },
 	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6),
 		HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
 local dayBoxes = {}
 for day, reward in Config.DailyRewards do
-	local box = make("Frame", { Size = UDim2.fromOffset(68, 90), BackgroundColor3 = Ui.PANEL, LayoutOrder = day,
+	local box = make("Frame", { Size = UDim2.fromOffset(78, 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = day,
 		ZIndex = 22, Parent = dayRow }, { corner(10), stroke() })
-	label({ Size = UDim2.new(1, -6, 0, 22), Position = UDim2.fromOffset(3, 6), Text = "Day " .. day, ZIndex = 23, Parent = box })
-	label({ Size = UDim2.new(1, -6, 0, 30), Position = UDim2.fromOffset(3, 32), Text = tostring(reward),
-		TextColor3 = Ui.GEM, ZIndex = 23, Parent = box })
-	label({ Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 64), Text = "gems",
-		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 23, Parent = box })
+	label({ Size = UDim2.new(1, -6, 0, 18), Position = UDim2.fromOffset(3, 5), Text = "Day " .. day, ZIndex = 23, Parent = box })
+	-- a gem pile that grows with the reward
+	local pictureSlot = make("Frame", { Size = UDim2.fromOffset(58, 58), Position = UDim2.new(0.5, 0, 0, 26),
+		AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 23, Parent = box })
+	Ui.rewardPicture(pictureSlot, { Kind = "Gems", Amount = reward }, nil, 23)
+	label({ Size = UDim2.new(1, -6, 0, 24), Position = UDim2.fromOffset(3, 88), Text = "x" .. tostring(reward),
+		TextColor3 = Ui.GEM, ZIndex = 24, Parent = box })
 	dayBoxes[day] = box
 end
 local claimButton = button({ Size = UDim2.fromOffset(260, 54), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 1),
@@ -892,6 +895,13 @@ local function refreshDaily()
 	dailyDot.Visible = ready
 end
 
+dailyButton.Press.Event:Connect(function()
+	dailyPanel.Visible = true
+	refreshDaily()
+end)
+shopButton.Press.Event:Connect(function()
+	openShop()
+end)
 dailyButton.Activated:Connect(function()
 	dailyPanel.Visible = not dailyPanel.Visible
 	refreshDaily()

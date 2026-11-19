@@ -82,6 +82,85 @@ function Ui.playSound(name)
 	SoundService:PlayLocalSound(s)
 end
 
+-- puts a painted 9-slice image (the UI kit, art/ui) behind a frame or button: its border keeps its size,
+-- the middle stretches. Waits for the image to load; until then the plain colours show.
+-- `border` is the painted border width in image pixels, `width` how wide it shows on screen.
+local KIT = {
+	ui_panel = { border = 50, width = 20 },
+	ui_button = { border = 66, width = 12 },
+	ui_slot = { border = 66, width = 10 },
+	ui_parchment = { border = 34, width = 12 },
+	ui_ribbon = { border = 120, width = 30 },
+}
+function Ui.skin(obj, name, tint)
+	local kit = KIT[name]
+	if not kit or obj:FindFirstChild("Skin") then
+		return
+	end
+	local images = game:GetService("ReplicatedStorage"):WaitForChild("ArtImages", 10)
+	local function apply()
+		local image = images and images:GetAttribute(name)
+		if not image or obj:FindFirstChild("Skin") then
+			return image ~= nil
+		end
+		Ui.make("ImageLabel", {
+			Name = "Skin",
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+			Image = image,
+			ImageColor3 = tint or Color3.new(1, 1, 1),
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(kit.border, kit.border, 512 - kit.border, 512 - kit.border),
+			SliceScale = kit.width / kit.border,
+			ZIndex = obj.ZIndex > 1 and obj.ZIndex or 0,
+			Parent = obj,
+		})
+		obj.BackgroundTransparency = 1
+		if obj:IsA("TextButton") or obj:IsA("TextLabel") then
+			-- a child image draws over the button's own text, so the text moves into a label on top
+			local text = Ui.make("TextLabel", {
+				Name = "SkinText",
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, -12, 1, -8),
+				Position = UDim2.fromOffset(6, 4),
+				ZIndex = (obj.ZIndex > 1 and obj.ZIndex or 0) + 1,
+				Parent = obj,
+			})
+			local strokeT = obj.TextStrokeTransparency
+			local function sync()
+				text.Text = obj.Text
+				text.Font = obj.Font
+				text.TextColor3 = obj.TextColor3
+				text.TextScaled = obj.TextScaled
+				text.TextSize = obj.TextSize
+				text.TextWrapped = obj.TextWrapped
+				text.TextStrokeTransparency = strokeT
+				text.TextStrokeColor3 = obj.TextStrokeColor3
+				text.RichText = obj.RichText
+			end
+			sync()
+			for _, prop in { "Text", "TextColor3", "Font", "TextSize" } do
+				obj:GetPropertyChangedSignal(prop):Connect(sync)
+			end
+			obj.TextTransparency = 1
+			obj.TextStrokeTransparency = 1
+		end
+		local stroke = obj:FindFirstChildOfClass("UIStroke")
+		if stroke and stroke.ApplyStrokeMode ~= Enum.ApplyStrokeMode.Contextual then
+			stroke.Enabled = false
+		end
+		return true
+	end
+	if not apply() and images then
+		local connection
+		connection = images:GetAttributeChangedSignal(name):Connect(function()
+			if apply() then
+				connection:Disconnect()
+			end
+		end)
+	end
+end
+
 function Ui.button(props)
 	local defaults = {
 		BackgroundColor3 = Ui.PANEL,
@@ -94,6 +173,9 @@ function Ui.button(props)
 		defaults[k] = v
 	end
 	local b = Ui.make("TextButton", defaults, { Ui.corner(10), Ui.stroke() })
+	-- painted brass-and-wood button, tinted with the button's own colour
+	b.TextStrokeTransparency = 0.35
+	Ui.skin(b, "ui_button", defaults.BackgroundColor3:Lerp(Color3.new(1, 1, 1), 0.25))
 	local scale = Ui.make("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
 		TweenService:Create(scale, TweenInfo.new(0.12), { Scale = 1.06 }):Play()
@@ -107,6 +189,43 @@ function Ui.button(props)
 		TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	end)
 	return b
+end
+
+-- The picture of a reward (season pass, daily reward): a gem pile, a gold stack, a medal, or a preview of a skin
+-- (its defender's picture or a cape, in the skin's own colours). `reward` = { Kind, Amount, Id }, `skin` = the
+-- skin's entry from Store.Skins for Kind "Skin". Fills `parent`. Returns the frame it made.
+local TOWER_PICTURE = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
+	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
+function Ui.rewardPicture(parent, reward, skin, zIndex)
+	local Art = require(game:GetService("ReplicatedStorage").Shared.Art)
+	local holder = Ui.make("Frame", { Name = "RewardPicture", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
+		ZIndex = zIndex or 1, Parent = parent })
+	local name, tint = nil, Color3.new(1, 1, 1)
+	if reward.Kind == "Gems" then
+		name = (reward.Amount or 0) >= 40 and "reward_gems_big" or "reward_gems_small"
+	elseif reward.Kind == "Gold" then
+		name = (reward.Amount or 0) >= 400 and "reward_gold_big" or "reward_gold_small"
+	elseif reward.Kind == "Title" then
+		name = "reward_title"
+	elseif reward.Kind == "Skin" and skin then
+		if skin.Target == "Cape" then
+			name, tint = "reward_cape", skin.Primary
+		else
+			name = TOWER_PICTURE[skin.Target]
+			-- the defender on a plate in the skin's colours
+			holder.BackgroundTransparency = 0
+			holder.BackgroundColor3 = skin.Primary
+			Ui.make("UICorner", { CornerRadius = UDim.new(0, 10), Parent = holder })
+			Ui.make("UIStroke", { Color = skin.Accent or Color3.new(1, 1, 1), Thickness = 3, Parent = holder })
+			tint = (skin.Accent or Color3.new(1, 1, 1)):Lerp(Color3.new(1, 1, 1), 0.55)
+		end
+	end
+	local image = name and Art.Image(name)
+	if image then
+		Ui.make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3),
+			Image = image, ImageColor3 = tint, ScaleType = Enum.ScaleType.Fit, ZIndex = (zIndex or 1) + 1, Parent = holder })
+	end
+	return holder, image ~= nil
 end
 
 -- make something pop (bigger for a moment)

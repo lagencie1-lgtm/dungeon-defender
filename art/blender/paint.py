@@ -137,6 +137,10 @@ def bake(name, texture_out, size=1024):
     scene = bpy.context.scene
     painted = [o for o in scene.objects if o.type == "MESH" and o.get("htd_paint")]
     glowing = [o for o in scene.objects if o.type == "MESH" and not o.get("htd_paint")]
+    # (an object already called "Body" would make the joined mesh "Body.001", which the game doesn't texture)
+    for i, o in enumerate(painted + glowing):
+        o.name = f"piece_{i}"
+        o.data.name = f"piece_{i}"
     bpy.ops.object.select_all(action="DESELECT")
     for o in painted:
         o.select_set(True)
@@ -177,7 +181,10 @@ def bake(name, texture_out, size=1024):
     bpy.context.scene.cursor.location = (0, 0, 0)
     bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
     for o in glowing:
-        lib._paint(o, o.get("htd_color", (1, 1, 1)))
+        # white vertex colours: Roblox multiplies them with the part's colour (a green marker stayed green)
+        c = [float(v) for v in o.get("htd_color", (1, 1, 1))]  # (a copy: _paint overwrites the property)
+        lib._paint(o, (1, 1, 1))
+        o["htd_color"] = c
     # glowing parts: one part per colour, like lib.join_all (it skips nothing, so run it on those only)
     bpy.ops.object.select_all(action="DESELECT")
     parts = [body]

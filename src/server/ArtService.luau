@@ -89,7 +89,7 @@ function ArtService.Start()
 							part.Color = Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b))
 							-- very bright, strong colours glow (cannon fire, magic)
 							local _, sat, val = part.Color:ToHSV()
-							if val >= 0.95 and sat >= 0.6 then
+							if val >= 0.95 and sat >= 0.6 and part.Name ~= "c_0_255_0" then -- (pure green = skin marker, not a glow)
 								part.Material = Enum.Material.Neon
 							end
 						end

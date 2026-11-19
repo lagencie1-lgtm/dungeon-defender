@@ -84,14 +84,27 @@ local function paintedTerrain(material, textureName)
 	return ok
 end
 
--- back to Roblox's own material looks (before building another map)
-function TerrainBuilder.ResetLooks()
+-- Old looks are only dropped once the new set is known (see applyLooks): clearing an override and setting it
+-- again in the same moment left the grass plain white.
+function TerrainBuilder.ResetLooks() end
+
+-- switches the painted looks to this set: { [material] = texture name }. Materials not in the set go back
+-- to Roblox's own look. Returns nothing; painted materials get a white tint (the painting has its colours).
+local function applyLooks(looks)
+	local t = terrain()
 	for material in overridden do
-		pcall(function()
-			MaterialService:SetBaseMaterialOverride(material, "")
-		end)
+		if not looks[material] then
+			pcall(function()
+				MaterialService:SetBaseMaterialOverride(material, "")
+			end)
+			overridden[material] = nil
+		end
 	end
-	table.clear(overridden)
+	for material, texture in looks do
+		if paintedTerrain(material, texture) then
+			t:SetMaterialColor(material, Color3.new(1, 1, 1))
+		end
+	end
 end
 
 -- wipes the battlefield's terrain only (the Outpost has its own terrain far away and keeps it)
@@ -203,12 +216,8 @@ function TerrainBuilder.Magma(map, camp)
 	t:SetMaterialColor(M.Rock, Color3.fromRGB(92, 80, 78))
 	t:SetMaterialColor(M.CrackedLava, Color3.fromRGB(255, 120, 40))
 	-- painted looks (the painting has its own colours, so no tint)
-	for material, texture in { [M.Basalt] = "t_ash", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
-		[M.Rock] = "t_cliff", [M.Slate] = "basalt", [M.CrackedLava] = "lava_rock" } do
-		if paintedTerrain(material, texture) then
-						t:SetMaterialColor(material, Color3.new(1, 1, 1))
-		end
-	end
+	applyLooks({ [M.Basalt] = "t_ash", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
+		[M.Rock] = "t_cliff", [M.Slate] = "basalt", [M.CrackedLava] = "lava_rock" })
 end
 
 -------------------------------------------------------------------------------
@@ -276,12 +285,8 @@ function TerrainBuilder.Forest(map, camp)
 	t.WaterTransparency = 0.5
 	t.WaterWaveSize = 0.05
 	t.WaterReflectance = 0.6
-	for material, texture in { [M.Grass] = "t_grass", [M.Mud] = "t_forest_dirt", [M.Ground] = "t_ground",
-		[M.Cobblestone] = "t_cobble", [M.Rock] = "t_moss_rock" } do
-		if paintedTerrain(material, texture) then
-			t:SetMaterialColor(material, Color3.new(1, 1, 1))
-		end
-	end
+	applyLooks({ [M.Grass] = "t_grass", [M.Mud] = "t_forest_dirt", [M.Ground] = "t_ground",
+		[M.Cobblestone] = "t_cobble", [M.Rock] = "t_moss_rock" })
 end
 
 -------------------------------------------------------------------------------
@@ -370,11 +375,7 @@ function TerrainBuilder.Crystal(map, camp)
 	t.WaterTransparency = 0.35
 	t.WaterWaveSize = 0.03
 	t.WaterReflectance = 0.4
-	for material, texture in { [M.Slate] = "t_cave_floor", [M.Basalt] = "t_cave_wall", [M.Cobblestone] = "t_cobble" } do
-		if paintedTerrain(material, texture) then
-			t:SetMaterialColor(material, material == M.Cobblestone and Color3.fromRGB(190, 195, 225) or Color3.new(1, 1, 1))
-		end
-	end
+	applyLooks({ [M.Slate] = "t_cave_floor", [M.Basalt] = "t_cave_wall", [M.Cobblestone] = "t_cobble" })
 end
 
 -------------------------------------------------------------------------------
@@ -424,13 +425,8 @@ function TerrainBuilder.OutpostLooks()
 	t:SetMaterialColor(M.Ground, Color3.fromRGB(170, 130, 92))
 	t:SetMaterialColor(M.Cobblestone, Color3.fromRGB(130, 124, 114))
 	t:SetMaterialColor(M.Rock, Color3.fromRGB(110, 112, 104))
-	TerrainBuilder.ResetLooks()
-	for material, texture in { [M.Grass] = "t_grass", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
-		[M.Rock] = "t_moss_rock" } do
-		if paintedTerrain(material, texture) then
-			t:SetMaterialColor(material, Color3.new(1, 1, 1))
-		end
-	end
+	applyLooks({ [M.Grass] = "t_grass", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
+		[M.Rock] = "t_moss_rock" })
 end
 
 return TerrainBuilder

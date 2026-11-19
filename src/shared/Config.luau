@@ -90,27 +90,40 @@ Config.Codes = {
 -- Pets: hatch from eggs bought with gold (gold can't be bought, only earned).
 -- Bonus is a percent that grows 10% per pet level. Evolving doubles it.
 -------------------------------------------------------------------------------
+-- Rarity 1-6 = Common, Uncommon, Rare, Epic, Legendary, Mythic (Items.Rarities). The Legendary and Mythic pets
+-- are the ones to chase: dragons, a unicorn and a phoenix, with tiny chances (Lemp 2026-11-19: "make them ultra
+-- rares so people want to farm them"). Picture = art/icons/pet_*.png.
 Config.Pets = {
 	Slimey = { Name = "Slimey", Rarity = 1, Stat = "GoldFind", Bonus = 5, Color = Color3.fromRGB(110, 220, 110), Shape = "Blob" },
 	Leafling = { Name = "Leafling", Rarity = 1, Stat = "Power", Bonus = 3, Color = Color3.fromRGB(90, 170, 70), Shape = "Sprout" },
 	Stonepup = { Name = "Stonepup", Rarity = 2, Stat = "Command", Bonus = 4, Color = Color3.fromRGB(140, 130, 120), Shape = "Pup" },
+	MossKitten = { Name = "Moss Kitten", Rarity = 2, Stat = "Crit", Bonus = 2, Color = Color3.fromRGB(150, 200, 120), Shape = "Pup" },
 	Glowbug = { Name = "Glowbug", Rarity = 3, Stat = "Crit", Bonus = 3, Color = Color3.fromRGB(255, 240, 120), Shape = "Bug" },
 	EmberFox = { Name = "Ember Fox", Rarity = 3, Stat = "Engineering", Bonus = 5, Color = Color3.fromRGB(255, 120, 40), Shape = "Pup" },
+	CrystalOwl = { Name = "Crystal Owl", Rarity = 3, Stat = "Command", Bonus = 6, Color = Color3.fromRGB(150, 210, 255), Shape = "Bug" },
 	MiniGolem = { Name = "Mini Golem", Rarity = 4, Stat = "Command", Bonus = 8, Color = Color3.fromRGB(100, 70, 60), Shape = "Golem" },
 	BabyDragon = { Name = "Baby Dragon", Rarity = 5, Stat = "Power", Bonus = 9, Color = Color3.fromRGB(170, 60, 220), Shape = "Dragon" },
+	StarUnicorn = { Name = "Star Unicorn", Rarity = 5, Stat = "GoldFind", Bonus = 16, Color = Color3.fromRGB(255, 235, 250), Shape = "Pup" },
+	Phoenix = { Name = "Sunfire Phoenix", Rarity = 6, Stat = "Power", Bonus = 14, Color = Color3.fromRGB(255, 150, 40), Shape = "Dragon" },
+	VoidDrake = { Name = "Void Drake", Rarity = 6, Stat = "Command", Bonus = 14, Color = Color3.fromRGB(70, 40, 130), Shape = "Dragon" },
 }
--- the chances are shown in the game before buying
+-- the chances are shown in the game before buying (with a picture of every pet)
 Config.Eggs = {
 	{ Id = "ForestEgg", Name = "Forest Egg", Price = 600, Color = Color3.fromRGB(120, 200, 100),
-		Chances = { { "Slimey", 40 }, { "Leafling", 35 }, { "Stonepup", 17 }, { "Glowbug", 6 }, { "MiniGolem", 1.8 }, { "BabyDragon", 0.2 } } },
+		Chances = { { "Slimey", 38 }, { "Leafling", 33 }, { "Stonepup", 14 }, { "MossKitten", 8 }, { "Glowbug", 5 },
+			{ "MiniGolem", 1.7 }, { "BabyDragon", 0.25 }, { "StarUnicorn", 0.05 } } },
 	{ Id = "MagmaEgg", Name = "Magma Egg", Price = 1500, Color = Color3.fromRGB(255, 110, 40),
-		Chances = { { "Stonepup", 40 }, { "EmberFox", 35 }, { "Glowbug", 15 }, { "MiniGolem", 8 }, { "BabyDragon", 2 } } },
+		Chances = { { "Stonepup", 40 }, { "EmberFox", 34 }, { "Glowbug", 15 }, { "MiniGolem", 8.8 }, { "BabyDragon", 2 },
+			{ "Phoenix", 0.2 } } },
+	{ Id = "CrystalEgg", Name = "Crystal Egg", Price = 4000, Color = Color3.fromRGB(150, 210, 255),
+		Chances = { { "MossKitten", 40 }, { "CrystalOwl", 36 }, { "MiniGolem", 18 }, { "BabyDragon", 4.6 },
+			{ "StarUnicorn", 1 }, { "VoidDrake", 0.4 } } },
 }
 Config.PetMaxLevel = 10
 Config.PetXpPerLevel = 60 -- pet xp per level (pets get 1 xp per enemy defeated)
 Config.PetEvolveGold = 2500
 Config.PetBagSize = 30
-Config.PetReleaseGold = { 50, 80, 150, 400, 1000 }
+Config.PetReleaseGold = { 50, 80, 150, 400, 1000, 4000 }
 
 -------------------------------------------------------------------------------
 -- Rebirth and Ascension (for heroes at the level cap)

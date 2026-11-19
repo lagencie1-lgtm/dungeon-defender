@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
+local UI_TOUR = true -- true: shoot the HUD and panels; false: the map look tours
+local player = game:GetService("Players").LocalPlayer
+
 local function log(...)
 	print("[AUTOTEST-CLIENT]", ...)
 end
@@ -204,6 +207,19 @@ local function outpostTour()
 			table.insert(hidden, g)
 		end
 	end
+	local lineup = workspace:WaitForChild("LineUp", 20)
+	task.wait(1)
+	local lineShots = {}
+	if lineup then
+		for i = -2, 2 do
+			table.insert(lineShots, { "lineup" .. (i + 3), CFrame.lookAt(center + Vector3.new(i * 27, 7, -8), center + Vector3.new(i * 27, 3, -30)) })
+		end
+	end
+	for _, shot in lineShots do
+		cam.CFrame = shot[2]
+		log("camera-tour " .. shot[1])
+		task.wait(5)
+	end
 	for _, shot in {
 		{ "outpost_overview", CFrame.lookAt(center + Vector3.new(0, 60, 50), center + Vector3.new(0, 0, -26)) },
 		{ "outpost_low", CFrame.lookAt(center + Vector3.new(0, 8, 14), center + Vector3.new(0, 4, -30)) },
@@ -218,49 +234,70 @@ local function outpostTour()
 	cam.CameraType = Enum.CameraType.Custom
 end
 
+-- the screens as a player sees them during a run (HUD on): the battle, every menu panel, the boss
+local function uiTour(mapId)
+	repeat
+		task.wait(0.5)
+	until GameState:GetAttribute("Map") == mapId and (GameState:GetAttribute("Wave") or 0) >= 2
+	log("camera-tour ui_battle")
+	task.wait(5)
+	-- close-ups of up to three different enemies
+	local seen, shots = {}, 0
+	local cam = workspace.CurrentCamera
+	for _ = 1, 40 do
+		for _, e in workspace.Enemies:GetChildren() do
+			if not seen[e.Name] and e.PrimaryPart and shots < 3 then
+				seen[e.Name] = true
+				shots += 1
+				cam.CameraType = Enum.CameraType.Scriptable
+				log("camera-tour ui_enemy" .. shots, e.Name)
+				for _ = 1, 60 do
+					if e.PrimaryPart then
+						local p = e.PrimaryPart.Position
+						cam.CFrame = CFrame.lookAt(p + Vector3.new(6, 4, 6), p)
+					end
+					task.wait(0.05)
+				end
+			end
+		end
+		if shots >= 3 then
+			break
+		end
+		task.wait(0.5)
+	end
+	cam.CameraType = Enum.CameraType.Custom
+	local dock = nil
+	for _, d in player.PlayerGui:GetDescendants() do
+		if d:IsA("TextButton") and d.Name == "Backpack" and d:FindFirstChild("Press") then
+			dock = d.Parent
+		end
+	end
+	for _, name in { "Backpack", "Heroes", "Quests", "Pets", "Season", "Daily", "Shop" } do
+		local button = dock and dock:FindFirstChild(name)
+		if button then
+			button.Press:Fire()
+			log("camera-tour ui_" .. string.lower(name))
+			task.wait(5)
+			if name ~= "Daily" and name ~= "Shop" then
+				button.Press:Fire() -- toggles it shut
+			end
+			task.wait(0.5)
+		end
+	end
+	repeat
+		task.wait(0.5)
+	until (GameState:GetAttribute("Wave") or 0) >= (GameState:GetAttribute("MaxWave") or 10) or GameState:GetAttribute("Map") ~= mapId
+	task.wait(2)
+	log("camera-tour ui_boss")
+end
+
 task.spawn(function()
 	outpostTour()
+	if UI_TOUR then
+		uiTour("MagmaFortress")
+		return
+	end
 	tour("MagmaFortress", "magma", true)
 	tour("CrystalCaves", "crystal", false)
 	tour("CursedForest", "forest", false)
-end)
-
--- and at a goblin-type enemy, for the model look check
-task.spawn(function()
-	task.wait(80) -- after the Ranger shot and the map tour
-	for _ = 1, 400 do
-		task.wait(0.5)
-		local enemies = workspace:FindFirstChild("Enemies")
-		local gob = nil
-		for _, e in enemies and enemies:GetChildren() or {} do
-			if e:GetAttribute("Mesh") and e.PrimaryPart then
-				gob = e
-				break
-			end
-		end
-		if gob then
-			local cam = workspace.CurrentCamera
-			cam.CameraType = Enum.CameraType.Scriptable
-			local hidden = {}
-			for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
-				if g:IsA("ScreenGui") and g.Enabled then
-					g.Enabled = false
-					table.insert(hidden, g)
-				end
-			end
-			log("camera on a goblin")
-			for _ = 1, 500 do
-				if gob.PrimaryPart then
-					local p = gob.PrimaryPart.Position
-					cam.CFrame = CFrame.lookAt(p + Vector3.new(8, 5, 8), p)
-				end
-				task.wait(0.05)
-			end
-			for _, g in hidden do
-				g.Enabled = true
-			end
-			cam.CameraType = Enum.CameraType.Custom
-			return
-		end
-	end
 end)

@@ -9,6 +9,7 @@ local Items = require(ReplicatedStorage.Shared.Items)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Effects = require(script.Parent.Effects)
+local ArtService = require(script.Parent.ArtService)
 
 local PetService = {}
 
@@ -81,36 +82,58 @@ local function buildModel(pet)
 		local part = p(props)
 		offsets[part] = offset
 	end
-	for side = -1, 1, 2 do
-		add({ Name = "Eye", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.35 * scale, Color = Color3.new(0, 0, 0) },
-			CFrame.new(side * 0.35 * scale, 0.25 * scale, -0.7 * scale))
+	-- the painted Blender model of this pet (art/blender/pets.py); the simple shapes below are the fallback
+	local template = ArtService.Model("pet_" .. string.lower(pet.kind))
+	if template then
+		local look = template:Clone()
+		local _, size = look:GetBoundingBox()
+		look:ScaleTo(look:GetScale() * (2.3 * scale) / size.Y)
+		local box = look:GetBoundingBox()
+		for _, part in look:GetChildren() do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+				part.CanCollide = false
+				part.CanQuery = false
+				part.CanTouch = false
+				offsets[part] = CFrame.new(-box.Position) * part.CFrame
+				part.Parent = model
+			end
+		end
+		look:Destroy()
+		body.Transparency = 1
 	end
-	if info.Shape == "Pup" then
+	if not template then
 		for side = -1, 1, 2 do
-			add({ Name = "Ear", Size = Vector3.new(0.3, 0.7, 0.3) * scale, Color = info.Color }, CFrame.new(side * 0.5 * scale, 0.9 * scale, 0))
+			add({ Name = "Eye", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.35 * scale, Color = Color3.new(0, 0, 0) },
+				CFrame.new(side * 0.35 * scale, 0.25 * scale, -0.7 * scale))
 		end
-	elseif info.Shape == "Sprout" then
-		add({ Name = "Leaf", Size = Vector3.new(0.9, 0.15, 0.5) * scale, Color = Color3.fromRGB(60, 200, 60) },
-			CFrame.new(0, 1 * scale, 0) * CFrame.Angles(0, 0, math.rad(20)))
-	elseif info.Shape == "Bug" then
-		for side = -1, 1, 2 do
-			add({ Name = "Wing", Size = Vector3.new(1, 0.1, 0.6) * scale, Color = Color3.new(1, 1, 1), Transparency = 0.4 },
-				CFrame.new(side * 0.9 * scale, 0.4 * scale, 0.2))
-		end
-		local light = Instance.new("PointLight")
-		light.Color = info.Color
-		light.Range = 8
-		light.Parent = body
-	elseif info.Shape == "Golem" then
-		body.Material = Enum.Material.Basalt
-		add({ Name = "Core", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6 * scale, Color = Color3.fromRGB(255, 140, 40),
-			Material = Enum.Material.Neon }, CFrame.new(0, 0, -0.6 * scale))
-	elseif info.Shape == "Dragon" then
-		for side = -1, 1, 2 do
-			add({ Name = "Wing", Size = Vector3.new(1.4, 0.15, 0.8) * scale, Color = info.Color:Lerp(Color3.new(0, 0, 0), 0.3) },
-				CFrame.new(side * 1.1 * scale, 0.5 * scale, 0.2) * CFrame.Angles(0, 0, side * math.rad(25)))
-			add({ Name = "Horn", Size = Vector3.new(0.2, 0.5, 0.2) * scale, Color = Color3.fromRGB(255, 220, 120) },
-				CFrame.new(side * 0.35 * scale, 0.85 * scale, -0.2 * scale))
+		if info.Shape == "Pup" then
+			for side = -1, 1, 2 do
+				add({ Name = "Ear", Size = Vector3.new(0.3, 0.7, 0.3) * scale, Color = info.Color }, CFrame.new(side * 0.5 * scale, 0.9 * scale, 0))
+			end
+		elseif info.Shape == "Sprout" then
+			add({ Name = "Leaf", Size = Vector3.new(0.9, 0.15, 0.5) * scale, Color = Color3.fromRGB(60, 200, 60) },
+				CFrame.new(0, 1 * scale, 0) * CFrame.Angles(0, 0, math.rad(20)))
+		elseif info.Shape == "Bug" then
+			for side = -1, 1, 2 do
+				add({ Name = "Wing", Size = Vector3.new(1, 0.1, 0.6) * scale, Color = Color3.new(1, 1, 1), Transparency = 0.4 },
+					CFrame.new(side * 0.9 * scale, 0.4 * scale, 0.2))
+			end
+			local light = Instance.new("PointLight")
+			light.Color = info.Color
+			light.Range = 8
+			light.Parent = body
+		elseif info.Shape == "Golem" then
+			body.Material = Enum.Material.Basalt
+			add({ Name = "Core", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6 * scale, Color = Color3.fromRGB(255, 140, 40),
+				Material = Enum.Material.Neon }, CFrame.new(0, 0, -0.6 * scale))
+		elseif info.Shape == "Dragon" then
+			for side = -1, 1, 2 do
+				add({ Name = "Wing", Size = Vector3.new(1.4, 0.15, 0.8) * scale, Color = info.Color:Lerp(Color3.new(0, 0, 0), 0.3) },
+					CFrame.new(side * 1.1 * scale, 0.5 * scale, 0.2) * CFrame.Angles(0, 0, side * math.rad(25)))
+				add({ Name = "Horn", Size = Vector3.new(0.2, 0.5, 0.2) * scale, Color = Color3.fromRGB(255, 220, 120) },
+					CFrame.new(side * 0.35 * scale, 0.85 * scale, -0.2 * scale))
+			end
 		end
 	end
 	if pet.evolved then
@@ -190,6 +213,18 @@ local function hatch(player, eggId)
 	DataService.Publish(player)
 	send(player)
 	task.spawn(DataService.Save, player)
+	local info = Config.Pets[kind]
+	if info.Rarity >= 5 then
+		-- a big moment for the whole server
+		local chance = 0
+		for _, c in egg.Chances do
+			if c[1] == kind then
+				chance = c[2] / total * 100
+			end
+		end
+		Remotes.Notify:FireAllClients(string.format("%s hatched a %s %s! (%.2f%% chance)", player.DisplayName,
+			Items.Rarities[info.Rarity].Name, info.Name, chance), Items.Rarities[info.Rarity].Color)
+	end
 	return true, pet
 end
 

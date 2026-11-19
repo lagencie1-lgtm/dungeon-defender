@@ -176,6 +176,7 @@ local function toggle()
 	end
 end
 heroButton.Activated:Connect(toggle)
+heroButton.Press.Event:Connect(toggle)
 Remotes.OpenPanel.OnClientEvent:Connect(function(name)
 	if name == "Heroes" and not panel.Visible then
 		toggle()

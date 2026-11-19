@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Items = require(ReplicatedStorage.Shared.Items)
+local Art = require(ReplicatedStorage.Shared.Art)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
 local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.label, Ui.button
@@ -42,6 +43,23 @@ local function rarityOf(item)
 	return Items.Rarities[item.rarity] or Items.Rarities[1]
 end
 
+-- the painted picture of an item kind (art/icons/item_*.png), or nil while it has not loaded
+local function itemImage(item)
+	local base = item and item.base
+	return base and Art.Image("item_" .. string.lower((string.gsub(base, "%s", "")))) or nil
+end
+-- an ImageLabel showing an item's picture inside `parent` (hidden when there is no picture)
+local function itemPicture(parent, item, props)
+	local defaults = { Name = "Picture", BackgroundTransparency = 1, Image = itemImage(item) or "",
+		ScaleType = Enum.ScaleType.Fit, Parent = parent }
+	for k, v in props do
+		defaults[k] = v
+	end
+	local picture = make("ImageLabel", defaults)
+	picture.Visible = picture.Image ~= ""
+	return picture
+end
+
 -------------------------------------------------------------------------------
 -- toasts: "Picked up Rare Runed Longsword"
 -------------------------------------------------------------------------------
@@ -54,11 +72,19 @@ local toasts = make("Frame", {
 }, { make("UIListLayout", { VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 6) }) })
 
-local function toast(text, color)
-	local box = make("Frame", { Size = UDim2.fromOffset(400, 34), BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.15,
-		Parent = toasts }, { corner(8), stroke(color, 2) })
-	local l = label({ Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), Text = text, TextColor3 = color,
-		TextXAlignment = Enum.TextXAlignment.Right, Parent = box })
+local function toast(text, color, item)
+	local image = item and itemImage(item)
+	local box = make("Frame", { Size = UDim2.fromOffset(400, image and 52 or 34), BackgroundColor3 = Ui.DARK,
+		BackgroundTransparency = 0.15, Parent = toasts }, { corner(8), stroke(color, 2) })
+	if image then
+		-- the item itself, in a little slot in its rarity colour
+		local slot = make("Frame", { Size = UDim2.fromOffset(44, 44), Position = UDim2.fromOffset(4, 4),
+			BackgroundColor3 = color:Lerp(Color3.new(0, 0, 0), 0.65), Parent = box }, { corner(8), stroke(color, 2) })
+		itemPicture(slot, item, { Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3) })
+		Ui.pop(slot, 1.5)
+	end
+	local l = label({ Size = UDim2.new(1, image and -64 or -16, 1, -8), Position = UDim2.fromOffset(image and 56 or 8, 4),
+		Text = text, TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Right, Parent = box })
 	Ui.pop(box, 1.15)
 	task.delay(4, function()
 		TweenService:Create(box, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
@@ -188,7 +214,7 @@ Remotes.LootPicked.OnClientEvent:Connect(function(dropId, item)
 	end
 	if item then
 		local r = rarityOf(item)
-		toast("Picked up " .. r.Name .. " " .. Items.DisplayName(item), r.Color)
+		toast(r.Name .. " " .. Items.DisplayName(item), r.Color, item)
 		Ui.playSound("Coin")
 	end
 end)
@@ -277,7 +303,10 @@ for i, slot in Items.Slots do
 		TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = b })
 	local name = label({ Size = UDim2.new(1, -6, 0, 46), Position = UDim2.fromOffset(3, 22), Text = "empty",
 		TextWrapped = true, ZIndex = 33, Parent = b })
-	slotBoxes[slot] = { button = b, name = name }
+	local picture = make("ImageLabel", { Name = "Picture", BackgroundTransparency = 1, Size = UDim2.fromOffset(50, 50),
+		Position = UDim2.new(0.5, 0, 0, 21), AnchorPoint = Vector2.new(0.5, 0), ScaleType = Enum.ScaleType.Fit, Visible = false,
+		ZIndex = 33, Parent = b })
+	slotBoxes[slot] = { button = b, name = name, picture = picture }
 end
 local totalsLabel = label({ Size = UDim2.fromOffset(440, 40), Position = UDim2.fromOffset(16, 134), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 230, 200), TextWrapped = true,
@@ -303,11 +332,15 @@ local grid = make("ScrollingFrame", {
 -- details on the right
 local detail = make("Frame", { Size = UDim2.fromOffset(330, 420), Position = UDim2.new(1, -16, 0, 66), AnchorPoint = Vector2.new(1, 0),
 	BackgroundColor3 = Ui.PANEL, ZIndex = 31, Parent = panel }, { corner(12) })
-local dName = label({ Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 10), Text = "Pick an item",
-	TextWrapped = true, ZIndex = 32, Parent = detail })
-local dRarity = label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(10, 42), Text = "",
-	Font = Enum.Font.Gotham, ZIndex = 32, Parent = detail })
-local dStats = label({ Size = UDim2.new(1, -20, 0, 170), Position = UDim2.fromOffset(10, 68), Text = "",
+local dSlot = make("Frame", { Size = UDim2.fromOffset(84, 84), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = Ui.DARK,
+	Visible = false, ZIndex = 32, Parent = detail }, { corner(10), stroke(Ui.GOLD, 3) })
+local dPicture = make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5),
+	ScaleType = Enum.ScaleType.Fit, ZIndex = 33, Parent = dSlot })
+local dName = label({ Size = UDim2.new(1, -114, 0, 52), Position = UDim2.fromOffset(104, 10), Text = "Pick an item",
+	TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 32, Parent = detail })
+local dRarity = label({ Size = UDim2.new(1, -114, 0, 20), Position = UDim2.fromOffset(104, 66), Text = "",
+	Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 32, Parent = detail })
+local dStats = label({ Size = UDim2.new(1, -20, 0, 140), Position = UDim2.fromOffset(10, 104), Text = "",
 	Font = Enum.Font.Gotham, TextScaled = false, TextSize = 17, RichText = true, TextWrapped = true,
 	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 32, Parent = detail })
 local equipButton = button({ Size = UDim2.new(1, -20, 0, 42), Position = UDim2.fromOffset(10, 252),
@@ -340,6 +373,7 @@ local function showDetail()
 	salvageArmed = nil
 	equipButton.Visible, upgradeButton.Visible, salvageButton.Visible = item ~= nil, item ~= nil, item ~= nil
 	if not item then
+		dSlot.Visible = false
 		dName.Text = "Pick an item"
 		dName.TextColor3 = Color3.new(1, 1, 1)
 		dRarity.Text = ""
@@ -347,6 +381,11 @@ local function showDetail()
 		return
 	end
 	local r = rarityOf(item)
+	local image = itemImage(item)
+	dSlot.Visible = image ~= nil
+	dPicture.Image = image or ""
+	dSlot.BackgroundColor3 = r.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.75)
+	dSlot:FindFirstChildOfClass("UIStroke").Color = r.Color
 	dName.Text = Items.DisplayName(item)
 	dName.TextColor3 = r.Color
 	dRarity.Text = r.Name .. " " .. item.slot .. " · item level " .. item.ilvl
@@ -401,11 +440,16 @@ local function card(item, order)
 	local b = make("TextButton", { Text = "", BackgroundColor3 = Color3.fromRGB(45, 38, 60), AutoButtonColor = true,
 		LayoutOrder = order, ZIndex = 32, Parent = grid }, { corner(8), stroke(r.Color, item.id == selectedId and 4 or 2) })
 	make("Frame", { Size = UDim2.new(1, 0, 0, 6), BackgroundColor3 = r.Color, ZIndex = 33, Parent = b }, { corner(3) })
-	label({ Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 9), Text = item.slot, Font = Enum.Font.Gotham,
-		TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = b })
-	label({ Size = UDim2.new(1, -6, 0, 34), Position = UDim2.fromOffset(3, 26), Text = item.slot == "Weapon"
-		and (Items.WeaponTypes[item.base] and Items.WeaponTypes[item.base].Name or item.base) or item.base,
-		TextColor3 = r.Color, TextWrapped = true, ZIndex = 33, Parent = b })
+	b.BackgroundColor3 = r.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.78) -- a hint of its rarity behind the picture
+	local picture = itemPicture(b, item, { Size = UDim2.new(1, -16, 1, -28), Position = UDim2.fromOffset(8, 8), ZIndex = 33 })
+	if not picture.Visible then
+		-- (no picture loaded yet: the old text card)
+		label({ Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 9), Text = item.slot, Font = Enum.Font.Gotham,
+			TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = b })
+		label({ Size = UDim2.new(1, -6, 0, 34), Position = UDim2.fromOffset(3, 26), Text = item.slot == "Weapon"
+			and (Items.WeaponTypes[item.base] and Items.WeaponTypes[item.base].Name or item.base) or item.base,
+			TextColor3 = r.Color, TextWrapped = true, ZIndex = 33, Parent = b })
+	end
 	label({ Size = UDim2.new(1, -6, 0, 16), Position = UDim2.new(0, 3, 1, -18),
 		Text = (isOn and "ON  " or "") .. ((item.plus or 0) > 0 and ("+" .. item.plus) or ("lv " .. item.ilvl)),
 		TextColor3 = isOn and Color3.fromRGB(120, 255, 120) or Color3.new(1, 1, 1), ZIndex = 33, Parent = b })
@@ -449,10 +493,14 @@ function refresh()
 		local item = equippedIn(slot)
 		if item then
 			local r = rarityOf(item)
-			box.name.Text = Items.DisplayName(item)
+			local image = itemImage(item)
+			box.picture.Image = image or ""
+			box.picture.Visible = image ~= nil
+			box.name.Text = image and "" or Items.DisplayName(item)
 			box.name.TextColor3 = r.Color
 			box.button:FindFirstChildOfClass("UIStroke").Color = r.Color
 		else
+			box.picture.Visible = false
 			box.name.Text = "empty"
 			box.name.TextColor3 = Ui.TEXT_DIM
 			box.button:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(200, 160, 80)
@@ -523,6 +571,7 @@ local function openBag()
 	end
 end
 bagButton.Activated:Connect(openBag)
+bagButton.Press.Event:Connect(openBag)
 Remotes.OpenPanel.OnClientEvent:Connect(function(name)
 	if name == "Backpack" and not panel.Visible then
 		openBag()
@@ -589,24 +638,30 @@ end)
 -- Victory Chest reveal
 -------------------------------------------------------------------------------
 local chestPanel = make("Frame", {
-	Size = UDim2.fromOffset(440, 300),
-	Position = UDim2.fromScale(0.5, 0.45),
+	Size = UDim2.fromOffset(440, 420),
+	Position = UDim2.fromScale(0.5, 0.47),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
 	Visible = false,
 	ZIndex = 40,
 	Parent = root,
 }, { corner(18), stroke(Ui.GOLD, 4) })
-label({ Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 12), Text = "VICTORY CHEST",
-	Font = Enum.Font.GothamBlack, TextColor3 = Ui.GOLD, ZIndex = 41, Parent = chestPanel })
-local chestRarity = label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 64), Text = "",
-	ZIndex = 41, Parent = chestPanel })
-local chestName = label({ Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 94), Text = "",
-	Font = Enum.Font.GothamBlack, ZIndex = 41, Parent = chestPanel })
-local chestStats = label({ Size = UDim2.new(1, -20, 0, 70), Position = UDim2.fromOffset(10, 140), Text = "",
-	Font = Enum.Font.Gotham, TextWrapped = true, ZIndex = 41, Parent = chestPanel })
-local chestOk = button({ Size = UDim2.fromOffset(200, 50), Position = UDim2.new(0.5, 0, 1, -16), AnchorPoint = Vector2.new(0.5, 1),
-	BackgroundColor3 = Color3.fromRGB(100, 60, 170), Text = "Nice!", ZIndex = 41, Parent = chestPanel })
+label({ Size = UDim2.new(1, -40, 0, 40), Position = UDim2.fromOffset(20, 18), Text = "VICTORY CHEST",
+	Font = Enum.Font.GothamBlack, TextColor3 = Ui.GOLD, ZIndex = 42, Parent = chestPanel })
+-- the item you got, big, in a slot in its rarity colour
+local chestSlot = make("Frame", { Size = UDim2.fromOffset(150, 150), Position = UDim2.new(0.5, 0, 0, 142),
+	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.PANEL, ZIndex = 42, Parent = chestPanel },
+	{ corner(18), stroke(Ui.GOLD, 4) })
+local chestPicture = make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -18, 1, -18),
+	Position = UDim2.fromOffset(9, 9), ScaleType = Enum.ScaleType.Fit, ZIndex = 43, Parent = chestSlot })
+local chestRarity = label({ Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 226), Text = "",
+	ZIndex = 42, Parent = chestPanel })
+local chestName = label({ Size = UDim2.new(1, -40, 0, 36), Position = UDim2.fromOffset(20, 250), Text = "",
+	Font = Enum.Font.GothamBlack, ZIndex = 42, Parent = chestPanel })
+local chestStats = label({ Size = UDim2.new(1, -48, 0, 46), Position = UDim2.fromOffset(24, 290), Text = "",
+	Font = Enum.Font.Gotham, TextWrapped = true, ZIndex = 42, Parent = chestPanel })
+local chestOk = button({ Size = UDim2.fromOffset(200, 48), Position = UDim2.new(0.5, 0, 1, -24), AnchorPoint = Vector2.new(0.5, 1),
+	BackgroundColor3 = Color3.fromRGB(100, 60, 170), Text = "Nice!", ZIndex = 42, Parent = chestPanel })
 chestOk.Activated:Connect(function()
 	chestPanel.Visible = false
 end)
@@ -617,6 +672,10 @@ Remotes.VictoryChest.OnClientEvent:Connect(function(item, kept)
 	chestRarity.Text = "..."
 	chestName.Text = ""
 	chestStats.Text = ""
+	-- first the open chest, then the item pops out of it
+	chestPicture.Image = Art.Image("chest_open") or ""
+	chestSlot.BackgroundColor3 = Ui.PANEL
+	chestSlot:FindFirstChildOfClass("UIStroke").Color = Ui.GOLD
 	chestPanel:FindFirstChildOfClass("UIStroke").Color = Ui.GOLD
 	Ui.pop(chestPanel, 0.6)
 	task.wait(1.2) -- a little suspense
@@ -625,6 +684,10 @@ Remotes.VictoryChest.OnClientEvent:Connect(function(item, kept)
 	chestName.Text = Items.DisplayName(item)
 	chestName.TextColor3 = r.Color
 	chestPanel:FindFirstChildOfClass("UIStroke").Color = r.Color
+	chestPicture.Image = itemImage(item) or chestPicture.Image
+	chestSlot.BackgroundColor3 = r.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7)
+	chestSlot:FindFirstChildOfClass("UIStroke").Color = r.Color
+	Ui.pop(chestSlot, 1.6)
 	local parts = {}
 	for _, stat in Items.StatOrder do
 		local v = Items.StatValue(item, stat)
@@ -635,6 +698,13 @@ Remotes.VictoryChest.OnClientEvent:Connect(function(item, kept)
 	chestStats.Text = table.concat(parts, "  ·  ") .. (kept and "" or "\n(backpack full: turned into scrap)")
 	Ui.pop(chestName, 1.5)
 	Ui.playSound("Coin")
+	-- closes by itself if nobody taps it
+	local shown = chestName.Text
+	task.delay(7, function()
+		if chestPanel.Visible and chestName.Text == shown then
+			chestPanel.Visible = false
+		end
+	end)
 end)
 
 -- gold earned at the end of a run

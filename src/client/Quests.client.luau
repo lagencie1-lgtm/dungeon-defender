@@ -101,6 +101,7 @@ local function toggle()
 	end
 end
 questButton.Activated:Connect(toggle)
+questButton.Press.Event:Connect(toggle)
 closeButton.Activated:Connect(function()
 	panel.Visible = false
 end)

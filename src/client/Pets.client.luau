@@ -27,51 +27,160 @@ end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
 fitScreen()
 
+local Art = require(ReplicatedStorage.Shared.Art)
+local TweenService = game:GetService("TweenService")
+
 local petButton = require(script.Parent.Menu).Add("Pets", "Pets", 6)
 
-local panel = make("Frame", { Size = UDim2.fromOffset(820, 500), Position = UDim2.fromScale(0.5, 0.5),
+local function rarityColor(kind)
+	return Items.Rarities[Config.Pets[kind].Rarity].Color
+end
+local function petImage(kind)
+	return Art.Image("pet_" .. string.lower(kind))
+end
+local function eggImage(egg)
+	return Art.Image("egg_" .. string.lower((string.gsub(egg.Id, "Egg$", ""))))
+end
+
+-- a square tile with a pet's picture on a plate in its rarity colour (its name when the picture isn't loaded)
+local function petTile(parent, kind, size, zIndex, props)
+	local color = rarityColor(kind)
+	local defaults = { Size = UDim2.fromOffset(size, size), BackgroundColor3 = color:Lerp(Color3.fromRGB(30, 24, 36), 0.72),
+		ZIndex = zIndex, Parent = parent }
+	for k, v in props or {} do
+		defaults[k] = v
+	end
+	local tile = make("Frame", defaults, { corner(math.floor(size / 6)), stroke(color, 2) })
+	local image = petImage(kind)
+	if image then
+		make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3),
+			Image = image, ScaleType = Enum.ScaleType.Fit, ZIndex = zIndex + 1, Parent = tile })
+	else
+		label({ Size = UDim2.new(1, -4, 1, -4), Position = UDim2.fromOffset(2, 2), Text = Config.Pets[kind].Name, TextWrapped = true,
+			TextColor3 = color, ZIndex = zIndex + 1, Parent = tile })
+	end
+	return tile
+end
+
+local panel = make("Frame", { Size = UDim2.fromOffset(940, 540), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 30, Parent = root },
 	{ corner(18), stroke(Color3.fromRGB(140, 255, 160), 3) })
-label({ Size = UDim2.fromOffset(200, 36), Position = UDim2.fromOffset(16, 10), Text = "Pets",
+label({ Size = UDim2.fromOffset(120, 36), Position = UDim2.fromOffset(24, 16), Text = "Pets",
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
-local goldLabel = label({ Size = UDim2.fromOffset(200, 28), Position = UDim2.fromOffset(120, 14), Text = "",
+local goldLabel = label({ Size = UDim2.fromOffset(200, 28), Position = UDim2.fromOffset(130, 20), Text = "",
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
-local message = label({ Size = UDim2.fromOffset(360, 24), Position = UDim2.fromOffset(330, 16), Text = "",
+local message = label({ Size = UDim2.fromOffset(440, 24), Position = UDim2.fromOffset(350, 22), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
-local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
 
--- eggs on the left, with their chances
-local eggColumn = make("Frame", { Size = UDim2.fromOffset(300, 430), Position = UDim2.fromOffset(16, 56), BackgroundTransparency = 1,
-	ZIndex = 31, Parent = panel }, { make("UIListLayout", { Padding = UDim.new(0, 10) }) })
+-------------------------------------------------------------------------------
+-- the hatch reveal: the egg shakes, then the pet pops out
+-------------------------------------------------------------------------------
+local reveal = make("Frame", { Size = UDim2.fromOffset(380, 400), Position = UDim2.fromScale(0.5, 0.48),
+	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 50, Parent = root },
+	{ corner(18), stroke(Ui.GOLD, 4) })
+local revealTitle = label({ Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 18), Text = "", Font = Enum.Font.GothamBlack,
+	TextColor3 = Ui.GOLD, ZIndex = 52, Parent = reveal })
+local revealSlot = make("Frame", { Size = UDim2.fromOffset(180, 180), Position = UDim2.new(0.5, 0, 0, 150),
+	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.PANEL, ZIndex = 52, Parent = reveal }, { corner(22), stroke(Ui.GOLD, 4) })
+local revealPicture = make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -16, 1, -16), Position = UDim2.fromOffset(8, 8),
+	ScaleType = Enum.ScaleType.Fit, ZIndex = 53, Parent = revealSlot })
+local revealName = label({ Size = UDim2.new(1, -40, 0, 36), Position = UDim2.fromOffset(20, 250), Text = "", Font = Enum.Font.GothamBlack,
+	ZIndex = 52, Parent = reveal })
+local revealInfo = label({ Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 290), Text = "", Font = Enum.Font.Gotham,
+	TextColor3 = Ui.TEXT_DIM, ZIndex = 52, Parent = reveal })
+local revealOk = button({ Size = UDim2.fromOffset(180, 46), Position = UDim2.new(0.5, 0, 1, -22), AnchorPoint = Vector2.new(0.5, 1),
+	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Nice!", ZIndex = 52, Parent = reveal })
+revealOk.Activated:Connect(function()
+	reveal.Visible = false
+end)
+local revealToken = 0
+local function showReveal(egg, pet, chance)
+	revealToken += 1
+	local my = revealToken
+	local info = Config.Pets[pet.kind]
+	local color = rarityColor(pet.kind)
+	reveal.Visible = true
+	revealTitle.Text = egg.Name
+	revealName.Text = ""
+	revealInfo.Text = "..."
+	revealPicture.Image = eggImage(egg) or ""
+	revealSlot.BackgroundColor3 = Ui.PANEL
+	revealSlot:FindFirstChildOfClass("UIStroke").Color = Ui.GOLD
+	reveal:FindFirstChildOfClass("UIStroke").Color = Ui.GOLD
+	Ui.pop(reveal, 0.7)
+	-- the egg wobbles, faster and faster
+	for i = 1, 6 do
+		if my ~= revealToken then
+			return
+		end
+		TweenService:Create(revealPicture, TweenInfo.new(0.09), { Rotation = (i % 2 == 0 and 1 or -1) * (6 + i * 2) }):Play()
+		task.wait(0.19 - i * 0.015)
+	end
+	if my ~= revealToken then
+		return
+	end
+	revealPicture.Rotation = 0
+	revealPicture.Image = petImage(pet.kind) or ""
+	revealSlot.BackgroundColor3 = color:Lerp(Color3.fromRGB(30, 24, 36), 0.65)
+	revealSlot:FindFirstChildOfClass("UIStroke").Color = color
+	reveal:FindFirstChildOfClass("UIStroke").Color = color
+	revealName.Text = info.Name
+	revealName.TextColor3 = color
+	revealInfo.Text = string.format("%s  ·  %s chance", Items.Rarities[info.Rarity].Name,
+		chance >= 1 and string.format("%.0f%%", chance) or string.format("%.2f%%", chance))
+	Ui.pop(revealSlot, info.Rarity >= 5 and 2 or 1.5)
+	Ui.pop(revealName, 1.4)
+	Ui.playSound("Coin")
+end
+
+-------------------------------------------------------------------------------
+-- eggs on the left: the egg, its price, and a picture of every pet inside with its chance
+-------------------------------------------------------------------------------
+local eggColumn = make("ScrollingFrame", { Size = UDim2.fromOffset(440, 450), Position = UDim2.fromOffset(24, 66),
+	BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 6, AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(), ZIndex = 31, Parent = panel }, { make("UIListLayout", { Padding = UDim.new(0, 10) }) })
 for i, egg in Config.Eggs do
-	local card = make("Frame", { Size = UDim2.fromOffset(300, 206), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
-		Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
-	label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 6), Text = egg.Name, TextColor3 = egg.Color,
-		ZIndex = 33, Parent = card })
 	local total = 0
 	for _, c in egg.Chances do
 		total += c[2]
 	end
-	local lines = {}
-	for _, c in egg.Chances do
-		local pet = Config.Pets[c[1]]
-		table.insert(lines, string.format("%s  %.1f%%  (+%d%% %s)", pet.Name, c[2] / total * 100, pet.Bonus,
-			Items.Stats[pet.Stat] and Items.Stats[pet.Stat].Name or pet.Stat))
-	end
-	label({ Size = UDim2.new(1, -20, 0, 110), Position = UDim2.fromOffset(10, 36), Text = table.concat(lines, "\n"),
-		Font = Enum.Font.Gotham, TextScaled = false, TextSize = 15, TextColor3 = Ui.TEXT_DIM,
-		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 33, Parent = card })
-	local hatch = button({ Size = UDim2.new(1, -20, 0, 42), Position = UDim2.new(0, 10, 1, -50),
+	local rows = math.ceil(#egg.Chances / 4)
+	local card = make("Frame", { Size = UDim2.fromOffset(428, 110 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
+		ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
+	local eggSlot = make("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.fromOffset(10, 10),
+		BackgroundColor3 = egg.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7), ZIndex = 33, Parent = card }, { corner(14), stroke(egg.Color, 2) })
+	make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4),
+		Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
+	label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	local hatch = button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.fromOffset(110, 50),
 		BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
+	-- what can come out
+	local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
+		BackgroundTransparency = 1, ZIndex = 33, Parent = card },
+		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(96, 86), CellPadding = UDim2.fromOffset(6, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder }) })
+	for n, c in egg.Chances do
+		local percent = c[2] / total * 100
+		local cell = make("Frame", { BackgroundTransparency = 1, LayoutOrder = n, ZIndex = 33, Parent = inside })
+		petTile(cell, c[1], 62, 34, { Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0) })
+		label({ Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 64),
+			Text = percent >= 1 and string.format("%.0f%%", percent) or string.format("%.2f%%", percent),
+			TextColor3 = rarityColor(c[1]), ZIndex = 34, Parent = cell })
+	end
 	hatch.Activated:Connect(function()
 		local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id)
 		if ok then
-			local info = Config.Pets[result.kind]
-			message.Text = "You hatched " .. info.Name .. "!"
-			message.TextColor3 = Items.Rarities[info.Rarity].Color
-			Ui.pop(message, 1.6)
-			Ui.playSound("Coin")
+			local chance = 0
+			for _, c in egg.Chances do
+				if c[1] == result.kind then
+					chance = c[2] / total * 100
+				end
+			end
+			message.Text = ""
+			task.spawn(showReveal, egg, result, chance)
 		else
 			message.Text = result or "Can't hatch"
 			message.TextColor3 = Ui.BAD
@@ -79,8 +188,10 @@ for i, egg in Config.Eggs do
 	end)
 end
 
+-------------------------------------------------------------------------------
 -- your pets on the right
-local list = make("ScrollingFrame", { Size = UDim2.fromOffset(476, 430), Position = UDim2.new(1, -16, 0, 56), AnchorPoint = Vector2.new(1, 0),
+-------------------------------------------------------------------------------
+local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 450), Position = UDim2.new(1, -24, 0, 66), AnchorPoint = Vector2.new(1, 0),
 	BackgroundColor3 = Color3.fromRGB(35, 28, 48), BorderSizePixel = 0, ScrollBarThickness = 6,
 	AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 31, Parent = panel },
 	{ corner(10), make("UIListLayout", { Padding = UDim.new(0, 6) }),
@@ -121,15 +232,16 @@ local function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 62), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 72), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, pet.id == equippedId and 3 or 1) })
-		label({ Size = UDim2.fromOffset(200, 24), Position = UDim2.fromOffset(10, 6),
+		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
+		label({ Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(76, 10),
 			Text = info.Name .. (pet.evolved and " (evolved)" or ""), TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
-		label({ Size = UDim2.fromOffset(220, 20), Position = UDim2.fromOffset(10, 34),
+		label({ Size = UDim2.fromOffset(170, 20), Position = UDim2.fromOffset(76, 40),
 			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
-		local equip = button({ Size = UDim2.fromOffset(74, 40), Position = UDim2.new(1, -170, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		local equip = button({ Size = UDim2.fromOffset(70, 40), Position = UDim2.new(1, -164, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 			Text = pet.id == equippedId and "On" or "Equip",
 			BackgroundColor3 = pet.id == equippedId and Color3.fromRGB(60, 60, 70) or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
 		equip.Activated:Connect(function()
@@ -174,11 +286,15 @@ local function toggle()
 		message.TextColor3 = Ui.TEXT_DIM
 		Ui.pop(panel, 0.85)
 		refresh()
+	else
+		reveal.Visible = false
 	end
 end
 petButton.Activated:Connect(toggle)
+petButton.Press.Event:Connect(toggle)
 closeButton.Activated:Connect(function()
 	panel.Visible = false
+	reveal.Visible = false
 end)
 Remotes.OpenPanel.OnClientEvent:Connect(function(name)
 	if name == "Pets" and not panel.Visible then
@@ -193,5 +309,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		toggle()
 	elseif input.KeyCode == Enum.KeyCode.Q then
 		panel.Visible = false
+		reveal.Visible = false
 	end
 end)

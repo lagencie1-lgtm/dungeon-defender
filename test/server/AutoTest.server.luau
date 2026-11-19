@@ -87,7 +87,44 @@ local RUNS = {
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
-task.wait(36) -- time for the Outpost look check on the client
+-- a line-up of every enemy type at the Outpost, for the look check
+step("enemy line-up", function()
+	local EnemyService = require(Server.EnemyService)
+	local ArtService = require(Server.ArtService)
+	local started = os.clock()
+	for _, look in { "goblin", "imp", "knight", "slime", "golem", "shade" } do
+		ArtService.WaitModel("enemy_" .. look, 60)
+	end
+	log("enemy models loaded after", math.floor(os.clock() - started), "s")
+	local names = {}
+	for name in Config.Enemies do
+		table.insert(names, name)
+	end
+	table.sort(names)
+	local lineup = Instance.new("Folder")
+	lineup.Name = "LineUp"
+	lineup.Parent = workspace
+	local c = Config.OutpostCenter
+	for i, name in names do
+		local e = EnemyService.Spawn(name, 1, 0)
+		local model = e and e.model or nil
+		if model then
+			local x = (i - (#names + 1) / 2) * 9
+			local copy = model:Clone() -- (Clear below destroys the real ones)
+			copy:PivotTo(CFrame.lookAt(c + Vector3.new(x, Config.Enemies[name].Size, -4), c + Vector3.new(x, Config.Enemies[name].Size, 40)))
+			copy.Parent = lineup
+			local look = copy:FindFirstChild("Look")
+			local bits = {}
+			for _, part in look and look:GetChildren() or {} do
+				table.insert(bits, part.Name .. "=" .. tostring(part.Color))
+			end
+			log("line-up", name, tostring(Config.Enemies[name].Color), table.concat(bits, " | "))
+		end
+	end
+	EnemyService.Clear()
+	log("line-up", #lineup:GetChildren())
+end)
+task.wait(45) -- time for the Outpost look check on the client
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()

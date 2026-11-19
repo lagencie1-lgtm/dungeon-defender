@@ -68,6 +68,8 @@ function Menu.Add(name, icon, order, color)
 	local dot = make("Frame", { Name = "Dot", Size = UDim2.fromOffset(16, 16), Position = UDim2.new(1, -10, 0, -6),
 		BackgroundColor3 = Color3.fromRGB(255, 60, 60), Visible = false, ZIndex = 3, Parent = b },
 		{ corner(8), make("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 1.5 }) })
+	-- the test build presses menu buttons through this (scripts can't click)
+	make("BindableEvent", { Name = "Press", Parent = b })
 	local scale = make("UIScale", { Parent = b })
 	b.MouseEnter:Connect(function()
 		scale.Scale = 1.08

@@ -634,7 +634,16 @@ function EnemyService.Start()
 				if e.stats.Loot then
 					side = Vector3.new(-dir.Z, 0, dir.X) * math.sin(e.distance * 0.35) * 2.5
 				end
-				e.model:PivotTo(CFrame.lookAt(pos + up + side, pos + up + side + dir))
+				-- turn smoothly at corners, waddle from foot to foot, lean into the walk (solid models, no skeleton)
+				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * 9)) or dir
+				if e.facing.Magnitude < 0.01 then
+					e.facing = dir
+				end
+				local step = e.distance * 0.8
+				local moving = speed > 0 and 1 or 0
+				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
+				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
+				e.model:PivotTo(CFrame.lookAt(pos + up + side, pos + up + side + e.facing.Unit) * CFrame.Angles(lean, 0, waddle))
 
 				-- boss says things from time to time
 				if e.stats.Boss and now > e.nextQuote then

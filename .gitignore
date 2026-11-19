@@ -5,3 +5,4 @@ sourcemap.json
 tools/
 htd-autotest.rbxl
 art/models/*.fbx
+__pycache__/

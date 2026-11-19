@@ -2,7 +2,8 @@
 into src/shared/Art.luau. Icons that already have an id are skipped.
 Needs the API key in tools/roblox-api-key.txt with the "asset" permission (read + write).
 Each icon is first shrunk to 256x256 with ffmpeg (tools/ffmpeg).
-Run:  python scripts/upload_art.py
+Run:  python scripts/upload_art.py                      (art/icons, 256 px)
+      python scripts/upload_art.py art/textures 1024    (another folder and size; names need a "" slot in Art.luau)
 """
 import glob
 import json
@@ -33,9 +34,9 @@ def creator_user_id():
     return owner.split("/")[-1]
 
 
-def shrink(src, dst):
+def shrink(src, dst, size=256):
     ffmpeg = glob.glob(os.path.join(ROOT, "tools", "ffmpeg", "*", "bin", "ffmpeg.exe"))[0]
-    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", src, "-vf", "scale=256:256", dst], check=True)
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", src, "-vf", f"scale={size}:{size}", dst], check=True)
 
 
 def upload(path, name, user_id):
@@ -78,12 +79,14 @@ def main():
     os.makedirs(SMALL, exist_ok=True)
     text = open(ART, encoding="utf-8").read()
     user_id = creator_user_id()
-    for path in sorted(glob.glob(os.path.join(ICONS, "*.png"))):
+    folder = os.path.join(ROOT, sys.argv[1]) if len(sys.argv) > 1 else ICONS
+    size = int(sys.argv[2]) if len(sys.argv) > 2 else 256
+    for path in sorted(glob.glob(os.path.join(folder, "*.png"))):
         name = os.path.splitext(os.path.basename(path))[0]
         if not re.search(r"\n\t" + name + r' = "",', text):
             continue
         small = os.path.join(SMALL, name + ".png")
-        shrink(path, small)
+        shrink(path, small, size)
         try:
             decal = upload(small, name, user_id)
             image = image_id_for(decal)

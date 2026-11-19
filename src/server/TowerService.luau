@@ -115,10 +115,10 @@ local BUILDERS = {
 
 -- the Blender-built look of a defender, scaled to its height, standing on `at`.
 -- Returns true when the model was used (otherwise the part-built look is used).
-local MODEL_HEIGHT = { Ranger = 12.8, FlameCannon = 6.5, FrostCrystal = 7.2, StormObelisk = 12.8, Ballista = 5.6 }
+local MODEL_HEIGHT = { Ranger = 13.5, FlameCannon = 6.5, FrostCrystal = 7.2, StormObelisk = 12.8, Ballista = 5.6 }
 local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
 	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
-local MODEL_MUZZLE = { Ranger = Vector3.new(0, 11.2, 0), FlameCannon = Vector3.new(0, 4.8, -3), FrostCrystal = Vector3.new(0, 5, 0),
+local MODEL_MUZZLE = { Ranger = Vector3.new(0, 7, -1.9), FlameCannon = Vector3.new(0, 4.8, -3), FrostCrystal = Vector3.new(0, 5, 0),
 	StormObelisk = Vector3.new(0, 12, 0), Ballista = Vector3.new(0, 5, -3) }
 local function useModel(model, towerType, at)
 	local template = MODEL_NAME[towerType] and ArtService.Model(MODEL_NAME[towerType])

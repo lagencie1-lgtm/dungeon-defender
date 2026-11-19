@@ -1,0 +1,9 @@
+{
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "Cobblestone",
+    "ColorMap": "rbxassetid://83790957979162",
+    "StudsPerTile": 8.0,
+    "RoughnessMap": "rbxassetid://100925396897052"
+  }
+}

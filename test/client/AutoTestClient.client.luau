@@ -75,15 +75,18 @@ log("code", Remotes.RedeemCode:InvokeServer("goblinmode"))
 log("code again", Remotes.RedeemCode:InvokeServer("GOBLINMODE"))
 log("bad code", Remotes.RedeemCode:InvokeServer("nope"))
 
--- look at a Ranger for a screenshot check (test build only)
+-- look at a Ranger for a screenshot check (test build only; off while the map tour runs)
 task.delay(25, function()
+	if true then
+		return
+	end
 	local towers = workspace:FindFirstChild("Towers")
 	local ranger = towers and towers:FindFirstChild("Ranger")
 	if ranger and ranger.PrimaryPart then
 		local cam = workspace.CurrentCamera
 		cam.CameraType = Enum.CameraType.Scriptable
 		local p = ranger.PrimaryPart.Position
-		cam.CFrame = CFrame.lookAt(p + Vector3.new(26, 22, 26), p + Vector3.new(0, 4, 0))
+		cam.CFrame = CFrame.lookAt(p + Vector3.new(40, 34, 40), p + Vector3.new(0, 2, 0))
 		local hidden = {}
 		for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
 			if g:IsA("ScreenGui") and g.Enabled then
@@ -100,8 +103,56 @@ task.delay(25, function()
 	end
 end)
 
+-- a short map tour for the look check: overview, the enemy gate, the portal (test build only)
+task.spawn(function()
+	repeat
+		task.wait(0.5)
+	until GameState:GetAttribute("Map") == "MagmaFortress" and workspace:FindFirstChild("Map")
+	task.wait(5) -- let the models load in
+	-- positions from the built map itself (the client's Config doesn't know which map is on)
+	local map = workspace.Map
+	local gate = map:WaitForChild("GateGlow", 10).Position
+	local portal = map:WaitForChild("Portal", 10).Position
+	local flat = Vector3.new(1, 0, 1)
+	local toPortal = ((portal - gate) * flat).Unit
+	local cam = workspace.CurrentCamera
+	cam.CameraType = Enum.CameraType.Scriptable
+	local hidden = {}
+	for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
+		if g:IsA("ScreenGui") and g.Enabled then
+			g.Enabled = false
+			table.insert(hidden, g)
+		end
+	end
+	local shots = {
+		{ "overview", CFrame.lookAt(Vector3.new(0, 120, 110), Vector3.new(0, 0, 0)) },
+		{ "gate", CFrame.lookAt(Vector3.new(gate.X, 18, gate.Z) + toPortal * 34, Vector3.new(gate.X, 8, gate.Z)) },
+		{ "portal", CFrame.lookAt(Vector3.new(portal.X, 16, portal.Z) - toPortal * 34, portal) },
+	}
+	local towers = workspace:FindFirstChild("Towers")
+	for _, kind in { "Ranger", "Flame Cannon", "Frost Crystal", "Storm Obelisk", "Ballista" } do
+		local tower = towers and towers:FindFirstChild(kind)
+		if tower and tower.PrimaryPart then
+			local p = tower.PrimaryPart.Position
+			local size = kind == "Ranger" and 16 or kind == "Storm Obelisk" and 15 or 10
+			table.insert(shots, { string.lower((kind:gsub(" ", ""))), CFrame.lookAt(p + Vector3.new(size, size * 0.7, -size), p + Vector3.new(0, size * 0.35, 0)) })
+		end
+	end
+	for _, shot in shots do
+		cam.CameraType = Enum.CameraType.Scriptable
+		cam.CFrame = shot[2]
+		log("camera-tour " .. shot[1], tostring(shot[2].Position))
+		task.wait(5)
+	end
+	for _, g in hidden do
+		g.Enabled = true
+	end
+	cam.CameraType = Enum.CameraType.Custom
+end)
+
 -- and at a goblin-type enemy, for the model look check
 task.spawn(function()
+	task.wait(80) -- after the Ranger shot and the map tour
 	for _ = 1, 400 do
 		task.wait(0.5)
 		local enemies = workspace:FindFirstChild("Enemies")

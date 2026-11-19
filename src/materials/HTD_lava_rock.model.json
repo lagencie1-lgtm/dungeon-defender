@@ -1,0 +1,9 @@
+{
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "CrackedLava",
+    "ColorMap": "rbxassetid://71676510076886",
+    "StudsPerTile": 14.0,
+    "RoughnessMap": "rbxassetid://100925396897052"
+  }
+}

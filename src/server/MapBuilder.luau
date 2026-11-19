@@ -3,6 +3,32 @@
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
+local TerrainBuilder = require(script.Parent.TerrainBuilder)
+local ArtService = require(script.Parent.ArtService)
+
+-- puts a Blender model (from ArtService) into the map, scaled to `height`, standing on `cframe`
+-- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
+local function placeModel(parent, name, cframe, height)
+	local template = ArtService.Model(name)
+	if not template then
+		return nil
+	end
+	local look = template:Clone()
+	local _, size = look:GetBoundingBox()
+	look:ScaleTo(look:GetScale() * height / size.Y)
+	-- stand the bottom centre on the spot, then turn it to face the right way
+	local box, newSize = look:GetBoundingBox()
+	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
+	local offset = look:GetPivot().Position - bottom
+	look:PivotTo(cframe * CFrame.new(offset))
+	for _, p in look:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Anchored = true
+		end
+	end
+	look.Parent = parent
+	return look
+end
 
 local MapBuilder = {}
 
@@ -51,6 +77,12 @@ local function setupLighting(theme)
 		atmosphere.Parent = Lighting
 	end
 	Lighting.Brightness = 2
+	-- no mirror-like sky reflections: they made faceted rocks flash white (painted look stays matte)
+	Lighting.EnvironmentSpecularScale = 0
+	Lighting.ColorShift_Top = Color3.new(0, 0, 0)
+	atmosphere.Offset = 0
+	atmosphere.Glare = 0
+	atmosphere.Haze = 2
 	-- 6A: maps stay bright and readable on a phone; mood comes from colour, not darkness
 	Lighting.ExposureCompensation = 0.25
 	if theme == "Crystal" then
@@ -63,14 +95,22 @@ local function setupLighting(theme)
 		atmosphere.Color = Color3.fromRGB(90, 100, 180)
 		atmosphere.Decay = Color3.fromRGB(30, 30, 80)
 	elseif theme == "Magma" then
-		Lighting.ClockTime = 17.2
-		Lighting.Brightness = 2.6
-		Lighting.Ambient = Color3.fromRGB(135, 95, 85)
-		Lighting.OutdoorAmbient = Color3.fromRGB(165, 115, 100)
+		-- volcanic dusk: red-orange haze on the horizon, bright warm light on the action
+		-- (a low sun at full strength blew the faces turned to it out to white: softer, warmer sun, more ambient)
+		Lighting.ClockTime = 16.2
+		Lighting.Brightness = 2.1
+		Lighting.ExposureCompensation = 0.3
+		Lighting.ColorShift_Top = Color3.fromRGB(255, 196, 150)
+		Lighting.Ambient = Color3.fromRGB(150, 136, 130)
+		Lighting.OutdoorAmbient = Color3.fromRGB(178, 158, 148)
 		Lighting.FogColor = Color3.fromRGB(80, 30, 20)
-		atmosphere.Density = 0.4
-		atmosphere.Color = Color3.fromRGB(200, 100, 70)
-		atmosphere.Decay = Color3.fromRGB(120, 40, 20)
+		-- thick ash haze turns the whole sky orange-red (no plain blue sky over a volcano)
+		atmosphere.Density = 0.3
+		atmosphere.Offset = 0.1
+		atmosphere.Color = Color3.fromRGB(255, 165, 110)
+		atmosphere.Decay = Color3.fromRGB(140, 60, 40)
+		atmosphere.Glare = 0.6
+		atmosphere.Haze = 2.5
 	else
 		Lighting.ClockTime = 16.8
 		Lighting.Brightness = 2.6
@@ -83,6 +123,27 @@ local function setupLighting(theme)
 	end
 	Lighting.FogStart = 120
 	Lighting.FogEnd = 400
+	-- painted sky box per theme (only Magma has one so far); the default blue sky never shows over a volcano
+	local old = Lighting:FindFirstChild("MapSky")
+	if old then
+		old:Destroy()
+	end
+	if theme == "Magma" then
+		-- in the background: the images may still be loading when the first map is built
+		task.spawn(function()
+		local side = ArtService.Image("sky_magma_side", 30)
+		if side and Config.Maps[Config.CurrentMap].Theme == "Magma" and not Lighting:FindFirstChild("MapSky") then
+			local sky = Instance.new("Sky")
+			sky.Name = "MapSky"
+			sky.SkyboxBk, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt = side, side, side, side
+			sky.SkyboxUp = ArtService.Image("sky_magma_up", 2) or side
+			sky.SkyboxDn = ArtService.Image("sky_magma_down", 2) or side
+			sky.CelestialBodiesShown = false
+			sky.StarCount = 0
+			sky.Parent = Lighting
+		end
+		end)
+	end
 end
 
 -- invisible walls around a rectangle so nobody falls off
@@ -174,7 +235,12 @@ function MapBuilder.BuildBattlefield(mapId)
 	setupLighting(mapInfo.Theme)
 
 	local map = folder("Map", workspace)
+	workspace.Terrain:Clear()
+	TerrainBuilder.ResetLooks()
+	local terrainLook = magma -- maps rebuilt with real terrain (the others follow)
 	part({
+		Transparency = terrainLook and 1 or 0,
+		CanCollide = not terrainLook, -- heroes walk on the terrain itself
 		Name = "Ground",
 		Size = Vector3.new(Config.MapSize.X, 2, Config.MapSize.Y),
 		Position = Vector3.new(0, -1, 0),
@@ -195,6 +261,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			CFrame = CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, 0.1, 0),
 			Color = crystal and Color3.fromRGB(80, 80, 105) or magma and Color3.fromRGB(95, 70, 60) or Color3.fromRGB(110, 85, 55),
 			Material = magma and Enum.Material.Slate or Enum.Material.Ground,
+			Transparency = terrainLook and 1 or 0,
 			CanCollide = false,
 			Parent = pathFolder,
 		})
@@ -203,6 +270,23 @@ function MapBuilder.BuildBattlefield(mapId)
 	-- where the enemies come from
 	local camp = points[1] + (points[1] - points[2]).Unit * 12
 	if magma then
+		TerrainBuilder.Magma(map, camp)
+	end
+	local gateFacing = CFrame.lookAt(camp, camp + (points[1] - camp).Unit)
+	if magma then
+		ArtService.WaitModel("map_gate", 8)
+		ArtService.WaitModel("map_portal", 4)
+	end
+	if magma and placeModel(map, "map_gate", gateFacing, 20) then
+		-- the Blender demon gate (with a glow from its lava maw)
+		local glowPart = part({ Name = "GateGlow", Size = Vector3.one, Position = camp + Vector3.new(0, 6, 0), Transparency = 1,
+			CanCollide = false, Parent = map })
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 120, 40)
+		light.Range = 26
+		light.Brightness = 2
+		light.Parent = glowPart
+	elseif magma then
 		part({ Name = "Gate", Size = Vector3.new(4, 16, 18), Position = camp + Vector3.new(0, 8, 0),
 			Color = Color3.fromRGB(40, 35, 40), Material = Enum.Material.Basalt, Parent = map })
 		local glow = part({ Name = "GateGlow", Size = Vector3.new(4.2, 10, 10), Position = camp + Vector3.new(0, 5, 0),
@@ -239,11 +323,18 @@ function MapBuilder.BuildBattlefield(mapId)
 	})
 	local glow = Instance.new("PointLight")
 	glow.Color = portal.Color
-	glow.Range = 30
-	glow.Brightness = 3
+	glow.Range = magma and 20 or 30
+	glow.Brightness = magma and 1.4 or 3
 	glow.Parent = portal
 	local side = Vector3.new(-dir.Z, 0, dir.X)
-	for _, k in { -9, 9 } do
+	local arch = magma and placeModel(map, "map_portal", CFrame.lookAt(last + dir * 4, last + dir * 5), 22)
+	if arch then
+		-- the disc sits inside the stone ring
+		portal.CFrame = CFrame.lookAt(last + dir * 4 + Vector3.new(0, 11.4, 0), last + dir * 5 + Vector3.new(0, 11.4, 0))
+			* CFrame.Angles(0, math.pi / 2, 0)
+		portal.Size = Vector3.new(0.6, 15.5, 15.5)
+	end
+	for _, k in arch and {} or { -9, 9 } do
 		part({ Name = "PortalPillar", Size = Vector3.new(3, 20, 3), Position = last + dir * 4 + side * k + Vector3.new(0, 10, 0),
 			Color = Color3.fromRGB(90, 90, 100), Material = Enum.Material.Slate, Parent = map })
 	end
@@ -266,7 +357,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	local rng = Random.new(crystal and 23 or magma and 11 or 7)
 	local half = Config.MapSize / 2
 	local placed, tries = 0, 0
-	while placed < 70 and tries < 2000 do
+	while placed < (terrainLook and 0 or 70) and tries < 2000 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 5, half.X - 5), 0, rng:NextNumber(-half.Y + 5, half.Y - 5))
 		if Config.DistanceToPath(pos) > Config.PathWidth + 6 and (pos - Config.SpawnPoint).Magnitude > 14

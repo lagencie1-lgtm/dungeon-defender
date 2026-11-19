@@ -28,6 +28,8 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	map_rift = "110475421435503",
+	crystal_cluster = "117863445799774",
 	map_camp = "83613241654248",
 	tree_oak = "86771716646437",
 	tree_dead = "99347777983539",
@@ -55,6 +57,13 @@ Art.Textures = {
 	paint_tree_oak = "86099707359138",
 	paint_tree_dead = "115071143061598",
 	paint_map_camp = "130036189894827",
+	sky_crystal_side = "94067426790712",
+	sky_crystal_up = "104643682364756",
+	sky_crystal_down = "109539278410545",
+	t_cave_floor = "82346507296465",
+	t_cave_wall = "131792067702208",
+	paint_crystal_cluster = "117491160837660",
+	paint_map_rift = "116951210349756",
 	sky_magma_down = "77642380587896",
 	t_ground = "112898416512039",
 	t_cobble = "136419768665426",

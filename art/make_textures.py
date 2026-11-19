@@ -41,6 +41,10 @@ TEXTURES = {
     "t_moss_rock": "grey boulder rock with patches of soft green moss, palette #4A4E48 to #8A9A70",
     "bark": "rough twisted tree bark with deep vertical grooves, dark brown, palette #2E2018 to #6E5038",
     "leaves": "dense clustered tree leaves canopy, deep green with lighter tips, palette #1E3A22 to #6A9A48",
+    # Crystal Caves
+    "t_cave_floor": "smooth dark blue-grey cave floor stone slabs with faint glowing cyan cracks, palette #22263A to #5A6488, #6AE0FF",
+    "t_cave_wall": "rough layered cave wall rock, deep indigo and slate, chunky facets, palette #1E1C30 to #4E4A70",
+    "crystal": "glowing magic crystal facets, pink and cyan gradients with bright white highlights, palette #FF7AD9, #7AE6FF, #FFFFFF",
     "rune_stone": "dark purple-grey carved stone with faint engraved rune lines, palette #2E2838 to #7A6E8E",
 }
 

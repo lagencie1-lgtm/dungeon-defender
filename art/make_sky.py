@@ -60,6 +60,8 @@ SKIES = {
     "magma": ((96, 52, 70), (205, 98, 62), (255, 178, 100), (60, 30, 24)),
     # Cursed Forest: violet twilight with a warm rose horizon
     "forest": ((52, 50, 98), (120, 92, 150), (240, 170, 150), (40, 48, 40)),
+    # Crystal Caves: deep indigo night with a teal glow low on the horizon
+    "crystal": ((18, 16, 44), (44, 40, 100), (90, 170, 200), (16, 14, 30)),
 }
 for name, (top, mid, horizon, bottom) in SKIES.items():
     side(top, mid, horizon, bottom).save(os.path.join(OUT, f"sky_{name}_side.png"))

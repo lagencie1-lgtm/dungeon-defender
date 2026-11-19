@@ -86,12 +86,15 @@ local function setupLighting(theme)
 	-- 6A: maps stay bright and readable on a phone; mood comes from colour, not darkness
 	Lighting.ExposureCompensation = 0.25
 	if theme == "Crystal" then
+		-- moonlit cavern: bright cool moonlight and strong ambient so the dark rock stays readable on a phone
 		Lighting.ClockTime = 0
-		Lighting.Brightness = 3
-		Lighting.Ambient = Color3.fromRGB(150, 150, 205)
-		Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 215)
+		Lighting.Brightness = 3.4
+		Lighting.ExposureCompensation = 0.7
+		Lighting.ColorShift_Top = Color3.fromRGB(190, 210, 255)
+		Lighting.Ambient = Color3.fromRGB(170, 170, 220)
+		Lighting.OutdoorAmbient = Color3.fromRGB(190, 185, 235)
 		Lighting.FogColor = Color3.fromRGB(20, 20, 45)
-		atmosphere.Density = 0.45
+		atmosphere.Density = 0.3
 		atmosphere.Color = Color3.fromRGB(90, 100, 180)
 		atmosphere.Decay = Color3.fromRGB(30, 30, 80)
 	elseif theme == "Magma" then
@@ -134,7 +137,7 @@ local function setupLighting(theme)
 	if old then
 		old:Destroy()
 	end
-	local skyName = ({ Magma = "magma", Forest = "forest" })[theme]
+	local skyName = ({ Magma = "magma", Forest = "forest", Crystal = "crystal" })[theme]
 	if skyName then
 		-- in the background: the images may still be loading when the first map is built
 		task.spawn(function()
@@ -245,7 +248,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	workspace.Terrain:Clear()
 	TerrainBuilder.ResetLooks()
 	local forest = not magma and not crystal
-	local terrainLook = magma or forest -- maps rebuilt with real terrain (Crystal Caves follows)
+	local terrainLook = true -- every map is real terrain now (the Ground/Path parts stay for clicks)
 	part({
 		Transparency = terrainLook and 1 or 0,
 		CanCollide = not terrainLook, -- heroes walk on the terrain itself
@@ -281,18 +284,27 @@ function MapBuilder.BuildBattlefield(mapId)
 		TerrainBuilder.Magma(map, camp)
 	elseif forest then
 		TerrainBuilder.Forest(map, camp)
+	else
+		TerrainBuilder.Crystal(map, camp)
 	end
 	local gateFacing = CFrame.lookAt(camp, camp + (points[1] - camp).Unit)
-	if magma or forest then
-		ArtService.WaitModel(magma and "map_gate" or "map_camp", 8)
-		ArtService.WaitModel("map_portal", 4)
-	end
+	ArtService.WaitModel(magma and "map_gate" or crystal and "map_rift" or "map_camp", 8)
+	ArtService.WaitModel("map_portal", 4)
 	if magma and placeModel(map, "map_gate", gateFacing, 20) then
 		-- the Blender demon gate (with a glow from its lava maw)
 		local glowPart = part({ Name = "GateGlow", Size = Vector3.one, Position = camp + Vector3.new(0, 6, 0), Transparency = 1,
 			CanCollide = false, Parent = map })
 		local light = Instance.new("PointLight")
 		light.Color = Color3.fromRGB(255, 120, 40)
+		light.Range = 26
+		light.Brightness = 2
+		light.Parent = glowPart
+	elseif crystal and placeModel(map, "map_rift", gateFacing, 20) then
+		-- the Blender shadow rift, glowing violet
+		local glowPart = part({ Name = "GateGlow", Size = Vector3.one, Position = camp + Vector3.new(0, 7, 0), Transparency = 1,
+			CanCollide = false, Parent = map })
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(170, 90, 255)
 		light.Range = 26
 		light.Brightness = 2
 		light.Parent = glowPart
@@ -351,7 +363,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	glow.Brightness = magma and 1.4 or 3
 	glow.Parent = portal
 	local side = Vector3.new(-dir.Z, 0, dir.X)
-	local arch = not crystal and placeModel(map, "map_portal", CFrame.lookAt(last + dir * 4, last + dir * 5), 22)
+	local arch = placeModel(map, "map_portal", CFrame.lookAt(last + dir * 4, last + dir * 5), 22)
 	if arch then
 		-- the disc sits inside the stone ring
 		portal.CFrame = CFrame.lookAt(last + dir * 4 + Vector3.new(0, 11.4, 0), last + dir * 5 + Vector3.new(0, 11.4, 0))
@@ -398,8 +410,8 @@ function MapBuilder.BuildBattlefield(mapId)
 	end
 
 	-- the forest's painted trees: a few inside the battlefield, a thick wood all around it
-	if forest then
-		ArtService.WaitModel("tree_oak", 8)
+	if forest or crystal then
+		ArtService.WaitModel(forest and "tree_oak" or "crystal_cluster", 8)
 		ArtService.WaitModel("tree_dead", 2)
 		local trees = folder("Trees", map)
 		local treeRng = Random.new(77)
@@ -415,20 +427,22 @@ function MapBuilder.BuildBattlefield(mapId)
 				return
 			end
 			pos = hit and hit.Position - Vector3.new(0, 0.5, 0) or pos
-			local kind = treeRng:NextNumber() < 0.25 and "tree_dead" or "tree_oak"
-			local h = big and treeRng:NextNumber(22, 32) or treeRng:NextNumber(14, 20)
+			local kind = crystal and "crystal_cluster" or treeRng:NextNumber() < 0.25 and "tree_dead" or "tree_oak"
+			local h = crystal and (big and treeRng:NextNumber(14, 26) or treeRng:NextNumber(6, 11))
+				or big and treeRng:NextNumber(22, 32) or treeRng:NextNumber(14, 20)
 			placeModel(trees, kind, CFrame.new(pos) * CFrame.Angles(0, treeRng:NextNumber(0, math.pi * 2), 0), h)
 		end
 		local inside, outside, n = 0, 0, 0
-		while (inside < 14 or outside < 70) and n < 3000 do
+		local wantInside, wantOutside = crystal and 18 or 14, crystal and 45 or 70
+		while (inside < wantInside or outside < wantOutside) and n < 3000 do
 			n += 1
 			local pos = Vector3.new(treeRng:NextNumber(-half.X - 40, half.X + 40), 0, treeRng:NextNumber(-half.Y - 40, half.Y + 40))
 			local inPlay = math.abs(pos.X) < half.X and math.abs(pos.Z) < half.Y
-			if inPlay and inside < 14 and Config.DistanceToPath(pos) > Config.PathWidth + 10
+			if inPlay and inside < wantInside and Config.DistanceToPath(pos) > Config.PathWidth + 10
 				and (pos - Config.SpawnPoint).Magnitude > 18 and (pos - camp).Magnitude > 18 then
 				plant(pos, false)
 				inside += 1
-			elseif not inPlay and outside < 70 then
+			elseif not inPlay and outside < wantOutside then
 				plant(pos, true)
 				outside += 1
 			end

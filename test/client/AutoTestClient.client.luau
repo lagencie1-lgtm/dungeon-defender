@@ -178,7 +178,7 @@ local function tour(mapId, prefix, withTowers)
 		cam.CameraType = Enum.CameraType.Scriptable
 		cam.CFrame = shot[2]
 		log("camera-tour " .. prefix .. "_" .. shot[1], tostring(shot[2].Position))
-		task.wait(9)
+		task.wait(6)
 	end
 	for _, g in hidden do
 		g.Enabled = true
@@ -187,6 +187,7 @@ local function tour(mapId, prefix, withTowers)
 end
 task.spawn(function()
 	tour("MagmaFortress", "magma", true)
+	tour("CrystalCaves", "crystal", false)
 	tour("CursedForest", "forest", false)
 end)
 

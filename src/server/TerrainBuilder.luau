@@ -279,4 +279,97 @@ function TerrainBuilder.Forest(map, camp)
 	end
 end
 
+-------------------------------------------------------------------------------
+-- Crystal Caves: a deep cavern floor open to the night sky, ringed by tall cave walls,
+-- with glowing pools (the crystal clusters themselves are Blender models, see MapBuilder)
+-------------------------------------------------------------------------------
+function TerrainBuilder.Crystal(map, camp)
+	local t = terrain()
+	t:Clear()
+	local rng = rngFor(23)
+	local half = Config.MapSize / 2
+
+	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Slate)
+	-- the path: smooth cobbles inside a dark rock kerb
+	pathStrip(Config.PathWidth + 5, M.Basalt, -1.2, 2.6)
+	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
+
+	-- glowing pools
+	local pools, tries = 0, 0
+	while pools < 5 and tries < 400 do
+		tries += 1
+		local pos = Vector3.new(rng:NextNumber(-half.X + 14, half.X - 14), 0, rng:NextNumber(-half.Y + 14, half.Y - 14))
+		if farFromPath(pos, 20) and (pos - Config.SpawnPoint).Magnitude > 24 and (pos - camp).Magnitude > 24 then
+			local r = rng:NextNumber(6, 9)
+			t:FillBall(pos + Vector3.new(0, 1, 0), r, M.Air)
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -3, 0)), 2, r * 0.9, M.Slate)
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.2, 0)), 1.6, r + 1.5, M.Basalt)
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.3, 0)), 1.8, r * 0.85, M.Water)
+			local glow = Instance.new("Part")
+			glow.Name = "PoolGlow"
+			glow.Anchored = true
+			glow.CanCollide = false
+			glow.CanQuery = false
+			glow.Transparency = 1
+			glow.Size = Vector3.one
+			glow.Position = pos
+			glow.Parent = map
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(90, 220, 255)
+			light.Range = r * 2.4
+			light.Brightness = 1.5
+			light.Parent = glow
+			pools += 1
+		end
+	end
+
+	-- rock spires on the floor
+	local rocks = 0
+	tries = 0
+	while rocks < 18 and tries < 600 do
+		tries += 1
+		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
+		if farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+			local r = rng:NextNumber(2, 4)
+			t:FillBall(pos + Vector3.new(0, r * 0.3, 0), r, M.Basalt)
+			if rng:NextNumber() < 0.5 then
+				t:FillCylinder(CFrame.new(pos + Vector3.new(0, r * 1.4, 0)), r * 2.2, r * 0.45, M.Basalt)
+			end
+			rocks += 1
+		end
+	end
+
+	-- tall cave walls all around, and far cliffs beyond them
+	local function wall(x, z)
+		local h = rng:NextNumber(30, 55)
+		t:FillCylinder(CFrame.new(x, h / 2, z), h, rng:NextNumber(10, 16), M.Basalt)
+		t:FillBall(Vector3.new(x + rng:NextNumber(-5, 5), h, z + rng:NextNumber(-5, 5)), rng:NextNumber(7, 11), M.Basalt)
+	end
+	for x = -half.X - 10, half.X + 10, 14 do
+		wall(x, -half.Y - 22 - rng:NextNumber(0, 8))
+		wall(x, half.Y + 22 + rng:NextNumber(0, 8))
+	end
+	for z = -half.Y - 10, half.Y + 10, 14 do
+		wall(-half.X - 22 - rng:NextNumber(0, 8), z)
+		wall(half.X + 22 + rng:NextNumber(0, 8), z)
+	end
+	mountain(Vector3.new(-240, 0, -270), 150, 160, M.Basalt, nil)
+	mountain(Vector3.new(230, 0, -280), 170, 190, M.Basalt, nil)
+	mountain(Vector3.new(320, 0, 140), 130, 140, M.Basalt, nil)
+	mountain(Vector3.new(-320, 0, 170), 120, 130, M.Basalt, nil)
+
+	t:SetMaterialColor(M.Slate, Color3.fromRGB(70, 74, 100))
+	t:SetMaterialColor(M.Basalt, Color3.fromRGB(56, 52, 80))
+	t:SetMaterialColor(M.Cobblestone, Color3.fromRGB(120, 118, 140))
+	t.WaterColor = Color3.fromRGB(60, 200, 230)
+	t.WaterTransparency = 0.35
+	t.WaterWaveSize = 0.03
+	t.WaterReflectance = 0.4
+	for material, texture in { [M.Slate] = "t_cave_floor", [M.Basalt] = "t_cave_wall", [M.Cobblestone] = "t_cobble" } do
+		if paintedTerrain(material, texture) then
+			t:SetMaterialColor(material, material == M.Cobblestone and Color3.fromRGB(190, 195, 225) or Color3.new(1, 1, 1))
+		end
+	end
+end
+
 return TerrainBuilder

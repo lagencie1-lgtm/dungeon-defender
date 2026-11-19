@@ -103,8 +103,11 @@ def smooth(obj, angle=35):
 
 
 def flat(color):
-    """A plain painted colour (faces, small details) that still gets light and occlusion baked in."""
-    return material("_flat", tint=color)
+    """A plain painted colour (faces, small details) that still gets light and occlusion baked in.
+    Colours are given the way they should look on screen; the bake works in linear light, so they are converted
+    (without this every flat colour came out pale and pastel)."""
+    linear = tuple(c ** 2.2 if c <= 1 else c for c in color)
+    return material("_flat", tint=linear)
 
 
 def paint(obj, key, tint=(1, 1, 1), scale=4.0):

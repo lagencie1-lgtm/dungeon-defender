@@ -137,7 +137,35 @@ step("enemy line-up", function()
 	EnemyService.Clear()
 	log("line-up", #lineup:GetChildren())
 end)
-task.wait(75) -- time for the Outpost look check on the client
+-- a row of every pet model at the Outpost, for the pet look check
+step("pet line-up", function()
+	local ArtService = require(Server.ArtService)
+	local kinds = {}
+	for kind in Config.Pets do
+		table.insert(kinds, kind)
+	end
+	table.sort(kinds)
+	local row = Instance.new("Folder")
+	row.Name = "PetRow"
+	row.Parent = workspace
+	local c = Config.OutpostCenter
+	for i, kind in kinds do
+		local template = ArtService.WaitModel("pet_" .. string.lower(kind), 30)
+		if template then
+			local look = template:Clone()
+			local _, size = look:GetBoundingBox()
+			look:ScaleTo(look:GetScale() * 3.2 / size.Y)
+			local box, newSize = look:GetBoundingBox()
+			local x = (i - (#kinds + 1) / 2) * 4.2
+			local y = newSize.Y / 2 + 1.6 -- (the plaza ground sits a little above zero)
+			local target = CFrame.lookAt(c + Vector3.new(x, y, 15), c + Vector3.new(x, y, 40))
+			look:PivotTo(target * box:ToObjectSpace(look:GetPivot()))
+			look.Parent = row
+		end
+	end
+	log("pet row", #row:GetChildren())
+end)
+task.wait(95) -- time for the Outpost look check on the client
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()

@@ -53,6 +53,9 @@ function StoreService.ApplyTowerSkin(model, skin)
 		if part:IsA("BasePart") then
 			if part.Material == Enum.Material.Neon then
 				part.Color = skin.Accent or skin.Primary
+			elseif part.Name == "Body" then
+				-- a painted model: a light wash of the skin's colour, so the paint still shows through
+				part.Color = Color3.new(1, 1, 1):Lerp(skin.Primary, 0.4)
 			elseif part.Name ~= "Base" then
 				part.Color = skin.Primary:Lerp(part.Color, 0.25)
 			end

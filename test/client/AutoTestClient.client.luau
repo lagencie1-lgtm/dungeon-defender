@@ -4,7 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
-local UI_TOUR = true -- true: shoot the HUD and panels; false: the map look tours
+local UI_TOUR = false -- true: shoot the HUD and panels; false: the map look tours
 local player = game:GetService("Players").LocalPlayer
 
 local function log(...)
@@ -53,6 +53,7 @@ if items and #items > 0 then
 end
 log("buy", Remotes.BuyItem:InvokeServer("Swords", "Baguette"))
 log("buy skin", Remotes.BuySkin:InvokeServer("RangerRoyal"))
+log("skin off for the look check", Remotes.EquipSkin:InvokeServer("None:Ranger"))
 log("buy cape", Remotes.BuySkin:InvokeServer("CapeRed"))
 log("buy VIP cape (should fail)", Remotes.BuySkin:InvokeServer("CapeVIP"))
 log("take cape off", Remotes.EquipSkin:InvokeServer("None:Cape"))
@@ -223,6 +224,15 @@ local function outpostTour()
 		cam.CFrame = shot[2]
 		log("camera-tour " .. shot[1])
 		task.wait(5)
+	end
+	-- the row of every pet model
+	if workspace:WaitForChild("PetRow", 30) then
+		task.wait(1)
+		for i = -1, 1 do
+			cam.CFrame = CFrame.lookAt(center + Vector3.new(i * 16.8, 7, 2), center + Vector3.new(i * 16.8, 3, -11))
+			log("camera-tour petrow" .. (i + 2))
+			task.wait(4)
+		end
 	end
 	-- the pet that follows the player, up close from the front and from the side
 	if player:GetAttribute("TestPetLocked") then

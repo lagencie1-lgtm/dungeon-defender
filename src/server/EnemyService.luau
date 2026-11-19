@@ -35,6 +35,11 @@ local function goblinMesh(model, body, stats)
 		if part.Name == SKIN_MARKER then
 			part.Color = stats.Color
 			table.insert(skin, part)
+		elseif part.Name == "Body" and not template:FindFirstChild(SKIN_MARKER) then
+			-- an image-to-3D model has its colours painted in: the plain kind keeps them, the variants
+			-- (Runner, Brute, Loot Goblin...) get a tint of their own colour over the whole model
+			local plain = Config.Enemies[string.gsub(template.Name, "^enemy_", "")] == nil and stats.DisplayName == "Goblin"
+			part.Color = plain and Color3.new(1, 1, 1) or Color3.new(1, 1, 1):Lerp(stats.Color, 0.55)
 		end
 	end
 	look.Parent = model

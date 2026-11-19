@@ -65,6 +65,7 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	tripo_goblin = "114321543334279",
 	gear_wrench = "76143938483623",
 	gear_tunic = "86132980411877",
 	gear_sword_twin = "95568676046699",
@@ -149,7 +150,7 @@ Art.Textures = {
 	paint_outpost_chest = "140595662824630",
 	paint_outpost_nest = "104501692569324",
 	paint_outpost_campfire = "87548380217848",
-	paint_enemy_goblin = "140347257973205",
+	paint_enemy_goblin = "123195934179564",
 	paint_enemy_imp = "118460614626651",
 	paint_enemy_knight = "80305145082903",
 	paint_enemy_slime = "123630604294338",

@@ -141,51 +141,59 @@ end
 local eggColumn = make("ScrollingFrame", { Size = UDim2.fromOffset(440, 450), Position = UDim2.fromOffset(24, 66),
 	BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 6, AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	CanvasSize = UDim2.new(), ZIndex = 31, Parent = panel }, { make("UIListLayout", { Padding = UDim.new(0, 10) }) })
-for i, egg in Config.Eggs do
-	local total = 0
-	for _, c in egg.Chances do
-		total += c[2]
-	end
-	local rows = math.ceil(#egg.Chances / 4)
-	local card = make("Frame", { Size = UDim2.fromOffset(428, 110 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
-		ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
-	local eggSlot = make("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.fromOffset(10, 10),
-		BackgroundColor3 = egg.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7), ZIndex = 33, Parent = card }, { corner(14), stroke(egg.Color, 2) })
-	make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4),
-		Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
-	label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
-		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-	local hatch = button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.fromOffset(110, 50),
-		BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
-	-- what can come out
-	local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
-		BackgroundTransparency = 1, ZIndex = 33, Parent = card },
-		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(96, 86), CellPadding = UDim2.fromOffset(6, 6),
-			SortOrder = Enum.SortOrder.LayoutOrder }) })
-	for n, c in egg.Chances do
-		local percent = c[2] / total * 100
-		local cell = make("Frame", { BackgroundTransparency = 1, LayoutOrder = n, ZIndex = 33, Parent = inside })
-		petTile(cell, c[1], 62, 34, { Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0) })
-		label({ Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 64),
-			Text = percent >= 1 and string.format("%.0f%%", percent) or string.format("%.2f%%", percent),
-			TextColor3 = rarityColor(c[1]), ZIndex = 34, Parent = cell })
-	end
-	hatch.Activated:Connect(function()
-		local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id)
-		if ok then
-			local chance = 0
-			for _, c in egg.Chances do
-				if c[1] == result.kind then
-					chance = c[2] / total * 100
-				end
-			end
-			message.Text = ""
-			task.spawn(showReveal, egg, result, chance)
-		else
-			message.Text = result or "Can't hatch"
-			message.TextColor3 = Ui.BAD
+-- (built each time the screen opens: the pictures load a moment after the game starts)
+local function buildEggs()
+	for _, child in eggColumn:GetChildren() do
+		if child:IsA("Frame") then
+			child:Destroy()
 		end
-	end)
+	end
+	for i, egg in Config.Eggs do
+		local total = 0
+		for _, c in egg.Chances do
+			total += c[2]
+		end
+		local rows = math.ceil(#egg.Chances / 4)
+		local card = make("Frame", { Size = UDim2.fromOffset(428, 110 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
+			ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
+		local eggSlot = make("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.fromOffset(10, 10),
+			BackgroundColor3 = egg.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7), ZIndex = 33, Parent = card }, { corner(14), stroke(egg.Color, 2) })
+		make("ImageLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4),
+			Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
+		label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
+			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+		local hatch = button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.fromOffset(110, 50),
+			BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
+		-- what can come out
+		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
+			BackgroundTransparency = 1, ZIndex = 33, Parent = card },
+			{ make("UIGridLayout", { CellSize = UDim2.fromOffset(96, 86), CellPadding = UDim2.fromOffset(6, 6),
+				SortOrder = Enum.SortOrder.LayoutOrder }) })
+		for n, c in egg.Chances do
+			local percent = c[2] / total * 100
+			local cell = make("Frame", { BackgroundTransparency = 1, LayoutOrder = n, ZIndex = 33, Parent = inside })
+			petTile(cell, c[1], 62, 34, { Position = UDim2.new(0.5, 0, 0, 0), AnchorPoint = Vector2.new(0.5, 0) })
+			label({ Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 64),
+				Text = percent >= 1 and string.format("%.0f%%", percent) or string.format("%.2f%%", percent),
+				TextColor3 = rarityColor(c[1]), ZIndex = 34, Parent = cell })
+		end
+		hatch.Activated:Connect(function()
+			local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id)
+			if ok then
+				local chance = 0
+				for _, c in egg.Chances do
+					if c[1] == result.kind then
+						chance = c[2] / total * 100
+					end
+				end
+				message.Text = ""
+				task.spawn(showReveal, egg, result, chance)
+			else
+				message.Text = result or "Can't hatch"
+				message.TextColor3 = Ui.BAD
+			end
+		end)
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -280,6 +288,7 @@ end)
 local function toggle()
 	panel.Visible = not panel.Visible
 	if panel.Visible then
+		buildEggs() -- (before asking the server, so the screen is never empty while it answers)
 		local p, e = Remotes.GetPets:InvokeServer()
 		pets, equippedId = p or {}, e
 		message.Text = "Eggs cost gold. Gold is earned by playing"

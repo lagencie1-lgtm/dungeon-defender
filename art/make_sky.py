@@ -60,6 +60,8 @@ SKIES = {
     "magma": ((96, 52, 70), (205, 98, 62), (255, 178, 100), (60, 30, 24)),
     # Cursed Forest: violet twilight with a warm rose horizon
     "forest": ((52, 50, 98), (120, 92, 150), (240, 170, 150), (40, 48, 40)),
+    # The Outpost: clear blue afternoon fading to a warm golden horizon
+    "outpost": ((70, 130, 205), (130, 180, 230), (255, 222, 170), (90, 110, 70)),
     # Crystal Caves: deep indigo night with a teal glow low on the horizon
     "crystal": ((18, 16, 44), (44, 40, 100), (90, 170, 200), (16, 14, 30)),
 }

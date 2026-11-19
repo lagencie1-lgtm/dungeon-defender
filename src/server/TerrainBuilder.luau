@@ -94,6 +94,11 @@ function TerrainBuilder.ResetLooks()
 	table.clear(overridden)
 end
 
+-- wipes the battlefield's terrain only (the Outpost has its own terrain far away and keeps it)
+local function clearBattlefield()
+	terrain():FillBlock(CFrame.new(0, 100, 0), Vector3.new(980, 280, 980), M.Air)
+end
+
 local function farFromPath(pos, margin)
 	return Config.DistanceToPath(pos) > Config.PathWidth / 2 + margin
 end
@@ -103,7 +108,7 @@ end
 -------------------------------------------------------------------------------
 function TerrainBuilder.Magma(map, camp)
 	local t = terrain()
-	t:Clear()
+	clearBattlefield()
 	local rng = rngFor(11)
 	local half = Config.MapSize / 2
 
@@ -211,7 +216,7 @@ end
 -------------------------------------------------------------------------------
 function TerrainBuilder.Forest(map, camp)
 	local t = terrain()
-	t:Clear()
+	clearBattlefield()
 	local rng = rngFor(7)
 	local half = Config.MapSize / 2
 
@@ -285,7 +290,7 @@ end
 -------------------------------------------------------------------------------
 function TerrainBuilder.Crystal(map, camp)
 	local t = terrain()
-	t:Clear()
+	clearBattlefield()
 	local rng = rngFor(23)
 	local half = Config.MapSize / 2
 
@@ -368,6 +373,62 @@ function TerrainBuilder.Crystal(map, camp)
 	for material, texture in { [M.Slate] = "t_cave_floor", [M.Basalt] = "t_cave_wall", [M.Cobblestone] = "t_cobble" } do
 		if paintedTerrain(material, texture) then
 			t:SetMaterialColor(material, material == M.Cobblestone and Color3.fromRGB(190, 195, 225) or Color3.new(1, 1, 1))
+		end
+	end
+end
+
+-------------------------------------------------------------------------------
+-- The Outpost: a sunny meadow plateau with a dirt plaza, a cobbled ring road and hills around
+-------------------------------------------------------------------------------
+function TerrainBuilder.Outpost(c)
+	local t = terrain()
+	local rng = rngFor(3)
+	t:FillBlock(CFrame.new(c + Vector3.new(0, 60, 0)), Vector3.new(420, 140, 420), M.Air)
+	t:FillBlock(CFrame.new(c + Vector3.new(0, -6, 0)), Vector3.new(420, 12, 420), M.Grass)
+	-- the plaza: packed dirt with a cobbled ring road and four cobbled spokes
+	-- (dig the top layer out first: a new material only replaces voxels that are empty)
+	t:FillCylinder(CFrame.new(c + Vector3.new(0, -2, 0)), 4, 30, M.Air)
+	t:FillCylinder(CFrame.new(c + Vector3.new(0, -2, 0)), 4, 30, M.Cobblestone)
+	t:FillCylinder(CFrame.new(c + Vector3.new(0, -2, 0)), 4.2, 26, M.Air)
+	t:FillCylinder(CFrame.new(c + Vector3.new(0, -2, 0)), 4, 26, M.Ground)
+	for _, d in { Vector3.new(0, 0, 1), Vector3.new(0, 0, -1), Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0) } do
+		t:FillBlock(CFrame.lookAt(c + d * 40 + Vector3.new(0, -0.7, 0), c + d * 60 + Vector3.new(0, -0.7, 0)), Vector3.new(8, 2.6, 22),
+			M.Cobblestone)
+	end
+	-- a few mossy rocks and soft hills all around, higher further out
+	for _ = 1, 14 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(40, 56)
+		local pos = c + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+		t:FillBall(pos + Vector3.new(0, 0.5, 0), rng:NextNumber(1.8, 3.2), M.Rock)
+	end
+	for i = 0, 40 do
+		local a = i / 40 * math.pi * 2
+		local d = rng:NextNumber(86, 100)
+		local h = rng:NextNumber(14, 30)
+		t:FillBall(c + Vector3.new(math.cos(a) * d, h * 0.2, math.sin(a) * d), h, M.Grass)
+		if rng:NextNumber() < 0.3 then
+			t:FillBall(c + Vector3.new(math.cos(a) * (d + 6), h * 0.7, math.sin(a) * (d + 6)), h * 0.4, M.Rock)
+		end
+	end
+	for i = 0, 7 do
+		local a = i / 8 * math.pi * 2 + 0.3
+		mountain(c + Vector3.new(math.cos(a) * 170, 0, math.sin(a) * 170), 70, rng:NextNumber(40, 70), M.Grass, nil)
+	end
+end
+
+-- painted looks for the Outpost's materials (while the players are in the hub)
+function TerrainBuilder.OutpostLooks()
+	local t = terrain()
+	t:SetMaterialColor(M.Grass, Color3.fromRGB(96, 140, 70))
+	t:SetMaterialColor(M.Ground, Color3.fromRGB(170, 130, 92))
+	t:SetMaterialColor(M.Cobblestone, Color3.fromRGB(130, 124, 114))
+	t:SetMaterialColor(M.Rock, Color3.fromRGB(110, 112, 104))
+	TerrainBuilder.ResetLooks()
+	for material, texture in { [M.Grass] = "t_grass", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
+		[M.Rock] = "t_moss_rock" } do
+		if paintedTerrain(material, texture) then
+			t:SetMaterialColor(material, Color3.new(1, 1, 1))
 		end
 	end
 end

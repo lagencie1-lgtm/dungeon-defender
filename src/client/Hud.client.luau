@@ -911,9 +911,9 @@ claimButton.Activated:Connect(function()
 	refreshDaily()
 end)
 task.spawn(function()
-	-- show the daily reward by itself when it's ready
+	-- show the daily reward by itself when it's ready (not on top of the first-run tutorial: one thing at a time)
 	task.wait(4)
-	if dailyReady() and player:GetAttribute("DailyNextAt") then
+	if dailyReady() and player:GetAttribute("DailyNextAt") and player:GetAttribute("TutorialDone") ~= false then
 		dailyPanel.Visible = true
 		refreshDaily()
 	end

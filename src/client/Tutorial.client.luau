@@ -25,7 +25,7 @@ if player:GetAttribute("TutorialDone") ~= false then
 end
 
 local gui = make("ScreenGui", { Name = "TutorialHud", ResetOnSpawn = false, DisplayOrder = 5, Parent = player:WaitForChild("PlayerGui") })
-local box = make("Frame", { Size = UDim2.fromOffset(520, 64), Position = UDim2.new(0.5, 0, 0.2, 0), AnchorPoint = Vector2.new(0.5, 0),
+local box = make("Frame", { Size = UDim2.new(0.6, 0, 0, 56), Position = UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1, Parent = gui }, { corner(14), stroke(Ui.GOLD, 3) })
 local hint = label({ Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromOffset(12, 6), Text = "", TextWrapped = true, Parent = box })
 make("UIScale", { Scale = isTouch and 0.8 or 1, Parent = box })

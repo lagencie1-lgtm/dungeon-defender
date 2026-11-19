@@ -185,7 +185,41 @@ local function tour(mapId, prefix, withTowers)
 	end
 	cam.CameraType = Enum.CameraType.Custom
 end
+-- the Outpost as a player sees it on joining (HUD on), then from above
+local function outpostTour()
+	repeat
+		task.wait(0.5)
+	until workspace:FindFirstChild("Outpost") and GameState:GetAttribute("State") == "Lobby"
+	task.wait(4)
+	log("camera-tour outpost_join")
+	task.wait(6)
+	local c = workspace.Outpost:FindFirstChild("OutpostSpawn")
+	local center = c and c.Position or Vector3.zero
+	local cam = workspace.CurrentCamera
+	cam.CameraType = Enum.CameraType.Scriptable
+	local hidden = {}
+	for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
+		if g:IsA("ScreenGui") and g.Enabled then
+			g.Enabled = false
+			table.insert(hidden, g)
+		end
+	end
+	for _, shot in {
+		{ "outpost_overview", CFrame.lookAt(center + Vector3.new(0, 60, 50), center + Vector3.new(0, 0, -26)) },
+		{ "outpost_low", CFrame.lookAt(center + Vector3.new(0, 8, 14), center + Vector3.new(0, 4, -30)) },
+	} do
+		cam.CFrame = shot[2]
+		log("camera-tour " .. shot[1])
+		task.wait(6)
+	end
+	for _, g in hidden do
+		g.Enabled = true
+	end
+	cam.CameraType = Enum.CameraType.Custom
+end
+
 task.spawn(function()
+	outpostTour()
 	tour("MagmaFortress", "magma", true)
 	tour("CrystalCaves", "crystal", false)
 	tour("CursedForest", "forest", false)

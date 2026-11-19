@@ -53,9 +53,10 @@ end
 
 local function nameTag(parentPart, text, color, height)
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(220, 40)
+	-- 6A: short labels that only show up close, never a wall of floating signs
+	gui.Size = UDim2.fromOffset(150, 28)
 	gui.StudsOffset = Vector3.new(0, height or 6, 0)
-	gui.MaxDistance = 90
+	gui.MaxDistance = 26
 	gui.Parent = parentPart
 	local l = Instance.new("TextLabel")
 	l.Size = UDim2.fromScale(1, 1)
@@ -76,6 +77,7 @@ local function setupLighting(theme)
 		atmosphere.Haze = 2
 		atmosphere.Parent = Lighting
 	end
+	Lighting:SetAttribute("Theme", theme)
 	Lighting.Brightness = 2
 	-- no mirror-like sky reflections: they made faceted rocks flash white (painted look stays matte)
 	Lighting.EnvironmentSpecularScale = 0
@@ -85,7 +87,22 @@ local function setupLighting(theme)
 	atmosphere.Haze = 2
 	-- 6A: maps stay bright and readable on a phone; mood comes from colour, not darkness
 	Lighting.ExposureCompensation = 0.25
-	if theme == "Crystal" then
+	if theme == "Outpost" then
+		-- the hub: a warm, sunny late afternoon (the first thing a player sees)
+		Lighting.ClockTime = 15.2
+		Lighting.Brightness = 2.4
+		Lighting.ExposureCompensation = 0.2
+		Lighting.ColorShift_Top = Color3.fromRGB(255, 225, 190)
+		Lighting.Ambient = Color3.fromRGB(140, 135, 130)
+		Lighting.OutdoorAmbient = Color3.fromRGB(165, 160, 150)
+		Lighting.FogColor = Color3.fromRGB(190, 200, 220)
+		atmosphere.Density = 0.28
+		atmosphere.Offset = 0.05
+		atmosphere.Color = Color3.fromRGB(215, 205, 190)
+		atmosphere.Decay = Color3.fromRGB(150, 160, 190)
+		atmosphere.Haze = 1.4
+		atmosphere.Glare = 0.4
+	elseif theme == "Crystal" then
 		-- moonlit cavern: bright cool moonlight and strong ambient so the dark rock stays readable on a phone
 		Lighting.ClockTime = 0
 		Lighting.Brightness = 3.4
@@ -137,12 +154,12 @@ local function setupLighting(theme)
 	if old then
 		old:Destroy()
 	end
-	local skyName = ({ Magma = "magma", Forest = "forest", Crystal = "crystal" })[theme]
+	local skyName = ({ Magma = "magma", Forest = "forest", Crystal = "crystal", Outpost = "outpost" })[theme]
 	if skyName then
 		-- in the background: the images may still be loading when the first map is built
 		task.spawn(function()
 		local side = ArtService.Image("sky_" .. skyName .. "_side", 30)
-		if side and Config.Maps[Config.CurrentMap].Theme == theme and not Lighting:FindFirstChild("MapSky") then
+		if side and Lighting:GetAttribute("Theme") == theme and not Lighting:FindFirstChild("MapSky") then
 			local sky = Instance.new("Sky")
 			sky.Name = "MapSky"
 			sky.SkyboxBk, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt = side, side, side, side
@@ -245,7 +262,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	setupLighting(mapInfo.Theme)
 
 	local map = folder("Map", workspace)
-	workspace.Terrain:Clear()
+	-- (each map clears only its own terrain region: the Outpost keeps its own)
 	TerrainBuilder.ResetLooks()
 	local forest = not magma and not crystal
 	local terrainLook = true -- every map is real terrain now (the Ground/Path parts stay for clicks)
@@ -477,35 +494,20 @@ function MapBuilder.BuildOutpost(onPrompt)
 	end
 	local hub = folder("Outpost", workspace)
 	local c = Config.OutpostCenter
-	local sizeX, sizeZ = 110, 76
+	TerrainBuilder.Outpost(c)
+	-- invisible floor and walls keep clicks and players inside (the terrain is what you see)
+	part({ Name = "Ground", Size = Vector3.new(150, 2, 150), Position = c - Vector3.new(0, 1, 0), Transparency = 1,
+		CanCollide = false, Parent = hub })
+	walls(hub, c, 150, 150)
 
-	part({ Name = "Ground", Size = Vector3.new(sizeX, 2, sizeZ), Position = c - Vector3.new(0, 1, 0),
-		Color = Color3.fromRGB(120, 110, 95), Material = Enum.Material.Cobblestone, Parent = hub })
-	walls(hub, c, sizeX, sizeZ)
-	-- wooden fence posts around the edge
-	for i = -5, 5 do
-		for _, z in { -sizeZ / 2 + 1, sizeZ / 2 - 1 } do
-			part({ Name = "Post", Size = Vector3.new(1, 4, 1), Position = c + Vector3.new(i * 10, 2, z),
-				Color = Color3.fromRGB(100, 70, 40), Material = Enum.Material.Wood, Parent = hub })
-		end
-	end
-	nameTag(part({ Name = "SignPost", Size = Vector3.new(1, 1, 1), Position = c + Vector3.new(0, 14, 0),
-		Transparency = 1, CanCollide = false, Parent = hub }), "THE OUTPOST", Color3.fromRGB(255, 210, 90), 0)
-
-	-- the spawn in the hub
+	-- the spawn, south of the campfire, looking north at the portal
 	local spawn = part({ ClassName = "SpawnLocation", Name = "OutpostSpawn", Size = Vector3.new(10, 1, 10),
-		Position = c + Vector3.new(0, 0.5, 26), Color = Color3.fromRGB(200, 170, 80), Material = Enum.Material.Marble,
-		Enabled = true, Parent = hub })
+		Position = c + Vector3.new(0, 0.3, 26), Transparency = 1, CanCollide = false, Enabled = true, Parent = hub })
 	spawn.Duration = 0
-
-	-- campfire in the middle
-	local fire = part({ Name = "Campfire", Size = Vector3.new(3, 1, 3), Position = c + Vector3.new(0, 0.5, 10),
-		Color = Color3.fromRGB(255, 130, 40), Material = Enum.Material.Neon, Parent = hub })
-	Instance.new("Fire", fire).Size = 6
-	local fireLight = Instance.new("PointLight")
-	fireLight.Color = Color3.fromRGB(255, 160, 80)
-	fireLight.Range = 30
-	fireLight.Parent = fire
+	local decal = spawn:FindFirstChildOfClass("Decal")
+	if decal then
+		decal:Destroy()
+	end
 
 	local function prompt(target, actionText, objectText, action, hold)
 		local p = Instance.new("ProximityPrompt")
@@ -520,82 +522,87 @@ function MapBuilder.BuildOutpost(onPrompt)
 		end)
 	end
 
-	-- the start pad: a glowing circle in front of the fire
-	local pad = part({ Name = "StartPad", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, 16, 16),
-		CFrame = CFrame.new(c + Vector3.new(0, 0.2, -12)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = Color3.fromRGB(140, 80, 255), Material = Enum.Material.Neon, Transparency = 0.2, CanCollide = false, Parent = hub })
-	nameTag(pad, "START RUN", Color3.fromRGB(200, 160, 255), 5)
+	-- each station: a painted Blender prop (placed when it has loaded), an invisible anchor with the prompt
+	-- and a short label that only shows when you're close
+	local function station(model, offset, height, label, color, actionText, action)
+		local pos = c + offset
+		local facing = CFrame.lookAt(pos, Vector3.new(c.X, 0, c.Z))
+		local anchor = part({ Name = model, Size = Vector3.new(4, 4, 4), CFrame = facing * CFrame.new(0, 2, -2),
+			Transparency = 1, CanCollide = false, Parent = hub })
+		if label then
+			nameTag(anchor, label, color, height + 1)
+			prompt(anchor, actionText, label, action)
+		end
+		task.spawn(function()
+			ArtService.WaitModel(model, 30)
+			placeModel(hub, model, facing, height)
+		end)
+		return anchor
+	end
+
+	-- the campfire in the middle, with real fire and warm light
+	local fireAnchor = station("outpost_campfire", Vector3.new(0, 0, 6), 3)
+	local fire = Instance.new("Fire")
+	fire.Size = 5
+	fire.Heat = 7
+	fire.Parent = fireAnchor
+	fireAnchor.CFrame = CFrame.new(c + Vector3.new(0, 0.6, 6))
+	local fireLight = Instance.new("PointLight")
+	fireLight.Color = Color3.fromRGB(255, 170, 90)
+	fireLight.Range = 24
+	fireLight.Brightness = 1.4
+	fireLight.Parent = fireAnchor
+
+	-- START: the stone portal arch at the north end, with a glowing disc and a pad in front
+	local portalPos = c + Vector3.new(0, 0, -30)
+	task.spawn(function()
+		ArtService.WaitModel("map_portal", 30)
+		placeModel(hub, "map_portal", CFrame.lookAt(portalPos, portalPos + Vector3.new(0, 0, 1)), 20)
+	end)
+	part({ Name = "PortalDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, 14, 14),
+		CFrame = CFrame.new(portalPos + Vector3.new(0, 10.4, 0)) * CFrame.Angles(0, math.pi / 2, 0),
+		Color = Color3.fromRGB(150, 90, 255), Material = Enum.Material.Neon, Transparency = 0.25, CanCollide = false, Parent = hub })
+	local pad = part({ Name = "StartPad", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.4, 12, 12),
+		CFrame = CFrame.new(portalPos + Vector3.new(0, 0.25, 10)) * CFrame.Angles(0, 0, math.pi / 2),
+		Color = Color3.fromRGB(150, 90, 255), Material = Enum.Material.Neon, Transparency = 0.35, CanCollide = false, Parent = hub })
+	local padLight = Instance.new("PointLight")
+	padLight.Color = Color3.fromRGB(170, 120, 255)
+	padLight.Range = 18
+	padLight.Brightness = 1.5
+	padLight.Parent = pad
+	nameTag(pad, "Start run", Color3.fromRGB(215, 190, 255), 4)
 	prompt(pad, "Start run", "Portal", "Start", 0.5)
 
-	-- blacksmith: anvil and forge (opens the backpack)
-	local anvil = part({ Name = "Anvil", Size = Vector3.new(4, 3, 2), Position = c + Vector3.new(-38, 1.5, -14),
-		Color = Color3.fromRGB(70, 70, 80), Material = Enum.Material.Metal, Parent = hub })
-	local forge = part({ Name = "Forge", Size = Vector3.new(8, 6, 6), Position = c + Vector3.new(-46, 3, -18),
-		Color = Color3.fromRGB(90, 80, 75), Material = Enum.Material.Brick, Parent = hub })
-	Instance.new("Fire", forge).Size = 5
-	nameTag(anvil, "Blacksmith", Color3.fromRGB(255, 200, 120), 6)
-	prompt(anvil, "Upgrade gear", "Blacksmith", "Backpack")
+	-- the stations around the plaza
+	station("outpost_forge", Vector3.new(-24, 0, -10), 11, "Blacksmith", Color3.fromRGB(255, 200, 120), "Upgrade gear", "Backpack")
+	station("outpost_stall", Vector3.new(24, 0, -10), 9, "Gem Shop", Color3.fromRGB(90, 220, 255), "Open shop", "Shop")
+	station("outpost_altar", Vector3.new(-26, 0, 10), 12, "Hero Altar", Color3.fromRGB(140, 255, 140), "Pick hero and stats", "Heroes")
+	station("outpost_mapboard", Vector3.new(26, 0, 10), 8.5, "Map Board", Color3.fromRGB(255, 210, 90), "Choose map", "Maps")
+	station("outpost_questboard", Vector3.new(-13, 0, 22), 8.5, "Quest Board", Color3.fromRGB(255, 220, 140), "Daily quests", "Quests")
+	station("outpost_chest", Vector3.new(13, 0, 22), 4, "Daily Chest", Color3.fromRGB(255, 210, 90), "Daily reward", "Daily")
+	station("outpost_nest", Vector3.new(17, 0, -22), 5, "Pet Corner", Color3.fromRGB(160, 255, 160), "Hatch eggs", "Pets")
 
-	-- gem shop: a tent
-	local tent = part({ ClassName = "WedgePart", Name = "Tent", Size = Vector3.new(12, 8, 6),
-		CFrame = CFrame.new(c + Vector3.new(40, 4, -17)), Color = Color3.fromRGB(60, 110, 170), Material = Enum.Material.Fabric, Parent = hub })
-	part({ ClassName = "WedgePart", Name = "Tent", Size = Vector3.new(12, 8, 6),
-		CFrame = CFrame.new(c + Vector3.new(40, 4, -11)) * CFrame.Angles(0, math.pi, 0), Color = Color3.fromRGB(60, 110, 170),
-		Material = Enum.Material.Fabric, Parent = hub })
-	local counter = part({ Name = "Counter", Size = Vector3.new(8, 3, 2), Position = c + Vector3.new(40, 1.5, -6),
-		Color = Color3.fromRGB(110, 80, 50), Material = Enum.Material.WoodPlanks, Parent = hub })
-	nameTag(tent, "Gem Shop", Color3.fromRGB(90, 220, 255), 7)
-	prompt(counter, "Open shop", "Gem Shop", "Shop")
+	-- trees all around the hills
+	task.spawn(function()
+		ArtService.WaitModel("tree_oak", 30)
+		local treeRng = Random.new(41)
+		for i = 1, 46 do
+			local a = treeRng:NextNumber(0, math.pi * 2)
+			local d = i <= 6 and treeRng:NextNumber(46, 60) or treeRng:NextNumber(66, 110)
+			local pos = c + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+			local hit = workspace:Raycast(pos + Vector3.new(0, 120, 0), Vector3.new(0, -240, 0))
+			pos = hit and hit.Position - Vector3.new(0, 0.5, 0) or pos
+			placeModel(hub, "tree_oak", CFrame.new(pos) * CFrame.Angles(0, treeRng:NextNumber(0, math.pi * 2), 0),
+				treeRng:NextNumber(14, 24))
+		end
+	end)
 
-	-- hero altar: a statue
-	local altar = part({ Name = "Altar", Size = Vector3.new(6, 2, 6), Position = c + Vector3.new(-38, 1, 16),
-		Color = Color3.fromRGB(200, 200, 210), Material = Enum.Material.Marble, Parent = hub })
-	part({ Name = "Statue", Size = Vector3.new(2, 7, 2), Position = c + Vector3.new(-38, 5.5, 16),
-		Color = Color3.fromRGB(220, 220, 230), Material = Enum.Material.Marble, Parent = hub })
-	part({ Name = "StatueHead", Shape = Enum.PartType.Ball, Size = Vector3.one * 2.4, Position = c + Vector3.new(-38, 10, 16),
-		Color = Color3.fromRGB(220, 220, 230), Material = Enum.Material.Marble, Parent = hub })
-	nameTag(altar, "Hero Altar", Color3.fromRGB(120, 255, 120), 11)
-	prompt(altar, "Pick hero and stats", "Hero Altar", "Heroes")
-
-	-- map board
-	local board = part({ Name = "MapBoard", Size = Vector3.new(10, 7, 1), Position = c + Vector3.new(40, 4.5, 16),
-		Color = Color3.fromRGB(110, 80, 50), Material = Enum.Material.WoodPlanks, Parent = hub })
-	nameTag(board, "Map Board", Color3.fromRGB(255, 210, 90), 6)
-	prompt(board, "Choose map", "Map Board", "Maps")
-
-	-- daily reward chest
-	local chest = part({ Name = "DailyChest", Size = Vector3.new(4, 3, 3), Position = c + Vector3.new(14, 1.5, 22),
-		Color = Color3.fromRGB(170, 120, 40), Material = Enum.Material.WoodPlanks, Parent = hub })
-	nameTag(chest, "Daily Chest", Color3.fromRGB(255, 210, 90), 4)
-	prompt(chest, "Daily reward", "Daily Chest", "Daily")
-
-	-- pet corner: a nest with eggs
-	local nest = part({ Name = "PetNest", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.5, 8, 8),
-		CFrame = CFrame.new(c + Vector3.new(26, 0.75, 4)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = Color3.fromRGB(130, 100, 60), Material = Enum.Material.Grass, Parent = hub })
-	for i, egg in Config.Eggs do
-		part({ Name = "Egg", Shape = Enum.PartType.Ball, Size = Vector3.new(2, 2.6, 2), Position = c + Vector3.new(24 + i * 1.6, 2.5, 4),
-			Color = egg.Color, Material = Enum.Material.SmoothPlastic, Parent = hub })
-	end
-	nameTag(nest, "Pet Corner", Color3.fromRGB(160, 255, 160), 5)
-	prompt(nest, "Hatch eggs", "Pet Corner", "Pets")
-
-	-- quest board
-	local questBoard = part({ Name = "QuestBoard", Size = Vector3.new(7, 6, 1), Position = c + Vector3.new(-14, 3.5, 22),
-		Color = Color3.fromRGB(140, 100, 60), Material = Enum.Material.WoodPlanks, Parent = hub })
-	for i = 1, 3 do
-		part({ Name = "Note", Size = Vector3.new(1.6, 2, 0.1), Position = c + Vector3.new(-16.5 + i * 1.8, 3.8, 21.4),
-			Color = Color3.fromRGB(240, 230, 200), Material = Enum.Material.SmoothPlastic, Parent = hub })
-	end
-	nameTag(questBoard, "Quest Board", Color3.fromRGB(255, 220, 140), 5)
-	prompt(questBoard, "Daily quests", "Quest Board", "Quests")
-
-	-- trophy wall with the best players on this server
-	local wall = part({ Name = "TrophyWall", Size = Vector3.new(26, 12, 1), Position = c + Vector3.new(0, 6, -36),
-		Color = Color3.fromRGB(60, 45, 35), Material = Enum.Material.WoodPlanks, Parent = hub })
+	-- trophy wall with the best players on this server, behind the pet corner
+	local wall = part({ Name = "TrophyWall", Size = Vector3.new(16, 9, 0.6), CFrame = CFrame.lookAt(c + Vector3.new(-17, 4.5, -23),
+		c + Vector3.new(0, 4.5, 0)), Color = Color3.fromRGB(92, 66, 44), Material = Enum.Material.WoodPlanks, Parent = hub })
 	local surface = Instance.new("SurfaceGui")
 	surface.Name = "Board"
-	surface.Face = Enum.NormalId.Back
+	surface.Face = Enum.NormalId.Front
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surface.PixelsPerStud = 30
 	surface.Parent = wall
@@ -605,7 +612,7 @@ function MapBuilder.BuildOutpost(onPrompt)
 	text.BackgroundTransparency = 1
 	text.Font = Enum.Font.GothamBold
 	text.TextScaled = true
-	text.TextColor3 = Color3.fromRGB(255, 220, 140)
+	text.TextColor3 = Color3.fromRGB(255, 225, 150)
 	text.Text = "TROPHY WALL"
 	text.Parent = surface
 
@@ -614,6 +621,11 @@ end
 
 -- only one spawn is on at a time: the hub's, or the battlefield's during a run
 function MapBuilder.UseSpawn(where)
+	-- the hub and the battlefield each have their own light and painted looks
+	if where == "Outpost" then
+		setupLighting("Outpost")
+		TerrainBuilder.OutpostLooks()
+	end
 	local hubSpawn = workspace:FindFirstChild("Outpost") and workspace.Outpost:FindFirstChild("OutpostSpawn")
 	local battleSpawn = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("HeroSpawn")
 	if hubSpawn then

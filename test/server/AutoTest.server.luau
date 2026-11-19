@@ -87,6 +87,7 @@ local RUNS = {
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
+task.wait(36) -- time for the Outpost look check on the client
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()

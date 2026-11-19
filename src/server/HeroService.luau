@@ -362,7 +362,7 @@ local function giveWeapon(player, character)
 		hat("gear_hat_wizard", 2.0, 1.1)
 		return
 	elseif heroId == "BeastHunter" and attachGear(character, hand, "gear_bow", grip * CFrame.new(0, 0, -0.25), 4.6, "Y", color, skin.Rainbow) then
-		hat("gear_hood", 1.9, 0.3)
+		-- (no hood for now: the hood model sits badly on the head; it comes back when it is rebuilt)
 		if torso then
 			attachGear(character, torso, "gear_quiver", torso.CFrame * CFrame.new(0.35, 0.5, 0.75) * CFrame.Angles(0, 0, math.rad(-20)),
 				2.6, "Y", color)

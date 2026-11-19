@@ -87,6 +87,16 @@ local RUNS = {
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
+-- the Baby Dragon follows the test player, for the pet look check
+step("equip baby dragon", function()
+	local ArtService = require(Server.ArtService)
+	ArtService.WaitModel("pet_babydragon", 60)
+	local profile = DataService.Get(player)
+	profile.Pets = profile.Pets or {}
+	table.insert(profile.Pets, { id = "testdragon", kind = "BabyDragon", level = 1, xp = 0, evolved = false })
+	player:SetAttribute("TestPetLocked", true) -- the test client equips it (only a client can call that remote)
+end)
+
 -- a line-up of every enemy type at the Outpost, for the look check
 step("enemy line-up", function()
 	local EnemyService = require(Server.EnemyService)

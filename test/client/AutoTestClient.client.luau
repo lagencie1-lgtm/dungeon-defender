@@ -61,7 +61,7 @@ log("buy rebirth sword (should fail)", Remotes.BuyItem:InvokeServer("Swords", "S
 for _ = 1, 3 do
 	local ok, pet = Remotes.HatchEgg:InvokeServer("ForestEgg")
 	log("hatch", ok, ok and pet.kind or pet)
-	if ok then
+	if ok and not player:GetAttribute("TestPetLocked") then
 		log("equip pet", Remotes.EquipPet:InvokeServer(pet.id))
 	end
 end
@@ -223,6 +223,20 @@ local function outpostTour()
 		cam.CFrame = shot[2]
 		log("camera-tour " .. shot[1])
 		task.wait(5)
+	end
+	-- the pet that follows the player, up close from the front and from the side
+	if player:GetAttribute("TestPetLocked") then
+		log("equip dragon", Remotes.EquipPet:InvokeServer("testdragon"))
+		task.wait(2.5)
+	end
+	local pet = workspace:FindFirstChild("Pet")
+	if pet and pet.PrimaryPart then
+		for i, offset in { Vector3.new(1.5, 1.2, -5.5), Vector3.new(5, 1.5, -2.5), Vector3.new(-3, 2.5, 5) } do
+			local p = pet.PrimaryPart.CFrame
+			cam.CFrame = CFrame.lookAt((p * CFrame.new(offset)).Position, p.Position)
+			log("camera-tour pet" .. i)
+			task.wait(4)
+		end
 	end
 	-- each hero up close, from the front (weapon, hat, worn armor)
 	heroShots = true

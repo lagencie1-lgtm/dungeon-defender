@@ -124,7 +124,7 @@ step("enemy line-up", function()
 	EnemyService.Clear()
 	log("line-up", #lineup:GetChildren())
 end)
-task.wait(45) -- time for the Outpost look check on the client
+task.wait(75) -- time for the Outpost look check on the client
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()

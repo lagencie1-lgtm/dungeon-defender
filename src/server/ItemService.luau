@@ -145,6 +145,11 @@ function ItemService.ApplyBonuses(player)
 	local weapon = equipped.Weapon
 	player:SetAttribute("WeaponType", weapon and weapon.base or "Longsword")
 	player:SetAttribute("WeaponRarity", weapon and weapon.rarity or 0)
+	-- what shows on the hero: "Helm:3" = a Rare helm ("" = nothing worn)
+	for _, slot in { "Helmet", "Armor" } do
+		local item = equipped[slot]
+		player:SetAttribute("Worn" .. slot, item and (item.base .. ":" .. item.rarity) or "")
+	end
 	ItemService.OnGearChanged(player)
 end
 

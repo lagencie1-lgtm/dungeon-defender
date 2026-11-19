@@ -17,6 +17,7 @@ local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local QuestService = require(script.Parent.QuestService)
 local PetService = require(script.Parent.PetService)
+local ArtService = require(script.Parent.ArtService)
 
 local HeroService = {}
 local Hero = Config.Hero
@@ -270,6 +271,61 @@ local function makeBlade(character, hand, skin, color, length, thick)
 	end
 end
 
+-- Welds a painted Blender gear model (art/blender/gear.py) to a body part. `center` is where the middle of the
+-- model goes, `fit` its size in studs along `axis` ("Y" = height, "X" = width). The model's white glow parts take
+-- `color` (rarity or weapon skin). Returns false when the model hasn't loaded (the old simple shapes are used).
+local function attachGear(character, limb, modelName, center, fit, axis, color, rainbow)
+	local template = ArtService.Model(modelName)
+	if not template or not limb then
+		return false
+	end
+	local look = template:Clone()
+	local _, size = look:GetBoundingBox()
+	look:ScaleTo(look:GetScale() * fit / size[axis or "Y"])
+	local box = look:GetBoundingBox()
+	look:PivotTo(center * box:ToObjectSpace(look:GetPivot()))
+	for _, part in look:GetChildren() do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.Massless = true
+			if part.Name == "c_255_255_255" then
+				part.Color = color
+				part.Material = Enum.Material.Neon
+				if rainbow then
+					rainbowParts[part] = true
+				end
+			end
+			part.Name = "HeroWeapon"
+			weld(character, limb, part)
+		end
+	end
+	look:Destroy()
+	return true
+end
+
+-- helmet and armor from the backpack show on the hero, glowing in the item's rarity colour
+local HELMET_MODEL = { Helm = { "gear_helm", 1.75, 0.45 }, Hood = { "gear_hood", 1.9, 0.3 }, Crown = { "gear_crown", 0.75, 0.85 } }
+local function giveArmor(player, character)
+	local head = character:FindFirstChild("Head")
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	local base, rarity = string.match(player:GetAttribute("WornHelmet") or "", "^(.-):(%d+)$")
+	local helmet = HELMET_MODEL[base or ""]
+	local worn = false
+	if helmet and head then
+		worn = attachGear(character, head, helmet[1], head.CFrame * CFrame.new(0, helmet[3] * head.Size.Y / 1.2, 0),
+			helmet[2] * head.Size.Y / 1.2, "Y", Items.Rarities[tonumber(rarity)].Color)
+	end
+	base, rarity = string.match(player:GetAttribute("WornArmor") or "", "^(.-):(%d+)$")
+	if base and torso then
+		attachGear(character, torso, "gear_" .. string.lower(base), torso.CFrame, torso.Size.X * 1.22, "X",
+			Items.Rarities[tonumber(rarity)].Color)
+	end
+	return worn
+end
+
 -- builds the hero's weapon: shape from the hero (and weapon type), colour from
 -- the shop skin. The Classic skin glows in the weapon's rarity colour.
 local function giveWeapon(player, character)
@@ -279,6 +335,7 @@ local function giveWeapon(player, character)
 			old:Destroy()
 		end
 	end
+	local helmetWorn = giveArmor(player, character)
 	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not hand then
 		return
@@ -291,6 +348,49 @@ local function giveWeapon(player, character)
 	end
 	local heroId = player:GetAttribute("HeroId") or "Swordmaster"
 	local grip = hand.CFrame * CFrame.new(0, -hand.Size.Y / 2, 0)
+
+	local head = character:FindFirstChild("Head")
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	local up = grip * CFrame.Angles(-math.pi / 2, 0, 0) -- a model's "up" pointing forward out of the fist
+	local headScale = head and head.Size.Y / 1.2 or 1
+	local function hat(model, height, lift)
+		if not helmetWorn and head then
+			attachGear(character, head, model, head.CFrame * CFrame.new(0, lift * headScale, 0), height * headScale, "Y", color)
+		end
+	end
+	if heroId == "RuneMage" and attachGear(character, hand, "gear_staff", grip * CFrame.new(0, 1.4, 0), 6.2, "Y", color, skin.Rainbow) then
+		hat("gear_hat_wizard", 2.0, 1.1)
+		return
+	elseif heroId == "BeastHunter" and attachGear(character, hand, "gear_bow", grip * CFrame.new(0, 0, -0.25), 4.6, "Y", color, skin.Rainbow) then
+		hat("gear_hood", 1.9, 0.3)
+		if torso then
+			attachGear(character, torso, "gear_quiver", torso.CFrame * CFrame.new(0.35, 0.5, 0.75) * CFrame.Angles(0, 0, math.rad(-20)),
+				2.6, "Y", color)
+		end
+		return
+	elseif heroId == "Engineer" and attachGear(character, hand, "gear_wrench", up * CFrame.new(0, 1.5, 0), 3.4, "Y", color, skin.Rainbow) then
+		hat("gear_goggles", 0.55, 0.25)
+		if torso then
+			attachGear(character, torso, "gear_pack", torso.CFrame * CFrame.new(0, 0.2, 0.95), 2.4, "Y", color)
+		end
+		return
+	elseif heroId == "Swordmaster" and not skin.Baguette then
+		local weaponType = player:GetAttribute("WeaponType") or "Longsword"
+		local model, length = "gear_sword_long", 4.6
+		if weaponType == "Greatsword" then
+			model, length = "gear_sword_great", 6.6
+		elseif weaponType == "TwinBlades" then
+			model, length = "gear_sword_twin", 3.4
+		end
+		if attachGear(character, hand, model, up * CFrame.new(0, length / 2 - 0.5, 0), length, "Y", color, skin.Rainbow) then
+			local left = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm")
+			if weaponType == "TwinBlades" and left then
+				local leftUp = left.CFrame * CFrame.new(0, -left.Size.Y / 2, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+				attachGear(character, left, model, leftUp * CFrame.new(0, length / 2 - 0.5, 0), length, "Y", color, skin.Rainbow)
+			end
+			return
+		end
+	end
 
 	if heroId == "RuneMage" then
 		local staff = newPart({ Name = "HeroWeapon", Shape = Enum.PartType.Cylinder, Size = Vector3.new(6, 0.35, 0.35),
@@ -422,6 +522,18 @@ local function onCharacter(player, character)
 	end
 	giveWeapon(player, character)
 	giveNameTag(player, character)
+	-- the painted gear models may still be loading right after the server starts: put them on when they arrive
+	if not ArtService.Model("gear_pack") or not ArtService.Model("gear_sword_long") then
+		task.spawn(function()
+			for _, name in { "gear_sword_long", "gear_sword_great", "gear_sword_twin", "gear_staff", "gear_bow", "gear_wrench",
+				"gear_hat_wizard", "gear_hood", "gear_goggles", "gear_quiver", "gear_pack" } do
+				ArtService.WaitModel(name, 40)
+			end
+			if character.Parent then
+				giveWeapon(player, character)
+			end
+		end)
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -968,7 +1080,7 @@ function HeroService.Start()
 			task.spawn(onCharacter, player, player.Character)
 		end
 		-- a new look picked in the shop or new gear: swap the weapon right away
-		for _, attr in { "EquippedSword", "WeaponType", "WeaponRarity" } do
+		for _, attr in { "EquippedSword", "WeaponType", "WeaponRarity", "WornHelmet", "WornArmor" } do
 			player:GetAttributeChangedSignal(attr):Connect(function()
 				if player.Character then
 					giveWeapon(player, player.Character)

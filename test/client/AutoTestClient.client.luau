@@ -25,9 +25,13 @@ task.spawn(function()
 	end
 end)
 
+local heroShots = false
 task.spawn(function()
 	while true do
 		task.wait(6)
+		if heroShots then
+			continue
+		end
 		i += 1
 		local ok, reason = Remotes.SelectHero:InvokeServer(heroes[i % #heroes + 1])
 		log("select hero", heroes[i % #heroes + 1], ok, reason)
@@ -220,6 +224,19 @@ local function outpostTour()
 		log("camera-tour " .. shot[1])
 		task.wait(5)
 	end
+	-- each hero up close, from the front (weapon, hat, worn armor)
+	heroShots = true
+	for _, heroId in heroes do
+		Remotes.SelectHero:InvokeServer(heroId)
+		task.wait(2.5)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			cam.CFrame = CFrame.lookAt((root.CFrame * CFrame.new(3.5, 2, -8.5)).Position, root.Position + Vector3.new(0, 1.2, 0))
+			log("camera-tour hero_" .. string.lower(heroId))
+			task.wait(4)
+		end
+	end
+	heroShots = false
 	for _, shot in {
 		{ "outpost_overview", CFrame.lookAt(center + Vector3.new(0, 60, 50), center + Vector3.new(0, 0, -26)) },
 		{ "outpost_low", CFrame.lookAt(center + Vector3.new(0, 8, 14), center + Vector3.new(0, 4, -30)) },

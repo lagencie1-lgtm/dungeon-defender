@@ -84,6 +84,22 @@ local function paintedTerrain(material, textureName)
 	return ok
 end
 
+-- The average colour of each painted ground. Phones on low graphics draw the ground as this plain colour instead
+-- of the painting, so it must match the painting (white here gave a white map on the iPhone, v39).
+local LOOK_COLOR = {
+	t_ash = Color3.fromRGB(119, 100, 92),
+	t_ground = Color3.fromRGB(163, 94, 48),
+	t_cobble = Color3.fromRGB(111, 88, 74),
+	t_cliff = Color3.fromRGB(124, 55, 41),
+	basalt = Color3.fromRGB(82, 49, 48),
+	lava_rock = Color3.fromRGB(99, 40, 18),
+	t_grass = Color3.fromRGB(80, 109, 41),
+	t_forest_dirt = Color3.fromRGB(87, 45, 23),
+	t_moss_rock = Color3.fromRGB(102, 103, 78),
+	t_cave_floor = Color3.fromRGB(58, 67, 100),
+	t_cave_wall = Color3.fromRGB(62, 52, 90),
+}
+
 -- Old looks are only dropped once the new set is known (see applyLooks): clearing an override and setting it
 -- again in the same moment left the grass plain white.
 function TerrainBuilder.ResetLooks() end
@@ -102,7 +118,10 @@ local function applyLooks(looks)
 	end
 	for material, texture in looks do
 		if paintedTerrain(material, texture) then
-			t:SetMaterialColor(material, Color3.new(1, 1, 1))
+			-- the game multiplies the painting with this colour: white keeps the painting as painted, the painting's
+			-- own colour is what a phone shows without it. 40% towards white is the middle that works for both.
+			local own = LOOK_COLOR[texture]
+			t:SetMaterialColor(material, own and own:Lerp(Color3.new(1, 1, 1), 0.4) or Color3.new(1, 1, 1))
 		end
 	end
 end

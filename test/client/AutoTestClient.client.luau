@@ -82,6 +82,7 @@ log("daily", Remotes.ClaimDaily:InvokeServer())
 log("code", Remotes.RedeemCode:InvokeServer("goblinmode"))
 log("code again", Remotes.RedeemCode:InvokeServer("GOBLINMODE"))
 log("bad code", Remotes.RedeemCode:InvokeServer("nope"))
+log("reset code, first time only (should ask to confirm)", Remotes.RedeemCode:InvokeServer("resetmysave"))
 
 -- look at a Ranger for a screenshot check (test build only; off while the map tour runs)
 task.delay(25, function()

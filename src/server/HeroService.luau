@@ -306,6 +306,32 @@ local function attachGear(character, limb, modelName, center, fit, axis, color, 
 	return true
 end
 
+-- hides (or shows again) the avatar's own hair and hat accessories
+local HEAD_ACCESSORY = { [Enum.AccessoryType.Hair] = true, [Enum.AccessoryType.Hat] = true }
+local function hideHair(character, hidden)
+	for _, accessory in character:GetChildren() do
+		if accessory:IsA("Accessory") then
+			local handle = accessory:FindFirstChild("Handle")
+			local onHead = HEAD_ACCESSORY[accessory.AccessoryType]
+				or (handle and (handle:FindFirstChild("HairAttachment") or handle:FindFirstChild("HatAttachment")) ~= nil)
+			if handle and onHead then
+				handle.Transparency = hidden and 1 or 0
+			end
+		end
+	end
+end
+
+-- a full helm, a hood or the mage's hat cover the head; a crown sits on the hair
+local function hairHidden(player)
+	local base = string.match(player:GetAttribute("WornHelmet") or "", "^(.-):")
+	if base == "Helm" or base == "Hood" then
+		return true
+	elseif base == "Crown" then
+		return false
+	end
+	return player:GetAttribute("HeroId") == "RuneMage"
+end
+
 -- helmet and armor from the backpack show on the hero, glowing in the item's rarity colour
 local HELMET_MODEL = { Helm = { "gear_helm", 1.75, 0.45 }, Hood = { "gear_hood", 1.9, 0.3 }, Crown = { "gear_crown", 0.75, 0.85 } }
 local function giveArmor(player, character)
@@ -348,6 +374,8 @@ local function giveWeapon(player, character)
 	end
 	local heroId = player:GetAttribute("HeroId") or "Swordmaster"
 	local grip = hand.CFrame * CFrame.new(0, -hand.Size.Y / 2, 0)
+	-- a hat or helmet replaces the avatar's own hair and hats (they poked through it), and they come back without one
+	hideHair(character, hairHidden(player))
 
 	local head = character:FindFirstChild("Head")
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
@@ -359,7 +387,7 @@ local function giveWeapon(player, character)
 		end
 	end
 	if heroId == "RuneMage" and attachGear(character, hand, "gear_staff", grip * CFrame.new(0, 1.4, 0), 6.2, "Y", color, skin.Rainbow) then
-		hat("gear_hat_wizard", 2.0, 1.1)
+		hat("gear_hat_wizard", 2.0, 1.22)
 		return
 	elseif heroId == "BeastHunter" and attachGear(character, hand, "gear_bow", grip * CFrame.new(0, 0, -0.25), 4.6, "Y", color, skin.Rainbow) then
 		-- (no hood for now: the hood model sits badly on the head; it comes back when it is rebuilt)
@@ -522,6 +550,12 @@ local function onCharacter(player, character)
 	end
 	giveWeapon(player, character)
 	giveNameTag(player, character)
+	-- the avatar's hair and hats can arrive a moment after the character: hide them again once they are there
+	task.delay(2, function()
+		if character.Parent then
+			hideHair(character, hairHidden(player))
+		end
+	end)
 	-- the painted gear models may still be loading right after the server starts: put them on when they arrive
 	if not ArtService.Model("gear_pack") or not ArtService.Model("gear_sword_long") then
 		task.spawn(function()

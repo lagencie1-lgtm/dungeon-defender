@@ -129,8 +129,8 @@ end
 
 local function save(player)
 	local p = profiles[player]
-	if not p then
-		return
+	if not p or player:GetAttribute("SaveLocked") then
+		return -- (locked: the save was just reset, nothing may write the old progress back)
 	end
 	for _, callback in DataService.BeforeSave do
 		pcall(callback, player, p)
@@ -157,7 +157,7 @@ end
 -- saves right now and says if it worked (used before confirming a Robux purchase)
 function DataService.SaveNow(player)
 	local p = profiles[player]
-	if not p or player:GetAttribute("SavesOff") or not store then
+	if not p or player:GetAttribute("SavesOff") or player:GetAttribute("SaveLocked") or not store then
 		return false
 	end
 	local ok = pcall(function()
@@ -269,12 +269,53 @@ local function equip(player, kind, id)
 	return true
 end
 
+-- "Start over" for the game's owner only (Lemp 2026-11-19: reset my own save from the phone). Typed in the
+-- Codes box: RESETMYSAVE, then once more within a minute to confirm. Deletes the whole save (and the Endless
+-- leaderboard entry) and sends the owner out, so the next join starts like a brand-new player. For every other
+-- player the code simply doesn't exist. Robux game passes come back by themselves; bought gems do not.
+local resetAsked = {} -- [player] = when they typed it the first time
+local function ownerReset(player)
+	local isOwner = game.CreatorType == Enum.CreatorType.User and game.CreatorId == player.UserId
+	if not isOwner and not game:GetService("RunService"):IsStudio() then
+		return false, "That code doesn't exist (yet)"
+	end
+	local asked = resetAsked[player]
+	if not asked or os.clock() - asked > 60 then
+		resetAsked[player] = os.clock()
+		return false, "This DELETES all your progress. Type the code again within 1 minute to confirm"
+	end
+	resetAsked[player] = nil
+	player:SetAttribute("SaveLocked", true)
+	local ok = true
+	if storeOk and store and not player:GetAttribute("SavesOff") then
+		ok = pcall(function()
+			store:RemoveAsync("player_" .. player.UserId)
+		end)
+		pcall(function()
+			DataStoreService:GetOrderedDataStore("EndlessBestWave_v1"):RemoveAsync(tostring(player.UserId))
+		end)
+	end
+	if not ok then
+		player:SetAttribute("SaveLocked", nil)
+		return false, "Couldn't reach the save right now. Try again in a moment"
+	end
+	task.delay(2, function()
+		if player.Parent then
+			player:Kick("Your save was reset. Join again to start fresh.")
+		end
+	end)
+	return true, "Save reset. Join again to start fresh"
+end
+
 local function redeemCode(player, text)
 	local p = profiles[player]
 	if not p or type(text) ~= "string" then
 		return false, "Still loading"
 	end
 	local code = string.upper((text:gsub("%s", "")))
+	if code == "RESETMYSAVE" then
+		return ownerReset(player)
+	end
 	local info = Config.Codes[code]
 	if not info then
 		return false, "That code doesn't exist (yet)"

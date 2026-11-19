@@ -13,8 +13,10 @@ local ArtService = require(script.Parent.ArtService)
 -- the Blender goblin, scaled to a goblin's size and painted in its colour.
 -- Returns the skin parts (for hit flashes) or nil when the model isn't loaded.
 local SKIN_MARKER = "c_0_255_0"
+-- the enemy each image-to-3D model was painted as: it keeps the model's own colours, its variants get a tint
+local PLAIN_KIND = { Goblin = true, ["Ember Imp"] = true, ["Obsidian Knight"] = true, ["Magma Slime"] = true, Shade = true }
 local function goblinMesh(model, body, stats)
-	local template = ArtService.Model("enemy_" .. string.lower(stats.Look or "Goblin"))
+	local template = ArtService.Model(stats.Model or ("enemy_" .. string.lower(stats.Look or "Goblin")))
 	if not template then
 		return nil
 	end
@@ -38,7 +40,7 @@ local function goblinMesh(model, body, stats)
 		elseif part.Name == "Body" and not template:FindFirstChild(SKIN_MARKER) then
 			-- an image-to-3D model has its colours painted in: the plain kind keeps them, the variants
 			-- (Runner, Brute, Loot Goblin...) get a tint of their own colour over the whole model
-			local plain = Config.Enemies[string.gsub(template.Name, "^enemy_", "")] == nil and stats.DisplayName == "Goblin"
+			local plain = stats.Model ~= nil or PLAIN_KIND[stats.DisplayName or "Goblin"] -- the one the model was painted as
 			part.Color = plain and Color3.new(1, 1, 1) or Color3.new(1, 1, 1):Lerp(stats.Color, 0.55)
 		end
 	end
@@ -145,7 +147,7 @@ local function makeGoblin(name, stats)
 
 	local look = stats.Look or "Goblin"
 	-- the painted Blender model, when it has loaded (every look has one); the block looks below are the fallback
-	if ArtService.Model("enemy_" .. string.lower(look)) then
+	if ArtService.Model(stats.Model or ("enemy_" .. string.lower(look))) then
 		local body = newPart(model, { Name = "Body", Size = Vector3.new(s, s, s * 0.8), Transparency = 1 })
 		model.PrimaryPart = body
 		local head = newPart(model, { Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.one * s * 0.7, Transparency = 1,

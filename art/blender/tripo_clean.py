@@ -58,7 +58,7 @@ bpy.ops.mesh.remove_doubles(threshold=0.0005)
 bpy.ops.mesh.quads_convert_to_tris()
 bpy.ops.object.mode_set(mode="OBJECT")
 before = len(body.data.polygons)
-if before > target:
+if before > target * 1.15:  # (close enough: leave it, every cut costs a little paint quality)
     mod = body.modifiers.new("decimate", "DECIMATE")
     mod.ratio = target / before
     mod.use_collapse_triangulate = True

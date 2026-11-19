@@ -185,7 +185,7 @@ Config.Enemies = {
 		Color = Color3.fromRGB(255, 140, 60), Size = 1.8,
 	},
 	MoltenGolem = {
-		DisplayName = "Molten Golem", Look = "Golem", Armor = 10, FireImmune = true, DropChance = 0,
+		DisplayName = "Molten Golem", Look = "Golem", Model = "boss_molten_golem", Armor = 10, FireImmune = true, DropChance = 0,
 		Health = 3000, Speed = 3.5, Damage = 100, Gold = 300, Xp = 140, Gems = 50, GemChance = 1,
 		Color = Color3.fromRGB(90, 50, 40), Size = 8, Boss = true,
 	},
@@ -206,13 +206,13 @@ Config.Enemies = {
 		Color = Color3.fromRGB(120, 200, 230), Size = 4.2,
 	},
 	ShadowQueen = {
-		DisplayName = "Shadow Queen", Look = "Shade", Boss = true, DropChance = 0,
+		DisplayName = "Shadow Queen", Look = "Shade", Model = "boss_shadow_queen", Boss = true, DropChance = 0,
 		Blink = { Every = 6, Distance = 18 }, Summon = { Every = 7, Enemy = "Gloomling", Count = 4 },
 		Health = 2800, Speed = 4.5, Damage = 100, Gold = 300, Xp = 150, Gems = 55, GemChance = 1,
 		Color = Color3.fromRGB(120, 40, 160), Size = 6.5,
 	},
 	GoblinKing = {
-		DisplayName = "Goblin King",
+		DisplayName = "Goblin King", Model = "boss_goblin_king", -- its own image-to-3D model (art/ref3d)
 		Health = 2600, Speed = 4, Damage = 100, Gold = 250, Xp = 100, Gems = 40, GemChance = 1,
 		Color = Color3.fromRGB(120, 60, 140), Size = 7, Boss = true,
 	},

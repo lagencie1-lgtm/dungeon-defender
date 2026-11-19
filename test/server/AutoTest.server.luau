@@ -95,6 +95,9 @@ step("enemy line-up", function()
 	for _, look in { "goblin", "imp", "knight", "slime", "golem", "shade" } do
 		ArtService.WaitModel("enemy_" .. look, 60)
 	end
+	for _, boss in { "boss_goblin_king", "boss_molten_golem", "boss_shadow_queen" } do
+		ArtService.WaitModel(boss, 30)
+	end
 	log("enemy models loaded after", math.floor(os.clock() - started), "s")
 	local names = {}
 	for name in Config.Enemies do

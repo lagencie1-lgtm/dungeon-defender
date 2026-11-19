@@ -1,0 +1,9 @@
+{
+  "className": "MaterialVariant",
+  "properties": {
+    "BaseMaterial": "Rock",
+    "ColorMap": "rbxassetid://75598055715752",
+    "StudsPerTile": 14.0,
+    "RoughnessMap": "rbxassetid://100925396897052"
+  }
+}

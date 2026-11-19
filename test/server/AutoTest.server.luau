@@ -83,12 +83,20 @@ end
 local RUNS = {
 	{ "MagmaFortress", "Campaign", 120 },
 	{ "CrystalCaves", "Campaign", 120 },
+	{ "CursedForest", "Campaign", 90 },
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()
+		-- the game only starts a run from the lobby (it may still be setting up the Outpost)
+		for _ = 1, 60 do
+			if State.Get("State") == "Lobby" then
+				break
+			end
+			task.wait(0.5)
+		end
 		State.Set("Map", mapId)
 		State.Set("Mode", mode)
 		State.Set("Difficulty", "Easy")

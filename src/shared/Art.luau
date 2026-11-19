@@ -28,6 +28,9 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	map_camp = "83613241654248",
+	tree_oak = "86771716646437",
+	tree_dead = "99347777983539",
 	map_portal = "89487886262773",
 	map_gate = "108646967586771",
 	enemy_goblin = "96884241329919",
@@ -43,6 +46,15 @@ Art.Models = {
 Art.Textures = {
 	sky_magma_side = "86765015504788",
 	sky_magma_up = "135493064995244",
+	sky_forest_side = "130463897132256",
+	sky_forest_up = "75511505634263",
+	sky_forest_down = "112098184845061",
+	t_grass = "125974768344376",
+	t_forest_dirt = "125681691745978",
+	t_moss_rock = "117697922325700",
+	paint_tree_oak = "86099707359138",
+	paint_tree_dead = "115071143061598",
+	paint_map_camp = "130036189894827",
 	sky_magma_down = "77642380587896",
 	t_ground = "112898416512039",
 	t_cobble = "136419768665426",

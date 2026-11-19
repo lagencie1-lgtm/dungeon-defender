@@ -112,14 +112,20 @@ local function setupLighting(theme)
 		atmosphere.Glare = 0.6
 		atmosphere.Haze = 2.5
 	else
-		Lighting.ClockTime = 16.8
-		Lighting.Brightness = 2.6
-		Lighting.Ambient = Color3.fromRGB(110, 100, 125)
-		Lighting.OutdoorAmbient = Color3.fromRGB(140, 130, 150)
-		Lighting.FogColor = Color3.fromRGB(40, 35, 60)
-		atmosphere.Density = 0.35
-		atmosphere.Color = Color3.fromRGB(110, 90, 140)
-		atmosphere.Decay = Color3.fromRGB(60, 40, 80)
+		-- cursed twilight: violet haze far away, soft warm light on the meadow so it stays readable
+		Lighting.ClockTime = 16.4
+		Lighting.ColorShift_Top = Color3.fromRGB(255, 220, 190)
+		Lighting.Brightness = 2.1
+		Lighting.ExposureCompensation = 0.3
+		Lighting.Ambient = Color3.fromRGB(130, 128, 145)
+		Lighting.OutdoorAmbient = Color3.fromRGB(158, 152, 170)
+		Lighting.FogColor = Color3.fromRGB(60, 50, 90)
+		atmosphere.Density = 0.3
+		atmosphere.Offset = 0.1
+		atmosphere.Color = Color3.fromRGB(190, 160, 210)
+		atmosphere.Decay = Color3.fromRGB(90, 70, 120)
+		atmosphere.Haze = 2
+		atmosphere.Glare = 0.3
 	end
 	Lighting.FogStart = 120
 	Lighting.FogEnd = 400
@@ -128,16 +134,17 @@ local function setupLighting(theme)
 	if old then
 		old:Destroy()
 	end
-	if theme == "Magma" then
+	local skyName = ({ Magma = "magma", Forest = "forest" })[theme]
+	if skyName then
 		-- in the background: the images may still be loading when the first map is built
 		task.spawn(function()
-		local side = ArtService.Image("sky_magma_side", 30)
-		if side and Config.Maps[Config.CurrentMap].Theme == "Magma" and not Lighting:FindFirstChild("MapSky") then
+		local side = ArtService.Image("sky_" .. skyName .. "_side", 30)
+		if side and Config.Maps[Config.CurrentMap].Theme == theme and not Lighting:FindFirstChild("MapSky") then
 			local sky = Instance.new("Sky")
 			sky.Name = "MapSky"
 			sky.SkyboxBk, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt = side, side, side, side
-			sky.SkyboxUp = ArtService.Image("sky_magma_up", 2) or side
-			sky.SkyboxDn = ArtService.Image("sky_magma_down", 2) or side
+			sky.SkyboxUp = ArtService.Image("sky_" .. skyName .. "_up", 2) or side
+			sky.SkyboxDn = ArtService.Image("sky_" .. skyName .. "_down", 2) or side
 			sky.CelestialBodiesShown = false
 			sky.StarCount = 0
 			sky.Parent = Lighting
@@ -237,7 +244,8 @@ function MapBuilder.BuildBattlefield(mapId)
 	local map = folder("Map", workspace)
 	workspace.Terrain:Clear()
 	TerrainBuilder.ResetLooks()
-	local terrainLook = magma -- maps rebuilt with real terrain (the others follow)
+	local forest = not magma and not crystal
+	local terrainLook = magma or forest -- maps rebuilt with real terrain (Crystal Caves follows)
 	part({
 		Transparency = terrainLook and 1 or 0,
 		CanCollide = not terrainLook, -- heroes walk on the terrain itself
@@ -271,10 +279,12 @@ function MapBuilder.BuildBattlefield(mapId)
 	local camp = points[1] + (points[1] - points[2]).Unit * 12
 	if magma then
 		TerrainBuilder.Magma(map, camp)
+	elseif forest then
+		TerrainBuilder.Forest(map, camp)
 	end
 	local gateFacing = CFrame.lookAt(camp, camp + (points[1] - camp).Unit)
-	if magma then
-		ArtService.WaitModel("map_gate", 8)
+	if magma or forest then
+		ArtService.WaitModel(magma and "map_gate" or "map_camp", 8)
 		ArtService.WaitModel("map_portal", 4)
 	end
 	if magma and placeModel(map, "map_gate", gateFacing, 20) then
@@ -286,6 +296,20 @@ function MapBuilder.BuildBattlefield(mapId)
 		light.Range = 26
 		light.Brightness = 2
 		light.Parent = glowPart
+	elseif forest and placeModel(map, "map_camp", gateFacing, 19) then
+		-- the Blender goblin camp gate, lit by its campfire
+		local glowPart = part({ Name = "GateGlow", Size = Vector3.one, Position = camp + Vector3.new(0, 3, 0), Transparency = 1,
+			CanCollide = false, Parent = map })
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 160, 70)
+		light.Range = 22
+		light.Brightness = 1.6
+		light.Parent = glowPart
+		local fire = Instance.new("Fire")
+		fire.Size = 3
+		fire.Heat = 6
+		fire.Parent = glowPart
+		glowPart.Position = (gateFacing * CFrame.new(0, 1, -5)).Position
 	elseif magma then
 		part({ Name = "Gate", Size = Vector3.new(4, 16, 18), Position = camp + Vector3.new(0, 8, 0),
 			Color = Color3.fromRGB(40, 35, 40), Material = Enum.Material.Basalt, Parent = map })
@@ -327,7 +351,7 @@ function MapBuilder.BuildBattlefield(mapId)
 	glow.Brightness = magma and 1.4 or 3
 	glow.Parent = portal
 	local side = Vector3.new(-dir.Z, 0, dir.X)
-	local arch = magma and placeModel(map, "map_portal", CFrame.lookAt(last + dir * 4, last + dir * 5), 22)
+	local arch = not crystal and placeModel(map, "map_portal", CFrame.lookAt(last + dir * 4, last + dir * 5), 22)
 	if arch then
 		-- the disc sits inside the stone ring
 		portal.CFrame = CFrame.lookAt(last + dir * 4 + Vector3.new(0, 11.4, 0), last + dir * 5 + Vector3.new(0, 11.4, 0))
@@ -371,6 +395,47 @@ function MapBuilder.BuildBattlefield(mapId)
 			end
 			placed += 1
 		end
+	end
+
+	-- the forest's painted trees: a few inside the battlefield, a thick wood all around it
+	if forest then
+		ArtService.WaitModel("tree_oak", 8)
+		ArtService.WaitModel("tree_dead", 2)
+		local trees = folder("Trees", map)
+		local treeRng = Random.new(77)
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { workspace.Terrain }
+		-- (freshly written terrain only answers raycasts after a physics step)
+		task.wait(0.3)
+		local function plant(pos, big)
+			-- stand on the ground (hills too), never in water
+			local hit = workspace:Raycast(pos + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0), params)
+			if hit and hit.Material == Enum.Material.Water then
+				return
+			end
+			pos = hit and hit.Position - Vector3.new(0, 0.5, 0) or pos
+			local kind = treeRng:NextNumber() < 0.25 and "tree_dead" or "tree_oak"
+			local h = big and treeRng:NextNumber(22, 32) or treeRng:NextNumber(14, 20)
+			placeModel(trees, kind, CFrame.new(pos) * CFrame.Angles(0, treeRng:NextNumber(0, math.pi * 2), 0), h)
+		end
+		local inside, outside, n = 0, 0, 0
+		while (inside < 14 or outside < 70) and n < 3000 do
+			n += 1
+			local pos = Vector3.new(treeRng:NextNumber(-half.X - 40, half.X + 40), 0, treeRng:NextNumber(-half.Y - 40, half.Y + 40))
+			local inPlay = math.abs(pos.X) < half.X and math.abs(pos.Z) < half.Y
+			if inPlay and inside < 14 and Config.DistanceToPath(pos) > Config.PathWidth + 10
+				and (pos - Config.SpawnPoint).Magnitude > 18 and (pos - camp).Magnitude > 18 then
+				plant(pos, false)
+				inside += 1
+			elseif not inPlay and outside < 70 then
+				plant(pos, true)
+				outside += 1
+			end
+		end
+		local first = trees:GetChildren()[1]
+		print("Map: forest trees", #trees:GetChildren(), "inside", inside, "outside", outside,
+			first and first:GetFullName(), first and tostring(first:GetPivot().Position))
 	end
 
 	-- folders the game fills while you play

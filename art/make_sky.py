@@ -55,11 +55,14 @@ def flat(color):
 
 
 os.makedirs(OUT, exist_ok=True)
-TOP = (96, 52, 70)
-MID = (205, 98, 62)
-HORIZON = (255, 178, 100)
-BOTTOM = (60, 30, 24)
-side(TOP, MID, HORIZON, BOTTOM).save(os.path.join(OUT, "sky_magma_side.png"))
-flat(TOP).save(os.path.join(OUT, "sky_magma_up.png"))
-flat(BOTTOM).save(os.path.join(OUT, "sky_magma_down.png"))
+SKIES = {
+    # Magma Fortress: smouldering dusk
+    "magma": ((96, 52, 70), (205, 98, 62), (255, 178, 100), (60, 30, 24)),
+    # Cursed Forest: violet twilight with a warm rose horizon
+    "forest": ((52, 50, 98), (120, 92, 150), (240, 170, 150), (40, 48, 40)),
+}
+for name, (top, mid, horizon, bottom) in SKIES.items():
+    side(top, mid, horizon, bottom).save(os.path.join(OUT, f"sky_{name}_side.png"))
+    flat(top).save(os.path.join(OUT, f"sky_{name}_up.png"))
+    flat(bottom).save(os.path.join(OUT, f"sky_{name}_down.png"))
 print("sky done")

@@ -35,6 +35,12 @@ TEXTURES = {
     "t_cobble": "rounded cobblestones of mixed sizes set in dark soil, warm grey, palette #4A4440 to #A89C90",
     "t_ash": "grey volcanic ash ground with small dark stones and faint cracks, palette #4A4240 to #9A8E88",
     "t_cliff": "rough layered volcanic cliff rock with big chunky angular facets, reddish brown, palette #3A2622 to #8A5E4E",
+    # Cursed Forest
+    "t_grass": "short dense meadow grass with small clover and tiny flowers, muted dusky green, palette #2E4A2A to #7A9A50",
+    "t_forest_dirt": "dark forest floor soil with fallen leaves and twigs, palette #3A2A1E to #8A6A44",
+    "t_moss_rock": "grey boulder rock with patches of soft green moss, palette #4A4E48 to #8A9A70",
+    "bark": "rough twisted tree bark with deep vertical grooves, dark brown, palette #2E2018 to #6E5038",
+    "leaves": "dense clustered tree leaves canopy, deep green with lighter tips, palette #1E3A22 to #6A9A48",
     "rune_stone": "dark purple-grey carved stone with faint engraved rune lines, palette #2E2838 to #7A6E8E",
 }
 

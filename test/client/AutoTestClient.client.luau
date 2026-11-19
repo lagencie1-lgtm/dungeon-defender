@@ -103,20 +103,27 @@ task.delay(25, function()
 	end
 end)
 
--- a short map tour for the look check: overview, the enemy gate, the portal (test build only)
-task.spawn(function()
+-- a short map tour for the look check on each rebuilt map: overview, the enemy gate, the portal,
+-- and (on Magma) each defender up close (test build only)
+local function tour(mapId, prefix, withTowers)
+	log("tour waiting for", mapId)
+	local n = 0
 	repeat
 		task.wait(0.5)
-	until GameState:GetAttribute("Map") == "MagmaFortress" and workspace:FindFirstChild("Map")
-	task.wait(5) -- let the models load in
+		n += 1
+		if n % 20 == 0 then
+			log("tour sees", GameState:GetAttribute("Map"), GameState:GetAttribute("State"), workspace:FindFirstChild("Map") ~= nil)
+		end
+	until GameState:GetAttribute("Map") == mapId and GameState:GetAttribute("State") ~= "Lobby" and workspace:FindFirstChild("Map")
+	task.wait(3) -- let the models load in
 	-- positions from the built map itself (the client's Config doesn't know which map is on)
 	local map = workspace.Map
-	local gate = map:WaitForChild("GateGlow", 10).Position
+	local gateMark = map:WaitForChild("GateGlow", 5) or map:FindFirstChild("CampHut") or map:FindFirstChild("CampFire")
+	local gate = gateMark and gateMark.Position or Vector3.new(-80, 0, 0)
 	local portal = map:WaitForChild("Portal", 10).Position
 	local flat = Vector3.new(1, 0, 1)
 	local toPortal = ((portal - gate) * flat).Unit
 	local cam = workspace.CurrentCamera
-	cam.CameraType = Enum.CameraType.Scriptable
 	local hidden = {}
 	for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
 		if g:IsA("ScreenGui") and g.Enabled then
@@ -128,9 +135,31 @@ task.spawn(function()
 		{ "overview", CFrame.lookAt(Vector3.new(0, 120, 110), Vector3.new(0, 0, 0)) },
 		{ "gate", CFrame.lookAt(Vector3.new(gate.X, 18, gate.Z) + toPortal * 34, Vector3.new(gate.X, 8, gate.Z)) },
 		{ "portal", CFrame.lookAt(Vector3.new(portal.X, 16, portal.Z) - toPortal * 34, portal) },
+		{ "low", CFrame.lookAt(Vector3.new(0, 14, 60), Vector3.new(0, 4, 0)) },
 	}
+	local names = {}
+	for _, c in map:GetChildren() do
+		names[c.Name] = (names[c.Name] or 0) + 1
+	end
+	local list = {}
+	for k, v in names do
+		table.insert(list, k .. "=" .. v)
+	end
+	log("map children", table.concat(list, " "))
+	local trees = map:FindFirstChild("Trees")
+	local tree = trees and trees:GetChildren()[3]
+	if tree then
+		local cf, size = tree:GetBoundingBox()
+		log("tree", tree.Name, tostring(cf.Position), tostring(size))
+		for _, part in tree:GetDescendants() do
+			if part:IsA("BasePart") then
+				log("tree part", part.Name, part.ClassName, part.Transparency, tostring(part.Size), part:IsA("MeshPart") and part.TextureID or "")
+			end
+		end
+		table.insert(shots, 1, { "tree", CFrame.lookAt(cf.Position + Vector3.new(size.Y, size.Y * 0.3, size.Y), cf.Position) })
+	end
 	local towers = workspace:FindFirstChild("Towers")
-	for _, kind in { "Ranger", "Flame Cannon", "Frost Crystal", "Storm Obelisk", "Ballista" } do
+	for _, kind in withTowers and { "Ranger", "Flame Cannon", "Frost Crystal", "Storm Obelisk", "Ballista" } or {} do
 		local tower = towers and towers:FindFirstChild(kind)
 		if tower and tower.PrimaryPart then
 			local p = tower.PrimaryPart.Position
@@ -139,15 +168,26 @@ task.spawn(function()
 		end
 	end
 	for _, shot in shots do
+		-- (popups that opened since keep hidden too)
+		for _, g in game:GetService("Players").LocalPlayer.PlayerGui:GetChildren() do
+			if g:IsA("ScreenGui") and g.Enabled then
+				g.Enabled = false
+				table.insert(hidden, g)
+			end
+		end
 		cam.CameraType = Enum.CameraType.Scriptable
 		cam.CFrame = shot[2]
-		log("camera-tour " .. shot[1], tostring(shot[2].Position))
-		task.wait(5)
+		log("camera-tour " .. prefix .. "_" .. shot[1], tostring(shot[2].Position))
+		task.wait(9)
 	end
 	for _, g in hidden do
 		g.Enabled = true
 	end
 	cam.CameraType = Enum.CameraType.Custom
+end
+task.spawn(function()
+	tour("MagmaFortress", "magma", true)
+	tour("CursedForest", "forest", false)
 end)
 
 -- and at a goblin-type enemy, for the model look check

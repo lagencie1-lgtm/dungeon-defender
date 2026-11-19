@@ -206,4 +206,77 @@ function TerrainBuilder.Magma(map, camp)
 	end
 end
 
+-------------------------------------------------------------------------------
+-- Cursed Forest
+-------------------------------------------------------------------------------
+function TerrainBuilder.Forest(map, camp)
+	local t = terrain()
+	t:Clear()
+	local rng = rngFor(7)
+	local half = Config.MapSize / 2
+
+	-- a meadow with no edge in sight (top at y = 0), bare soil patches
+	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Grass)
+	for _ = 1, 30 do
+		local pos = Vector3.new(rng:NextNumber(-half.X, half.X), -1, rng:NextNumber(-half.Y, half.Y))
+		if farFromPath(pos, 6) then
+			t:FillCylinder(CFrame.new(pos), 2, rng:NextNumber(2.5, 5), M.Mud)
+		end
+	end
+
+	-- the path: packed sandy dirt inside a cobbled kerb (leafy soil read as a red carpet in the violet light)
+	pathStrip(Config.PathWidth + 5, M.Cobblestone, -1.2, 2.6)
+	pathStrip(Config.PathWidth, M.Ground, -1.0, 2.4)
+
+	-- a few still ponds away from the path
+	local ponds, tries = 0, 0
+	while ponds < 3 and tries < 400 do
+		tries += 1
+		local pos = Vector3.new(rng:NextNumber(-half.X + 16, half.X - 16), 0, rng:NextNumber(-half.Y + 16, half.Y - 16))
+		if farFromPath(pos, 22) and (pos - Config.SpawnPoint).Magnitude > 24 and (pos - camp).Magnitude > 24 then
+			local r = rng:NextNumber(7, 10)
+			t:FillBall(pos + Vector3.new(0, 1, 0), r, M.Air)
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -3, 0)), 2, r * 0.9, M.Mud)
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.2, 0)), 1.6, r + 1.5, M.Cobblestone) -- stony rim
+			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.3, 0)), 1.8, r * 0.85, M.Water)
+			ponds += 1
+		end
+	end
+
+	-- mossy boulders
+	local rocks = 0
+	tries = 0
+	while rocks < 22 and tries < 600 do
+		tries += 1
+		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
+		if farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+			local r = rng:NextNumber(2, 4.5)
+			t:FillBall(pos + Vector3.new(0, r * 0.2, 0), r, M.Rock)
+			rocks += 1
+		end
+	end
+
+	-- grassy, rocky hills around the battlefield and rolling hills on the horizon
+	cliffs(rng, M.Grass, M.Rock)
+	mountain(Vector3.new(-240, 0, -270), 160, 90, M.Grass, nil)
+	mountain(Vector3.new(220, 0, -290), 180, 110, M.Grass, nil)
+	mountain(Vector3.new(330, 0, 130), 140, 80, M.Rock, nil)
+	mountain(Vector3.new(-330, 0, 170), 130, 70, M.Grass, nil)
+
+	t:SetMaterialColor(M.Grass, Color3.fromRGB(86, 120, 64))
+	t:SetMaterialColor(M.Mud, Color3.fromRGB(120, 92, 66))
+	t:SetMaterialColor(M.Cobblestone, Color3.fromRGB(128, 120, 110))
+	t:SetMaterialColor(M.Rock, Color3.fromRGB(110, 112, 104))
+	t.WaterColor = Color3.fromRGB(40, 80, 90)
+	t.WaterTransparency = 0.5
+	t.WaterWaveSize = 0.05
+	t.WaterReflectance = 0.6
+	for material, texture in { [M.Grass] = "t_grass", [M.Mud] = "t_forest_dirt", [M.Ground] = "t_ground",
+		[M.Cobblestone] = "t_cobble", [M.Rock] = "t_moss_rock" } do
+		if paintedTerrain(material, texture) then
+			t:SetMaterialColor(material, Color3.new(1, 1, 1))
+		end
+	end
+end
+
 return TerrainBuilder

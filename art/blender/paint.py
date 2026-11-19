@@ -15,7 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TEXTURES = os.path.join(HERE, "..", "textures")
 
 _materials = {}
-FALLBACK = {"brass": (0.84, 0.67, 0.31), "cloth": (0.95, 0.90, 0.78), "iron": (0.35, 0.36, 0.40)}
+FALLBACK = {"bark": (0.36, 0.26, 0.18), "leaves": (0.30, 0.50, 0.26), "brass": (0.84, 0.67, 0.31), "cloth": (0.95, 0.90, 0.78), "iron": (0.35, 0.36, 0.40)}
 
 
 def material(key, tint=(1, 1, 1), scale=4.0):

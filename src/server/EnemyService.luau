@@ -42,6 +42,8 @@ local function goblinMesh(model, body, stats)
 			-- (Runner, Brute, Loot Goblin...) get a tint of their own colour over the whole model
 			local plain = stats.Model ~= nil or PLAIN_KIND[stats.DisplayName or "Goblin"] -- the one the model was painted as
 			part.Color = plain and Color3.new(1, 1, 1) or Color3.new(1, 1, 1):Lerp(stats.Color, 0.55)
+			skin.painted = skin.painted or {}
+			skin.painted[part] = part.Color -- its own tint, to come back to after freeze / burn colours
 		end
 	end
 	look.Parent = model
@@ -669,8 +671,21 @@ function EnemyService.Start()
 					e.model.Body.Color = tint
 					e.head.Color = tint
 					if e.skin then
-						for _, part in e.skin do
+						for _, part in ipairs(e.skin) do
 							part.Color = tint
+						end
+						-- painted models can't go "whiter", so a hit makes them pop bigger for a moment instead;
+						-- freeze, burn and slow tint the paint
+						if e.skin.painted then
+							local effect = tint ~= e.stats.Color and tint ~= WHITE
+							for part, base in e.skin.painted do
+								part.Color = effect and base:Lerp(tint, 0.55) or base
+							end
+							local pop = tint == WHITE and 1.12 or 1
+							if e.pop ~= pop then
+								e.pop = pop
+								e.model:ScaleTo(pop)
+							end
 						end
 					end
 				end

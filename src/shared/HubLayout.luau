@@ -20,17 +20,17 @@ HubLayout.PadCountdown = 4 -- seconds standing on a pad before the run starts
 
 -- stations on the ring around the plaza: one big word, the icon beside it, the painted prop, a walk-in ring
 HubLayout.Stations = {
-	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "outpost_forge", Height = 13, At = Vector3.new(-42, 0, -14),
+	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "keep_forge", Height = 13, At = Vector3.new(-42, 0, -14),
 		Action = "Backpack", Color = Color3.fromRGB(255, 170, 80) },
-	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "outpost_altar", Height = 13, At = Vector3.new(-42, 0, 12),
+	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 13, At = Vector3.new(-42, 0, 12),
 		Action = "Heroes", Color = Color3.fromRGB(120, 230, 120) },
 	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "outpost_stall", Height = 10, At = Vector3.new(42, 0, -14),
 		Action = "Shop", Color = Color3.fromRGB(90, 220, 255) },
-	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "outpost_nest", Height = 6, At = Vector3.new(42, 0, 12),
+	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 10, At = Vector3.new(42, 0, 12),
 		Action = "Pets", Color = Color3.fromRGB(170, 240, 120) },
-	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "outpost_questboard", Height = 9, At = Vector3.new(-26, 0, 32),
+	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "keep_quests", Height = 10, At = Vector3.new(-26, 0, 32),
 		Action = "Quests", Color = Color3.fromRGB(255, 215, 120) },
-	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "outpost_chest", Height = 5, At = Vector3.new(26, 0, 32),
+	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "keep_chest", Height = 6, At = Vector3.new(26, 0, 32),
 		Action = "Daily", Color = Color3.fromRGB(255, 205, 80) },
 }
 HubLayout.RingRadius = 5 -- walk into it to open the station

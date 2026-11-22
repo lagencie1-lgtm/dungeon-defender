@@ -55,6 +55,11 @@ local top = make("Frame", {
 	BackgroundTransparency = 0.15,
 	Parent = root,
 }, { corner(14), stroke() })
+if isTouch then
+	-- phones: the run bar at 80% size (the mobile test keeps 70% of the screen free for the game)
+	make("UIScale", { Scale = 0.8, Parent = top })
+	top.Position = UDim2.new(0.5, 0, 0, 4)
+end
 
 local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fromOffset(14, 6), Text = "Wave 0/10",
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = top })
@@ -74,18 +79,20 @@ local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fro
 	ZIndex = 2, Parent = portalBack })
 
 -- start wave + speed buttons under the bar
+-- phones: a compact stack in the top-right corner, off the lane (it sat over the middle of the map before)
 local controls = make("Frame", {
 	Name = "WaveControls",
-	Size = UDim2.fromOffset(420, 44),
-	Position = UDim2.new(0.5, 0, 0, 80),
-	AnchorPoint = Vector2.new(0.5, 0),
+	Size = isTouch and UDim2.fromOffset(160, 136) or UDim2.fromOffset(420, 44),
+	Position = isTouch and UDim2.new(1, -8, 0, 8) or UDim2.new(0.5, 0, 0, 80),
+	AnchorPoint = isTouch and Vector2.new(1, 0) or Vector2.new(0.5, 0),
 	BackgroundTransparency = 1,
 	Parent = root,
-}, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
-	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
-local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 180 or 210, isTouch and 74 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+}, { make("UIListLayout", { FillDirection = isTouch and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
+	Padding = UDim.new(0, isTouch and 6 or 10),
+	HorizontalAlignment = isTouch and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Center }) })
+local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 160 or 210, isTouch and 66 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
 	Text = isTouch and "Start wave" or "Start wave now", LayoutOrder = 1, Parent = controls })
-local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 125 or 110, isTouch and 74 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
+local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(110, isTouch and 64 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
 
 -- difficulty picker, only before the first wave
@@ -306,6 +313,9 @@ local heroPanel = make("Frame", {
 	BackgroundTransparency = 0.15,
 	Parent = root,
 }, { corner(12), stroke() })
+if isTouch then
+	make("UIScale", { Scale = 0.8, Parent = heroPanel })
+end
 local heroPortrait = Icons.Draw(heroPanel, Config.HeroIcons.Swordmaster, nil,
 	{ Size = UDim2.fromOffset(46, 46), Position = UDim2.fromOffset(4, 3) })
 local heroName = label({ Size = UDim2.new(1, -66, 0, 24), Position = UDim2.fromOffset(56, 4),
@@ -366,7 +376,7 @@ end
 -- defender info panel (shows when you click one of your defenders)
 -------------------------------------------------------------------------------
 -- (phones: 60-tall buttons, so upgrade and sell are at least 44 pixels on a small phone)
-local INFO_BUTTON = isTouch and 60 or 38
+local INFO_BUTTON = isTouch and 66 or 38 -- 66 x the phone scale (0.69 on an iPhone 13) = 45 px
 local infoPanel = make("Frame", {
 	Name = "TowerInfo",
 	Size = UDim2.fromOffset(240, 100 + INFO_BUTTON * 2),
@@ -503,7 +513,8 @@ end)
 -------------------------------------------------------------------------------
 -- the next goal: always one clear thing to do next
 -------------------------------------------------------------------------------
-local goalLabel = label({ Size = UDim2.fromOffset(760, isTouch and 26 or 22), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
+-- one short line at the top edge (in a run just under the wave bar), never a sentence over the hero
+local goalLabel = label({ Name = "NextGoal", Size = UDim2.fromOffset(440, 18), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
 	Text = "", TextColor3 = Color3.fromRGB(255, 235, 190), TextStrokeTransparency = 0.25, Parent = root })
 
 local function nextGoal()
@@ -516,7 +527,7 @@ local function nextGoal()
 			return "Next: spend your " .. free .. " stat point" .. (free == 1 and "" or "s") .. " (Heroes)"
 		end
 		if (player:GetAttribute("Wins") or 0) == 0 then
-			return "Next: win your first run (it unlocks the Machine Engineer)"
+			return "Next: win a run to unlock the Engineer"
 		end
 		local cleared = {}
 		pcall(function()
@@ -543,7 +554,7 @@ local function nextGoal()
 		if wave >= maxWave then
 			return "Goal: defeat the boss!"
 		end
-		return "Goal: survive " .. maxWave .. " waves, then defeat the boss"
+		return "Survive " .. maxWave .. " waves, then beat the boss"
 	end
 	return ""
 end
@@ -1018,9 +1029,10 @@ local function refreshTop()
 		portalLabel.Visible = not inLobby
 		abilityHolder.Visible = not inLobby
 	end
-	eventLabel.Visible = inLobby
+	-- the weekly twist is announced when a run starts; on a phone its line only covered the hub
+	eventLabel.Visible = inLobby and not isTouch
 	goalLabel.Text = nextGoal()
-	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 1, isTouch and -124 or -108) or UDim2.new(0.5, 0, 1, -116)
+	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8) or UDim2.new(0.5, 0, 0, isTouch and 60 or 76)
 	towerBar.Visible = not inLobby
 	top.Visible = not inLobby
 	portalBack.Visible = not inLobby

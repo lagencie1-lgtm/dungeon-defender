@@ -31,7 +31,7 @@ end)
 
 local function check(name)
 	probe:SetAttribute("Check", name)
-	waitFor(function() return completed == name end, 30)
+	waitFor(function() return completed == name end, 90)
 end
 
 waitFor(function() return State.Get("State") == "Lobby" and player.Character ~= nil end, 45)

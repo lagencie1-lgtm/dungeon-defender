@@ -2,7 +2,7 @@
 -- network): the Beacon Tower's crystal turns slowly and breathes up and down. Restraint: one slow motion, no flashes.
 local RunService = game:GetService("RunService")
 
-local CRYSTAL = "c_168_140_255" -- the crystal's colour part in the keep_beacon model (Blender glow colour)
+local CRYSTAL = "c_150_90_255" -- the crystal, its own part in the keep_beacon model (bright violet: drawn as glowing Neon)
 local crystal, home, t = nil, nil, 0
 
 local function find()

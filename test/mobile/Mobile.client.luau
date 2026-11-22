@@ -80,6 +80,80 @@ local function assertGround(name)
 	print("[MOBILE]", name, "native painted materials and fallback tints")
 end
 
+-- How much of the screen our UI covers (0..1): every visible panel, button, picture and line of text, painted onto
+-- a 96 x 54 grid so overlaps count once. Rule (Lemp 2026-11-22, "Mobile and Console first"): at least 70% of a
+-- phone screen stays free for the game, in the hub and in a run.
+local MAX_UI_COVER = 0.30
+-- Roblox's own screens are not ours to move: the invisible thumbstick zone, prompts, chat
+local NOT_OURS = { TouchGui = true, ProximityPrompts = true, BubbleChat = true, Chat = true, Freecam = true }
+local function shown(obj)
+	while obj and obj:IsA("GuiObject") do
+		if not obj.Visible then
+			return false
+		end
+		obj = obj.Parent
+	end
+	return obj == nil or not obj:IsA("ScreenGui") or obj.Enabled
+end
+local function uiCoverage()
+	local viewport = workspace.CurrentCamera.ViewportSize
+	local cols, rows = 96, 54
+	local cells, count = {}, 0
+	local function paint(x0, y0, x1, y1)
+		local c0, c1 = math.max(0, math.floor(x0 / viewport.X * cols)), math.min(cols - 1, math.floor(x1 / viewport.X * cols))
+		local r0, r1 = math.max(0, math.floor(y0 / viewport.Y * rows)), math.min(rows - 1, math.floor(y1 / viewport.Y * rows))
+		for c = c0, c1 do
+			for r = r0, r1 do
+				local key = r * cols + c
+				if not cells[key] then
+					cells[key] = true
+					count += 1
+				end
+			end
+		end
+	end
+	for _, screen in gui:GetChildren() do
+		if screen:IsA("ScreenGui") and screen.Enabled and not NOT_OURS[screen.Name] then
+			for _, obj in screen:GetDescendants() do
+				if obj:IsA("GuiObject") and shown(obj) and obj.AbsoluteSize.X > 2 and obj.AbsoluteSize.Y > 2 then
+					local p, s = obj.AbsolutePosition, obj.AbsoluteSize
+					if obj.BackgroundTransparency < 0.95 or (obj:IsA("ImageLabel") or obj:IsA("ImageButton")) and obj.Image ~= ""
+						and obj.ImageTransparency < 0.95 then
+						paint(p.X, p.Y, p.X + s.X, p.Y + s.Y)
+					elseif (obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj.Text ~= "" and obj.TextTransparency < 0.95 then
+						-- a line of text on no background covers only its letters
+						local b = obj.TextBounds
+						local cx = p.X + s.X * (obj.TextXAlignment == Enum.TextXAlignment.Left and 0 or obj.TextXAlignment == Enum.TextXAlignment.Right and 1 or 0.5)
+						local x0 = obj.TextXAlignment == Enum.TextXAlignment.Left and cx or obj.TextXAlignment == Enum.TextXAlignment.Right and cx - b.X or cx - b.X / 2
+						local cy = p.Y + s.Y / 2
+						paint(x0, cy - b.Y / 2, x0 + b.X, cy + b.Y / 2)
+					end
+				end
+			end
+		end
+	end
+	return count / (cols * rows)
+end
+
+-- the biggest visible pieces of UI, to see what to shrink when the screen is too full
+local function biggest()
+	local list = {}
+	local viewport = workspace.CurrentCamera.ViewportSize
+	for _, screen in gui:GetChildren() do
+		if screen:IsA("ScreenGui") and screen.Enabled and not NOT_OURS[screen.Name] then
+			for _, obj in screen:GetDescendants() do
+				if obj:IsA("GuiObject") and shown(obj) and (obj.BackgroundTransparency < 0.95 or obj:IsA("TextLabel") and obj.Text ~= "") then
+					table.insert(list, { obj:GetFullName():gsub("^.-PlayerGui%.", "") .. (obj:IsA("TextLabel") and (" """ .. obj.Text:sub(1, 40) .. """") or ""), obj.AbsoluteSize.X * obj.AbsoluteSize.Y / (viewport.X * viewport.Y) })
+				end
+			end
+		end
+	end
+	table.sort(list, function(a, b) return a[2] > b[2] end)
+	for i = 1, math.min(12, #list) do
+		print(string.format("[MOBILE]   %4.1f%% %s", list[i][2] * 100, list[i][1]))
+	end
+end
+
 local function check(name)
 	if name == "Combat" then
 		waitFor(function()
@@ -87,6 +161,16 @@ local function check(name)
 		end)
 		waitFor(function() return #workspace.Effects:GetChildren() > 0 end)
 		return
+	end
+	if name ~= "Outpost" then
+		-- the steady run screen, before this check's own build and sell messages pop up
+		task.wait(1.5)
+		local cover = uiCoverage()
+		print(string.format("[MOBILE] %s run screen covered by UI %.0f%% (max %.0f%%)", name, cover * 100, MAX_UI_COVER * 100))
+		if cover > MAX_UI_COVER then
+			biggest()
+		end
+		assert(cover <= MAX_UI_COVER, string.format("the run UI covers %.0f%% of the screen", cover * 100))
 	end
 	if name == "CursedForest" then
 		local remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -128,8 +212,18 @@ local function check(name)
 		-- walk from the spawn to just in front of the pad (standing on it would start a run)
 		local toPad = Vector3.new(pad.Position.X - rootPart.Position.X, 0, pad.Position.Z - rootPart.Position.Z)
 		local approach = pad.Position - toPad.Unit * (HubLayout.PadRadius + 3)
-		humanoid:MoveTo(approach)
-		assert(humanoid.MoveToFinished:Wait(), "walk from spawn to the start pad failed")
+		-- (MoveTo gives up after 8 s; the first walk after joining can start before the ground has streamed in)
+		local reached = false
+		for _ = 1, 3 do
+			humanoid:MoveTo(approach)
+			reached = humanoid.MoveToFinished:Wait()
+			print("[MOBILE] walk", reached, "at", rootPart.Position - Config.OutpostCenter, "to", approach - Config.OutpostCenter,
+				"speed", humanoid.WalkSpeed, "state", humanoid:GetState(), "anchored", rootPart.Anchored)
+			if reached then
+				break
+			end
+		end
+		assert(reached, "walk from spawn to the start pad failed")
 		assert((Vector3.new(rootPart.Position.X, 0, rootPart.Position.Z) - Vector3.new(approach.X, 0, approach.Z)).Magnitude < 4,
 			"missed the portal approach")
 		local dock = gui:WaitForChild("SideMenu").Root
@@ -139,6 +233,10 @@ local function check(name)
 		end
 		print("[MOBILE] viewport", workspace.CurrentCamera.ViewportSize, "touch", UserInputService.TouchEnabled,
 			"root", root.AbsoluteSize)
+		local cover = uiCoverage()
+		print(string.format("[MOBILE] hub screen covered by UI %.0f%% (max %.0f%%)", cover * 100, MAX_UI_COVER * 100))
+		if cover > MAX_UI_COVER then biggest() end
+		assert(cover <= MAX_UI_COVER, string.format("the hub UI covers %.0f%% of the screen", cover * 100))
 	else
 		local menu = gui:WaitForChild("SideMenu").Root.OpenMenu
 		local hero = root.HeroStatus

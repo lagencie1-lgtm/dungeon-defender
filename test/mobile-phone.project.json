@@ -1,0 +1,21 @@
+{
+  "name": "htd-film-phone-mobiletest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "../src/shared" },
+      "MobileTest": { "$className": "RemoteEvent" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "../src/server" },
+      "MobileServer": { "$path": "mobile/Mobile.server.luau" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "../src/client" },
+        "MobileClient": { "$path": "mobile/Mobile.client.luau" }
+      }
+    },
+    "MaterialService": { "$path": "../src/materials" }
+  }
+}

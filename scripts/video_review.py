@@ -5,6 +5,7 @@ check each one against the frames before fixing anything (6A principle 19).
 Needs the Gemini API key in tools/gemini-api-key.txt (from aistudio.google.com).
 Run while the test game is running:
   python scripts/video_review.py 40                 film 40 s now, then review
+  python scripts/video_review.py 25 --player         review only the live Roblox Player window
   python scripts/video_review.py --file clip.mp4     review an existing clip
 """
 import base64
@@ -25,8 +26,7 @@ MODEL = MODELS[0]
 WINDOW = os.path.join(ROOT, "tools", "htd-autotest.rbxl") + " - Roblox Studio"
 
 PROMPT = """You are a harsh, independent game reviewer. You never saw the design intent. The owner thinks parts of
-this game reek of AI slop. This clip is a Roblox co-op tower defense game ("Heroes Tower Defense") filmed from a
-Roblox Studio play test window: judge only the game viewport, ignore Studio's own toolbars and panels.
+this game reek of AI slop. This clip is a Roblox co-op tower defense game ("Heroes Tower Defense") filmed from a Roblox Studio play test window: judge only the game viewport, ignore Studio's own toolbars and panels.
 
 The bar is "6A": exceptional clarity, responsiveness, tactile animation, cohesive art and reliable performance,
 judged on a phone by a 9-13 year old in the first minutes. Score each axis 0-10 and pass only if every axis is 9+:
@@ -45,7 +45,7 @@ Answer in plain English."""
 
 def record(seconds, out):
     ffmpeg = glob.glob(os.path.join(ROOT, "tools", "ffmpeg", "*", "bin", "ffmpeg.exe"))[0]
-    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", "15", "-i", "title=" + WINDOW,
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", "15", "-i", "title=" + ("Roblox" if "--player" in sys.argv else WINDOW),
                     "-t", str(seconds), "-vf", "scale=-2:540", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
                     "-pix_fmt", "yuv420p", out], check=True)
 
@@ -53,7 +53,7 @@ def record(seconds, out):
 def review(video):
     key = open(KEY_FILE).read().strip()
     data = base64.b64encode(open(video, "rb").read()).decode()
-    body = {"contents": [{"parts": [{"inline_data": {"mime_type": "video/mp4", "data": data}}, {"text": PROMPT}]}],
+    body = {"contents": [{"parts": [{"inline_data": {"mime_type": "video/mp4", "data": data}}, {"text": PROMPT.replace("filmed from a Roblox Studio play test window", "filmed from the live Roblox PC Player") if "--player" in sys.argv else PROMPT}]}],
             "generationConfig": {"temperature": 0.2}}
     global MODEL
     result, last_error = None, None

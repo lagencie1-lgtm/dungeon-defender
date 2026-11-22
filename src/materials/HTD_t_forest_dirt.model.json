@@ -4,6 +4,7 @@
     "BaseMaterial": "Mud",
     "ColorMap": "rbxassetid://75669845993131",
     "StudsPerTile": 10.0,
-    "RoughnessMap": "rbxassetid://100925396897052"
+    "RoughnessMap": "rbxassetid://100925396897052",
+    "TexturePack": "rbxassetid://128644653477790"
   }
 }

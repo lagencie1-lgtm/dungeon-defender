@@ -48,6 +48,7 @@ step("roll items", function()
 	end
 	ItemService.VictoryChest("Hard")
 end)
+player:SetAttribute("TestRewardReady", true)
 
 local function placeTowers()
 	local types = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ranger", "Ranger" }
@@ -87,6 +88,7 @@ local RUNS = {
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
+local mapPropNames = { CursedForest = "Bramble Waystone", MagmaFortress = "Forge Vent", CrystalCaves = "Crystal Survey Cairn" }
 -- the Baby Dragon follows the test player, for the pet look check
 step("equip baby dragon", function()
 	local ArtService = require(Server.ArtService)
@@ -166,6 +168,14 @@ step("pet line-up", function()
 	log("pet row", #row:GetChildren())
 end)
 task.wait(95) -- time for the Outpost look check on the client
+step("painted oak", function()
+	local art = require(Server.ArtService)
+	local oak = assert(art.WaitModel("tree_oak", 20), "oak model did not load")
+	local body = oak:FindFirstChild("Body")
+	local paint = art.Image("paint_tree_oak", 5)
+	assert(body and body:IsA("MeshPart") and #oak:GetChildren() == 1, "expected one painted MeshPart")
+	assert(paint and body.TextureID == paint, "oak is missing its painted atlas")
+end)
 for _, run in RUNS do
 	local mapId, mode, seconds = run[1], run[2], run[3]
 	step("run " .. mapId .. " " .. mode, function()
@@ -181,6 +191,14 @@ for _, run in RUNS do
 		State.Set("Difficulty", "Easy")
 		GameService.StartRun()
 		task.wait(1)
+		step("map prop " .. mapId, function()
+			local prop = workspace.Map.Decor:FindFirstChild(mapPropNames[mapId])
+			assert(prop, "missing trail marker")
+			for _, part in prop:GetChildren() do
+				assert(part.Anchored and not part.CanCollide and not part.CanTouch and not part.CanQuery)
+				assert(Config.DistanceToPath(part.Position) > Config.PathWidth / 2 + 2)
+			end
+		end)
 		State.Set("Gold", 100000)
 		placeTowers()
 		Clock.scale = 8

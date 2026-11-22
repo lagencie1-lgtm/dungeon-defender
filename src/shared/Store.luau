@@ -3,6 +3,8 @@
 -- ROBUX: create each game pass / developer product in Creator Hub
 -- (your game > Monetization), then paste its ID number below instead of 0.
 -- Anything with Id = 0 shows as "Coming soon" and can't be bought.
+local Config = require(script.Parent.Config)
+local GearLooks = require(script.Parent.GearLooks)
 local Store = {}
 
 -------------------------------------------------------------------------------
@@ -39,7 +41,7 @@ Store.ProductOrder = { "SeasonPass", "StarterPack", "Gems100", "Gems550", "Gems1
 
 -------------------------------------------------------------------------------
 -- Skins: change looks only. Placeholders for now (colour changes = "Rare").
--- Target = a defender type, or "Cape" for the hero's cape.
+-- Target = a defender type, "Cape" or "Pet".
 -------------------------------------------------------------------------------
 Store.Skins = {
 	-- defenders
@@ -79,6 +81,35 @@ Store.Skins = {
 }
 Store.SkinOrder = { "CapeGreen", "RangerForest", "CapeRed", "CapeNight", "RangerRoyal", "RangerShadow", "FlameCandy",
 	"FlameGold", "FrostToxic", "StormSunset", "BallistaBone", "CapeHero", "CapeVIP" }
+
+local defenderSet = {
+	Ranger = "Brambleguard", FlameCannon = "Cinderforge", FrostCrystal = "Rimewarden",
+	StormObelisk = "Riftkeeper", Ballista = "Cinderforge",
+}
+local function addMatchingLook(set, target, name)
+	local id = set.Id .. target
+	Store.Skins[id] = { Target = target, Name = set.Name .. " " .. name, Price = 0, Free = true,
+		Primary = set.PaintTint, Accent = set.Color, TintStrength = 0.65, Description = set.Finish }
+	table.insert(Store.SkinOrder, id)
+end
+local petSets = { Brambleguard = true, Cinderforge = true, Rimewarden = true, Riftkeeper = true }
+for _, set in GearLooks.Sets do
+	for _, target in Config.TowerOrder do
+		if defenderSet[target] == set.Id then
+			addMatchingLook(set, target, Config.Towers[target].DisplayName)
+		end
+	end
+	if petSets[set.Id] then
+		addMatchingLook(set, "Pet", "Pet")
+	end
+	local id = set.Id .. "Outfit"
+	Store.Skins[id] = { Target = "Outfit", Outfit = set.Id, Name = set.Name, Price = 0, Free = true,
+		Primary = set.PaintTint, Accent = set.Color, Description = set.Finish }
+	table.insert(Store.SkinOrder, id)
+end
+Store.Skins.OriginalOutfit = { Target = "Outfit", Outfit = "Original", Name = "Original gear", Price = 0, Free = true,
+	Primary = Color3.fromRGB(201, 194, 179), Description = "Restore the default look of all five slots" }
+table.insert(Store.SkinOrder, "OriginalOutfit")
 -------------------------------------------------------------------------------
 -- Season (battle pass). Free track for everyone, paid track with the Season Pass.
 -- Pass XP: waves cleared, wins and claimed quests.

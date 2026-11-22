@@ -4,6 +4,7 @@
     "BaseMaterial": "Basalt",
     "ColorMap": "rbxassetid://108364844519451",
     "StudsPerTile": 16.0,
-    "RoughnessMap": "rbxassetid://100925396897052"
+    "RoughnessMap": "rbxassetid://100925396897052",
+    "TexturePack": "rbxassetid://110470063355872"
   }
 }

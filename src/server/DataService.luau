@@ -8,6 +8,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
+local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 local DataService = {}
@@ -18,6 +19,11 @@ local storeOk = pcall(function()
 end)
 
 local profiles = {} -- [player] = profile table
+
+local equippedFields = { Titles = "Title" }
+for _, slot in GearLooks.Slots do
+	equippedFields[slot.Id] = slot.Field
+end
 
 local function defaultProfile()
 	return {
@@ -53,9 +59,31 @@ local function fixUp(data)
 	if type(data.Heroes) ~= "table" then
 		data.Heroes = {}
 	end
+	if type(data.Owned) ~= "table" then
+		data.Owned = fresh.Owned
+	end
 	for k, v in fresh.Owned do
 		if type(data.Owned[k]) ~= "table" then
 			data.Owned[k] = v
+		end
+	end
+	if type(data.Equipped) ~= "table" then
+		data.Equipped = fresh.Equipped
+	end
+	for _, slot in GearLooks.Slots do
+		if type(data.Owned[slot.Id]) ~= "table" then
+			data.Owned[slot.Id] = {}
+		end
+		local owned = data.Owned[slot.Id]
+		owned[slot.Default] = true
+		for _, look in GearLooks.Items[slot.Id] do
+			if look.Free then
+				owned[look.Id] = true
+			end
+		end
+		if not GearLooks.Find(slot.Id, data.Equipped[slot.Field])
+			or owned[data.Equipped[slot.Field]] ~= true then
+			data.Equipped[slot.Field] = slot.Default
 		end
 	end
 	return data
@@ -71,7 +99,9 @@ local function publish(player)
 	player:SetAttribute("Wins", p.Wins)
 	player:SetAttribute("BestWave", p.BestWave)
 	player:SetAttribute("Owned", HttpService:JSONEncode(p.Owned))
-	player:SetAttribute("EquippedSword", p.Equipped.Sword)
+	for _, slot in GearLooks.Slots do
+		player:SetAttribute("Equipped" .. slot.Field, p.Equipped[slot.Field])
+	end
 	player:SetAttribute("EquippedTitle", p.Equipped.Title)
 	player:SetAttribute("DailyStreak", p.DailyStreak)
 	player:SetAttribute("DailyNextAt", p.DailyLast + Config.DailyCooldownHours * 3600)
@@ -210,8 +240,8 @@ function DataService.RecordGame(player, waveReached, won, kills)
 end
 
 local function findItem(kind, id)
-	if kind == "Swords" then
-		local item = Config.FindById(Config.Swords, id)
+	if GearLooks.Items[kind] then
+		local item = GearLooks.Find(kind, id)
 		return item, item and item.Price
 	elseif kind == "Titles" then
 		local item = Config.FindById(Config.Titles, id)
@@ -224,6 +254,9 @@ local function findItem(kind, id)
 end
 
 local function buy(player, kind, id)
+	if type(kind) ~= "string" or type(id) ~= "string" then
+		return false, "Unknown item"
+	end
 	local p = profiles[player]
 	local item, price = findItem(kind, id)
 	if not p or not item or not price then
@@ -243,10 +276,9 @@ local function buy(player, kind, id)
 	end
 	p.Gems -= price
 	p.Owned[kind][id] = true
-	if kind == "Swords" then
-		p.Equipped.Sword = id
-	elseif kind == "Titles" then
-		p.Equipped.Title = id
+	local field = equippedFields[kind]
+	if field then
+		p.Equipped[field] = id
 	end
 	publish(player)
 	task.spawn(save, player)
@@ -254,17 +286,19 @@ local function buy(player, kind, id)
 end
 
 local function equip(player, kind, id)
+	if type(kind) ~= "string" or type(id) ~= "string" then
+		return false, "Unknown item"
+	end
 	local p = profiles[player]
-	if not p or not p.Owned[kind] or not p.Owned[kind][id] then
+	local field = equippedFields[kind]
+	local item = findItem(kind, id)
+	if not p or not item or not p.Owned[kind] or p.Owned[kind][id] ~= true then
 		return false, "You don't own this yet"
 	end
-	if kind == "Swords" then
-		p.Equipped.Sword = id
-	elseif kind == "Titles" then
-		p.Equipped.Title = id
-	else
+	if not field then
 		return false, "Can't equip that"
 	end
+	p.Equipped[field] = id
 	publish(player)
 	return true
 end

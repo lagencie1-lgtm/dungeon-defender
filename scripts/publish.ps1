@@ -12,15 +12,16 @@ $keyFile = Join-Path $root "tools\roblox-api-key.txt"
 if (-not (Test-Path $keyFile)) { throw "API key missing: put it in tools\roblox-api-key.txt" }
 $key = (Get-Content $keyFile -Raw).Trim()
 
-$out = Join-Path $root "tools\publish-build.rbxl"
+$out = Join-Path $root "tools\publish-build.rbxlx"
 & "$root\tools\rojo.exe" build -o $out
 if ($LASTEXITCODE -ne 0) { throw "rojo build failed" }
+& "$PSScriptRoot\check-terrain-packs.ps1" -PlaceFile $out
 
 $url = "https://apis.roblox.com/universes/v1/$($settings.universeId)/places/$($settings.placeId)/versions?versionType=Published"
 # Roblox sometimes answers "server is busy": try again a few times
 for ($try = 1; $try -le 6; $try++) {
     try {
-        $result = Invoke-RestMethod -Method Post -Uri $url -InFile $out -ContentType "application/octet-stream" -Headers @{ "x-api-key" = $key }
+        $result = Invoke-RestMethod -Method Post -Uri $url -InFile $out -ContentType "application/xml" -Headers @{ "x-api-key" = $key }
         Write-Output "Published version $($result.versionNumber)"
         exit 0
     } catch {

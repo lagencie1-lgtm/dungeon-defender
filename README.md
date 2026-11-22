@@ -39,6 +39,12 @@ Saving gems in Studio needs: Game Settings > Security > Enable Studio Access to 
 - Stats: Power (hero damage), Command (your defenders' damage), Engineering (your defenders' speed and range), Crit, Gold Find.
 - Weapons change the sword hit: Longsword (balanced), Greatsword (slow, hits a crowd), Twin Blades (very fast, one goblin).
 - **Backpack** (button or I): equip, compare, upgrade +1 to +10 with **gold**, salvage into **scrap** (needed from +8).
+- **Shop → Gear Looks**: choose a weapon, armor, helm, boot or amulet appearance and turn its 3D preview before
+  equipping it. Eight matching sets are free to mix and match without changing your gear stats.
+- **Shop → Skins → Outfits**: preview and equip a full five-piece set in one click. Original gear restores the
+  default appearance of all five slots.
+- **Shop → Skins**: the five defenders each have a free matching finish for new builds. Wear any of the four Pet
+  looks to give your equipped companion the set's colors.
 - Gold is earned at the end of every run and kept. The building money during a run is now called **mana**.
 - Harder difficulty = better items.
 

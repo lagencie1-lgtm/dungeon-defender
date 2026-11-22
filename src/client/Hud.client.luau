@@ -9,22 +9,22 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
+local ShopLooks = require(script.Parent.ShopLooks)
 local Store = require(ReplicatedStorage.Shared.Store)
 local MarketplaceService = game:GetService("MarketplaceService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
-workspace:WaitForChild("Map"):WaitForChild("Ground")
 workspace:WaitForChild("Towers")
 
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
 local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.label, Ui.button
 
 -- phones and tablets get bigger buttons in different places
-local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isTouch = Ui.isTouch
 
 -------------------------------------------------------------------------------
 -- the screen, scaled to fit any size (phones get everything a bit smaller)
@@ -36,16 +36,7 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 local root = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
-local rootScale = make("UIScale", { Parent = root })
-
-local function fitScreen()
-	local size = camera.ViewportSize
-	local s = math.clamp(math.min(size.X / 1280, size.Y / 720), 0.55, 1.3)
-	rootScale.Scale = s
-	root.Size = UDim2.fromScale(1 / s, 1 / s)
-end
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
-fitScreen()
+Ui.fitRoot(gui, root, 930, 480)
 
 -- red flash over the whole screen when the portal is hit
 local flash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(255, 0, 0),
@@ -55,6 +46,7 @@ local flash = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = C
 -- top bar: wave, gold, portal health
 -------------------------------------------------------------------------------
 local top = make("Frame", {
+	Name = "RunStatus",
 	Size = UDim2.fromOffset(600, 64),
 	Position = UDim2.new(0.5, 0, 0, 8),
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -71,7 +63,7 @@ local goldLabel = label({ Size = UDim2.fromOffset(150, 30), Position = UDim2.fro
 	TextColor3 = Ui.MANA, Parent = top })
 local buildLabel = label({ Size = UDim2.fromOffset(150, 18), Position = UDim2.fromOffset(200, 40), Text = "Build 0/30",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = top })
-label({ Size = UDim2.fromOffset(220, 16), Position = UDim2.fromOffset(366, 6), Text = "Portal",
+local portalLabel = label({ Size = UDim2.fromOffset(220, 16), Position = UDim2.fromOffset(366, 6), Text = "Portal",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 170, 255), Parent = top })
 local portalBack = make("Frame", { Size = UDim2.fromOffset(220, 24), Position = UDim2.fromOffset(366, 26),
 	BackgroundColor3 = Color3.fromRGB(50, 30, 40), Parent = top }, { corner(6) })
@@ -82,6 +74,7 @@ local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fro
 
 -- start wave + speed buttons under the bar
 local controls = make("Frame", {
+	Name = "WaveControls",
 	Size = UDim2.fromOffset(420, 44),
 	Position = UDim2.new(0.5, 0, 0, 80),
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -89,9 +82,9 @@ local controls = make("Frame", {
 	Parent = root,
 }, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
 	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
-local startButton = button({ Size = UDim2.fromOffset(210, 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
-	Text = "Start wave now", LayoutOrder = 1, Parent = controls })
-local speedButton = button({ Size = UDim2.fromOffset(110, 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
+local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 180 or 210, isTouch and 74 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+	Text = isTouch and "Start wave" or "Start wave now", LayoutOrder = 1, Parent = controls })
+local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 125 or 110, isTouch and 74 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
 
 -- difficulty picker, only before the first wave
@@ -134,7 +127,7 @@ local gemsLabel = label({ Size = UDim2.fromOffset(1, 1), Text = "", Visible = fa
 -- (6A: one or two short lines just under the wave panel, never a stack over the middle of the fight)
 local messages = make("Frame", {
 	Size = UDim2.fromOffset(560, 56),
-	Position = UDim2.new(0.5, 0, 0, isTouch and 150 or 160),
+	Position = UDim2.new(0.5, 0, 0, 160),
 	AnchorPoint = Vector2.new(0.5, 0),
 	BackgroundTransparency = 1,
 	Parent = root,
@@ -155,7 +148,7 @@ local function showMessage(text, color)
 			count += 1
 		end
 	end
-	if count > 2 then
+	if count > (isTouch and 1 or 2) then
 		for _, child in messages:GetChildren() do
 			if child:IsA("TextLabel") then
 				child:Destroy()
@@ -233,30 +226,38 @@ local comboShout = label({
 -- screen shake
 -------------------------------------------------------------------------------
 local shakeAmount = 0
+local lastShaken
 local function shake(amount)
 	shakeAmount = math.max(shakeAmount, amount)
 end
 RunService.RenderStepped:Connect(function(dt)
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then
+	if shakeAmount <= 0.01 then
+		if lastShaken then
+			lastShaken.CameraOffset = Vector3.zero
+			lastShaken = nil
+		end
 		return
 	end
-	if shakeAmount > 0.01 then
-		local function r()
-			return (math.random() - 0.5) * 2 * shakeAmount * 0.35
-		end
-		humanoid.CameraOffset = Vector3.new(r(), r(), r())
-		shakeAmount = math.max(0, shakeAmount - dt * 3)
-	elseif humanoid.CameraOffset ~= Vector3.zero then
-		humanoid.CameraOffset = Vector3.zero
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		shakeAmount = 0
+		return
 	end
+	if lastShaken and lastShaken ~= humanoid then
+		lastShaken.CameraOffset = Vector3.zero
+	end
+	lastShaken = humanoid
+	local strength = shakeAmount * (isTouch and 0.22 or 0.35)
+	humanoid.CameraOffset = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 2 * strength
+	shakeAmount = math.max(0, shakeAmount - dt * 3)
 end)
 
 -------------------------------------------------------------------------------
 -- defender buttons (bottom middle)
 -------------------------------------------------------------------------------
-local BUTTON_W = 112
+local BUTTON_W = isTouch and 98 or 112
 local towerBar = make("Frame", {
+	Name = "TowerBar",
 	Size = UDim2.fromOffset(#Config.TowerOrder * (BUTTON_W + 8), 100),
 	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -10),
 	AnchorPoint = Vector2.new(0.5, 1),
@@ -296,8 +297,9 @@ end
 -- hero panel and ability buttons
 -------------------------------------------------------------------------------
 local heroPanel = make("Frame", {
+	Name = "HeroStatus",
 	Size = UDim2.fromOffset(230, 52),
-	Position = isTouch and UDim2.fromOffset(170, 70) or UDim2.new(0, 10, 1, -132),
+	Position = isTouch and UDim2.fromOffset(10, 145) or UDim2.new(0, 10, 1, -132),
 	AnchorPoint = Vector2.new(0, 0),
 	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.15,
@@ -316,8 +318,8 @@ local abilityHolder
 if isTouch then
 	-- a column on the right, above the jump button
 	abilityHolder = make("Frame", {
-		Size = UDim2.fromOffset(96, 320),
-		Position = UDim2.new(1, -16, 1, -150),
+		Size = UDim2.fromOffset(96, 286),
+		Position = UDim2.new(1, -12, 1, -168),
 		AnchorPoint = Vector2.new(1, 1),
 		BackgroundTransparency = 1,
 		Parent = root,
@@ -333,7 +335,7 @@ else
 end
 
 local function abilityButton(text, key, order)
-	local size = isTouch and UDim2.fromOffset(92, 92) or UDim2.fromOffset(71, 58)
+	local size = isTouch and UDim2.fromOffset(78, 78) or UDim2.fromOffset(71, 58)
 	local b = button({ Size = size, Text = "", LayoutOrder = order, BackgroundColor3 = Color3.fromRGB(70, 50, 100),
 		Parent = abilityHolder })
 	if isTouch then
@@ -351,6 +353,7 @@ local function abilityButton(text, key, order)
 	return b, shade, nameLabel
 end
 local attackButton, attackShade, attackName = abilityButton("Sword", "F", 3)
+attackButton.Name = "PrimaryAttack"
 local whirlButton, whirlShade, whirlName = abilityButton("Whirl", "E", 2)
 local leapButton, leapShade, leapName = abilityButton("Leap", "R", 1)
 if not isTouch then
@@ -388,18 +391,18 @@ local confirmBar = make("Frame", {
 	Parent = root,
 }, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10),
 	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
-local confirmButton = button({ Size = UDim2.fromOffset(200, 54), BackgroundColor3 = Color3.fromRGB(60, 140, 60),
+local confirmButton = button({ Name = "ConfirmBuild", Size = UDim2.fromOffset(200, isTouch and 74 or 54), BackgroundColor3 = Color3.fromRGB(60, 140, 60),
 	Text = "Build here", LayoutOrder = 1, Parent = confirmBar })
-local cancelButton = button({ Size = UDim2.fromOffset(120, 54), BackgroundColor3 = Color3.fromRGB(140, 50, 50),
+local cancelButton = button({ Name = "CancelBuild", Size = UDim2.fromOffset(120, isTouch and 74 or 54), BackgroundColor3 = Color3.fromRGB(140, 50, 50),
 	Text = "Cancel", LayoutOrder = 2, Parent = confirmBar })
-local tapHint = label({ Size = UDim2.fromOffset(400, 26), Position = UDim2.new(0.5, 0, 1, -190), AnchorPoint = Vector2.new(0.5, 1),
+local tapHint = label({ Size = UDim2.fromOffset(400, 26), Position = UDim2.new(0.5, 0, 1, isTouch and -209 or -190), AnchorPoint = Vector2.new(0.5, 1),
 	Text = "Tap the ground where it should go", TextStrokeTransparency = 0.3, Visible = false, Parent = root })
 
 -------------------------------------------------------------------------------
 -- in the hub: start a run and pick a map
 -------------------------------------------------------------------------------
 local lobbyBar = make("Frame", {
-	Size = UDim2.fromOffset(520, 60),
+	Size = UDim2.fromOffset(520, isTouch and 76 or 60),
 	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -12),
 	AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundTransparency = 1,
@@ -407,13 +410,13 @@ local lobbyBar = make("Frame", {
 	Parent = root,
 }, { make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 12),
 	HorizontalAlignment = Enum.HorizontalAlignment.Center }) })
-local runButton = button({ Size = UDim2.fromOffset(240, 60), BackgroundColor3 = Color3.fromRGB(110, 60, 190),
+local runButton = button({ Name = "StartRun", Size = UDim2.fromOffset(240, isTouch and 76 or 60), BackgroundColor3 = Color3.fromRGB(110, 60, 190),
 	Text = "Start run", LayoutOrder = 1, Parent = lobbyBar })
 local eventInfo = Config.WeeklyEvent()
-local eventLabel = label({ Size = UDim2.fromOffset(760, 24), Position = UDim2.new(0.5, 0, 1, -80), AnchorPoint = Vector2.new(0.5, 1),
+local eventLabel = label({ Size = UDim2.fromOffset(760, 24), Position = UDim2.new(0.5, 0, 1, isTouch and -96 or -80), AnchorPoint = Vector2.new(0.5, 1),
 	Text = "This week: " .. eventInfo.Name .. " · " .. eventInfo.Text, Visible = false,
 	TextColor3 = Color3.fromRGB(255, 200, 120), TextStrokeTransparency = 0.2, Parent = root })
-local mapButton = button({ Size = UDim2.fromOffset(260, 60), BackgroundColor3 = Color3.fromRGB(120, 80, 40),
+local mapButton = button({ Name = "PickMap", Size = UDim2.fromOffset(260, isTouch and 76 or 60), BackgroundColor3 = Color3.fromRGB(120, 80, 40),
 	Text = "Map and difficulty", LayoutOrder = 2, Parent = lobbyBar })
 
 local mapPanel = make("Frame", {
@@ -496,7 +499,7 @@ end)
 -------------------------------------------------------------------------------
 -- the next goal: always one clear thing to do next
 -------------------------------------------------------------------------------
-local goalLabel = label({ Size = UDim2.fromOffset(760, 22), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
+local goalLabel = label({ Size = UDim2.fromOffset(760, isTouch and 26 or 22), Position = UDim2.new(0.5, 0, 1, -112), AnchorPoint = Vector2.new(0.5, 1),
 	Text = "", TextColor3 = Color3.fromRGB(255, 235, 190), TextStrokeTransparency = 0.25, Parent = root })
 
 local function nextGoal()
@@ -569,14 +572,15 @@ local playAgainButton = button({ Size = UDim2.fromOffset(240, 54), Position = UD
 -- shop
 -------------------------------------------------------------------------------
 local shopPanel = make("Frame", {
-	Size = UDim2.fromOffset(780, 480),
+	Name = "Shop",
+	Size = UDim2.new(1, -28, 1, -32),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = Ui.DARK,
 	Visible = false,
 	ZIndex = 20,
 	Parent = root,
-}, { corner(18), stroke(Ui.GEM, 3) })
+}, { corner(18), stroke(Ui.GEM, 3), make("UISizeConstraint", { MaxSize = Vector2.new(780, 480) }) })
 label({ Size = UDim2.new(1, -120, 0, 36), Position = UDim2.fromOffset(16, 10), Text = "Shop",
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = shopPanel })
 local shopGems = label({ Size = UDim2.fromOffset(200, 30), Position = UDim2.new(1, -70, 0, 14), AnchorPoint = Vector2.new(1, 0),
@@ -599,9 +603,16 @@ local list = make("ScrollingFrame", {
 }, { make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
 
 local shopTab = "Towers"
-local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "Swords", Name = "Swords" }, { Id = "Titles", Name = "Titles" },
+local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "GearLooks", Name = "Gear Looks" }, { Id = "Titles", Name = "Titles" },
 	{ Id = "Skins", Name = "Skins" }, { Id = "Robux", Name = "Robux" }, { Id = "Codes", Name = "Codes" } }
 local tabButtons = {}
+local gearSlot = GearLooks.Slots[1]
+local gearTabs = make("Frame", { Size = UDim2.new(1, -32, 0, 44), Position = UDim2.fromOffset(16, 104),
+	BackgroundTransparency = 1, ZIndex = 21, Visible = false, Parent = shopPanel },
+	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder }) })
+local gearButtons = {}
+local shopLooks = ShopLooks.new(shopPanel, list, showMessage)
 
 local function shopItems(kind)
 	local items = {}
@@ -612,11 +623,6 @@ local function shopItems(kind)
 				table.insert(items, { Id = towerType, Name = info.DisplayName, Price = info.UnlockGems,
 					Text = info.Description, Color = info.Color })
 			end
-		end
-	elseif kind == "Swords" then
-		for _, s in Config.Swords do
-			table.insert(items, { Id = s.Id, Name = s.Name, Price = s.Price, Color = s.Color, RebirthOnly = s.RebirthOnly,
-				Text = s.RebirthOnly and "Unlocked by your first Rebirth" or "A new look for your sword" })
 		end
 	else
 		for _, t in Config.Titles do
@@ -630,7 +636,7 @@ end
 
 local refreshShop -- defined below
 
-local function rowFor(kind, item, order)
+local function rowFor(kind, item, order, equippedId)
 	local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = order,
 		ZIndex = 22, Parent = list }, { corner(10) })
 	make("Frame", { Size = UDim2.fromOffset(10, 44), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = item.Color,
@@ -641,13 +647,11 @@ local function rowFor(kind, item, order)
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
 
 	local isOwned = owned[kind] and owned[kind][item.Id] == true
-	local equippedId = kind == "Swords" and player:GetAttribute("EquippedSword")
-		or kind == "Titles" and player:GetAttribute("EquippedTitle") or nil
 	local text, color
 	if not isOwned and item.RebirthOnly then
 		text, color = "Reward only", Color3.fromRGB(70, 70, 80)
 	elseif not isOwned then
-		text, color = "Buy " .. item.Price .. " gems", Color3.fromRGB(40, 120, 170)
+		text, color = item.Price == 0 and "Claim free" or ("Buy " .. item.Price .. " gems"), Color3.fromRGB(40, 120, 170)
 	elseif kind == "Towers" then
 		text, color = "Unlocked", Color3.fromRGB(60, 60, 70)
 	elseif equippedId == item.Id then
@@ -658,6 +662,9 @@ local function rowFor(kind, item, order)
 	local b = button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 		Text = text, BackgroundColor3 = color, ZIndex = 23, Parent = row })
 	b.Activated:Connect(function()
+		if (not isOwned and item.RebirthOnly) or (isOwned and (kind == "Towers" or equippedId == item.Id)) then
+			return
+		end
 		local ok, reason
 		if not isOwned then
 			ok, reason = Remotes.BuyItem:InvokeServer(kind, item.Id)
@@ -682,63 +689,22 @@ function refreshShop()
 			child:Destroy()
 		end
 	end
-	if shopTab == "Skins" then
-		local ownedSkins, equippedSkins = {}, {}
-		pcall(function()
-			ownedSkins = HttpService:JSONDecode(player:GetAttribute("OwnedSkins") or "{}")
-			equippedSkins = HttpService:JSONDecode(player:GetAttribute("EquippedSkins") or "{}")
-		end)
-		local featured = Store.Featured()
-		for i, id in Store.SkinOrder do
-			local skin = Store.Skins[id]
-			local isOwned = ownedSkins[id] == true
-			if not skin.NotForSale or isOwned then
-				local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 22,
-					Parent = list }, { corner(10) })
-				make("Frame", { Size = UDim2.fromOffset(22, 44), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = skin.Primary,
-					ZIndex = 23, Parent = row }, { corner(4) })
-				make("Frame", { Size = UDim2.fromOffset(22, 44), Position = UDim2.fromOffset(36, 10),
-					BackgroundColor3 = skin.Accent or skin.Primary, ZIndex = 23, Parent = row }, { corner(4) })
-				local isFeatured = table.find(featured, id) ~= nil and not isOwned
-				label({ Size = UDim2.new(1, -260, 0, 26), Position = UDim2.fromOffset(68, 8),
-					Text = skin.Name .. (isFeatured and "  ·  TODAY -" .. math.floor(Store.FeaturedDiscount * 100) .. "%" or ""),
-					TextColor3 = isFeatured and Ui.GOLD or Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
-				local targetName = skin.Target == "Cape" and "Hero cape" or (Config.Towers[skin.Target] and Config.Towers[skin.Target].DisplayName or skin.Target)
-				label({ Size = UDim2.new(1, -260, 0, 18), Position = UDim2.fromOffset(68, 38), Text = skin.Tier .. " skin for: " .. targetName,
-					Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
-				local wearing = equippedSkins[skin.Target] == id
-				local text, color
-				if wearing then
-					text, color = "Take off", Color3.fromRGB(110, 60, 60)
-				elseif isOwned then
-					text, color = "Wear", Color3.fromRGB(60, 130, 60)
-				else
-					text, color = "Buy " .. Store.PriceOf(id) .. " gems", Color3.fromRGB(40, 120, 170)
-				end
-				local b = button({ Size = UDim2.fromOffset(170, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
-					Text = text, BackgroundColor3 = color, ZIndex = 23, Parent = row })
-				b.Activated:Connect(function()
-					local ok, reason
-					if wearing then
-						ok, reason = Remotes.EquipSkin:InvokeServer("None:" .. skin.Target)
-					elseif isOwned then
-						ok, reason = Remotes.EquipSkin:InvokeServer(id)
-					else
-						ok, reason = Remotes.BuySkin:InvokeServer(id)
-						if ok then
-							showMessage("You got the " .. skin.Name .. "!", Ui.GEM)
-							Ui.playSound("Coin")
-						end
-					end
-					if not ok then
-						showMessage(reason or "Can't do that", Ui.BAD)
-					end
-					task.wait(0.15)
-					refreshShop()
-				end)
-			end
-		end
-	elseif shopTab == "Robux" then
+	local showGear = shopTab == "GearLooks"
+	gearTabs.Visible = showGear
+	for id, b in tabButtons do
+		b.BackgroundColor3 = id == shopTab and Color3.fromRGB(90, 70, 150) or Ui.PANEL
+	end
+	for id, b in gearButtons do
+		b.BackgroundColor3 = id == gearSlot.Id and Color3.fromRGB(90, 70, 150) or Ui.PANEL
+	end
+	if showGear or shopTab == "Skins" then
+		shopLooks.Show(showGear and gearSlot.Id or shopTab)
+		return
+	end
+	shopLooks.Hide()
+	list.Position = UDim2.fromOffset(16, 104)
+	list.Size = UDim2.new(1, -32, 1, -116)
+	if shopTab == "Robux" then
 		local order = 0
 		local function robuxRow(name, text, price, id, isPass, ownedAlready)
 			order += 1
@@ -792,21 +758,32 @@ function refreshShop()
 			end
 		end)
 	else
+		local equipped = shopTab == "Titles" and player:GetAttribute("EquippedTitle")
 		for i, item in shopItems(shopTab) do
-			rowFor(shopTab, item, i)
+			rowFor(shopTab, item, i, equipped)
 		end
-	end
-	for id, b in tabButtons do
-		b.BackgroundColor3 = id == shopTab and Color3.fromRGB(90, 70, 150) or Ui.PANEL
 	end
 end
 
-for i, tab in TABS do
-	local b = button({ Size = UDim2.fromOffset(120, 40), Text = tab.Name, LayoutOrder = i, ZIndex = 22, Parent = tabBar })
+for i, slot in GearLooks.Slots do
+	local b = button({ Size = UDim2.new(0.2, -7, 1, 0), Text = slot.Name, LayoutOrder = i, ZIndex = 22, Parent = gearTabs })
 	b.Activated:Connect(function()
-		shopTab = tab.Id
+		gearSlot = slot
+		list.CanvasPosition = Vector2.zero
 		refreshShop()
 	end)
+	gearButtons[slot.Id] = b
+end
+
+for i, tab in TABS do
+	local b = button({ Size = UDim2.new(1 / #TABS, -7, 1, 0), Name = tab.Id, Text = tab.Name, LayoutOrder = i, ZIndex = 22, Parent = tabBar })
+	local function selectTab()
+		shopTab = tab.Id
+		list.CanvasPosition = Vector2.zero
+		refreshShop()
+	end
+	b.Activated:Connect(selectTab)
+	make("BindableEvent", { Name = "Press", Parent = b }).Event:Connect(selectTab)
 	tabButtons[tab.Id] = b
 end
 
@@ -825,6 +802,11 @@ shopButton.Activated:Connect(function()
 end)
 shopClose.Activated:Connect(function()
 	shopPanel.Visible = false
+end)
+shopPanel:GetPropertyChangedSignal("Visible"):Connect(function()
+	if not shopPanel.Visible then
+		shopLooks.Hide()
+	end
 end)
 
 -------------------------------------------------------------------------------
@@ -921,12 +903,7 @@ claimButton.Activated:Connect(function()
 	refreshDaily()
 end)
 task.spawn(function()
-	-- show the daily reward by itself when it's ready (not on top of the first-run tutorial: one thing at a time)
-	task.wait(4)
-	if dailyReady() and player:GetAttribute("DailyNextAt") and player:GetAttribute("TutorialDone") ~= false then
-		dailyPanel.Visible = true
-		refreshDaily()
-	end
+	refreshDaily()
 	while true do
 		task.wait(30)
 		refreshDaily()
@@ -943,6 +920,7 @@ local lastBoss = GameState:GetAttribute("BossAlert") or 0
 local lastKills = GameState:GetAttribute("Kills") or 0
 local combo, lastKillTime, comboStep = 0, 0, 0
 
+local clearedJson, clearedMaps
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
 	goldLabel.Text = math.floor(gold) .. " mana"
@@ -1023,16 +1001,29 @@ local function refreshTop()
 		Config.SetMap(mapId) -- so the build ghost knows the new path
 	end
 	local inLobby = s == "Lobby"
+	local loading = GameState:GetAttribute("LoadingRun") == true
 	lobbyBar.Visible = inLobby
+	runButton.Text = loading and "Preparing battlefield…" or "Start run"
+	runButton.Interactable = not loading
+	mapButton.Interactable = not loading
+	if isTouch then
+		top.Size = UDim2.fromOffset(inLobby and 322 or 600, 64)
+		stateLabel.Size = UDim2.fromOffset(inLobby and 290 or 180, 20)
+		goldLabel.Visible = not inLobby
+		buildLabel.Visible = not inLobby
+		portalLabel.Visible = not inLobby
+		abilityHolder.Visible = not inLobby
+	end
 	eventLabel.Visible = inLobby
 	goalLabel.Text = nextGoal()
-	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 1, -108) or UDim2.new(0.5, 0, 1, -116)
+	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 1, isTouch and -124 or -108) or UDim2.new(0.5, 0, 1, -116)
 	towerBar.Visible = not inLobby
-	top.Visible = true
+	top.Visible = not inLobby
 	portalBack.Visible = not inLobby
 	startButton.Visible = s == "Break"
 	speedButton.Visible = s == "Break" or s == "Wave"
-	speedButton.Text = "Speed " .. (GameState:GetAttribute("Speed") or 1) .. "x"
+	local speed = GameState:GetAttribute("Speed") or 1
+	speedButton.Text = isTouch and (speed .. "x speed") or ("Speed " .. speed .. "x")
 	if inLobby then
 		local mapInfo = Config.Maps[mapId] or Config.Maps.CursedForest
 		waveLabel.Text = "The Outpost"
@@ -1040,7 +1031,7 @@ local function refreshTop()
 		stateLabel.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
 			.. (modeInfo and modeInfo.Id ~= "Campaign" and (" · " .. modeInfo.Name) or "")
 
-		mapButton.Text = "Map: " .. mapInfo.Name
+		mapButton.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
 	elseif s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"
 	elseif s == "Wave" then
@@ -1051,10 +1042,13 @@ local function refreshTop()
 
 	-- the difficulty can only be changed in the Outpost (Map button / Map Board)
 	local currentDiff = GameState:GetAttribute("Difficulty")
-	local cleared = {}
-	pcall(function()
-		cleared = HttpService:JSONDecode(player:GetAttribute("Cleared") or "{}")[GameState:GetAttribute("Map") or "CursedForest"] or {}
-	end)
+	local rawClears = player:GetAttribute("Cleared") or "{}"
+	if rawClears ~= clearedJson then
+		clearedJson = rawClears
+		local ok, data = pcall(HttpService.JSONDecode, HttpService, rawClears)
+		clearedMaps = ok and data or {}
+	end
+	local cleared = clearedMaps[mapId] or {}
 	for id, b in diffButtons do
 		local d = Config.FindById(Config.Difficulties, id)
 		local locked = d.Unlock and not cleared[d.Unlock]
@@ -1092,7 +1086,18 @@ local function refreshTop()
 		t.cost.TextColor3 = affordable and Ui.MANA or Ui.BAD
 	end
 end
-GameState.AttributeChanged:Connect(refreshTop)
+local refreshQueued = false
+local function queueTop()
+	if refreshQueued then
+		return
+	end
+	refreshQueued = true
+	task.defer(function()
+		refreshQueued = false
+		refreshTop()
+	end)
+end
+GameState.AttributeChanged:Connect(queueTop)
 refreshTop()
 
 -- combo fades after a moment without kills
@@ -1142,19 +1147,29 @@ local function refreshPlayer()
 		end
 	end
 	refreshDaily()
-	refreshTop()
+	queueTop()
 end
 player.AttributeChanged:Connect(refreshPlayer)
 refreshPlayer()
 
-RunService.RenderStepped:Connect(function()
-	local now = workspace:GetServerTimeNow()
-	local function fill(shade, attr, cooldown)
-		shade.Size = UDim2.fromScale(1, math.clamp(((player:GetAttribute(attr) or 0) - now) / cooldown, 0, 1))
+task.spawn(function()
+	local cooldowns = {
+		{ attackShade, "AttackReadyAt", "AttackCooldown", Config.Hero.Attack.Cooldown },
+		{ whirlShade, "WhirlwindReadyAt", "CooldownE", Config.Hero.Whirlwind.Cooldown },
+		{ leapShade, "LeapReadyAt", "CooldownR", Config.Hero.Leap.Cooldown },
+	}
+	while true do
+		local now = workspace:GetServerTimeNow()
+		for _, cooldown in cooldowns do
+			local shade, ready, duration, fallback = table.unpack(cooldown)
+			local left = (player:GetAttribute(ready) or 0) - now
+			local fill = left > 0 and math.clamp(left / (player:GetAttribute(duration) or fallback), 0, 1) or 0
+			if shade.Size.Y.Scale ~= fill then
+				shade.Size = UDim2.fromScale(1, fill)
+			end
+		end
+		task.wait(isTouch and 0.05 or 0.025)
 	end
-	fill(attackShade, "AttackReadyAt", player:GetAttribute("AttackCooldown") or Config.Hero.Attack.Cooldown)
-	fill(whirlShade, "WhirlwindReadyAt", player:GetAttribute("CooldownE") or Config.Hero.Whirlwind.Cooldown)
-	fill(leapShade, "LeapReadyAt", player:GetAttribute("CooldownR") or Config.Hero.Leap.Cooldown)
 end)
 
 -------------------------------------------------------------------------------
@@ -1163,6 +1178,10 @@ end)
 local placing = nil -- the defender type we're placing, or nil
 local ghost = nil
 local ghostPos = nil -- phones: the spot that was tapped
+local displayedPos, displayedReason
+local placementPending = false
+local placementRay = RaycastParams.new()
+placementRay.FilterType = Enum.RaycastFilterType.Include
 local selected = nil -- the defender model whose info panel is open
 local rangeCircle = nil
 
@@ -1182,11 +1201,14 @@ local function makeDisc(radius, color)
 end
 
 local function screenRay(screenPos, include)
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return nil
+	end
+	-- GetMouseLocation and TouchTapInWorld both report viewport coordinates.
 	local ray = camera:ViewportPointToRay(screenPos.X, screenPos.Y)
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = include
-	return workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+	placementRay.FilterDescendantsInstances = include
+	return workspace:Raycast(ray.Origin, ray.Direction * 1000, placementRay)
 end
 
 local function mouseRay(include)
@@ -1221,7 +1243,7 @@ end
 
 local function stopPlacing()
 	placing = nil
-	ghostPos = nil
+	ghostPos, displayedPos, displayedReason = nil, nil, nil
 	confirmBar.Visible = false
 	tapHint.Visible = false
 	if ghost then
@@ -1236,6 +1258,19 @@ local function closeInfo()
 	if rangeCircle then
 		rangeCircle:Destroy()
 		rangeCircle = nil
+	end
+end
+
+local function groundUnder(screenPos)
+	local map = workspace:FindFirstChild("Map")
+	local ground = map and map:FindFirstChild("Ground")
+	if not ground then
+		return nil
+	end
+	local path = map:FindFirstChild("Path")
+	local hit = screenRay(screenPos, { ground, path })
+	if hit then
+		return Vector3.new(hit.Position.X, 0, hit.Position.Z)
 	end
 end
 
@@ -1271,91 +1306,112 @@ local function startPlacing(towerType)
 	ghostPart({ Name = "Foot", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, Config.TowerSpacing, Config.TowerSpacing),
 		Color = Color3.fromRGB(120, 255, 120), Transparency = 0.25 })
 	ghost.PrimaryPart = body
-	make("Highlight", { FillTransparency = 0.7, OutlineTransparency = 0, OutlineColor = Color3.new(1, 1, 1),
-		DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Parent = ghost })
-	-- the range: a faint disc with a bright edge
+	-- The translucent floor disc shows the full range without an outline pass or 40 edge parts.
 	local range = info.Levels[1].Range
 	local disc = makeDisc(range, Color3.fromRGB(120, 255, 120))
 	disc.Name = "Range"
 	disc.Transparency = 0.85
 	disc.Parent = ghost
-	local edge = make("Folder", { Name = "Edge", Parent = ghost })
-	for i = 1, 40 do
-		local a = i / 40 * math.pi * 2
-		make("Part", { Size = Vector3.new(0.35, 0.35, range * math.pi * 2 / 40 + 0.2), Anchored = true, CanCollide = false,
-			CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(120, 255, 120),
-			Parent = edge }):SetAttribute("Angle", a)
-	end
 	local tagHolder = ghostPart({ Name = "TagHolder", Size = Vector3.one * 0.2, Transparency = 1 })
 	local tag = make("BillboardGui", { Name = "Tag", Size = UDim2.fromOffset(260, 34), StudsOffset = Vector3.new(0, 7, 0),
 		AlwaysOnTop = true, Parent = tagHolder })
 	label({ Name = "Text", Size = UDim2.fromScale(1, 1), Text = "", TextColor3 = Color3.fromRGB(255, 120, 120),
 		TextStrokeTransparency = 0, Parent = tag })
-	ghost.Parent = workspace
 	if isTouch then
-		tapHint.Visible = true
-		-- start the ghost in front of the hero
-		local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if r then
-			local p = r.Position + r.CFrame.LookVector * 10
-			ghostPos = Vector3.new(p.X, 0, p.Z)
-			confirmBar.Visible = true
+		-- Show a legal preview as soon as a card is chosen. Players can move it before confirming.
+		local camera = workspace.CurrentCamera
+		if camera then
+			for _, x in { 0.5, 0.38, 0.62 } do
+				local viewport = camera.ViewportSize
+				local spot = groundUnder(Vector2.new(viewport.X * x, viewport.Y * 0.6))
+				if spot then
+					spot = Vector3.new(math.round(spot.X), 0, math.round(spot.Z))
+					if canPlaceHere(spot) then
+						ghostPos = spot
+						confirmBar.Visible = true
+						break
+					end
+				end
+			end
 		end
+		tapHint.Visible = ghostPos == nil
 	end
 end
 
-local function groundUnder(screenPos)
-	local hit = screenRay(screenPos, { workspace.Map.Ground, workspace.Map.Path })
-	if not hit then
-		return nil
-	end
-	return Vector3.new(hit.Position.X, 0, hit.Position.Z)
+local function snapPlacement(pos)
+	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
 end
 
-RunService.RenderStepped:Connect(function()
-	if not placing or not ghost then
-		return
-	end
-	local pos = isTouch and ghostPos or groundUnder(UserInputService:GetMouseLocation())
+local function visualGround(pos)
+	placementRay.FilterDescendantsInstances = { workspace.Terrain }
+	local hit = workspace:Raycast(pos + Vector3.new(0, 12, 0), Vector3.new(0, -24, 0), placementRay)
+	return hit and Vector3.new(pos.X, hit.Position.Y, pos.Z) or pos
+end
+
+local function refreshPlacement(pos)
 	if not pos then
 		ghost.Parent = nil
+		displayedPos = nil
 		return
 	end
-	ghost.Parent = workspace
-	pos = Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5)) -- snap to whole studs
-	ghost:SetAttribute("Spot", pos)
+	pos = snapPlacement(pos)
 	local ok, reason = canPlaceHere(pos)
+	if pos == displayedPos and reason == displayedReason then
+		return
+	end
+	displayedPos, displayedReason = pos, reason
+	pos = visualGround(pos)
 	local color = ok and Color3.fromRGB(120, 255, 120) or Color3.fromRGB(255, 80, 80)
-	local bob = math.sin(os.clock() * 4) * 0.2
-	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3.5 + bob, 0))
-	ghost.Top.CFrame = CFrame.new(pos + Vector3.new(0, 7.5 + bob, 0))
+	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3.5, 0))
+	ghost.Top.CFrame = CFrame.new(pos + Vector3.new(0, 7.5, 0))
 	ghost.Top.Color = ok and Config.Towers[placing].Color or color
-	ghost.Body.Color = ok and Config.Towers[placing].Color or color
+	ghost.Body.Color = ghost.Top.Color
 	ghost.Foot.CFrame = CFrame.new(pos + Vector3.new(0, 0.18, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	ghost.Foot.Color = color
 	ghost.Range.CFrame = CFrame.new(pos + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	ghost.Range.Color = color
-	local range = Config.Towers[placing].Levels[1].Range
-	for _, piece in ghost.Edge:GetChildren() do
-		local a = piece:GetAttribute("Angle")
-		local at = pos + Vector3.new(math.cos(a) * range, 0.3, math.sin(a) * range)
-		piece.CFrame = CFrame.lookAt(at, at + Vector3.new(-math.sin(a), 0, math.cos(a)))
-		piece.Color = color
-	end
 	ghost.TagHolder.CFrame = CFrame.new(pos)
-	ghost.TagHolder.Tag.Text.Text = ok and "" or (reason or "")
-	local highlight = ghost:FindFirstChildOfClass("Highlight")
-	highlight.OutlineColor = ok and Color3.new(1, 1, 1) or color
-	highlight.FillColor = color
+	ghost.TagHolder.Tag.Text.Text = reason or ""
+	confirmButton.BackgroundColor3 = ok and Color3.fromRGB(60, 140, 60) or Color3.fromRGB(84, 72, 69)
+	ghost.Parent = workspace
+end
+
+local placementElapsed = 0
+RunService.Heartbeat:Connect(function(dt)
+	if not placing or not ghost then
+		return
+	end
+	placementElapsed += dt
+	if placementElapsed >= (isTouch and 0.12 or 0.03) then
+		placementElapsed = 0
+		if isTouch then
+			refreshPlacement(ghostPos)
+		else
+			refreshPlacement(groundUnder(UserInputService:GetMouseLocation()))
+		end
+	end
 end)
 
 local function tryPlace(pos)
-	if not pos or not placing then
+	if not pos or not placing or placementPending then
 		return
 	end
-	pos = Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5)) -- same spot the preview shows
-	local ok, reason = Remotes.PlaceTower:InvokeServer(placing, pos)
-	if ok then
+	pos = snapPlacement(pos)
+	local valid, problem = canPlaceHere(pos)
+	if not valid then
+		showMessage(problem, Ui.BAD)
+		return
+	end
+	local requestGhost = ghost
+	placementPending = true
+	local replied, ok, reason = pcall(Remotes.PlaceTower.InvokeServer, Remotes.PlaceTower, placing, pos)
+	placementPending = false
+	if requestGhost ~= ghost then
+		return
+	end
+	if not replied then
+		showMessage("Build request failed. Try again.", Ui.BAD)
+	elseif ok then
 		-- keep placing the same defender while holding Shift (PC)
 		if isTouch or not UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
 			stopPlacing()
@@ -1394,11 +1450,11 @@ local function refreshInfo()
 		upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 	end
 	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " mana)"
-	if rangeCircle then
-		rangeCircle:Destroy()
-	end
 	local base = selected.PrimaryPart and selected.PrimaryPart.Position or Vector3.zero
-	rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
+	if not rangeCircle then
+		rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
+	end
+	rangeCircle.Size = Vector3.new(0.15, stats.Range * 2, stats.Range * 2)
 	rangeCircle.CFrame = CFrame.new(base.X, 0.2, base.Z) * CFrame.Angles(0, 0, math.pi / 2)
 	rangeCircle.Parent = workspace
 end
@@ -1434,11 +1490,16 @@ end)
 
 -- a click or tap in the world: place, or pick a defender
 local function worldClick(screenPos)
+	if shopPanel.Visible or dailyPanel.Visible or mapPanel.Visible or endPanel.Visible
+		or GameState:GetAttribute("State") == "Lobby" then
+		return
+	end
 	if placing then
 		if isTouch then
 			local pos = groundUnder(screenPos)
 			if pos then
 				ghostPos = pos
+				refreshPlacement(ghostPos)
 				confirmBar.Visible = true
 				tapHint.Visible = false
 			end
@@ -1572,9 +1633,15 @@ UserInputService.TouchTapInWorld:Connect(function(position, processedByUI)
 	if processedByUI then
 		return
 	end
-	-- TouchTapInWorld gives a position without the top bar inset, so add it back
-	local inset = game:GetService("GuiService"):GetGuiInset()
-	worldClick(Vector2.new(position.X, position.Y + inset.Y))
+	worldClick(position)
+end)
+
+GameState:GetAttributeChangedSignal("State"):Connect(function()
+	local state = GameState:GetAttribute("State")
+	if state ~= "Break" and state ~= "Wave" then
+		stopPlacing()
+		closeInfo()
+	end
 end)
 
 -- keep the info panel right when gold changes
@@ -1585,10 +1652,15 @@ GameState:GetAttributeChangedSignal("Gold"):Connect(function()
 end)
 
 if not isTouch then
-	label({ Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
+	local shortcuts = label({ BackgroundColor3 = Color3.fromRGB(37, 29, 25), BackgroundTransparency = 0.12, Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
 		Text = "1-5 build · click a defender to upgrade · Shift builds more · B shop · Q cancel",
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextStrokeTransparency = 0.5, TextWrapped = true,
-		TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+		TextXAlignment = Enum.TextXAlignment.Center, Parent = root })
+	local function showShortcuts()
+		shortcuts.Visible = GameState:GetAttribute("State") ~= "Lobby"
+	end
+	GameState:GetAttributeChangedSignal("State"):Connect(showShortcuts)
+	showShortcuts()
 end
 
 -- stalls in the Outpost open these screens

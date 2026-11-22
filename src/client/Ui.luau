@@ -1,11 +1,38 @@
 -- Small helpers for building the game screen, plus click sounds and
 -- a bouncy hover effect on every button.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Shared.Config)
 
 local Ui = {}
+
+Ui.isTouch = (UserInputService.TouchEnabled and UserInputService.PreferredInput == Enum.PreferredInput.Touch)
+	or (RunService:IsStudio() and ReplicatedStorage:FindFirstChild("MobileTest") ~= nil)
+
+function Ui.fitRoot(gui, root, mobileWidth, mobileHeight)
+	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+	local scale = Instance.new("UIScale")
+	scale.Parent = root
+	local function fit()
+		local size = gui.AbsoluteSize
+		if size.X <= 0 or size.Y <= 0 then
+			return
+		end
+		local width, height = 1280, 720
+		if Ui.isTouch then
+			width, height = mobileWidth, mobileHeight
+		end
+		local factor = math.min(size.X / width, size.Y / height, 1.3)
+		scale.Scale = factor
+		root.Size = UDim2.fromScale(1 / factor, 1 / factor)
+	end
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	fit()
+	return scale
+end
 
 Ui.GOLD = Color3.fromRGB(255, 210, 70)
 Ui.MANA = Color3.fromRGB(170, 150, 255) -- the building money during a run
@@ -93,17 +120,21 @@ local KIT = {
 	ui_ribbon = { border = 120, width = 30 },
 }
 function Ui.skin(obj, name, tint)
+	-- Native text stays on the same render layer as its button on every device.
+	if obj:IsA("TextButton") or obj:IsA("TextLabel") then
+		return
+	end
 	local kit = KIT[name]
 	if not kit or obj:FindFirstChild("Skin") then
 		return
 	end
-	local images = game:GetService("ReplicatedStorage"):WaitForChild("ArtImages", 10)
+	local images = ReplicatedStorage:WaitForChild("ArtImages", 10)
 	local function apply()
 		local image = images and images:GetAttribute(name)
 		if not image or obj:FindFirstChild("Skin") then
 			return image ~= nil
 		end
-		Ui.make("ImageLabel", {
+		local skin = Ui.make("ImageLabel", {
 			Name = "Skin",
 			BackgroundTransparency = 1,
 			Size = UDim2.fromScale(1, 1),
@@ -115,40 +146,20 @@ function Ui.skin(obj, name, tint)
 			ZIndex = obj.ZIndex > 1 and obj.ZIndex or 0,
 			Parent = obj,
 		})
-		obj.BackgroundTransparency = 1
-		if obj:IsA("TextButton") or obj:IsA("TextLabel") then
-			-- a child image draws over the button's own text, so the text moves into a label on top
-			local text = Ui.make("TextLabel", {
-				Name = "SkinText",
-				BackgroundTransparency = 1,
-				Size = UDim2.new(1, -12, 1, -8),
-				Position = UDim2.fromOffset(6, 4),
-				ZIndex = (obj.ZIndex > 1 and obj.ZIndex or 0) + 1,
-				Parent = obj,
-			})
-			local strokeT = obj.TextStrokeTransparency
-			local function sync()
-				text.Text = obj.Text
-				text.Font = obj.Font
-				text.TextColor3 = obj.TextColor3
-				text.TextScaled = obj.TextScaled
-				text.TextSize = obj.TextSize
-				text.TextWrapped = obj.TextWrapped
-				text.TextStrokeTransparency = strokeT
-				text.TextStrokeColor3 = obj.TextStrokeColor3
-				text.RichText = obj.RichText
+		local connection
+		local function reveal()
+			if not skin.IsLoaded then
+				return
 			end
-			sync()
-			for _, prop in { "Text", "TextColor3", "Font", "TextSize" } do
-				obj:GetPropertyChangedSignal(prop):Connect(sync)
+			connection:Disconnect()
+			obj.BackgroundTransparency = 1
+			local stroke = obj:FindFirstChildOfClass("UIStroke")
+			if stroke and stroke.ApplyStrokeMode ~= Enum.ApplyStrokeMode.Contextual then
+				stroke.Enabled = false
 			end
-			obj.TextTransparency = 1
-			obj.TextStrokeTransparency = 1
 		end
-		local stroke = obj:FindFirstChildOfClass("UIStroke")
-		if stroke and stroke.ApplyStrokeMode ~= Enum.ApplyStrokeMode.Contextual then
-			stroke.Enabled = false
-		end
+		connection = skin:GetPropertyChangedSignal("IsLoaded"):Connect(reveal)
+		reveal()
 		return true
 	end
 	if not apply() and images then
@@ -172,7 +183,7 @@ function Ui.button(props)
 	for k, v in props do
 		defaults[k] = v
 	end
-	local b = Ui.make("TextButton", defaults, { Ui.corner(10), Ui.stroke() })
+	local b = Ui.make("TextButton", defaults, { Ui.corner(Ui.isTouch and 8 or 10), Ui.stroke(nil, Ui.isTouch and 1 or 2) })
 	-- painted brass-and-wood button, tinted with the button's own colour
 	b.TextStrokeTransparency = 0.35
 	Ui.skin(b, "ui_button", defaults.BackgroundColor3:Lerp(Color3.new(1, 1, 1), 0.25))

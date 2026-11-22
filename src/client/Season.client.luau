@@ -11,22 +11,12 @@ local Ui = require(script.Parent.Ui)
 local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.label, Ui.button
 
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local S = Store.Season
 
 local gui = make("ScreenGui", { Name = "SeasonHud", ResetOnSpawn = false, DisplayOrder = 3,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = player:WaitForChild("PlayerGui") })
 local root = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
-local rootScale = make("UIScale", { Parent = root })
-local function fitScreen()
-	local size = camera.ViewportSize
-	local s = math.clamp(math.min(size.X / 1280, size.Y / 720), 0.55, 1.3)
-	rootScale.Scale = s
-	root.Size = UDim2.fromScale(1 / s, 1 / s)
-end
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
-fitScreen()
+Ui.fitRoot(gui, root, 924, 474)
 
 local seasonButton, dot = require(script.Parent.Menu).Add("Season", "Season", 7)
 

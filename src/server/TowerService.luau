@@ -141,7 +141,7 @@ local function useModel(model, towerType, at)
 	end
 	look.Parent = model
 	-- an invisible base keeps upgrades, labels and effects working
-	newPart(model, { Name = "Base", Size = Vector3.new(5, 1, 5), CFrame = at * CFrame.new(0, 0.5, 0), Transparency = 1,
+	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55, 5), CFrame = at * CFrame.new(0, 0.275, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
 		CanCollide = false })
 	return true
 end
@@ -151,8 +151,8 @@ local function setLevelLabel(model, level)
 	if not gui then
 		gui = Instance.new("BillboardGui")
 		gui.Name = "LevelLabel"
-		gui.Size = UDim2.fromOffset(60, 20)
-		gui.StudsOffset = Vector3.new(0, 14, 0)
+		gui.Size = UDim2.fromOffset(112, 20)
+		gui.StudsOffsetWorldSpace = Vector3.new(0, (MODEL_HEIGHT[model:GetAttribute("TowerType")] or 9) + 1, 0)
 		gui.MaxDistance = 90
 		gui.Adornee = model.PrimaryPart
 		gui.Parent = model
@@ -166,7 +166,7 @@ local function setLevelLabel(model, level)
 		label.TextScaled = true
 		label.Parent = gui
 	end
-	gui:FindFirstChild("Text").Text = "Lv " .. level
+	gui:FindFirstChild("Text").Text = model.Name .. "  Lv " .. level
 end
 
 -- can a defender stand here? returns ok, reason
@@ -231,8 +231,13 @@ function TowerService.Place(player, towerType, position)
 	end
 	model.PrimaryPart = model:FindFirstChild("Base")
 	if typeof(player) == "Instance" then
-		StoreService.ApplyTowerSkin(model, StoreService.SkinFor(player, towerType))
+		StoreService.ApplyModelSkin(model, StoreService.SkinFor(player, towerType))
 	end
+	local pickHeight = MODEL_HEIGHT[towerType] or 8
+	newPart(model, { Name = "SelectionVolume", Size = Vector3.new(6, pickHeight, 6),
+		CFrame = at * CFrame.new(0, pickHeight / 2, 0), Transparency = 1,
+		CanCollide = false, CanTouch = false, CanQuery = true, CastShadow = false })
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("TowerType", towerType)
 	model:SetAttribute("Level", 1)
 	model:SetAttribute("Range", info.Levels[1].Range)

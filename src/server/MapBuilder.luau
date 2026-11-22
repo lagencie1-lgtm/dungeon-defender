@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local TerrainBuilder = require(script.Parent.TerrainBuilder)
 local ArtService = require(script.Parent.ArtService)
+local MapProps = require(script.Parent.MapProps)
 
 -- puts a Blender model (from ArtService) into the map, scaled to `height`, standing on `cframe`
 -- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
@@ -90,9 +91,9 @@ local function setupLighting(theme)
 	if theme == "Outpost" then
 		-- the hub: a warm, sunny late afternoon (the first thing a player sees)
 		Lighting.ClockTime = 15.2
-		Lighting.Brightness = 2.4
-		Lighting.ExposureCompensation = 0.2
-		Lighting.ColorShift_Top = Color3.fromRGB(255, 225, 190)
+		Lighting.Brightness = 2
+		Lighting.ExposureCompensation = 0.08
+		Lighting.ColorShift_Top = Color3.fromRGB(20, 12, 6)
 		Lighting.Ambient = Color3.fromRGB(140, 135, 130)
 		Lighting.OutdoorAmbient = Color3.fromRGB(165, 160, 150)
 		Lighting.FogColor = Color3.fromRGB(190, 200, 220)
@@ -107,7 +108,7 @@ local function setupLighting(theme)
 		Lighting.ClockTime = 0
 		Lighting.Brightness = 3.4
 		Lighting.ExposureCompensation = 0.7
-		Lighting.ColorShift_Top = Color3.fromRGB(190, 210, 255)
+		Lighting.ColorShift_Top = Color3.fromRGB(9, 14, 24)
 		Lighting.Ambient = Color3.fromRGB(170, 170, 220)
 		Lighting.OutdoorAmbient = Color3.fromRGB(190, 185, 235)
 		Lighting.FogColor = Color3.fromRGB(20, 20, 45)
@@ -120,7 +121,7 @@ local function setupLighting(theme)
 		Lighting.ClockTime = 16.2
 		Lighting.Brightness = 2.1
 		Lighting.ExposureCompensation = 0.3
-		Lighting.ColorShift_Top = Color3.fromRGB(255, 196, 150)
+		Lighting.ColorShift_Top = Color3.fromRGB(22, 11, 4)
 		Lighting.Ambient = Color3.fromRGB(150, 136, 130)
 		Lighting.OutdoorAmbient = Color3.fromRGB(178, 158, 148)
 		Lighting.FogColor = Color3.fromRGB(80, 30, 20)
@@ -134,9 +135,9 @@ local function setupLighting(theme)
 	else
 		-- cursed twilight: violet haze far away, soft warm light on the meadow so it stays readable
 		Lighting.ClockTime = 16.4
-		Lighting.ColorShift_Top = Color3.fromRGB(255, 220, 190)
-		Lighting.Brightness = 2.1
-		Lighting.ExposureCompensation = 0.3
+		Lighting.ColorShift_Top = Color3.fromRGB(16, 9, 4)
+		Lighting.Brightness = 1.8
+		Lighting.ExposureCompensation = 0.1
 		Lighting.Ambient = Color3.fromRGB(130, 128, 145)
 		Lighting.OutdoorAmbient = Color3.fromRGB(158, 152, 170)
 		Lighting.FogColor = Color3.fromRGB(60, 50, 90)
@@ -149,28 +150,6 @@ local function setupLighting(theme)
 	end
 	Lighting.FogStart = 120
 	Lighting.FogEnd = 400
-	-- painted sky box per theme (only Magma has one so far); the default blue sky never shows over a volcano
-	local old = Lighting:FindFirstChild("MapSky")
-	if old then
-		old:Destroy()
-	end
-	local skyName = ({ Magma = "magma", Forest = "forest", Crystal = "crystal", Outpost = "outpost" })[theme]
-	if skyName then
-		-- in the background: the images may still be loading when the first map is built
-		task.spawn(function()
-		local side = ArtService.Image("sky_" .. skyName .. "_side", 30)
-		if side and Lighting:GetAttribute("Theme") == theme and not Lighting:FindFirstChild("MapSky") then
-			local sky = Instance.new("Sky")
-			sky.Name = "MapSky"
-			sky.SkyboxBk, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt = side, side, side, side
-			sky.SkyboxUp = ArtService.Image("sky_" .. skyName .. "_up", 2) or side
-			sky.SkyboxDn = ArtService.Image("sky_" .. skyName .. "_down", 2) or side
-			sky.CelestialBodiesShown = false
-			sky.StarCount = 0
-			sky.Parent = Lighting
-		end
-		end)
-	end
 end
 
 -- invisible walls around a rectangle so nobody falls off
@@ -263,7 +242,6 @@ function MapBuilder.BuildBattlefield(mapId)
 
 	local map = folder("Map", workspace)
 	-- (each map clears only its own terrain region: the Outpost keeps its own)
-	TerrainBuilder.ResetLooks()
 	local forest = not magma and not crystal
 	local terrainLook = true -- every map is real terrain now (the Ground/Path parts stay for clicks)
 	part({
@@ -304,6 +282,8 @@ function MapBuilder.BuildBattlefield(mapId)
 	else
 		TerrainBuilder.Crystal(map, camp)
 	end
+	-- Fresh terrain is not ready for decor raycasts until it has reached the physics engine.
+	task.wait(0.3)
 	local gateFacing = CFrame.lookAt(camp, camp + (points[1] - camp).Unit)
 	ArtService.WaitModel(magma and "map_gate" or crystal and "map_rift" or "map_camp", 8)
 	ArtService.WaitModel("map_portal", 4)
@@ -435,8 +415,6 @@ function MapBuilder.BuildBattlefield(mapId)
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Include
 		params.FilterDescendantsInstances = { workspace.Terrain }
-		-- (freshly written terrain only answers raycasts after a physics step)
-		task.wait(0.3)
 		local function plant(pos, big)
 			-- stand on the ground (hills too), never in water
 			local hit = workspace:Raycast(pos + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0), params)
@@ -469,6 +447,8 @@ function MapBuilder.BuildBattlefield(mapId)
 			first and first:GetFullName(), first and tostring(first:GetPivot().Position))
 	end
 
+	MapProps.Place(decor, mapInfo, Config.PathWidth, Config.DistanceToPath)
+
 	-- folders the game fills while you play
 	for _, name in { "Towers", "Enemies" } do
 		local old = workspace:FindFirstChild(name)
@@ -495,6 +475,7 @@ function MapBuilder.BuildOutpost(onPrompt)
 	local hub = folder("Outpost", workspace)
 	local c = Config.OutpostCenter
 	TerrainBuilder.Outpost(c)
+	hub:SetAttribute("GroundTheme", "Outpost")
 	-- invisible floor and walls keep clicks and players inside (the terrain is what you see)
 	part({ Name = "Ground", Size = Vector3.new(150, 2, 150), Position = c - Vector3.new(0, 1, 0), Transparency = 1,
 		CanCollide = false, Parent = hub })
@@ -502,7 +483,7 @@ function MapBuilder.BuildOutpost(onPrompt)
 
 	-- the spawn, south of the campfire, looking north at the portal
 	local spawn = part({ ClassName = "SpawnLocation", Name = "OutpostSpawn", Size = Vector3.new(10, 1, 10),
-		Position = c + Vector3.new(0, 0.3, 26), Transparency = 1, CanCollide = false, Enabled = true, Parent = hub })
+		Position = c + Vector3.new(0, 0.3, 36), Transparency = 1, CanCollide = false, Enabled = true, Parent = hub })
 	spawn.Duration = 0
 	local decal = spawn:FindFirstChildOfClass("Decal")
 	if decal then
@@ -530,7 +511,7 @@ function MapBuilder.BuildOutpost(onPrompt)
 		local anchor = part({ Name = model, Size = Vector3.new(4, 4, 4), CFrame = facing * CFrame.new(0, 2, -2),
 			Transparency = 1, CanCollide = false, Parent = hub })
 		if label then
-			nameTag(anchor, label, color, height + 1)
+			-- The native interaction prompt already names this station.
 			prompt(anchor, actionText, label, action)
 		end
 		task.spawn(function()
@@ -541,17 +522,27 @@ function MapBuilder.BuildOutpost(onPrompt)
 	end
 
 	-- the campfire in the middle, with real fire and warm light
-	local fireAnchor = station("outpost_campfire", Vector3.new(0, 0, 6), 3)
+	local fireAnchor = station("outpost_campfire", Vector3.new(9, 0, 6), 4)
 	local fire = Instance.new("Fire")
 	fire.Size = 5
 	fire.Heat = 7
 	fire.Parent = fireAnchor
-	fireAnchor.CFrame = CFrame.new(c + Vector3.new(0, 0.6, 6))
+	fireAnchor.CFrame = CFrame.new(c + Vector3.new(9, 0.6, 6))
 	local fireLight = Instance.new("PointLight")
 	fireLight.Color = Color3.fromRGB(255, 170, 90)
 	fireLight.Range = 24
 	fireLight.Brightness = 1.4
 	fireLight.Parent = fireAnchor
+
+	-- Glowing coals remain legible when phone graphics reduce the fire particles.
+	for index = 1, 7 do
+		local angle = index * 2.4
+		local radius = 0.36 * math.sqrt(index)
+		part({ Name = "HearthCoal", Shape = Enum.PartType.Ball, Size = Vector3.new(1.15, 0.65, 0.9),
+			Position = fireAnchor.Position + Vector3.new(math.cos(angle) * radius, 0.25, math.sin(angle) * radius),
+			Color = Color3.fromRGB(242, 73 + index * 10, 18), Material = Enum.Material.Neon,
+			CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false, Parent = hub })
+	end
 
 	-- START: the stone portal arch at the north end, with a glowing disc and a pad in front
 	local portalPos = c + Vector3.new(0, 0, -30)
@@ -562,6 +553,28 @@ function MapBuilder.BuildOutpost(onPrompt)
 	part({ Name = "PortalDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, 14, 14),
 		CFrame = CFrame.new(portalPos + Vector3.new(0, 10.4, 0)) * CFrame.Angles(0, math.pi / 2, 0),
 		Color = Color3.fromRGB(150, 90, 255), Material = Enum.Material.Neon, Transparency = 0.25, CanCollide = false, Parent = hub })
+	-- Show the destination inside the arch using the forest's existing painted sky.
+	local window = part({ Name = "PortalView", Size = Vector3.new(12.7, 12.7, 0.05),
+		Position = portalPos + Vector3.new(0, 10.4, 1.75), Transparency = 1,
+		CanCollide = false, CanTouch = false, CanQuery = false, Parent = hub })
+	local view = Instance.new("SurfaceGui")
+	view.Face = Enum.NormalId.Back
+	view.CanvasSize = Vector2.new(384, 384)
+	view.LightInfluence = 0
+	view.Parent = window
+	local vista = Instance.new("ImageLabel")
+	vista.BackgroundTransparency = 1
+	vista.Size = UDim2.fromScale(1, 1)
+	task.spawn(function()
+		local image = ArtService.Image("sky_forest_side", 30)
+		if image then vista.Image = image end
+	end)
+	vista.ScaleType = Enum.ScaleType.Crop
+	vista.ImageColor3 = Color3.fromRGB(219, 196, 255)
+	local mask = Instance.new("UICorner")
+	mask.CornerRadius = UDim.new(0.5, 0)
+	mask.Parent = vista
+	vista.Parent = view
 	local pad = part({ Name = "StartPad", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.4, 12, 12),
 		CFrame = CFrame.new(portalPos + Vector3.new(0, 0.25, 10)) * CFrame.Angles(0, 0, math.pi / 2),
 		Color = Color3.fromRGB(150, 90, 255), Material = Enum.Material.Neon, Transparency = 0.35, CanCollide = false, Parent = hub })
@@ -573,13 +586,37 @@ function MapBuilder.BuildOutpost(onPrompt)
 	nameTag(pad, "Start run", Color3.fromRGB(215, 190, 255), 4)
 	prompt(pad, "Start run", "Portal", "Start", 0.5)
 
+	-- Paired blue-and-gold standards mark the entrance from across the courtyard.
+	for _, side in { -1, 1 } do
+		local mast = portalPos + Vector3.new(side * 20, 0, 4)
+		local function trim(name, offset, size, color, material)
+			part({ Name = name, Position = mast + offset, Size = size,
+				Material = material, Color = color, CanCollide = false, CanTouch = false, CanQuery = false,
+				Parent = hub })
+		end
+		local gold = Color3.fromRGB(196, 149, 67)
+		trim("BannerMast", Vector3.new(0, 7, 0), Vector3.new(0.45, 14, 0.45), Color3.fromRGB(85, 54, 35), Enum.Material.Wood)
+		trim("BannerCrossbar", Vector3.new(side * 2, 13, 0), Vector3.new(5, 0.3, 0.35), gold, Enum.Material.Metal)
+		trim("OutpostStandard", Vector3.new(side * 2, 9.5, 0), Vector3.new(3.8, 6.8, 0.17),
+			Color3.fromRGB(36, 83, 119), Enum.Material.Fabric)
+		trim("StandardHem", Vector3.new(side * 2, 6.5, 0.12), Vector3.new(3.8, 0.36, 0.1), gold, Enum.Material.Fabric)
+		part({ Name = "GateSigil", Size = Vector3.new(1.35, 1.35, 0.15),
+			CFrame = CFrame.new(mast + Vector3.new(side * 2, 10, 0.14)) * CFrame.Angles(0, 0, math.pi / 4),
+			Color = gold, Material = Enum.Material.Metal, CanCollide = false, CanTouch = false, CanQuery = false, Parent = hub })
+	end
+
+	require(script.Parent.OutpostGatehouse).build(hub, c, function(gate, facing)
+		ArtService.WaitModel("tower_ranger", 30)
+		return placeModel(gate, "tower_ranger", facing, 19)
+	end)
+
 	-- the stations around the plaza
-	station("outpost_forge", Vector3.new(-24, 0, -10), 11, "Blacksmith", Color3.fromRGB(255, 200, 120), "Upgrade gear", "Backpack")
+	station("outpost_forge", Vector3.new(-23, 0, -12), 13, "Blacksmith", Color3.fromRGB(255, 200, 120), "Upgrade gear", "Backpack")
 	station("outpost_stall", Vector3.new(24, 0, -10), 9, "Gem Shop", Color3.fromRGB(90, 220, 255), "Open shop", "Shop")
 	station("outpost_altar", Vector3.new(-26, 0, 10), 12, "Hero Altar", Color3.fromRGB(140, 255, 140), "Pick hero and stats", "Heroes")
 	station("outpost_mapboard", Vector3.new(26, 0, 10), 8.5, "Map Board", Color3.fromRGB(255, 210, 90), "Choose map", "Maps")
-	station("outpost_questboard", Vector3.new(-13, 0, 22), 8.5, "Quest Board", Color3.fromRGB(255, 220, 140), "Daily quests", "Quests")
-	station("outpost_chest", Vector3.new(13, 0, 22), 4, "Daily Chest", Color3.fromRGB(255, 210, 90), "Daily reward", "Daily")
+	station("outpost_questboard", Vector3.new(-27, 0, 22), 8.5, "Quest Board", Color3.fromRGB(255, 220, 140), "Daily quests", "Quests")
+	station("outpost_chest", Vector3.new(34, 0, 15), 5, "Daily Chest", Color3.fromRGB(255, 210, 90), "Daily reward", "Daily")
 	station("outpost_nest", Vector3.new(17, 0, -22), 5, "Pet Corner", Color3.fromRGB(160, 255, 160), "Hatch eggs", "Pets")
 
 	-- trees all around the hills
@@ -598,7 +635,7 @@ function MapBuilder.BuildOutpost(onPrompt)
 	end)
 
 	-- trophy wall with the best players on this server, behind the pet corner
-	local wall = part({ Name = "TrophyWall", Size = Vector3.new(16, 9, 0.6), CFrame = CFrame.lookAt(c + Vector3.new(-17, 4.5, -23),
+	local wall = part({ Name = "TrophyWall", Size = Vector3.new(16, 9, 0.6), CFrame = CFrame.lookAt(c + Vector3.new(-30, 4.5, -32),
 		c + Vector3.new(0, 4.5, 0)), Color = Color3.fromRGB(92, 66, 44), Material = Enum.Material.WoodPlanks, Parent = hub })
 	local surface = Instance.new("SurfaceGui")
 	surface.Name = "Board"
@@ -642,7 +679,7 @@ function MapBuilder.Teleport(player, where)
 	if not character then
 		return
 	end
-	local target = where == "Outpost" and (Config.OutpostCenter + Vector3.new(math.random(-6, 6), 4, 26 + math.random(-3, 3)))
+	local target = where == "Outpost" and (Config.OutpostCenter + Vector3.new(math.random(-2, 2), 4, 36))
 		or (Config.SpawnPoint + Vector3.new(math.random(-3, 3), 4, math.random(-3, 3)))
 	character:PivotTo(CFrame.new(target))
 end

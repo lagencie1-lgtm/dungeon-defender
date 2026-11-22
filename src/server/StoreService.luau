@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Store = require(ReplicatedStorage.Shared.Store)
+local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local SeasonService = require(script.Parent.SeasonService)
@@ -27,6 +28,7 @@ local function publish(player)
 	player:SetAttribute("OwnedSkins", HttpService:JSONEncode(owned))
 	player:SetAttribute("EquippedSkins", HttpService:JSONEncode(equipped))
 	player:SetAttribute("EquippedCape", equipped.Cape or "")
+	player:SetAttribute("EquippedPetSkin", equipped.Pet or "")
 	player:SetAttribute("StarterBought", profile.StarterBought == true)
 	local boosts = profile.Boosts or {}
 	player:SetAttribute("BoostXpUntil", boosts.Xp or 0)
@@ -44,8 +46,8 @@ function StoreService.SkinFor(player, target)
 	return id and Store.Skins[id] or nil
 end
 
--- recolours a defender model with a skin (placeholder look)
-function StoreService.ApplyTowerSkin(model, skin)
+-- Recolours a painted model while letting the baked shading show through.
+function StoreService.ApplyModelSkin(model, skin)
 	if not skin then
 		return
 	end
@@ -55,7 +57,7 @@ function StoreService.ApplyTowerSkin(model, skin)
 				part.Color = skin.Accent or skin.Primary
 			elseif part.Name == "Body" then
 				-- a painted model: a light wash of the skin's colour, so the paint still shows through
-				part.Color = Color3.new(1, 1, 1):Lerp(skin.Primary, 0.4)
+				part.Color = Color3.new(1, 1, 1):Lerp(skin.Primary, skin.TintStrength or 0.4)
 			elseif part.Name ~= "Base" then
 				part.Color = skin.Primary:Lerp(part.Color, 0.25)
 			end
@@ -66,13 +68,12 @@ end
 -------------------------------------------------------------------------------
 -- capes
 -------------------------------------------------------------------------------
-local function giveCape(player, character)
+function StoreService.AttachCape(character, skin)
 	for _, old in character:GetChildren() do
 		if old.Name == "HeroCape" then
 			old:Destroy()
 		end
 	end
-	local skin = StoreService.SkinFor(player, "Cape")
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
 	if not skin or not torso then
 		return
@@ -107,9 +108,24 @@ local function giveCape(player, character)
 	end
 end
 
+local function giveCape(player, character)
+	StoreService.AttachCape(character, StoreService.SkinFor(player, "Cape"))
+end
+
 -------------------------------------------------------------------------------
 -- skins bought with gems
 -------------------------------------------------------------------------------
+local function wearSkin(profile, id, skin)
+	if skin.Outfit then
+		for _, slot in GearLooks.Slots do
+			profile.Equipped[slot.Field] = GearLooks.OutfitItem(slot, skin.Outfit)
+		end
+	else
+		local _, equipped = skinsOf(profile)
+		equipped[skin.Target] = id
+	end
+end
+
 local function buySkin(player, id)
 	local profile = DataService.Get(player)
 	local skin = Store.Skins[id]
@@ -129,8 +145,7 @@ local function buySkin(player, id)
 	end
 	profile.Gems -= price
 	owned[id] = true
-	local _, equipped = skinsOf(profile)
-	equipped[skin.Target] = id -- wear it right away
+	wearSkin(profile, id, skin)
 	DataService.Publish(player)
 	publish(player)
 	if skin.Target == "Cape" and player.Character then
@@ -155,7 +170,10 @@ local function equipSkin(player, id)
 		if not skin or not owned[id] then
 			return false, "You don't own this skin"
 		end
-		equipped[skin.Target] = id
+		wearSkin(profile, id, skin)
+		if skin.Outfit then
+			DataService.Publish(player)
+		end
 		target = skin.Target
 	end
 	publish(player)

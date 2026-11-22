@@ -12,7 +12,7 @@ local EVENTS = {
 local FUNCTIONS = { "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints",
 	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode", "BuySkin", "EquipSkin", "ClaimSeason", "GetSeason",
-	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets" }
+	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets", "GetLookPreview" }
 
 local Remotes = {}
 
@@ -30,6 +30,9 @@ if RunService:IsServer() then
 			Instance.new("RemoteFunction", folder).Name = name
 		end
 	end
+	if not folder:FindFirstChild("CombatFx") then
+		Instance.new("UnreliableRemoteEvent", folder).Name = "CombatFx"
+	end
 	folder.Parent = ReplicatedStorage
 else
 	folder = ReplicatedStorage:WaitForChild("Remotes")
@@ -41,5 +44,6 @@ end
 for _, name in FUNCTIONS do
 	Remotes[name] = folder:WaitForChild(name)
 end
+Remotes.CombatFx = folder:WaitForChild("CombatFx")
 
 return Remotes

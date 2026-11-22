@@ -1,7 +1,6 @@
 -- The side menu: one wooden dock with square icon buttons, shared by all
 -- the screens (shop, backpack, heroes...). Each screen adds its own button.
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local Ui = require(script.Parent.Ui)
 local Icons = require(script.Parent.Icons)
 local make, corner, label = Ui.make, Ui.corner, Ui.label
@@ -9,9 +8,8 @@ local make, corner, label = Ui.make, Ui.corner, Ui.label
 local Menu = {}
 
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local SIZE = 54
+local isTouch = Ui.isTouch
+local SIZE = isTouch and 60 or 54
 
 local WOOD = Color3.fromRGB(70, 46, 30)
 local WOOD_DARK = Color3.fromRGB(40, 26, 18)
@@ -20,23 +18,16 @@ local BRASS = Color3.fromRGB(214, 170, 80)
 local gui = make("ScreenGui", { Name = "SideMenu", ResetOnSpawn = false, DisplayOrder = 1,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = player:WaitForChild("PlayerGui") })
 local root = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = gui })
-local rootScale = make("UIScale", { Parent = root })
-local function fitScreen()
-	local size = camera.ViewportSize
-	local s = math.clamp(math.min(size.X / 1280, size.Y / 720), 0.55, 1.3)
-	rootScale.Scale = s
-	root.Size = UDim2.fromScale(1 / s, 1 / s)
-end
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScreen)
-fitScreen()
+local rootScale = Ui.fitRoot(gui, root, 520, 330)
 
 -- the dock: a dark wooden board with a brass frame
 local dock = make("Frame", {
 	Name = "Dock",
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Size = UDim2.fromOffset(SIZE + 16, 0),
-	Position = UDim2.fromOffset(8, isTouch and 108 or 96),
+	Position = UDim2.fromOffset(8, isTouch and 94 or 96),
 	BackgroundColor3 = WOOD,
+	Visible = not isTouch,
 	Parent = root,
 }, {
 	corner(14),
@@ -45,6 +36,24 @@ local dock = make("Frame", {
 	make("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8) }),
 	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 })
+
+local menuButton
+if isTouch then
+	dock.Active = true
+	dock.Size = UDim2.fromOffset(4 * SIZE + 40, 2 * SIZE + 24)
+	dock.AutomaticSize = Enum.AutomaticSize.None
+	dock:FindFirstChildOfClass("UIListLayout"):Destroy()
+	make("UIGridLayout", { CellSize = UDim2.fromOffset(SIZE, SIZE), CellPadding = UDim2.fromOffset(8, 8),
+		FillDirectionMaxCells = 4, SortOrder = Enum.SortOrder.LayoutOrder, Parent = dock })
+	menuButton = Ui.button({ Name = "OpenMenu", Size = UDim2.fromOffset(92, 50), Position = UDim2.fromOffset(8, 40),
+		Text = "Menu", BackgroundColor3 = WOOD, Parent = root })
+	menuButton.Activated:Connect(function()
+		dock.Visible = not dock.Visible
+	end)
+	dock:GetPropertyChangedSignal("Visible"):Connect(function()
+		menuButton.Text = dock.Visible and "Close" or "Menu"
+	end)
+end
 
 -- adds a button. Returns the button and a red dot to show "something new"
 function Menu.Add(name, icon, order, color)
@@ -78,6 +87,9 @@ function Menu.Add(name, icon, order, color)
 		scale.Scale = 1
 	end)
 	b.Activated:Connect(function()
+		if menuButton then
+			dock.Visible = false
+		end
 		Ui.playSound("Click")
 		Ui.pop(b, 0.9)
 	end)
@@ -87,14 +99,14 @@ end
 -- the wallet in the top-left corner: gems and gold
 local wallet = make("Frame", {
 	Name = "Wallet",
-	Size = UDim2.fromOffset(250, 34),
-	Position = UDim2.fromOffset(8, isTouch and 64 or 52),
+	Size = UDim2.fromOffset(isTouch and 142 or 250, 34),
+	Position = UDim2.fromOffset(8, isTouch and 2 or 52),
 	BackgroundColor3 = WOOD,
 	Parent = root,
 }, { corner(10), make("UIStroke", { Color = BRASS, Thickness = 2 }) })
 Icons.Draw(wallet, "Gem", Ui.GEM, { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5) })
 Icons.Draw(wallet, "Gold", Ui.GOLD, { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0.5, 0, 0, 5) })
-local gemsText = label({ Size = UDim2.new(0.5, -40, 1, -8), Position = UDim2.fromOffset(34, 4), Text = "0",
+local gemsText = label({ Size = UDim2.new(0.5, -35, 1, -8), Position = UDim2.fromOffset(34, 4), Text = "0",
 	TextColor3 = Ui.GEM, TextXAlignment = Enum.TextXAlignment.Left, Parent = wallet })
 local goldText = label({ Size = UDim2.new(0.5, -40, 1, -8), Position = UDim2.new(0.5, 28, 0, 4), Text = "0",
 	TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, Parent = wallet })

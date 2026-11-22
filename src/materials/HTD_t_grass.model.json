@@ -4,6 +4,7 @@
     "BaseMaterial": "Grass",
     "ColorMap": "rbxassetid://77210106696959",
     "StudsPerTile": 12.0,
-    "RoughnessMap": "rbxassetid://100925396897052"
+    "RoughnessMap": "rbxassetid://100925396897052",
+    "TexturePack": "rbxassetid://86273569012362"
   }
 }

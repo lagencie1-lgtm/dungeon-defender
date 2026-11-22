@@ -4,7 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MaterialService = game:GetService("MaterialService")
 local Config = require(ReplicatedStorage.Shared.Config)
-local ArtService = require(script.Parent.ArtService)
+local GroundLooks = require(ReplicatedStorage.Shared.GroundLooks)
 
 local TerrainBuilder = {}
 local M = Enum.Material
@@ -64,65 +64,27 @@ local function mountain(center, radius, height, material, craterMaterial)
 	end
 end
 
--- gives a terrain material our painted texture (art/textures, the same set the models use).
--- The MaterialVariants live in the place file (src/materials, scripts can't make them): HTD_<texture>.
--- Returns true when it worked; the material then shows the painting instead of Roblox's own look.
+-- Apply the palette even if a variant is unavailable. Reuse valid overrides across maps.
 local overridden = {}
-local function paintedTerrain(material, textureName)
-	local variant = MaterialService:FindFirstChild("HTD_" .. textureName)
-	if not variant then
-		return false
-	end
-	local ok, err = pcall(function()
-		MaterialService:SetBaseMaterialOverride(material, variant.Name)
-	end)
-	if ok then
-		overridden[material] = true
-	else
-		warn("Art: painted terrain off for " .. material.Name .. ": " .. tostring(err))
-	end
-	return ok
-end
-
--- The average colour of each painted ground. Phones on low graphics draw the ground as this plain colour instead
--- of the painting, so it must match the painting (white here gave a white map on the iPhone, v39).
-local LOOK_COLOR = {
-	t_ash = Color3.fromRGB(119, 100, 92),
-	t_ground = Color3.fromRGB(163, 94, 48),
-	t_cobble = Color3.fromRGB(111, 88, 74),
-	t_cliff = Color3.fromRGB(124, 55, 41),
-	basalt = Color3.fromRGB(82, 49, 48),
-	lava_rock = Color3.fromRGB(99, 40, 18),
-	t_grass = Color3.fromRGB(80, 109, 41),
-	t_forest_dirt = Color3.fromRGB(87, 45, 23),
-	t_moss_rock = Color3.fromRGB(102, 103, 78),
-	t_cave_floor = Color3.fromRGB(58, 67, 100),
-	t_cave_wall = Color3.fromRGB(62, 52, 90),
-}
-
--- Old looks are only dropped once the new set is known (see applyLooks): clearing an override and setting it
--- again in the same moment left the grass plain white.
-function TerrainBuilder.ResetLooks() end
-
--- switches the painted looks to this set: { [material] = texture name }. Materials not in the set go back
--- to Roblox's own look. Returns nothing; painted materials get a white tint (the painting has its colours).
-local function applyLooks(looks)
+local function applyLooks(theme)
+	local looks = GroundLooks.Themes[theme]
 	local t = terrain()
 	for material in overridden do
 		if not looks[material] then
-			pcall(function()
-				MaterialService:SetBaseMaterialOverride(material, "")
-			end)
+			MaterialService:SetBaseMaterialOverride(material, "")
 			overridden[material] = nil
 		end
 	end
 	for material, texture in looks do
-		if paintedTerrain(material, texture) then
-			-- the game multiplies the painting with this colour: white keeps the painting as painted, the painting's
-			-- own colour is what a phone shows without it. 40% towards white is the middle that works for both.
-			local own = LOOK_COLOR[texture]
-			t:SetMaterialColor(material, own and own:Lerp(Color3.new(1, 1, 1), 0.4) or Color3.new(1, 1, 1))
+		local name = "HTD_" .. texture
+		local variant = MaterialService:GetMaterialVariant(material, name)
+		if variant and overridden[material] ~= name then
+			MaterialService:SetBaseMaterialOverride(material, name)
+			overridden[material] = name
 		end
+		local own = GroundLooks.Colors[texture]
+		-- This tint is also what low-detail clients see when Roblox omits the image.
+		t:SetMaterialColor(material, variant and own:Lerp(Color3.new(1, 1, 1), 0.15) or own)
 	end
 end
 
@@ -235,8 +197,8 @@ function TerrainBuilder.Magma(map, camp)
 	t:SetMaterialColor(M.Rock, Color3.fromRGB(92, 80, 78))
 	t:SetMaterialColor(M.CrackedLava, Color3.fromRGB(255, 120, 40))
 	-- painted looks (the painting has its own colours, so no tint)
-	applyLooks({ [M.Basalt] = "t_ash", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
-		[M.Rock] = "t_cliff", [M.Slate] = "basalt", [M.CrackedLava] = "lava_rock" })
+	applyLooks("Magma")
+	map:SetAttribute("GroundTheme", "Magma")
 end
 
 -------------------------------------------------------------------------------
@@ -304,8 +266,8 @@ function TerrainBuilder.Forest(map, camp)
 	t.WaterTransparency = 0.5
 	t.WaterWaveSize = 0.05
 	t.WaterReflectance = 0.6
-	applyLooks({ [M.Grass] = "t_grass", [M.Mud] = "t_forest_dirt", [M.Ground] = "t_ground",
-		[M.Cobblestone] = "t_cobble", [M.Rock] = "t_moss_rock" })
+	applyLooks("Forest")
+	map:SetAttribute("GroundTheme", "Forest")
 end
 
 -------------------------------------------------------------------------------
@@ -394,7 +356,8 @@ function TerrainBuilder.Crystal(map, camp)
 	t.WaterTransparency = 0.35
 	t.WaterWaveSize = 0.03
 	t.WaterReflectance = 0.4
-	applyLooks({ [M.Slate] = "t_cave_floor", [M.Basalt] = "t_cave_wall", [M.Cobblestone] = "t_cobble" })
+	applyLooks("Crystal")
+	map:SetAttribute("GroundTheme", "Crystal")
 end
 
 -------------------------------------------------------------------------------
@@ -415,6 +378,12 @@ function TerrainBuilder.Outpost(c)
 		t:FillBlock(CFrame.lookAt(c + d * 40 + Vector3.new(0, -0.7, 0), c + d * 60 + Vector3.new(0, -0.7, 0)), Vector3.new(8, 2.6, 22),
 			M.Cobblestone)
 	end
+	-- Light flagstones lead from spawn to the portal between painted cobbled shoulders.
+	local lane = CFrame.new(c + Vector3.new(0, -2, 4))
+	t:FillBlock(lane, Vector3.new(16, 4, 64), M.Air)
+	t:FillBlock(lane, Vector3.new(16, 4, 64), M.Cobblestone)
+	t:FillBlock(lane, Vector3.new(8, 4, 64), M.Air)
+	t:FillBlock(lane, Vector3.new(8, 4, 64), M.Limestone)
 	-- a few mossy rocks and soft hills all around, higher further out
 	for _ = 1, 14 do
 		local a = rng:NextNumber(0, math.pi * 2)
@@ -444,8 +413,7 @@ function TerrainBuilder.OutpostLooks()
 	t:SetMaterialColor(M.Ground, Color3.fromRGB(170, 130, 92))
 	t:SetMaterialColor(M.Cobblestone, Color3.fromRGB(130, 124, 114))
 	t:SetMaterialColor(M.Rock, Color3.fromRGB(110, 112, 104))
-	applyLooks({ [M.Grass] = "t_grass", [M.Ground] = "t_ground", [M.Cobblestone] = "t_cobble",
-		[M.Rock] = "t_moss_rock" })
+	applyLooks("Outpost")
 end
 
 return TerrainBuilder

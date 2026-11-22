@@ -4,6 +4,7 @@
     "BaseMaterial": "CrackedLava",
     "ColorMap": "rbxassetid://71676510076886",
     "StudsPerTile": 14.0,
-    "RoughnessMap": "rbxassetid://100925396897052"
+    "RoughnessMap": "rbxassetid://100925396897052",
+    "TexturePack": "rbxassetid://111710450214315"
   }
 }

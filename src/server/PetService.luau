@@ -10,6 +10,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Effects = require(script.Parent.Effects)
 local ArtService = require(script.Parent.ArtService)
+local StoreService = require(script.Parent.StoreService)
 
 local PetService = {}
 
@@ -56,8 +57,9 @@ end
 -------------------------------------------------------------------------------
 -- the pet model following the hero
 -------------------------------------------------------------------------------
-local function buildModel(pet)
+local function buildModel(pet, skin)
 	local info = Config.Pets[pet.kind]
+	local color = skin and skin.Primary or info.Color
 	local scale = pet.evolved and 1.6 or 1
 	local model = Instance.new("Model")
 	model.Name = "Pet"
@@ -74,7 +76,7 @@ local function buildModel(pet)
 		part.Parent = model
 		return part
 	end
-	local body = p({ Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.one * 1.6 * scale, Color = info.Color,
+	local body = p({ Name = "Body", Shape = Enum.PartType.Ball, Size = Vector3.one * 1.6 * scale, Color = color,
 		Material = info.Shape == "Bug" and Enum.Material.Neon or Enum.Material.SmoothPlastic })
 	model.PrimaryPart = body
 	local offsets = {} -- [part] = offset from the body
@@ -89,6 +91,7 @@ local function buildModel(pet)
 		local _, size = look:GetBoundingBox()
 		look:ScaleTo(look:GetScale() * (2.3 * scale) / size.Y)
 		local box = look:GetBoundingBox()
+		StoreService.ApplyModelSkin(look, skin)
 		for _, part in look:GetChildren() do
 			if part:IsA("BasePart") then
 				part.Anchored = true
@@ -109,7 +112,7 @@ local function buildModel(pet)
 		end
 		if info.Shape == "Pup" then
 			for side = -1, 1, 2 do
-				add({ Name = "Ear", Size = Vector3.new(0.3, 0.7, 0.3) * scale, Color = info.Color }, CFrame.new(side * 0.5 * scale, 0.9 * scale, 0))
+				add({ Name = "Ear", Size = Vector3.new(0.3, 0.7, 0.3) * scale, Color = color }, CFrame.new(side * 0.5 * scale, 0.9 * scale, 0))
 			end
 		elseif info.Shape == "Sprout" then
 			add({ Name = "Leaf", Size = Vector3.new(0.9, 0.15, 0.5) * scale, Color = Color3.fromRGB(60, 200, 60) },
@@ -120,7 +123,7 @@ local function buildModel(pet)
 					CFrame.new(side * 0.9 * scale, 0.4 * scale, 0.2))
 			end
 			local light = Instance.new("PointLight")
-			light.Color = info.Color
+			light.Color = color
 			light.Range = 8
 			light.Parent = body
 		elseif info.Shape == "Golem" then
@@ -129,7 +132,7 @@ local function buildModel(pet)
 				Material = Enum.Material.Neon }, CFrame.new(0, 0, -0.6 * scale))
 		elseif info.Shape == "Dragon" then
 			for side = -1, 1, 2 do
-				add({ Name = "Wing", Size = Vector3.new(1.4, 0.15, 0.8) * scale, Color = info.Color:Lerp(Color3.new(0, 0, 0), 0.3) },
+				add({ Name = "Wing", Size = Vector3.new(1.4, 0.15, 0.8) * scale, Color = color:Lerp(Color3.new(0, 0, 0), 0.3) },
 					CFrame.new(side * 1.1 * scale, 0.5 * scale, 0.2) * CFrame.Angles(0, 0, side * math.rad(25)))
 				add({ Name = "Horn", Size = Vector3.new(0.2, 0.5, 0.2) * scale, Color = Color3.fromRGB(255, 220, 120) },
 					CFrame.new(side * 0.35 * scale, 0.85 * scale, -0.2 * scale))
@@ -138,7 +141,7 @@ local function buildModel(pet)
 	end
 	if pet.evolved then
 		local sparkles = Instance.new("Sparkles")
-		sparkles.SparkleColor = info.Color
+		sparkles.SparkleColor = skin and skin.Accent or info.Color
 		sparkles.Parent = body
 	end
 	local tag = Instance.new("BillboardGui")
@@ -168,7 +171,7 @@ local function refreshFollower(player)
 	if not pet then
 		return
 	end
-	local model, offsets = buildModel(pet)
+	local model, offsets = buildModel(pet, StoreService.SkinFor(player, "Pet"))
 	model.Parent = workspace
 	followers[player] = { model = model, offsets = offsets, pos = nil }
 end
@@ -314,6 +317,9 @@ function PetService.Start()
 		return profile and profile.Pets or {}, profile and profile.EquippedPet
 	end
 	table.insert(DataService.OnLoaded, function(player)
+		player:GetAttributeChangedSignal("EquippedPetSkin"):Connect(function()
+			refreshFollower(player)
+		end)
 		refreshFollower(player)
 		send(player)
 	end)

@@ -3,7 +3,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -12,7 +11,7 @@ local make, corner, stroke, label = Ui.make, Ui.corner, Ui.stroke, Ui.label
 
 local player = Players.LocalPlayer
 local GameState = ReplicatedStorage:WaitForChild("GameState")
-local isTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local isTouch = Ui.isTouch
 
 -- wait until we know if this player is new
 local waited = 0
@@ -25,10 +24,11 @@ if player:GetAttribute("TutorialDone") ~= false then
 end
 
 local gui = make("ScreenGui", { Name = "TutorialHud", ResetOnSpawn = false, DisplayOrder = 5, Parent = player:WaitForChild("PlayerGui") })
-local box = make("Frame", { Size = UDim2.new(0.6, 0, 0, 56), Position = UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 1),
+local box = make("Frame", { Size = UDim2.new(isTouch and 0.23 or 0.6, 0, 0, isTouch and 52 or 56),
+	Position = isTouch and UDim2.new(0, 8, 0.42, 0) or UDim2.new(0.5, 0, 1, -150),
+	AnchorPoint = isTouch and Vector2.zero or Vector2.new(0.5, 1),
 	BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1, Parent = gui }, { corner(14), stroke(Ui.GOLD, 3) })
 local hint = label({ Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromOffset(12, 6), Text = "", TextWrapped = true, Parent = box })
-make("UIScale", { Scale = isTouch and 0.8 or 1, Parent = box })
 
 -- the arrow floating over the place to go
 local arrow = make("Part", { Name = "TutorialArrow", Size = Vector3.new(3, 4, 1), Anchored = true, CanCollide = false, CanQuery = false,
@@ -42,15 +42,13 @@ local function show(text, target)
 		Ui.pop(box, 1.1)
 	end
 	arrowTarget = target
+	arrow.Transparency = target and 0 or 1
 end
 
-RunService.RenderStepped:Connect(function()
+local animateArrow = RunService.RenderStepped:Connect(function()
 	if arrowTarget then
 		local t = os.clock()
-		arrow.Transparency = 0
 		arrow.CFrame = CFrame.new(arrowTarget + Vector3.new(0, 7 + math.sin(t * 4), 0)) * CFrame.Angles(math.pi, t * 2, 0)
-	else
-		arrow.Transparency = 1
 	end
 end)
 
@@ -80,13 +78,13 @@ while not finished do
 	local wave = GameState:GetAttribute("Wave") or 0
 	if s == "Lobby" then
 		local pad = workspace:FindFirstChild("Outpost") and workspace.Outpost:FindFirstChild("StartPad")
-		show(isTouch and "Welcome, hero! Walk to the glowing circle and tap Start run" or
+		show(isTouch and "Tap Start run or walk to the portal" or
 			"Welcome, hero! Walk to the glowing circle and press E to start a run", pad and pad.Position)
 	elseif s == "Break" and wave == 0 and myTowers() == 0 then
-		show(isTouch and "Tap Ranger at the bottom, tap near the arrow, then Build here" or
+		show(isTouch and "Tap Ranger, tap by the arrow, then tap Build here" or
 			"Press 1 (or click Ranger), then click near the arrow to build", goodSpot())
 	elseif s == "Break" and wave == 0 then
-		show("Nice! Build a few more if you like, then press Start wave now", nil)
+		show(isTouch and "Tap Start wave when ready" or "Nice! Build a few more if you like, then press Start wave now", nil)
 	elseif s == "Wave" and wave == 1 then
 		show(isTouch and "Goblins! Run to them and tap Sword to hit them" or "Goblins! Run to them and press F to hit them (E and R are big attacks)", nil)
 	elseif (s == "Break" and wave >= 1) or s == "Won" or s == "Lost" then
@@ -97,5 +95,6 @@ while not finished do
 	task.wait(0.3)
 end
 Remotes.FinishTutorial:FireServer()
+animateArrow:Disconnect()
 arrow:Destroy()
 gui:Destroy()

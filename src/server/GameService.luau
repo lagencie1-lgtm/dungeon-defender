@@ -357,12 +357,20 @@ end
 
 -- a new run on the chosen map
 function GameService.StartRun()
-	if State.Get("State") ~= "Lobby" then
+	if State.Get("State") ~= "Lobby" or State.Get("LoadingRun") then
 		return
 	end
+	State.Set("LoadingRun", true)
 	cleanUp()
 	local mapId = State.Get("Map") or "CursedForest"
-	MapBuilder.BuildBattlefield(mapId)
+	local ok, err = pcall(MapBuilder.BuildBattlefield, mapId)
+	if not ok then
+		MapBuilder.UseSpawn("Outpost")
+		State.Set("LoadingRun", false)
+		warn("Map failed to prepare: " .. tostring(err))
+		notify("The battlefield couldn't load. Try again.", Color3.fromRGB(255, 120, 120))
+		return
+	end
 	EnemyService.SetPath()
 	State.Set("Gold", Config.StartGold)
 	local modeInfo = Config.FindById(Config.Modes, State.Get("Mode") or "Campaign")
@@ -378,6 +386,7 @@ function GameService.StartRun()
 	State.Set("BuildUsed", 0)
 	State.Set("BuildMax", Config.BuildLimit)
 	State.Set("State", "Break")
+	State.Set("LoadingRun", false)
 	MapBuilder.UseSpawn("Battle")
 	for _, player in Players:GetPlayers() do
 		HeroService.Reset(player)
@@ -429,6 +438,9 @@ function GameService.Start()
 	end)
 	-- difficulty and map can only be changed before the first wave
 	Remotes.PickDifficulty.OnServerEvent:Connect(function(player, id)
+		if State.Get("LoadingRun") then
+			return
+		end
 		local diff = Config.FindById(Config.Difficulties, id)
 		if diff and diff.Unlock and not GameService.HasCleared(player, State.Get("Map"), diff.Unlock) then
 			Remotes.Notify:FireClient(player, "Beat this map on " .. diff.Unlock .. " to unlock " .. diff.Name, Color3.fromRGB(255, 140, 140))
@@ -441,7 +453,7 @@ function GameService.Start()
 	end)
 	Remotes.PickMap.OnServerEvent:Connect(function(player, mapId)
 		local mapInfo = Config.Maps[mapId]
-		if mapInfo and State.Get("State") == "Lobby" and State.Get("Map") ~= mapId then
+		if mapInfo and State.Get("State") == "Lobby" and not State.Get("LoadingRun") and State.Get("Map") ~= mapId then
 			State.Set("Map", mapId)
 			notify(player.DisplayName .. " picked the " .. mapInfo.Name, mapInfo.Color)
 			local diff = Config.FindById(Config.Difficulties, State.Get("Difficulty"))
@@ -452,7 +464,7 @@ function GameService.Start()
 	end)
 	Remotes.PickMode.OnServerEvent:Connect(function(player, modeId)
 		local modeInfo = Config.FindById(Config.Modes, modeId)
-		if modeInfo and State.Get("State") == "Lobby" and State.Get("Mode") ~= modeId then
+		if modeInfo and State.Get("State") == "Lobby" and not State.Get("LoadingRun") and State.Get("Mode") ~= modeId then
 			State.Set("Mode", modeId)
 			notify(player.DisplayName .. " picked " .. modeInfo.Name, Color3.fromRGB(200, 200, 255))
 		end
@@ -477,7 +489,14 @@ function GameService.Start()
 		end
 	end)
 	MapBuilder.BuildOutpost(onPrompt)
-	MapBuilder.BuildBattlefield("CursedForest")
+	-- The first join only needs the hub. Build the chosen battlefield when a run starts.
+	for _, name in { "Effects", "Enemies", "Towers" } do
+		if not workspace:FindFirstChild(name) then
+			local folder = Instance.new("Folder")
+			folder.Name = name
+			folder.Parent = workspace
+		end
+	end
 	-- new players start in the hub, or join the run that's going on
 	Players.PlayerAdded:Connect(function(player)
 		player.CharacterAdded:Wait()

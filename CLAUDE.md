@@ -3,6 +3,11 @@
 The owner (Lemp) is a Roblox beginner: explain in plain words, hand over playable builds with a short summary,
 and batch taste calls as 2-3 options with your pick.
 
+## Rule 1. Mobile optimization first
+
+Start every improvement cycle with the published phone experience. Walk from the Outpost spawn to the portal, start a run, place a Ranger, select it, upgrade it and sell it. Check every action label, even while the art is loading. Record the first missed tap, invisible defender or unreadable action and fix it before decorative work. Repeat the same route on PC with a mouse.
+For hub changes, compare the spawn view, campfire crossing and portal approach at player height. Use `python scripts/video_review.py 25 --player` to review a live PC game-window recording with Gemini and compare the same views after each change. Record device, build and observed failures. A 9/10 rating requires a real phone pass and visible evidence for the score.
+
 ## The quality bar: 6A (always)
 Read and follow the 6A guides before any game, art, UI, effect, audio, map or monetization work:
 - `docs/6A/6A-principles.md` — the 25 principles (short, read first)

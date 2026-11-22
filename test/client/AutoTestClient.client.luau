@@ -1,6 +1,7 @@
 -- Only in the test build: uses hero abilities, switches heroes, spends stat
 -- points and works the backpack, printing [AUTOTEST-CLIENT] lines.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
@@ -13,6 +14,131 @@ end
 
 task.wait(8)
 log("client started, state", GameState:GetAttribute("State"))
+
+local function waitFor(predicate)
+	for _ = 1, 120 do
+		local result = predicate()
+		if result then
+			return result
+		end
+		task.wait(0.1)
+	end
+	return nil
+end
+
+local function verifyGearLooks()
+	assert(waitFor(function() return player:GetAttribute("TestRewardReady") end), "test reward did not replicate")
+	task.wait()
+	local before = {}
+	for _, attr in { "Gems", "WeaponType", "WeaponRarity", "WornArmor", "WornHelmet", "GearPower", "GearCommand" } do
+		before[attr] = player:GetAttribute(attr)
+	end
+	local equippedLooks = {}
+	for index, slot in GearLooks.Slots do
+		assert(not Remotes.EquipItem:InvokeServer(slot.Id, "Unknown"), "equipped an unknown look")
+		local chosen = GearLooks.Items[slot.Id][index % 4 + 2]
+		assert(Remotes.EquipItem:InvokeServer(slot.Id, chosen.Id))
+		equippedLooks[slot.Id] = chosen
+		assert(waitFor(function()
+			return player:GetAttribute("Equipped" .. slot.Field) == chosen.Id
+		end), "missing selection for " .. slot.Name)
+	end
+	for attr, value in before do
+		assert(player:GetAttribute(attr) == value, "gear look changed " .. attr)
+	end
+	local function partCount(name)
+		local count = 0
+		for _, part in player.Character:GetChildren() do
+			if part.Name == name then
+				count += 1
+				assert(part.Massless and not part.CanCollide and not part.CanQuery and not part.CanTouch, name .. " affects physics")
+			end
+		end
+		return count
+	end
+	local function hasAccent(limb, expected)
+		for _, part in player.Character:GetChildren() do
+			local weld = part:FindFirstChildOfClass("WeldConstraint")
+			if part.Name == "HeroWeapon" and weld and weld.Part0 and weld.Part0.Name == limb and part.Color == expected then
+				return true
+			end
+		end
+		return false
+	end
+	assert(waitFor(function()
+		return hasAccent("RightHand", equippedLooks.Swords.Color)
+			and hasAccent("UpperTorso", equippedLooks.ArmorSkins.Color)
+			and hasAccent("Head", equippedLooks.HelmSkins.Color)
+	end), "weapon, armor or helm accent missing")
+	assert(waitFor(function()
+		return partCount("HeroBoot") == 6 and partCount("HeroAmulet") == 4
+	end), "missing or duplicated accessory pieces")
+	for _, slot in GearLooks.Slots do
+		assert(Remotes.EquipItem:InvokeServer(slot.Id, slot.Default))
+	end
+	assert(waitFor(function()
+		return partCount("HeroBoot") == 0 and partCount("HeroAmulet") == 0
+	end), "accessories stayed visible after restoring Default")
+end
+
+local looksOk, looksError = pcall(verifyGearLooks)
+log("gear looks", looksOk and "OK" or ("FAILED: " .. tostring(looksError)))
+
+local matchingOk, matchingError = pcall(function()
+	assert(Remotes.EquipSkin:InvokeServer("BrambleguardRanger"))
+	assert(Remotes.EquipSkin:InvokeServer("RimewardenPet"))
+	assert(Remotes.EquipSkin:InvokeServer("None:Pet"))
+	assert(Remotes.EquipSkin:InvokeServer("RiftkeeperPet"))
+end)
+log("matching looks", matchingOk and "OK" or ("FAILED: " .. tostring(matchingError)))
+
+local previewOk, previewError = pcall(function()
+	local gui = player.PlayerGui
+	local shop = assert(waitFor(function()
+		local hud = gui:FindFirstChild("RealmGuardiansHud")
+		return hud and hud:FindFirstChild("Shop", true)
+	end), "Shop was not built")
+	gui.SideMenu.Root.Dock.Shop.Press:Fire()
+	shop:FindFirstChild("Skins", true).Press:Fire()
+	local viewport = shop.LookDisplay.SkinPreview
+	local figure = assert(waitFor(function()
+		return viewport:FindFirstChildOfClass("Model")
+	end), "Outfits did not show a 3D preview")
+	assert(shop.Visible and viewport.Visible and viewport.CurrentCamera, "preview is not visible")
+	local screen = workspace.CurrentCamera.ViewportSize
+	assert(shop.AbsoluteSize.X <= screen.X and shop.AbsoluteSize.Y <= screen.Y, "shop preview layout exceeds the screen")
+	assert(figure:FindFirstChild("HeroBoot") and figure:FindFirstChild("HeroAmulet")
+		and figure:FindFirstChild("HeroWeapon"), "outfit preview is missing gear")
+	shop:FindFirstChild("GearLooks", true).Press:Fire()
+	assert(waitFor(function()
+		local model = viewport:FindFirstChildOfClass("Model")
+		return model and model ~= figure and model:FindFirstChild("HeroWeapon")
+	end), "Gear Looks did not replace the outfit preview")
+	shop.Visible = false
+	assert(waitFor(function() return not viewport:FindFirstChildOfClass("Model") end), "closed shop kept the preview")
+
+	for _, preview in {
+		{ "Swords", "Hearthwatch" }, { "ArmorSkins", "Moonstone" }, { "Skins", "RangerRoyal" },
+		{ "Skins", "RiftkeeperPet" }, { "Skins", "CapeRed" },
+	} do
+		task.wait(0.2)
+		local key = assert(Remotes.GetLookPreview:InvokeServer(preview[1], preview[2]), "missing preview for " .. preview[2])
+		local model = assert(gui.ShopPreviewModels:WaitForChild(key, 5), "preview did not replicate")
+		assert(waitFor(function() return #model:GetChildren() > 0 end), "empty preview for " .. preview[2])
+	end
+
+	local gems = player:GetAttribute("Gems")
+	assert(Remotes.EquipSkin:InvokeServer("SuncrestOutfit"))
+	assert(waitFor(function() return GearLooks.IsOutfitWorn(player, "Suncrest") end), "full outfit did not equip")
+	assert(Remotes.EquipItem:InvokeServer("ArmorSkins", "Moonstone"))
+	assert(waitFor(function()
+		return player:GetAttribute("EquippedArmorSkin") == "Moonstone" and not GearLooks.IsOutfitWorn(player, "Suncrest")
+	end), "outfit did not allow mixing pieces")
+	assert(Remotes.EquipSkin:InvokeServer("OriginalOutfit"))
+	assert(waitFor(function() return GearLooks.IsOutfitWorn(player, "Original") end), "outfit defaults were not restored")
+	assert(player:GetAttribute("Gems") == gems, "free outfit spent gems")
+end)
+log("shop preview and outfits", previewOk and "OK" or ("FAILED: " .. tostring(previewError)))
 
 local heroes = { "Swordmaster", "RuneMage", "Engineer", "BeastHunter" }
 local i = 0

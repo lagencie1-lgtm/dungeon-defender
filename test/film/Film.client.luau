@@ -66,6 +66,27 @@ for i = 0, 90 do
 end
 workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 
+-- the Beacon Tower's crystal close up (proof of the Tripo fix: violet glowing crystal, no white egg)
+local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
+local tower = c + HubLayout.Portal
+local top = tower + Vector3.new(0, HubLayout.BeaconHeight * 0.74, 0)
+workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+for _, shot in { Vector3.new(0, 2, 26), Vector3.new(20, 4, 14), Vector3.new(-18, 3, -16) } do
+	mark("beacon close")
+	workspace.CurrentCamera.CFrame = CFrame.lookAt(top + shot, top)
+	task.wait(2)
+end
+-- every station's building, as a player walking up to it sees it
+for _, s in HubLayout.Stations do
+	local at = c + s.At
+	local inward = (Vector3.new(c.X, 0, c.Z) - Vector3.new(at.X, 0, at.Z)).Unit
+	mark("station " .. s.Id)
+	workspace.CurrentCamera.CFrame = CFrame.lookAt(at + inward * (s.Height * 1.6 + 6) + Vector3.new(0, 6, 0),
+		at + Vector3.new(0, s.Height * 0.45, 0))
+	task.wait(1.6)
+end
+workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+
 -- 4 the run
 mark("run start")
 ask("StartRun", "CursedForest")

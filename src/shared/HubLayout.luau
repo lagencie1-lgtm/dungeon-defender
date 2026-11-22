@@ -7,13 +7,13 @@ HubLayout.Size = Vector2.new(116, 96) -- inside the walls (X, Z)
 HubLayout.Spawn = Vector3.new(0, 0, 36) -- faces north, straight at the portal
 -- the Beacon Tower (Lemp's pick): the landmark, with the portal standing in the archway at its foot
 HubLayout.Portal = Vector3.new(0, 0, -36) -- 72 studs ahead of the spawn: the whole tower fits the spawn view
-HubLayout.PortalHeight = 18 -- the portal model, sized to fit the archway (14 wide at a 42-stud tower)
+HubLayout.PortalHeight = 12 -- the portal model, sized to fit the Tripo tower's archway (about 9 wide, 13 tall)
 HubLayout.BeaconHeight = 42
 -- walk-in map pads in front of the gate (one per map, in Config.MapOrder)
 HubLayout.Pads = {
-	{ Map = "CursedForest", At = Vector3.new(-16, 0, -15) },
+	{ Map = "CursedForest", At = Vector3.new(-19, 0, -15) },
 	{ Map = "MagmaFortress", At = Vector3.new(0, 0, -13) },
-	{ Map = "CrystalCaves", At = Vector3.new(16, 0, -15) },
+	{ Map = "CrystalCaves", At = Vector3.new(19, 0, -15) },
 }
 HubLayout.PadRadius = 5.5
 HubLayout.PadCountdown = 4 -- seconds standing on a pad before the run starts
@@ -24,7 +24,7 @@ HubLayout.Stations = {
 		Action = "Backpack", Color = Color3.fromRGB(255, 170, 80) },
 	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 13, At = Vector3.new(-42, 0, 12),
 		Action = "Heroes", Color = Color3.fromRGB(120, 230, 120) },
-	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "outpost_stall", Height = 10, At = Vector3.new(42, 0, -14),
+	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "keep_shop", Height = 11, At = Vector3.new(42, 0, -14),
 		Action = "Shop", Color = Color3.fromRGB(90, 220, 255) },
 	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 10, At = Vector3.new(42, 0, 12),
 		Action = "Pets", Color = Color3.fromRGB(170, 240, 120) },

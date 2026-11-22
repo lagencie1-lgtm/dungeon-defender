@@ -65,6 +65,7 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	keep_shop = "118754520644861",
 	keep_quests = "77510162718827",
 	keep_pets = "121128722132211",
 	keep_hero = "106266594445058",
@@ -138,6 +139,7 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
+	paint_keep_shop = "130984343201267",
 	paint_keep_forge = "89580872397608",
 	paint_keep_pets = "140353077935927",
 	paint_keep_quests = "124807052909619",

@@ -43,8 +43,10 @@ local box = make("Frame", { Size = UDim2.new(isTouch and 0.23 or 0.6, 0, 0, isTo
 local hint = label({ Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromOffset(12, 6), Text = "", TextWrapped = true, Parent = box })
 
 -- the arrow floating over the place to go
-local arrow = make("Part", { Name = "TutorialArrow", Size = Vector3.new(3, 4, 1), Anchored = true, CanCollide = false, CanQuery = false,
-	CanTouch = false, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 220, 60), Transparency = 1, Parent = workspace })
+-- (a calm painted-gold marker: the old spinning neon-yellow block read as a placeholder on the phone)
+local arrow = make("Part", { Name = "TutorialArrow", Size = Vector3.new(2.2, 2.8, 0.7), Anchored = true, CanCollide = false, CanQuery = false,
+	CanTouch = false, CastShadow = false, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(240, 190, 80),
+	Transparency = 1, Parent = workspace })
 make("SpecialMesh", { MeshType = Enum.MeshType.Wedge, Scale = Vector3.new(1, 1, 1), Parent = arrow })
 local arrowTarget = nil
 
@@ -60,7 +62,12 @@ end
 local animateArrow = RunService.RenderStepped:Connect(function()
 	if arrowTarget then
 		local t = os.clock()
-		arrow.CFrame = CFrame.new(arrowTarget + Vector3.new(0, 7 + math.sin(t * 4), 0)) * CFrame.Angles(math.pi, t * 2, 0)
+		-- a slow bob, pointing down, turned to face the camera (no spin)
+		local camera = workspace.CurrentCamera
+		local toCam = camera and (camera.CFrame.Position - arrowTarget) * Vector3.new(1, 0, 1) or Vector3.zAxis
+		local yaw = math.atan2(toCam.X, toCam.Z)
+		arrow.CFrame = CFrame.new(arrowTarget + Vector3.new(0, 7 + math.sin(t * 2.4) * 0.6, 0)) * CFrame.Angles(0, yaw, 0)
+			* CFrame.Angles(math.pi, 0, 0)
 	end
 end)
 

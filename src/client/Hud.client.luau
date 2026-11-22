@@ -83,7 +83,8 @@ local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fro
 local controls = make("Frame", {
 	Name = "WaveControls",
 	Size = isTouch and UDim2.fromOffset(160, 136) or UDim2.fromOffset(420, 44),
-	Position = isTouch and UDim2.new(1, -8, 0, 8) or UDim2.new(0.5, 0, 0, 80),
+	-- (left of the ability column, which reaches up the right edge)
+	Position = isTouch and UDim2.new(1, -118, 0, 8) or UDim2.new(0.5, 0, 0, 80),
 	AnchorPoint = isTouch and Vector2.new(1, 0) or Vector2.new(0.5, 0),
 	BackgroundTransparency = 1,
 	Parent = root,

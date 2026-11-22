@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 local player = Players.LocalPlayer
 
-local RUN_DISTANCE = 34 -- studs behind the hero when a run starts
+local RUN_DISTANCE = 30 -- studs from the hero when a run starts: the hero is about 13% of the screen height
 local HUB_DISTANCE = 14
 local MAX_DISTANCE = 60
 

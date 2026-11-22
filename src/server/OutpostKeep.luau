@@ -141,7 +141,8 @@ local function ring(ctx, parent, name, at, radius, color, fill)
 	corner.Parent = circle
 	local edge = Instance.new("UIStroke")
 	edge.Color = color
-	edge.Thickness = 14
+	edge.Thickness = 10
+	edge.Transparency = 0.15
 	edge.Parent = circle
 	return holder
 end
@@ -172,8 +173,45 @@ function Keep.Build(hub, c, ctx)
 	light.Range = 22
 	light.Brightness = 0.6 -- brighter tinted the pale stone pink
 	light.Parent = glow
+	-- inside the ring you see where you are going: the picked map's own painted sky, behind a thin violet veil
+	glow.Transparency = 0.72
+	local window = ctx.part({ Name = "PortalView", Size = Vector3.new(13 * scale, 13 * scale, 0.05),
+		CFrame = CFrame.new(portalAt + Vector3.new(0, 10.4 * scale, -0.4)), Transparency = 1,
+		CanCollide = false, CanTouch = false, CanQuery = false, Parent = hub })
+	local view = Instance.new("SurfaceGui")
+	view.Face = Enum.NormalId.Back
+	view.CanvasSize = Vector2.new(384, 384)
+	view.LightInfluence = 0
+	view.Parent = window
+	local vista = Instance.new("ImageLabel")
+	vista.Name = "Vista"
+	vista.BackgroundColor3 = Color3.fromRGB(70, 40, 120)
+	vista.Size = UDim2.fromScale(1, 1)
+	vista.ScaleType = Enum.ScaleType.Crop
+	vista.ImageColor3 = Color3.fromRGB(225, 210, 255)
+	vista.Parent = view
+	local mask = Instance.new("UICorner")
+	mask.CornerRadius = UDim.new(0.5, 0)
+	mask.Parent = vista
+	local SKY = { Forest = "sky_forest_side", Magma = "sky_magma_side", Crystal = "sky_crystal_side" }
+	local shownMap = nil
+	local function showMap()
+		local mapId = State.Get("Map") or Config.MapOrder[1]
+		if mapId == shownMap then
+			return
+		end
+		shownMap = mapId
+		local theme = Config.Maps[mapId] and Config.Maps[mapId].Theme
+		task.spawn(function()
+			local image = theme and ArtService.Image(SKY[theme], 30)
+			if image and shownMap == mapId then
+				vista.Image = image
+			end
+		end)
+	end
+	showMap()
 	-- the one word you must read from the spawn, 76 studs away: letters about 6 studs tall
-	sign(ctx, hub, "PlaySign", portalAt + Vector3.new(0, 30.5 * HubLayout.BeaconHeight / 48, 7.9 * HubLayout.BeaconHeight / 48), spawnAt, "PLAY", nil,
+	sign(ctx, hub, "PlaySign", portalAt + Vector3.new(0, HubLayout.BeaconHeight * 0.4, HubLayout.BeaconHeight * 0.23), spawnAt, "PLAY", nil,
 		Color3.fromRGB(170, 120, 255), 16, 5.5, 200)
 
 	-- the map pads: walk on one with your party to start that map
@@ -188,7 +226,7 @@ function Keep.Build(hub, c, ctx)
 		ring(ctx, hub, "PadRing_" .. info.Map, at + Vector3.new(0, 0.12, 0), HubLayout.PadRadius + 0.6, CREAM, 1)
 		-- a low sign behind the pad: the map's name, below the portal so it never hides it
 		local board = sign(ctx, hub, "PadSign_" .. info.Map, at + Vector3.new(0, 2.6, -HubLayout.PadRadius - 1.2), spawnAt,
-			map.Name, nil, map.Color, 13, 3, 80)
+			map.Name, nil, map.Color, 11.5, 2.6, 66)
 		local count = Instance.new("TextLabel")
 		count.Name = "Party"
 		count.BackgroundTransparency = 1
@@ -226,7 +264,8 @@ function Keep.Build(hub, c, ctx)
 		piece(ctx, hub, s.Model, facing, s.Height, Vector3.new(8, s.Height, 6))
 		sign(ctx, hub, s.Id .. "Sign", at + Vector3.new(0, s.Height + 4, 0) + inward * 2, at + inward * 20, s.Word, s.Icon, s.Color)
 		local ringAt = at + inward * HubLayout.RingOffset
-		local walkIn = ring(ctx, hub, s.Id .. "Ring", ringAt, HubLayout.RingRadius, s.Color)
+		-- one soft cream ring for every station (the sign above carries its colour): calmer than six colours on the grass
+		local walkIn = ring(ctx, hub, s.Id .. "Ring", ringAt, HubLayout.RingRadius, CREAM, 0.88)
 		ctx.prompt(walkIn, s.Word:sub(1, 1) .. s.Word:sub(2):lower(), "", s.Action, 0)
 		table.insert(rings, { at = ringAt, action = s.Action, id = s.Id })
 	end
@@ -322,6 +361,7 @@ function Keep.Build(hub, c, ctx)
 			return
 		end
 		elapsed = 0
+		showMap()
 		local lobby = State.Get("State") == "Lobby" and not State.Get("LoadingRun")
 		local onPad = {}
 		for _, player in Players:GetPlayers() do

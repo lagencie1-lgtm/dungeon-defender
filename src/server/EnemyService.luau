@@ -14,6 +14,7 @@ local Ground = require(ReplicatedStorage.Shared.Ground)
 -- the Blender goblin, scaled to a goblin's size and painted in its colour.
 -- Returns the skin parts (for hit flashes) or nil when the model isn't loaded.
 local SKIN_MARKER = "c_0_255_0"
+local LOOK_SCALE = 1.35 -- monsters are drawn this much bigger than their hit size (see goblinMesh)
 -- the enemy each image-to-3D model was painted as: it keeps the model's own colours, its variants get a tint
 local PLAIN_KIND = { Goblin = true, ["Ember Imp"] = true, ["Obsidian Knight"] = true, ["Magma Slime"] = true, Shade = true }
 local function goblinMesh(model, body, stats)
@@ -25,7 +26,9 @@ local function goblinMesh(model, body, stats)
 	local look = template:Clone()
 	look.Name = "Look"
 	local _, size = look:GetBoundingBox()
-	look:ScaleTo(look:GetScale() * (s * 1.95) / size.Y)
+	-- drawn 1.35x the hit size: from the top-down run camera on a phone the goblins were specks (cycle 6 film);
+	-- hits, health and speed stay as they were
+	look:ScaleTo(look:GetScale() * (s * 1.95 * LOOK_SCALE) / size.Y)
 	local box, newSize = look:GetBoundingBox()
 	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
 	-- the feet: the body rides s * 0.74 over the ground (see the walk in Start), so the model's bottom goes there
@@ -137,7 +140,7 @@ function EnemyService.HealthBar(model, head, stats)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "HealthBar"
 	gui.Size = stats.Boss and UDim2.fromOffset(180, 30) or UDim2.fromOffset(50, 6)
-	gui.StudsOffset = Vector3.new(0, s * 0.9, 0)
+	gui.StudsOffset = Vector3.new(0, s * (0.9 + (LOOK_SCALE - 1) * 1.6), 0)
 	gui.AlwaysOnTop = true
 	gui.MaxDistance = 150
 	gui.Adornee = head

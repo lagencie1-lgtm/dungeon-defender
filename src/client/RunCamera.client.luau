@@ -15,7 +15,7 @@ local MAX_DISTANCE = 60
 
 local PITCH = math.rad(40) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
 
-local function zoomTo(distance, pitch)
+local function zoomTo(distance, pitch, toward)
 	-- forcing the minimum to the wanted distance moves the camera out at once; letting it go next frame keeps it there
 	player.CameraMaxZoomDistance = math.max(MAX_DISTANCE, distance)
 	player.CameraMinZoomDistance = distance
@@ -23,7 +23,8 @@ local function zoomTo(distance, pitch)
 	local camera = workspace.CurrentCamera
 	if pitch and root and camera then
 		-- tilt the follow camera down once; the default camera keeps the angle it is given after a scripted frame
-		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		-- facing where the hero faces, or (at a wave's start) towards the wave
+		local look = (toward and (toward - root.Position) or root.CFrame.LookVector) * Vector3.new(1, 0, 1)
 		look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
 		local eye = root.Position - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
 		camera.CameraType = Enum.CameraType.Scriptable
@@ -47,7 +48,39 @@ local function update()
 	end
 end
 
-GameState:GetAttributeChangedSignal("State"):Connect(update)
+
+-- when a wave starts, turn the camera once (behind the hero) towards the monsters, so the wave is in frame:
+-- on a phone they walked in far from the hero, off screen (cycle 6 film). The player can turn away freely.
+local function enemyCentre()
+	local folder = workspace:FindFirstChild("Enemies")
+	if not folder then
+		return nil
+	end
+	local sum, n = Vector3.zero, 0
+	for _, m in folder:GetChildren() do
+		if m:IsA("Model") then
+			sum += m:GetPivot().Position
+			n += 1
+		end
+	end
+	return n > 0 and sum / n or nil
+end
+GameState:GetAttributeChangedSignal("State"):Connect(function()
+	if GameState:GetAttribute("State") ~= "Wave" then
+		return
+	end
+	local centre
+	for _ = 1, 20 do
+		task.wait(0.25)
+		centre = enemyCentre()
+		if centre then
+			break
+		end
+	end
+	if centre then
+		zoomTo(RUN_DISTANCE, PITCH, centre)
+	end
+end)GameState:GetAttributeChangedSignal("State"):Connect(update)
 player.CharacterAdded:Connect(function()
 	last = nil
 	task.wait(0.5)

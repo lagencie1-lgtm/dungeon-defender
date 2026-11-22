@@ -211,7 +211,7 @@ end
 
 local comboLabel = label({
 	Size = UDim2.fromOffset(200, 32),
-	Position = UDim2.new(1, -16, 0, isTouch and 150 or 160),
+	Position = isTouch and UDim2.new(1, -130, 0, 150) or UDim2.new(1, -16, 0, 160), -- phones: left of the ability column
 	AnchorPoint = Vector2.new(1, 0),
 	Text = "",
 	Font = Enum.Font.GothamBlack,
@@ -290,9 +290,10 @@ for i, towerType in Config.TowerOrder do
 			BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(90, 70, 130), ZIndex = 3, Parent = b }, {})
 	end
 	local lock = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.35, Visible = false, ZIndex = 4, Parent = b }, { corner(10) })
-	Icons.Draw(lock, "Lock", Color3.fromRGB(230, 200, 140), { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0.5, -15, 0, 18), ZIndex = 5 })
-	label({ Size = UDim2.new(1, -10, 0, 22), Position = UDim2.fromOffset(5, 56),
+		BackgroundTransparency = 0.6, Visible = false, ZIndex = 4, Parent = b }, { corner(10) })
+	-- locked: the tower and its name stay visible under a light shade, a small lock in the corner, the price below
+	Icons.Draw(lock, "Lock", Color3.fromRGB(230, 200, 140), { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(1, -28, 0, 4), ZIndex = 5 })
+	label({ Size = UDim2.new(1, -10, 0, 18), Position = UDim2.fromOffset(5, 78),
 		Text = (info.UnlockGems or 0) .. " gems", TextColor3 = Ui.GEM, ZIndex = 5, Parent = lock })
 	towerButtons[towerType] = { button = b, cost = cost, lock = lock }
 end
@@ -355,6 +356,25 @@ local function abilityButton(text, key, order)
 	end
 	local nameLabel = label({ Size = UDim2.new(1, -8, 0.45, 0), Position = UDim2.fromScale(0, 0.12), AnchorPoint = Vector2.new(0, 0),
 		Text = text, Parent = b })
+	-- the painted ability icon (art/make_ability_icons.py); once it has loaded the word shrinks to a small caption
+	local icon = make("ImageLabel", { Name = "AbilityIcon", BackgroundTransparency = 1, Size = UDim2.fromScale(0.62, 0.62),
+		Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 2, Visible = false, Parent = b })
+	local images = ReplicatedStorage:WaitForChild("ArtImages")
+	local function showIcon()
+		local image = images:GetAttribute("ab_" .. string.lower(nameLabel.Text))
+		icon.Image = image or ""
+		icon.Visible = image ~= nil
+		if image then
+			nameLabel.Size = UDim2.new(1, -8, 0, 14)
+			nameLabel.Position = UDim2.new(0, 4, 1, isTouch and -20 or -34)
+		else
+			nameLabel.Size = UDim2.new(1, -8, 0.45, 0)
+			nameLabel.Position = UDim2.fromScale(0, 0.12)
+		end
+	end
+	nameLabel:GetPropertyChangedSignal("Text"):Connect(showIcon)
+	images.AttributeChanged:Connect(showIcon)
+	showIcon()
 	if not isTouch then
 		label({ Name = "KeyHint", Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0, 4, 1, -20), Text = "[" .. key .. "]",
 			Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })

@@ -156,7 +156,7 @@ local function setLevelLabel(model, level)
 		gui.Name = "LevelLabel"
 		gui.Size = UDim2.fromOffset(112, 20)
 		gui.StudsOffsetWorldSpace = Vector3.new(0, (MODEL_HEIGHT[model:GetAttribute("TowerType")] or 9) + 1, 0)
-		gui.MaxDistance = 90
+		gui.MaxDistance = 26 -- only up close: from the run camera the names piled up under the wave bar
 		gui.Adornee = model.PrimaryPart
 		gui.Parent = model
 		local label = Instance.new("TextLabel")

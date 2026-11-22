@@ -51,6 +51,7 @@ make("SpecialMesh", { MeshType = Enum.MeshType.Wedge, Scale = Vector3.new(1, 1, 
 local arrowTarget = nil
 
 local function show(text, target)
+	box.Visible = text ~= ""
 	if hint.Text ~= text then
 		hint.Text = text
 		Ui.pop(box, 1.1)
@@ -97,7 +98,7 @@ while not finished do
 	local wave = GameState:GetAttribute("Wave") or 0
 	if s == "Lobby" then
 		local pad = workspace:FindFirstChild("Outpost") and workspace.Outpost:FindFirstChild("StartPad")
-		show(pick("Welcome, hero! Walk to the glowing circle to start a run", "Tap Start run or walk to the portal",
+		show(pick("Welcome, hero! Walk to the glowing circle to start a run", "", -- (phones: the big Start run button already says it; the arrow over the pad is enough)
 			"Welcome, hero! Walk to the glowing circle and press E to start a run"), pad and pad.Position)
 	elseif s == "Break" and wave == 0 and myTowers() == 0 then
 		show(pick("Press " .. key(Enum.KeyCode.ButtonX) .. " for a Ranger, walk to the arrow, then press " .. key(Enum.KeyCode.ButtonA),

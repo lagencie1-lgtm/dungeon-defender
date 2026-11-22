@@ -136,20 +136,20 @@ local function setupLighting(theme)
 		atmosphere.Glare = 0.6
 		atmosphere.Haze = 2.5
 	else
-		-- cursed twilight: violet haze far away, soft warm light on the meadow so it stays readable
-		Lighting.ClockTime = 16.4
-		Lighting.ColorShift_Top = Color3.fromRGB(16, 9, 4)
-		-- brighter than the old twilight: on a phone at low graphics the meadow was near black (cycle 1 film)
-		Lighting.Brightness = 2.5
-		Lighting.ExposureCompensation = 0.32
-		Lighting.Ambient = Color3.fromRGB(150, 146, 160)
-		Lighting.OutdoorAmbient = Color3.fromRGB(182, 176, 190)
-		Lighting.FogColor = Color3.fromRGB(60, 50, 90)
-		atmosphere.Density = 0.3
-		atmosphere.Offset = 0.1
-		atmosphere.Color = Color3.fromRGB(190, 160, 210)
-		atmosphere.Decay = Color3.fromRGB(90, 70, 120)
-		atmosphere.Haze = 2
+		-- the Cursed Forest in the hub's bright daylight family (the hub is the target exposure on a phone); the curse
+		-- is carried by colour: a violet haze on the horizon and violet fog, never by darkness (cycle 6 film: muddy)
+		Lighting.ClockTime = 14.6
+		Lighting.ColorShift_Top = Color3.fromRGB(20, 12, 6)
+		Lighting.Brightness = 2.7
+		Lighting.ExposureCompensation = 0.22
+		Lighting.Ambient = Color3.fromRGB(152, 146, 150)
+		Lighting.OutdoorAmbient = Color3.fromRGB(182, 175, 180)
+		Lighting.FogColor = Color3.fromRGB(150, 120, 190)
+		atmosphere.Density = 0.26
+		atmosphere.Offset = 0.08
+		atmosphere.Color = Color3.fromRGB(205, 185, 225)
+		atmosphere.Decay = Color3.fromRGB(130, 100, 170)
+		atmosphere.Haze = 1.6
 		atmosphere.Glare = 0.3
 	end
 	Lighting.FogStart = 120
@@ -455,6 +455,44 @@ function MapBuilder.BuildBattlefield(mapId)
 	end
 
 	MapProps.Place(decor, mapInfo, Config.PathWidth, Config.DistanceToPath)
+
+	-- the enclosure: a wall of tall trees just outside the build area (dead trees on Magma), so the battlefield is a
+	-- clearing with no empty horizon (the same rule as the hub's tree ring)
+	task.spawn(function()
+		local treeModel = magma and "tree_dead" or (not crystal and "tree_oak") or nil
+		if not treeModel or not ArtService.WaitModel(treeModel, 30) then
+			return
+		end
+		local Ground = require(ReplicatedStorage.Shared.Ground)
+		local half = Config.MapSize / 2
+		local rng = Random.new(77)
+		local perimeter = 2 * (half.X + half.Y) * 2
+		local count = math.floor(perimeter / 14)
+		for i = 1, count do
+			local f = (i - 1) / count * perimeter
+			local x, z
+			if f < 2 * half.X then
+				x, z = -half.X + f, -half.Y
+			elseif f < 2 * half.X + 2 * half.Y then
+				x, z = half.X, -half.Y + (f - 2 * half.X)
+			elseif f < 4 * half.X + 2 * half.Y then
+				x, z = half.X - (f - 2 * half.X - 2 * half.Y), half.Y
+			else
+				x, z = -half.X, half.Y - (f - 4 * half.X - 2 * half.Y)
+			end
+			-- pushed a little outward (never into the build area), never onto the path where it leaves the map
+			local out = Vector3.new(x, 0, z).Unit * rng:NextNumber(4, 12)
+			local pos = Vector3.new(x, 0, z) + out
+			if Config.DistanceToPath(pos) > Config.PathWidth + 6 then
+				pos = Vector3.new(pos.X, (Ground.At(pos.X, pos.Z)) - 0.4, pos.Z)
+				placeModel(decor, treeModel, CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0),
+					rng:NextNumber(26, 38))
+			end
+			if i % 10 == 0 then
+				task.wait()
+			end
+		end
+	end)
 
 	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides) with a barrel or crate now and
 	-- then, all inside the no-build band beside the road so they never stand where a defender goes

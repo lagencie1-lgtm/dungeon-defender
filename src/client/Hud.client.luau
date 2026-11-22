@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -1238,6 +1239,11 @@ local function canPlaceHere(position)
 	if (GameState:GetAttribute("BuildUsed") or 0) + (Config.BuildPoints[placing] or 0) > (GameState:GetAttribute("BuildMax") or Config.BuildLimit) then
 		return false, "Build Points full"
 	end
+	-- the ground itself (same rule as the server): no water, no boulders
+	local height, why = Ground.Pad(position, Ground.Foot[placing] or 2.5)
+	if not height then
+		return false, why
+	end
 	return true, nil
 end
 
@@ -1343,9 +1349,9 @@ local function snapPlacement(pos)
 end
 
 local function visualGround(pos)
-	placementRay.FilterDescendantsInstances = { workspace.Terrain }
-	local hit = workspace:Raycast(pos + Vector3.new(0, 12, 0), Vector3.new(0, -24, 0), placementRay)
-	return hit and Vector3.new(pos.X, hit.Position.Y, pos.Z) or pos
+	-- exactly where the defender will stand: the highest ground under its footprint (Ground.Pad on the server)
+	local top = Ground.Footprint(pos, Ground.Foot[placing] or 2.5)
+	return Vector3.new(pos.X, top, pos.Z)
 end
 
 local function refreshPlacement(pos)

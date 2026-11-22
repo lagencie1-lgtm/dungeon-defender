@@ -9,8 +9,41 @@ local GroundLooks = require(ReplicatedStorage.Shared.GroundLooks)
 local TerrainBuilder = {}
 local M = Enum.Material
 
+-- Roblox draws a terrain surface 2 studs above the top of a filled block (measured: a block filled to y = 0 shows
+-- its ground at y = 2.0; filled to -2 it shows at 0.02). Everything here is written as "top at y", and the game
+-- (spawns, the click ground, defenders, enemies) expects flat ground at y = 0, so every fill goes 2 studs lower.
+-- Ground.luau measures the real surface for everything that isn't flat.
+local SINK = Vector3.new(0, -2, 0)
+local sunk = setmetatable({}, {
+	__index = function(_, key)
+		local real = workspace.Terrain
+		if key == "FillBlock" then
+			return function(_, cframe, size, material)
+				real:FillBlock(cframe + SINK, size, material)
+			end
+		elseif key == "FillBall" then
+			return function(_, center, radius, material)
+				real:FillBall(center + SINK, radius, material)
+			end
+		elseif key == "FillCylinder" then
+			return function(_, cframe, height, radius, material)
+				real:FillCylinder(cframe + SINK, height, radius, material)
+			end
+		end
+		local value = real[key]
+		if type(value) == "function" then
+			return function(_, ...)
+				return value(real, ...)
+			end
+		end
+		return value
+	end,
+	__newindex = function(_, key, value)
+		workspace.Terrain[key] = value
+	end,
+})
 local function terrain()
-	return workspace.Terrain
+	return sunk
 end
 
 -- deterministic random so every server builds the same map
@@ -107,17 +140,17 @@ function TerrainBuilder.Magma(map, camp)
 	local half = Config.MapSize / 2
 
 	-- the ground: a wide basalt plain with no edge in sight (top at y = 0)
-	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Basalt)
+	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Sand) -- smooth (see GroundLooks), painted as ash
 	-- lighter ash patches so the floor isn't one flat colour
 	for _ = 1, 40 do
 		-- flat discs that only recolour the surface (balls made grey bumps)
 		local pos = Vector3.new(rng:NextNumber(-half.X, half.X), -1, rng:NextNumber(-half.Y, half.Y))
-		t:FillCylinder(CFrame.new(pos), 2, rng:NextNumber(5, 10), M.Slate)
+		t:FillCylinder(CFrame.new(pos), 2, rng:NextNumber(5, 10), M.Salt)
 	end
 
 	-- the path: a cobbled border with packed ground inside, so it reads at a glance
 	-- (grey cobbles inside a dark basalt kerb: the path never looks like lava on this red map)
-	pathStrip(Config.PathWidth + 5, M.Slate, -1.2, 2.6)
+	pathStrip(Config.PathWidth + 5, M.Salt, -1.2, 2.6)
 	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
 
 	-- lava pools sunk into the ground, kept away from the path and from building spots near it
@@ -280,9 +313,9 @@ function TerrainBuilder.Crystal(map, camp)
 	local rng = rngFor(23)
 	local half = Config.MapSize / 2
 
-	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Slate)
+	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Asphalt) -- smooth, painted as cave floor
 	-- the path: smooth cobbles inside a dark rock kerb
-	pathStrip(Config.PathWidth + 5, M.Basalt, -1.2, 2.6)
+	pathStrip(Config.PathWidth + 5, M.Concrete, -1.2, 2.6) -- smooth, painted as cave wall
 	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
 
 	-- glowing pools

@@ -6,3 +6,5 @@ tools/
 htd-autotest.rbxl
 art/models/*.fbx
 __pycache__/
+
+reviews/hub/bench/img/

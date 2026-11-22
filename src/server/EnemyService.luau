@@ -9,6 +9,7 @@ local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local Clock = require(script.Parent.Clock)
 local ArtService = require(script.Parent.ArtService)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 
 -- the Blender goblin, scaled to a goblin's size and painted in its colour.
 -- Returns the skin parts (for hit flashes) or nil when the model isn't loaded.
@@ -27,7 +28,10 @@ local function goblinMesh(model, body, stats)
 	look:ScaleTo(look:GetScale() * (s * 1.95) / size.Y)
 	local box, newSize = look:GetBoundingBox()
 	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
-	look:PivotTo(look:GetPivot() + ((body.Position - Vector3.new(0, s * 0.8, 0)) - bottom))
+	-- the feet: the body rides s * 0.74 over the ground (see the walk in Start), so the model's bottom goes there
+	look:PivotTo(look:GetPivot() + ((body.Position - Vector3.new(0, s * 0.74, 0)) - bottom))
+	model:SetAttribute("FootHalfWidth", newSize.X / 2)
+	model:SetAttribute("FootHalfDepth", newSize.Z / 2)
 	local skin = {}
 	for _, part in look:GetChildren() do
 		part.Anchored = true
@@ -74,8 +78,8 @@ function EnemyService.SetPath()
 end
 EnemyService.SetPath()
 
--- where an enemy stands after walking `distance` studs, and which way it faces
-local function positionAt(distance)
+-- where an enemy would stand on flat ground after walking `distance` studs, and which way it faces
+local function flatAt(distance)
 	local pts = Config.Path
 	for i = 2, #pts do
 		if distance <= corners[i] then
@@ -85,6 +89,33 @@ local function positionAt(distance)
 		end
 	end
 	return pts[#pts], (pts[#pts] - pts[#pts - 1]).Unit
+end
+
+-- the ground along the path, sampled every 2 studs once the map's terrain is built (SampleGround)
+local STEP = 2
+local profile = {}
+function EnemyService.SampleGround()
+	profile = {}
+	for d = 0, pathLength + STEP, STEP do
+		local p = flatAt(d)
+		profile[#profile + 1] = (Ground.At(p.X, p.Z))
+	end
+end
+
+local function groundAt(distance)
+	if #profile == 0 then
+		return 0
+	end
+	local f = math.clamp(distance / STEP, 0, #profile - 1)
+	local i = math.floor(f)
+	local a, b = profile[i + 1], profile[math.min(i + 2, #profile)]
+	return a + (b - a) * (f - i)
+end
+
+-- where an enemy stands (on the real ground) after walking `distance` studs, and which way it faces
+local function positionAt(distance)
+	local pos, dir = flatAt(distance)
+	return Vector3.new(pos.X, groundAt(distance), pos.Z), dir
 end
 
 local function newPart(model, props)
@@ -365,7 +396,7 @@ function EnemyService.Spawn(name, healthMultiplier, startDistance)
 	local hp = math.floor(stats.Health * (healthMultiplier or 1))
 	model:SetAttribute("Health", hp)
 	model:SetAttribute("MaxHealth", hp)
-	model:PivotTo(CFrame.new(Config.Path[1] + Vector3.new(0, stats.Size, 0)))
+	model:PivotTo(CFrame.new(positionAt(startDistance or 0) + Vector3.new(0, stats.Size * 0.74 + Ground.Feet, 0)))
 	model.Parent = workspace:FindFirstChild("Enemies") or workspace
 	local enemy = {
 		name = name,
@@ -507,7 +538,7 @@ function EnemyService.InRange(position, radius)
 	local found = {}
 	local flat = Vector3.new(position.X, 0, position.Z)
 	for _, e in active do
-		if not e.dead and (e.position - flat).Magnitude <= radius then
+		if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude <= radius then
 			table.insert(found, e)
 		end
 	end
@@ -632,11 +663,13 @@ function EnemyService.Start()
 				e.position = pos
 				local s = e.stats.Size
 				local hop = math.abs(math.sin(e.distance * 0.8)) * 0.3 * s / 3 -- little hop while walking
-				local up = Vector3.new(0, s * 0.74 + hop, 0)
 				-- the Loot Goblin zig-zags, the king stomps
 				local side = Vector3.zero
 				if e.stats.Loot then
 					side = Vector3.new(-dir.Z, 0, dir.X) * math.sin(e.distance * 0.35) * 2.5
+					-- off the middle of the path: stand on the ground where it really is (the kerb is higher)
+					local x, z = pos.X + side.X, pos.Z + side.Z
+					pos = Vector3.new(pos.X, (Ground.At(x, z)), pos.Z)
 				end
 				-- turn smoothly at corners, waddle from foot to foot, lean into the walk (solid models, no skeleton)
 				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * 9)) or dir
@@ -647,6 +680,11 @@ function EnemyService.Start()
 				local moving = speed > 0 and 1 or 0
 				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
 				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
+				-- tilting swings the model's lower edge down: lift by exactly that, so feet stay Ground.Feet over the ground
+				local tilt = (e.model:GetAttribute("FootHalfWidth") or s * 0.4) * math.abs(math.sin(waddle))
+					+ (e.model:GetAttribute("FootHalfDepth") or s * 0.4) * math.abs(math.sin(lean))
+				e.hop = hop
+				local up = Vector3.new(0, s * 0.74 + hop + tilt + Ground.Feet, 0)
 				e.model:PivotTo(CFrame.lookAt(pos + up + side, pos + up + side + e.facing.Unit) * CFrame.Angles(lean, 0, waddle))
 
 				-- boss says things from time to time

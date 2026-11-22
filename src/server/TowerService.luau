@@ -13,6 +13,7 @@ local QuestService = require(script.Parent.QuestService)
 local ArtService = require(script.Parent.ArtService)
 local StoreService = require(script.Parent.StoreService)
 local SeasonService = require(script.Parent.SeasonService)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 
 local TowerService = {}
 
@@ -121,7 +122,7 @@ local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", Frost
 	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
 local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector3.new(0, 4.6, -3.2), FrostCrystal = Vector3.new(0, 6.6, 0),
 	StormObelisk = Vector3.new(0, 11.75, 0), Ballista = Vector3.new(0, 5.6, -4.6) }
-local function useModel(model, towerType, at)
+local function useModel(model, towerType, at, drop)
 	local template = MODEL_NAME[towerType] and ArtService.Model(MODEL_NAME[towerType])
 	local height = MODEL_HEIGHT[towerType]
 	if not template or not height then
@@ -140,8 +141,10 @@ local function useModel(model, towerType, at)
 		part.CanCollide = true
 	end
 	look.Parent = model
-	-- an invisible base keeps upgrades, labels and effects working
-	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55, 5), CFrame = at * CFrame.new(0, 0.275, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
+	-- the stone plinth keeps upgrades, labels and effects working; on a gentle slope it reaches down to the
+	-- lowest ground under the footprint (drop studs below the stand), so no edge ever floats
+	drop = drop or 0
+	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55 + drop, 5), CFrame = at * CFrame.new(0, (0.55 - drop) / 2, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
 		CanCollide = false })
 	return true
 end
@@ -169,6 +172,14 @@ local function setLevelLabel(model, level)
 	gui:FindFirstChild("Text").Text = model.Name .. "  Lv " .. level
 end
 
+-- how wide each defender stands (radius of the ground it needs)
+local FOOT = Ground.Foot
+TowerService.Foot = FOOT
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
 -- can a defender stand here? returns ok, reason
 function TowerService.CanPlace(position)
 	local half = Config.MapSize / 2
@@ -182,7 +193,7 @@ function TowerService.CanPlace(position)
 		return false, "Too close to the portal"
 	end
 	for _, t in towers do
-		if (t.position - position).Magnitude < Config.TowerSpacing then
+		if (flat(t.position) - flat(position)).Magnitude < Config.TowerSpacing then
 			return false, "Too close to another defender"
 		end
 	end
@@ -209,6 +220,13 @@ function TowerService.Place(player, towerType, position)
 	if not ok then
 		return false, reason
 	end
+	-- stand on the real ground (highest point under the footprint), never on y = 0
+	local height, why = Ground.Pad(position, FOOT[towerType] or 2.5)
+	if not height then
+		return false, why
+	end
+	position = Vector3.new(position.X, height, position.Z)
+	local _, low = Ground.Footprint(position, FOOT[towerType] or 2.5)
 	local points = Config.BuildPoints[towerType] or 0
 	local used = State.Get("BuildUsed") or 0
 	local limit = State.Get("BuildMax") or Config.BuildLimit
@@ -224,7 +242,7 @@ function TowerService.Place(player, towerType, position)
 	model.Name = info.DisplayName
 	local at = CFrame.new(position)
 	local muzzle, kicker, turners
-	if useModel(model, towerType, at) then
+	if useModel(model, towerType, at, height - low + 0.02) then
 		muzzle = MODEL_MUZZLE[towerType]
 	else
 		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
@@ -331,9 +349,8 @@ end
 
 -- a boss slam knocks defenders out for a moment
 function TowerService.Stun(position, radius, seconds)
-	local flat = Vector3.new(position.X, 0, position.Z)
 	for _, t in towers do
-		if (t.position - flat).Magnitude <= radius then
+		if (flat(t.position) - flat(position)).Magnitude <= radius then
 			t.nextShot = math.max(t.nextShot, Clock.now + seconds)
 			Effects.Text(t.position + Vector3.new(0, 9, 0), "Stunned", Color3.fromRGB(255, 200, 120), 0.9)
 		end
@@ -357,7 +374,7 @@ local function faceTarget(t, targetPos)
 	if not t.turners then
 		return
 	end
-	local flatTarget = Vector3.new(targetPos.X, 0, targetPos.Z)
+	local flatTarget = Vector3.new(targetPos.X, t.position.Y, targetPos.Z)
 	if (flatTarget - t.position).Magnitude < 0.5 then
 		return
 	end
@@ -394,7 +411,7 @@ end
 function TowerService.Overclock(position, radius, speed, seconds)
 	local count = 0
 	for model, t in towers do
-		if (t.position - Vector3.new(position.X, 0, position.Z)).Magnitude <= radius then
+		if (flat(t.position) - flat(position)).Magnitude <= radius then
 			t.overclockUntil = Clock.now + seconds
 			t.overclockSpeed = speed
 			count += 1

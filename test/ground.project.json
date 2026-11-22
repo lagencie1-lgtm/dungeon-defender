@@ -1,0 +1,19 @@
+{
+  "name": "htd-autotest-ground",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "../src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "../src/server" },
+      "GroundTest": { "$path": "ground/Ground.server.luau" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "../src/client" }
+      }
+    },
+    "MaterialService": { "$path": "../src/materials" }
+  }
+}

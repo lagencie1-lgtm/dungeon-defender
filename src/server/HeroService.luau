@@ -7,6 +7,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local Items = require(ReplicatedStorage.Shared.Items)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local EnemyService = require(script.Parent.EnemyService)
@@ -859,7 +860,7 @@ local ABILITIES = {
 				return
 			end
 			local spot = root.Position + root.CFrame.LookVector * 4
-			TowerService.SpawnTurret(player, Vector3.new(spot.X, 0, spot.Z), info)
+			TowerService.SpawnTurret(player, Vector3.new(spot.X, (Ground.At(spot.X, spot.Z)), spot.Z), info)
 			Sound.Play("Build", spot)
 		end,
 	},
@@ -1238,7 +1239,7 @@ function HeroService.Start()
 				local flat = Vector3.new(root.Position.X, 0, root.Position.Z)
 				local hurt = 0
 				for _, e in EnemyService.GetActive() do
-					if not e.dead and (e.position - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
+					if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
 						hurt += (Config.ContactDamage[e.name] or 5) * gameDt
 					end
 				end

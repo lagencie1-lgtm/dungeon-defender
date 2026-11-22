@@ -372,6 +372,7 @@ function GameService.StartRun()
 		return
 	end
 	EnemyService.SetPath()
+	EnemyService.SampleGround() -- the map's terrain is built and in physics (BuildBattlefield waits for it)
 	State.Set("Gold", Config.StartGold)
 	local modeInfo = Config.FindById(Config.Modes, State.Get("Mode") or "Campaign")
 	local portalHealth = modeInfo and modeInfo.PortalHealth or Config.WeeklyEvent().PortalHealth or Config.PortalHealth

@@ -139,10 +139,11 @@ local function setupLighting(theme)
 		-- cursed twilight: violet haze far away, soft warm light on the meadow so it stays readable
 		Lighting.ClockTime = 16.4
 		Lighting.ColorShift_Top = Color3.fromRGB(16, 9, 4)
-		Lighting.Brightness = 1.8
-		Lighting.ExposureCompensation = 0.1
-		Lighting.Ambient = Color3.fromRGB(130, 128, 145)
-		Lighting.OutdoorAmbient = Color3.fromRGB(158, 152, 170)
+		-- brighter than the old twilight: on a phone at low graphics the meadow was near black (cycle 1 film)
+		Lighting.Brightness = 2.5
+		Lighting.ExposureCompensation = 0.32
+		Lighting.Ambient = Color3.fromRGB(150, 146, 160)
+		Lighting.OutdoorAmbient = Color3.fromRGB(182, 176, 190)
 		Lighting.FogColor = Color3.fromRGB(60, 50, 90)
 		atmosphere.Density = 0.3
 		atmosphere.Offset = 0.1
@@ -383,6 +384,9 @@ function MapBuilder.BuildBattlefield(mapId)
 		Position = Config.SpawnPoint + Vector3.new(0, 0.5, 0),
 		Color = Color3.fromRGB(200, 170, 80),
 		Material = Enum.Material.Marble,
+		-- invisible: a gold marble square under the hero read as a placeholder in the top-down view (cycle 2)
+		Transparency = 1,
+		CanCollide = false,
 		Enabled = false,
 		Parent = map,
 	})

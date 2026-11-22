@@ -13,10 +13,24 @@ local RUN_DISTANCE = 34 -- studs behind the hero when a run starts
 local HUB_DISTANCE = 14
 local MAX_DISTANCE = 60
 
-local function zoomTo(distance)
+local PITCH = math.rad(40) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
+
+local function zoomTo(distance, pitch)
 	-- forcing the minimum to the wanted distance moves the camera out at once; letting it go next frame keeps it there
 	player.CameraMaxZoomDistance = math.max(MAX_DISTANCE, distance)
 	player.CameraMinZoomDistance = distance
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local camera = workspace.CurrentCamera
+	if pitch and root and camera then
+		-- tilt the follow camera down once; the default camera keeps the angle it is given after a scripted frame
+		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
+		local eye = root.Position - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = CFrame.lookAt(eye, root.Position)
+		RunService.RenderStepped:Wait()
+		camera.CameraType = Enum.CameraType.Custom
+	end
 	RunService.RenderStepped:Wait()
 	RunService.RenderStepped:Wait()
 	player.CameraMinZoomDistance = 0.5
@@ -28,7 +42,8 @@ local function update()
 	local inRun = state == "Break" or state == "Wave"
 	if inRun ~= last then
 		last = inRun
-		task.spawn(zoomTo, inRun and RUN_DISTANCE or HUB_DISTANCE)
+		-- (a run teleports the hero right after the state changes: wait for it to land)
+		task.delay(inRun and 1.2 or 0, zoomTo, inRun and RUN_DISTANCE or HUB_DISTANCE, inRun and PITCH or nil)
 	end
 end
 

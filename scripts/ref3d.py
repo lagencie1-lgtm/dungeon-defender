@@ -35,6 +35,7 @@ ITEMS = {
                     "brass pins, a lantern hanging at one side", "gold yellow #FFD246"),
     "reward_chest": ("a huge treasure chest with a rounded lid, dark wood with brass bands and corners, a golden "
                      "lock, standing on a low round stone dais", "gold yellow #FFD246"),
+    "tower_ranger_sheet": ("three versions of the same archer defense tower standing side by side left to right, growing with each upgrade level, all at the same scale on one shared white background: LEFT level 1, a small wooden watch post on a round stone footing with a plank lookout, one hooded green archer with a bow, a short shingled roof; MIDDLE level 2, a round warm-stone tower with an arched wooden door, ivy, a timber lookout with railings, a tall red-brown shingled cone roof with a green pennant, one archer; RIGHT level 3, a taller tower with a second stone storey and brass bands, green and cream banners, a wider lookout with two archers, a tall roof with a glowing green gem on the finial. Same three-quarter view, same light, clearly one family", "forest green #5FB45A"),
     "beacon_tower": ("a tall square watchtower of pale warm stone with a wide archway at its foot, battlements at "
                      "the top and a timber lantern cage with a pointed blue roof holding a big glowing violet crystal, "
                      "blue cloth banners with brass hems hanging either side of the arch", "violet #AA96FF"),
@@ -59,7 +60,7 @@ def paint(name):
             for part in res["candidates"][0]["content"]["parts"]:
                 data = part.get("inlineData") or part.get("inline_data")
                 if data:
-                    path = os.path.join(OUT, f"keep_{name}.png")
+                    path = os.path.join(OUT, (name if name.startswith("tower_") else "keep_" + name) + ".png")
                     with open(path, "wb") as f:
                         f.write(base64.b64decode(data["data"]))
                     print(name, "->", path, "(" + model + ")")
@@ -74,10 +75,10 @@ def paint(name):
     import glob
     import subprocess
     found = sorted(glob.glob(os.path.expandvars(r"%USERPROFILE%\.vscode\extensions\openai.chatgpt-*\bin\windows-x86_64\codex.exe")))
-    target = os.path.join(OUT, f"keep_{name}.png")
+    target = os.path.join(OUT, (name if name.startswith("tower_") else "keep_" + name) + ".png")
     if found:
         prompt = (STYLE.format(what=what, accent=accent) + f" Use your image generation tool and save the image as "
-                  f"keep_{name}.png in the current folder. Reply only with the file path.")
+                  f"{name if name.startswith('tower_') else 'keep_' + name}.png in the current folder. Reply only with the file path.")
         try:
             # the default model in the owner's Codex config is no longer served for ChatGPT logins: name one
             # from Codex's own list (~/.codex/models_cache.json)

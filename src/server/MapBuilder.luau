@@ -90,14 +90,17 @@ local function setupLighting(theme)
 	Lighting.ExposureCompensation = 0.25
 	if theme == "Outpost" then
 		-- the hub: a warm, sunny late afternoon (the first thing a player sees)
-		Lighting.ClockTime = 15.2
-		Lighting.Brightness = 2
-		Lighting.ExposureCompensation = 0.08
+		-- the Watch Keep: bright warm daylight, the sun high enough that the walls don't shade the courtyard
+		-- (the top hubs are all bright and saturated; benchmark.md point 6)
+		local keep = Config.HubVersion == "Keep"
+		Lighting.ClockTime = keep and 14.4 or 15.2
+		Lighting.Brightness = keep and 2.6 or 2
+		Lighting.ExposureCompensation = keep and 0.18 or 0.08
 		Lighting.ColorShift_Top = Color3.fromRGB(20, 12, 6)
-		Lighting.Ambient = Color3.fromRGB(140, 135, 130)
-		Lighting.OutdoorAmbient = Color3.fromRGB(165, 160, 150)
+		Lighting.Ambient = keep and Color3.fromRGB(150, 142, 132) or Color3.fromRGB(140, 135, 130)
+		Lighting.OutdoorAmbient = keep and Color3.fromRGB(178, 170, 158) or Color3.fromRGB(165, 160, 150)
 		Lighting.FogColor = Color3.fromRGB(190, 200, 220)
-		atmosphere.Density = 0.28
+		atmosphere.Density = keep and 0.24 or 0.28
 		atmosphere.Offset = 0.05
 		atmosphere.Color = Color3.fromRGB(215, 205, 190)
 		atmosphere.Decay = Color3.fromRGB(150, 160, 190)
@@ -474,6 +477,34 @@ function MapBuilder.BuildOutpost(onPrompt)
 	end
 	local hub = folder("Outpost", workspace)
 	local c = Config.OutpostCenter
+	if Config.HubVersion == "Keep" then
+		-- the Watch Keep (server/OutpostKeep, shared/HubLayout); the old meadow below stays one switch away
+		local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
+		TerrainBuilder.Keep(c)
+		hub:SetAttribute("GroundTheme", "Outpost")
+		hub:SetAttribute("HubVersion", "Keep")
+		part({ Name = "Ground", Size = Vector3.new(150, 2, 150), Position = c - Vector3.new(0, 1, 0), Transparency = 1,
+			CanCollide = false, Parent = hub })
+		walls(hub, c, HubLayout.Size.X + 2, HubLayout.Size.Y + 2)
+		return require(script.Parent.OutpostKeep).Build(hub, c, {
+			part = part,
+			placeModel = placeModel,
+			onPrompt = onPrompt,
+			prompt = function(target, actionText, objectText, action, hold)
+				local p = Instance.new("ProximityPrompt")
+				p.ActionText = actionText
+				p.ObjectText = objectText
+				p.MaxActivationDistance = 12
+				p.HoldDuration = hold or 0
+				p.RequiresLineOfSight = false
+				p.Parent = target
+				p.Triggered:Connect(function(player)
+					onPrompt(player, action)
+				end)
+				return p
+			end,
+		})
+	end
 	TerrainBuilder.Outpost(c)
 	hub:SetAttribute("GroundTheme", "Outpost")
 	-- invisible floor and walls keep clicks and players inside (the terrain is what you see)

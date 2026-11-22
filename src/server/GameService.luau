@@ -410,7 +410,21 @@ function GameService.HasCleared(player, mapId, difficultyId)
 end
 
 local function onPrompt(player, action)
-	if action == "Start" then
+	local mapId = action:match("^Map:(%w+)$")
+	if mapId then
+		-- a map pad in the Watch Keep: standing on it picks the map (the pad counts down, then "Start");
+		-- pressing its prompt (gamepad X, a tap) starts right away
+		if Config.Maps[mapId] and State.Get("State") == "Lobby" and not State.Get("LoadingRun") and State.Get("Map") ~= mapId then
+			State.Set("Map", mapId)
+			local diff = Config.FindById(Config.Difficulties, State.Get("Difficulty"))
+			if diff and diff.Unlock and player and not GameService.HasCleared(player, mapId, diff.Unlock) then
+				State.Set("Difficulty", Config.DefaultDifficulty)
+			end
+		end
+		if player then
+			GameService.StartRun()
+		end
+	elseif action == "Start" then
 		GameService.StartRun()
 	else
 		Remotes.OpenPanel:FireClient(player, action)

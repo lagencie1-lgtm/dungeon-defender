@@ -15,6 +15,8 @@ local ForestPath = {
 Config.PathWidth = 10
 Config.MapSize = Vector2.new(240, 180) -- ground size (X, Z)
 Config.OutpostCenter = Vector3.new(0, 0, 1600) -- the hub, far from the battlefield (its own terrain and hills)
+-- which hub: "Keep" (the Watch Keep, 2026-11-22, layout in HubLayout.luau) or "Meadow" (the old open meadow)
+Config.HubVersion = "Keep"
 
 Config.StartGold = 200
 Config.PortalHealth = 100

@@ -439,6 +439,47 @@ function TerrainBuilder.Outpost(c)
 	end
 end
 
+-------------------------------------------------------------------------------
+-- The Watch Keep (the new Outpost): a flat courtyard of packed earth inside the walls, a cobbled avenue from the
+-- spawn to the gate and a round cobbled plaza; grass outside, hills and mountains behind as the skyline.
+-- Smooth materials only where people walk and stand (see GroundLooks).
+-------------------------------------------------------------------------------
+function TerrainBuilder.Keep(c)
+	local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
+	local t = terrain()
+	local rng = rngFor(5)
+	t:FillBlock(CFrame.new(c + Vector3.new(0, 60, 0)), Vector3.new(460, 140, 460), M.Air)
+	t:FillBlock(CFrame.new(c + Vector3.new(0, -6, 0)), Vector3.new(460, 12, 460), M.Grass)
+	-- a new material only replaces empty voxels: dig the top layer out first, then fill it
+	local function surface(cframe, size, material)
+		t:FillBlock(cframe, size, M.Air)
+		t:FillBlock(cframe, size, material)
+	end
+	local size = HubLayout.Size
+	-- the courtyard stays bright meadow grass (an earth floor read as one big orange-red stain on the phone)
+	local avenue = HubLayout.Avenue
+	local mid = c + (avenue.From + avenue.To) / 2
+	surface(CFrame.lookAt(mid + Vector3.new(0, -2, 0), c + avenue.To + Vector3.new(0, -2, 0)),
+		Vector3.new(avenue.Width, 4, (avenue.From - avenue.To).Magnitude), M.Cobblestone)
+	t:FillCylinder(CFrame.new(c + HubLayout.Plaza.At + Vector3.new(0, -2, 0)), 4, HubLayout.Plaza.Radius, M.Air)
+	t:FillCylinder(CFrame.new(c + HubLayout.Plaza.At + Vector3.new(0, -2, 0)), 4, HubLayout.Plaza.Radius, M.Cobblestone)
+	-- rolling hills outside the walls, higher further out, and a ring of mountains as the far skyline
+	for _ = 1, 26 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(85, 150)
+		local h = rng:NextNumber(10, 22) * (d / 110)
+		t:FillBall(c + Vector3.new(math.cos(a) * d, h * 0.15, math.sin(a) * d), h, M.Grass)
+		if rng:NextNumber() < 0.35 then
+			t:FillBall(c + Vector3.new(math.cos(a) * (d + 8), h * 0.65, math.sin(a) * (d + 8)), h * 0.4, M.Rock)
+		end
+	end
+	for i = 0, 5 do
+		local a = i / 6 * math.pi * 2 + 0.4
+		mountain(c + Vector3.new(math.cos(a) * 240, 0, math.sin(a) * 230), rng:NextNumber(70, 100), rng:NextNumber(60, 95), M.Grass, nil)
+	end
+	TerrainBuilder.OutpostLooks()
+end
+
 -- painted looks for the Outpost's materials (while the players are in the hub)
 function TerrainBuilder.OutpostLooks()
 	local t = terrain()

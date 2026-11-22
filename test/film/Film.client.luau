@@ -54,7 +54,7 @@ mark("hub campfire")
 walk(c + Vector3.new(0, 0, 8), 6)
 task.wait(1.5)
 mark("hub portal")
-walk(c + Vector3.new(0, 0, -18), 7)
+walk(c + Vector3.new(0, 0, -2), 7) -- the plaza, short of the map pads
 task.wait(2)
 -- a slow look around from the portal back to spawn (what a player does with the camera)
 workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable

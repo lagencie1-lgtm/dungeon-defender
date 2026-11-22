@@ -141,7 +141,7 @@ local function setupLighting(theme)
 		Lighting.ClockTime = 14.6
 		Lighting.ColorShift_Top = Color3.fromRGB(20, 12, 6)
 		Lighting.Brightness = 2.7
-		Lighting.ExposureCompensation = 0.22
+		Lighting.ExposureCompensation = 0.45 -- measured: the battle still read 17% darker than the hub (cycle 8)
 		Lighting.Ambient = Color3.fromRGB(152, 146, 150)
 		Lighting.OutdoorAmbient = Color3.fromRGB(182, 175, 180)
 		Lighting.FogColor = Color3.fromRGB(150, 120, 190)
@@ -493,6 +493,62 @@ function MapBuilder.BuildBattlefield(mapId)
 			end
 		end
 	end)
+
+	-- things on the field between the lanes (Cursed Forest): a ruined watchtower, rocks, bushes, stumps, mushrooms.
+	-- Each says honestly that nothing can be built there: BlockRadius (TowerService.CanPlace and the build preview).
+	if not magma and not crystal then
+		task.spawn(function()
+			local Ground = require(ReplicatedStorage.Shared.Ground)
+			local rng = Random.new(19)
+			local half = Config.MapSize / 2
+			local kinds = { { "keep_field_rock", 3.2, 3.6 }, { "keep_field_bush", 3.4, 3.2 }, { "keep_field_stump", 1.9, 2.6 },
+				{ "keep_field_mushrooms", 1.1, 2.2 } }
+			local placed = {}
+			local function free(pos, r)
+				if Config.DistanceToPath(pos) < Config.PathWidth / 2 + 3 + r then
+					return false
+				end
+				if (Vector3.new(pos.X, 0, pos.Z) - Config.SpawnPoint).Magnitude < 12 + r then
+					return false
+				end
+				for _, p in placed do
+					if (p.pos - pos).Magnitude < p.r + r + 8 then
+						return false
+					end
+				end
+				return true
+			end
+			local function put(name, pos, height, r, turn)
+				if not ArtService.WaitModel(name, 30) then
+					return
+				end
+				local y = (Ground.At(pos.X, pos.Z))
+				local look = placeModel(decor, name, CFrame.new(pos.X, y, pos.Z) * CFrame.Angles(0, turn, 0), height)
+				if look then
+					look:SetAttribute("BlockRadius", r)
+					table.insert(placed, { pos = Vector3.new(pos.X, 0, pos.Z), r = r })
+				end
+			end
+			-- the ruin first, in the largest open corner it fits
+			for _ = 1, 200 do
+				local pos = Vector3.new(rng:NextNumber(-half.X + 12, half.X - 12), 0, rng:NextNumber(-half.Y + 12, half.Y - 12))
+				if free(pos, 6) then
+					put("keep_field_ruin", pos, 7.5, 6, rng:NextNumber(0, math.pi * 2))
+					break
+				end
+			end
+			local count, tries = 0, 0
+			while count < 14 and tries < 800 do
+				tries += 1
+				local kind = kinds[count % #kinds + 1]
+				local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
+				if free(pos, kind[2]) then
+					put(kind[1], pos, kind[3], kind[2], rng:NextNumber(0, math.pi * 2))
+					count += 1
+				end
+			end
+		end)
+	end
 
 	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides) with a barrel or crate now and
 	-- then, all inside the no-build band beside the road so they never stand where a defender goes

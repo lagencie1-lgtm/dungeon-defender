@@ -90,15 +90,17 @@ end
 -- a speech bubble over something's head
 local bubbleCount = 0
 function Effects.Bubble(adornee, text, color, seconds)
-	if bubbleCount >= 8 or not adornee or not adornee.Parent then
-		return -- not too many at once
+	-- at most 2 at once, small, and only for monsters near the camera: far-away bubbles sat at the top of the phone
+	-- screen right over the wave bar (cycle 7 film)
+	if bubbleCount >= 2 or not adornee or not adornee.Parent then
+		return
 	end
 	bubbleCount += 1
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Bubble"
-	gui.Size = UDim2.fromOffset(180, 34)
-	gui.StudsOffset = Vector3.new(0, 4.5, 0)
-	gui.MaxDistance = 120
+	gui.Size = UDim2.fromOffset(140, 26)
+	gui.StudsOffset = Vector3.new(0, 3.5, 0)
+	gui.MaxDistance = 34
 	gui.Adornee = adornee
 	local frame = Instance.new("TextLabel")
 	frame.Size = UDim2.fromScale(1, 1)

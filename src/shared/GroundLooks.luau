@@ -35,7 +35,7 @@ end
 
 -- how far each painting's tint goes towards white (white shows the painting as painted). The meadow grass is lifted
 -- more: from the run camera it was a dark green carpet on a phone (cycle 5 film).
-GroundLooks.Lift = { t_grass = 0.42 }
+GroundLooks.Lift = { t_grass = 0.55 }
 function GroundLooks.Tint(texture)
 	return GroundLooks.Colors[texture]:Lerp(Color3.new(1, 1, 1), GroundLooks.Lift[texture] or 0.15)
 end

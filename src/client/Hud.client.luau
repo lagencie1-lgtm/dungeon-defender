@@ -1288,6 +1288,17 @@ local function canPlaceHere(position)
 	if (GameState:GetAttribute("BuildUsed") or 0) + (Config.BuildPoints[placing] or 0) > (GameState:GetAttribute("BuildMax") or Config.BuildLimit) then
 		return false, "Build Points full"
 	end
+	-- rocks, bushes, the ruin (same rule as the server)
+	local decor = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Decor")
+	if decor then
+		for _, d in decor:GetChildren() do
+			local r = d:GetAttribute("BlockRadius")
+			local p = r and d:GetPivot().Position
+			if r and (Vector3.new(p.X, 0, p.Z) - Vector3.new(position.X, 0, position.Z)).Magnitude < r + 2.5 then
+				return false, "Something is in the way"
+			end
+		end
+	end
 	-- the ground itself (same rule as the server): no water, no boulders
 	local height, why = Ground.Pad(position, Ground.Foot[placing] or 2.5)
 	if not height then

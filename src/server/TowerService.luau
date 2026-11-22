@@ -197,6 +197,16 @@ function TowerService.CanPlace(position)
 			return false, "Too close to another defender"
 		end
 	end
+	-- rocks, bushes, the ruin: whatever stands on the field says how much room it takes (BlockRadius)
+	local decor = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Decor")
+	if decor then
+		for _, d in decor:GetChildren() do
+			local r = d:GetAttribute("BlockRadius")
+			if r and (flat(d:GetPivot().Position) - flat(position)).Magnitude < r + 2.5 then
+				return false, "Something is in the way"
+			end
+		end
+	end
 	return true
 end
 

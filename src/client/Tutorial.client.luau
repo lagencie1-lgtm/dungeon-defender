@@ -36,7 +36,7 @@ end
 local function key(keyCode)
 	return Gamepad.Name(keyCode)
 end
-local box = make("Frame", { Size = UDim2.new(isTouch and 0.23 or 0.6, 0, 0, isTouch and 52 or 56),
+local box = make("Frame", { Size = UDim2.new(isTouch and 0.2 or 0.6, 0, 0, isTouch and 50 or 56),
 	Position = isTouch and UDim2.new(0, 8, 0.42, 0) or UDim2.new(0.5, 0, 1, -150),
 	AnchorPoint = isTouch and Vector2.zero or Vector2.new(0.5, 1),
 	BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1, Parent = gui }, { corner(14), stroke(Ui.GOLD, 3) })

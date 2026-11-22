@@ -91,9 +91,9 @@ local controls = make("Frame", {
 }, { make("UIListLayout", { FillDirection = isTouch and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
 	Padding = UDim.new(0, isTouch and 6 or 10),
 	HorizontalAlignment = isTouch and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Center }) })
-local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 160 or 210, isTouch and 66 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 140 or 210, isTouch and 66 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
 	Text = isTouch and "Start wave" or "Start wave now", LayoutOrder = 1, Parent = controls })
-local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(110, isTouch and 64 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
+local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 88 or 110, isTouch and 64 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
 
 -- difficulty picker, only before the first wave
@@ -347,7 +347,7 @@ else
 end
 
 local function abilityButton(text, key, order)
-	local size = isTouch and UDim2.fromOffset(78, 78) or UDim2.fromOffset(71, 58)
+	local size = isTouch and UDim2.fromOffset(72, 72) or UDim2.fromOffset(71, 58) -- 72 x 0.69 = 50 px on an iPhone 13
 	local b = button({ Size = size, Text = "", LayoutOrder = order, BackgroundColor3 = Color3.fromRGB(70, 50, 100),
 		Parent = abilityHolder })
 	if isTouch then

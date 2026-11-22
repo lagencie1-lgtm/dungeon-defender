@@ -143,7 +143,11 @@ local function biggest()
 		if screen:IsA("ScreenGui") and screen.Enabled and not NOT_OURS[screen.Name] then
 			for _, obj in screen:GetDescendants() do
 				if obj:IsA("GuiObject") and shown(obj) and (obj.BackgroundTransparency < 0.95 or obj:IsA("TextLabel") and obj.Text ~= "") then
-					table.insert(list, { obj:GetFullName():gsub("^.-PlayerGui%.", "") .. (obj:IsA("TextLabel") and (" """ .. obj.Text:sub(1, 40) .. """") or ""), obj.AbsoluteSize.X * obj.AbsoluteSize.Y / (viewport.X * viewport.Y) })
+					local path = obj:GetFullName():gsub("^.-PlayerGui%.", "")
+					if obj:IsA("TextLabel") then
+						path ..= ' "' .. obj.Text:sub(1, 40) .. '"'
+					end
+					table.insert(list, { path, obj.AbsoluteSize.X * obj.AbsoluteSize.Y / (viewport.X * viewport.Y) })
 				end
 			end
 		end
@@ -163,8 +167,8 @@ local function check(name)
 		return
 	end
 	if name ~= "Outpost" then
-		-- the steady run screen, before this check's own build and sell messages pop up
-		task.wait(1.5)
+		-- the steady run screen: after the start-of-run messages fade, before this check's own build messages
+		task.wait(7)
 		local cover = uiCoverage()
 		print(string.format("[MOBILE] %s run screen covered by UI %.0f%% (max %.0f%%)", name, cover * 100, MAX_UI_COVER * 100))
 		if cover > MAX_UI_COVER then

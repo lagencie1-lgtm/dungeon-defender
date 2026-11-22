@@ -35,6 +35,9 @@ ITEMS = {
                     "brass pins, a lantern hanging at one side", "gold yellow #FFD246"),
     "reward_chest": ("a huge treasure chest with a rounded lid, dark wood with brass bands and corners, a golden "
                      "lock, standing on a low round stone dais", "gold yellow #FFD246"),
+    "beacon_tower": ("a tall square watchtower of pale warm stone with a wide archway at its foot, battlements at "
+                     "the top and a timber lantern cage with a pointed blue roof holding a big glowing violet crystal, "
+                     "blue cloth banners with brass hems hanging either side of the arch", "violet #AA96FF"),
     "hero_statue": ("a heroic stone statue of a young knight raising a sword to the sky, cape flowing, on a round "
                     "stepped plinth with a brass band", "nature green #5FB45A"),
 }

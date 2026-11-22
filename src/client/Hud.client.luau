@@ -308,7 +308,7 @@ end
 local heroPanel = make("Frame", {
 	Name = "HeroStatus",
 	Size = UDim2.fromOffset(230, 52),
-	Position = isTouch and UDim2.fromOffset(10, 145) or UDim2.new(0, 10, 1, -132),
+	Position = isTouch and UDim2.fromOffset(10, 168) or UDim2.new(0, 10, 1, -132), -- (below the square Menu button)
 	AnchorPoint = Vector2.new(0, 0),
 	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.15,
@@ -517,6 +517,17 @@ end)
 -- one short line at the top edge (in a run just under the wave bar), never a sentence over the hero
 local goalLabel = label({ Name = "NextGoal", Size = UDim2.fromOffset(440, 18), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0),
 	Text = "", TextColor3 = Color3.fromRGB(255, 235, 190), TextStrokeTransparency = 0.25, Parent = root })
+-- a small dark-wood chip behind it, so the line reads over bright signs and sky
+goalLabel.TextScaled = false
+goalLabel.TextSize = 15
+goalLabel.AutomaticSize = Enum.AutomaticSize.X
+goalLabel.Size = UDim2.fromOffset(0, 22)
+goalLabel.BackgroundColor3 = Color3.fromRGB(58, 38, 24)
+goalLabel.BackgroundTransparency = 0.12
+make("UICorner", { CornerRadius = UDim.new(0, 8), Parent = goalLabel })
+make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = goalLabel })
+make("UIStroke", { Color = Color3.fromRGB(214, 170, 80), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+	Parent = goalLabel })
 
 local function nextGoal()
 	local s = GameState:GetAttribute("State")
@@ -1033,6 +1044,7 @@ local function refreshTop()
 	-- the weekly twist is announced when a run starts; on a phone its line only covered the hub
 	eventLabel.Visible = inLobby and not isTouch
 	goalLabel.Text = nextGoal()
+	goalLabel.Visible = goalLabel.Text ~= ""
 	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8) or UDim2.new(0.5, 0, 0, isTouch and 60 or 76)
 	towerBar.Visible = not inLobby
 	top.Visible = not inLobby

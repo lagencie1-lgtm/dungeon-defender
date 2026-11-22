@@ -225,8 +225,14 @@ function Keep.Build(hub, c, ctx)
 		pad.Material = Enum.Material.Slate
 		ring(ctx, hub, "PadRing_" .. info.Map, at + Vector3.new(0, 0.12, 0), HubLayout.PadRadius + 0.6, CREAM, 1)
 		-- a low sign behind the pad: the map's name, below the portal so it never hides it
-		local board = sign(ctx, hub, "PadSign_" .. info.Map, at + Vector3.new(0, 2.6, -HubLayout.PadRadius - 1.2), spawnAt,
-			map.Name, nil, map.Color, 11.5, 2.6, 66)
+		-- an upright sign on two posts behind the pad: the map's painted sky as its picture, and its name
+		local skyName = ({ Forest = "sky_forest_side", Magma = "sky_magma_side", Crystal = "sky_crystal_side" })[map.Theme]
+		local board = sign(ctx, hub, "PadSign_" .. info.Map, at + Vector3.new(0, 4.4, -HubLayout.PadRadius - 1.2), spawnAt,
+			map.Name, skyName, map.Color, 12.5, 3.4, 72)
+		for _, side in { -1, 1 } do
+			ctx.part({ Name = "PadPost", Size = Vector3.new(0.5, 4.4, 0.5), CFrame = board.CFrame * CFrame.new(side * 5.6, -2.6, 0.35),
+				Color = WOOD, Material = Enum.Material.Wood, CanCollide = false, CanQuery = false, Parent = hub })
+		end
 		local count = Instance.new("TextLabel")
 		count.Name = "Party"
 		count.BackgroundTransparency = 1
@@ -267,7 +273,48 @@ function Keep.Build(hub, c, ctx)
 		-- one soft cream ring for every station (the sign above carries its colour): calmer than six colours on the grass
 		local walkIn = ring(ctx, hub, s.Id .. "Ring", ringAt, HubLayout.RingRadius, CREAM, 0.88)
 		ctx.prompt(walkIn, s.Word:sub(1, 1) .. s.Word:sub(2):lower(), "", s.Action, 0)
+		-- the painted stone rune ring set in the paving replaces the flat circle once it has loaded;
+		-- its runes take the station's colour (KeepLife makes them glow softly while you stand near)
+		task.spawn(function()
+			if not ArtService.WaitModel("keep_ring", 40) then
+				return
+			end
+			local look = ctx.placeModel(hub, "keep_ring", CFrame.new(ringAt), 0.3)
+			if not look then
+				return
+			end
+			look.Name = s.Id .. "RuneRing"
+			look:SetAttribute("Station", s.Id)
+			for _, p in look:GetDescendants() do
+				if p:IsA("BasePart") then
+					p.CanCollide = false
+					p.CanQuery = false
+					if p.Name:match("^c_") then
+						p.Name = "Runes"
+						p.Color = s.Color
+						p.Material = Enum.Material.Neon
+						p.Transparency = 0.35
+					end
+				end
+			end
+			local gui = walkIn:FindFirstChildOfClass("SurfaceGui")
+			if gui then
+				gui.Enabled = false
+			end
+		end)
 		table.insert(rings, { at = ringAt, action = s.Action, id = s.Id })
+	end
+
+	-- dressing and banners (HubLayout.Dressing / Banners): every piece has a reason, see the list
+	for _, d in HubLayout.Dressing do
+		local at = c + d.At
+		piece(ctx, hub, d.Model, CFrame.new(at) * CFrame.Angles(0, math.rad(d.Turn or 0), 0), d.Height, nil)
+	end
+	for _, b in HubLayout.Banners do
+		local at = c + b.At
+		-- hung 2.5 up the palisade, facing into the courtyard
+		local up = at + Vector3.new(0, 2.5, 0)
+		piece(ctx, hub, "keep_banner", CFrame.lookAt(up, Vector3.new(c.X, up.Y, c.Z)), 7.3, nil)
 	end
 
 	-- the five real defenders on pedestals
@@ -329,9 +376,10 @@ function Keep.Build(hub, c, ctx)
 	task.spawn(function()
 		ArtService.WaitModel("tree_oak", 30)
 		local rng = Random.new(41)
-		for i = 1, 40 do
-			local a = rng:NextNumber(0, math.pi * 2)
-			local d = rng:NextNumber(72, 120)
+		-- a close ring of tall trees just behind the palisade (their crowns are the skyline), then the woods further out
+		for i = 1, 64 do
+			local a = (i <= 28) and (i / 28 * math.pi * 2 + rng:NextNumber(-0.08, 0.08)) or rng:NextNumber(0, math.pi * 2)
+			local d = (i <= 28) and rng:NextNumber(66, 76) or rng:NextNumber(80, 125)
 			local pos = c + Vector3.new(math.cos(a) * d * 1.05, 0, math.sin(a) * d * 0.9)
 			local params = RaycastParams.new()
 			params.FilterType = Enum.RaycastFilterType.Include
@@ -339,7 +387,7 @@ function Keep.Build(hub, c, ctx)
 			local hit = workspace:Raycast(pos + Vector3.new(0, 150, 0), Vector3.new(0, -300, 0), params)
 			pos = hit and hit.Position - Vector3.new(0, 0.5, 0) or pos
 			ctx.placeModel(hub, "tree_oak", CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0),
-				rng:NextNumber(18, 30))
+				i <= 28 and rng:NextNumber(30, 42) or rng:NextNumber(20, 32))
 			if i % 8 == 0 then
 				task.wait()
 			end

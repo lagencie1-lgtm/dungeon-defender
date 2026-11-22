@@ -45,8 +45,14 @@ if isTouch then
 	dock:FindFirstChildOfClass("UIListLayout"):Destroy()
 	make("UIGridLayout", { CellSize = UDim2.fromOffset(SIZE, SIZE), CellPadding = UDim2.fromOffset(8, 8),
 		FillDirectionMaxCells = 4, SortOrder = Enum.SortOrder.LayoutOrder, Parent = dock })
-	menuButton = Ui.button({ Name = "OpenMenu", Size = UDim2.fromOffset(92, 50), Position = UDim2.fromOffset(8, 40),
+	-- a painted icon button with one small word under it (like the dock's buttons), not a block of text
+	menuButton = Ui.button({ Name = "OpenMenu", Size = UDim2.fromOffset(66, 66), Position = UDim2.fromOffset(8, 40),
 		Text = "Menu", BackgroundColor3 = WOOD, Parent = root })
+	menuButton.TextYAlignment = Enum.TextYAlignment.Bottom
+	menuButton.TextScaled = false
+	menuButton.TextSize = 14
+	Icons.Draw(menuButton, "backpack", Color3.fromRGB(235, 195, 115), {
+		Size = UDim2.new(1, -22, 1, -26), Position = UDim2.fromOffset(11, 4) })
 	menuButton.Activated:Connect(function()
 		dock.Visible = not dock.Visible
 	end)

@@ -463,6 +463,17 @@ function TerrainBuilder.Keep(c)
 		Vector3.new(avenue.Width, 4, (avenue.From - avenue.To).Magnitude), M.Cobblestone)
 	t:FillCylinder(CFrame.new(c + HubLayout.Plaza.At + Vector3.new(0, -2, 0)), 4, HubLayout.Plaza.Radius, M.Air)
 	t:FillCylinder(CFrame.new(c + HubLayout.Plaza.At + Vector3.new(0, -2, 0)), 4, HubLayout.Plaza.Radius, M.Cobblestone)
+	-- the forecourt of the Beacon Tower (pads and showcase stand on stone) and a path to every station
+	surface(CFrame.new(c + Vector3.new(0, -2, -24)), Vector3.new(76, 4, 30), M.Cobblestone)
+	for _, s in HubLayout.Stations do
+		local station = Vector3.new(s.At.X, 0, s.At.Z)
+		local inward = -station.Unit
+		local ringAt = station + inward * HubLayout.RingOffset
+		local from = HubLayout.Plaza.At + (ringAt - HubLayout.Plaza.At).Unit * (HubLayout.Plaza.Radius - 2)
+		local to = station
+		surface(CFrame.lookAt(c + (from + to) / 2 + Vector3.new(0, -2, 0), c + to + Vector3.new(0, -2, 0)),
+			Vector3.new(HubLayout.PathWidth, 4, (to - from).Magnitude), M.Cobblestone)
+	end
 	-- rolling hills outside the walls, higher further out, and a ring of mountains as the far skyline
 	for _ = 1, 26 do
 		local a = rng:NextNumber(0, math.pi * 2)
@@ -472,6 +483,14 @@ function TerrainBuilder.Keep(c)
 		if rng:NextNumber() < 0.35 then
 			t:FillBall(c + Vector3.new(math.cos(a) * (d + 8), h * 0.65, math.sin(a) * (d + 8)), h * 0.4, M.Rock)
 		end
+	end
+	-- rock cliffs breaking the hills behind the woods, so no bald hill shows over the wall
+	for i = 0, 13 do
+		local a = i / 14 * math.pi * 2 + rng:NextNumber(-0.12, 0.12)
+		local d = rng:NextNumber(100, 135)
+		local h = rng:NextNumber(26, 44)
+		t:FillBall(c + Vector3.new(math.cos(a) * d, h * 0.35, math.sin(a) * d), h * 0.55, M.Rock)
+		t:FillBall(c + Vector3.new(math.cos(a) * (d + 10), h * 0.2, math.sin(a) * (d + 10)), h * 0.6, M.Grass)
 	end
 	for i = 0, 5 do
 		local a = i / 6 * math.pi * 2 + 0.4

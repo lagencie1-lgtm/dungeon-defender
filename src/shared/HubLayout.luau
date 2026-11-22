@@ -20,17 +20,17 @@ HubLayout.PadCountdown = 4 -- seconds standing on a pad before the run starts
 
 -- stations on the ring around the plaza: one big word, the icon beside it, the painted prop, a walk-in ring
 HubLayout.Stations = {
-	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "keep_forge", Height = 13, At = Vector3.new(-42, 0, -14),
+	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "keep_forge", Height = 17, At = Vector3.new(-37, 0, -15),
 		Action = "Backpack", Color = Color3.fromRGB(255, 170, 80) },
-	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 13, At = Vector3.new(-42, 0, 12),
+	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 20, At = Vector3.new(-37, 0, 13),
 		Action = "Heroes", Color = Color3.fromRGB(120, 230, 120) },
-	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "keep_shop", Height = 11, At = Vector3.new(42, 0, -14),
+	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "keep_shop", Height = 15, At = Vector3.new(37, 0, -15),
 		Action = "Shop", Color = Color3.fromRGB(90, 220, 255) },
-	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 10, At = Vector3.new(42, 0, 12),
+	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 14, At = Vector3.new(37, 0, 13),
 		Action = "Pets", Color = Color3.fromRGB(170, 240, 120) },
-	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "keep_quests", Height = 10, At = Vector3.new(-26, 0, 32),
+	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "keep_quests", Height = 13, At = Vector3.new(-25, 0, 31),
 		Action = "Quests", Color = Color3.fromRGB(255, 215, 120) },
-	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "keep_chest", Height = 6, At = Vector3.new(26, 0, 32),
+	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "keep_chest", Height = 8, At = Vector3.new(25, 0, 31),
 		Action = "Daily", Color = Color3.fromRGB(255, 205, 80) },
 }
 HubLayout.RingRadius = 5 -- walk into it to open the station
@@ -53,9 +53,45 @@ HubLayout.Keepers = {
 	{ Station = "Pets", Side = -6 },
 }
 
--- where the main avenue and the round plaza are paved (TerrainBuilder.Keep)
+-- dressing, each piece with a reason (Blender: art/blender/keep_dressing.py). At is from the hub centre, Turn in
+-- degrees, Height in studs. The keep should feel lived in, with no stretch of bare lawn in the spawn view.
+HubLayout.Dressing = {
+	-- the forge works: coal, a weapon rack, a quench barrel
+	{ Model = "keep_coal", At = Vector3.new(-28, 0, -24), Height = 2.2 },
+	{ Model = "keep_rack", At = Vector3.new(-45, 0, -4), Turn = 90, Height = 3.4 },
+	{ Model = "keep_barrel", At = Vector3.new(-27, 0, -8), Height = 3 },
+	-- the shop's stock waits in crates and barrels
+	{ Model = "keep_crate", At = Vector3.new(29, 0, -24), Turn = 20, Height = 2.6 },
+	{ Model = "keep_crate", At = Vector3.new(31.5, 0, -26), Turn = -10, Height = 2.2 },
+	{ Model = "keep_barrel", At = Vector3.new(46, 0, -6), Height = 3 },
+	-- the well in the middle of the plaza (water for the keep, a meeting point)
+	{ Model = "keep_well", At = Vector3.new(11, 0, 6), Height = 6.5 }, -- (off the spawn-to-portal line)
+	-- lanterns light the avenue and the paths to the stations
+	{ Model = "keep_lantern", At = Vector3.new(-8, 0, 30), Turn = 0, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(8, 0, 30), Turn = 180, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(-8, 0, -24), Turn = 0, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(8, 0, -24), Turn = 180, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(-20, 0, 0), Turn = 90, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(20, 0, 0), Turn = -90, Height = 6.5 },
+	-- flower beds where people don't walk
+	{ Model = "keep_flowerbed", At = Vector3.new(-14, 0, 22), Turn = 0, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(14, 0, 22), Turn = 0, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(-48, 0, 30), Turn = 90, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(48, 0, 30), Turn = 90, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(-17, 0, -30), Turn = 0, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(17, 0, -30), Turn = 0, Height = 1.4 },
+}
+-- the keep's banners hang on the inside of the palisade
+HubLayout.Banners = {
+	{ At = Vector3.new(-30, 0, -47), Turn = 0 }, { At = Vector3.new(30, 0, -47), Turn = 0 },
+	{ At = Vector3.new(-57, 0, -20), Turn = 90 }, { At = Vector3.new(57, 0, -20), Turn = -90 },
+	{ At = Vector3.new(-57, 0, 20), Turn = 90 }, { At = Vector3.new(57, 0, 20), Turn = -90 },
+	{ At = Vector3.new(-14, 0, 47), Turn = 180 }, { At = Vector3.new(14, 0, 47), Turn = 180 },
+}
+-- where the main avenue and the round plaza are paved (TerrainBuilder.Keep); paths lead from the plaza to every station
 HubLayout.Avenue = { From = Vector3.new(0, 0, 44), To = Vector3.new(0, 0, -30), Width = 12 }
-HubLayout.Plaza = { At = Vector3.new(0, 0, 2), Radius = 17 }
+HubLayout.Plaza = { At = Vector3.new(0, 0, 2), Radius = 20 }
+HubLayout.PathWidth = 8
 
 -- an offset from the hub centre to a world position
 function HubLayout.World(center, offset)

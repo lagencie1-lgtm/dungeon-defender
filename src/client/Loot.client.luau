@@ -705,3 +705,11 @@ player:GetAttributeChangedSignal("LastGold"):Connect(function()
 		toast("+" .. g .. " gold for the blacksmith (open your Backpack)", Ui.GOLD)
 	end
 end)
+
+-- controllers: the highlight jumps into the panel when it opens, B closes it
+Ui.Gamepad.Panel(panel, { closeButton = closeButton, close = function()
+	if panel.Visible then
+		openBag() -- (closing through here also marks new gear as seen)
+	end
+end })
+Ui.Gamepad.Panel(chestPanel, { default = chestOk })

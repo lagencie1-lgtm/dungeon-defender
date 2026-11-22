@@ -6,8 +6,10 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Shared.Config)
+local Gamepad = require(script.Parent.Gamepad)
 
 local Ui = {}
+Ui.Gamepad = Gamepad
 
 Ui.isTouch = (UserInputService.TouchEnabled and UserInputService.PreferredInput == Enum.PreferredInput.Touch)
 	or (RunService:IsStudio() and ReplicatedStorage:FindFirstChild("MobileTest") ~= nil)
@@ -22,14 +24,19 @@ function Ui.fitRoot(gui, root, mobileWidth, mobileHeight)
 			return
 		end
 		local width, height = 1280, 720
+		-- a TV is far away: with a controller the screens may grow up to 1.5x (1080p shows the full
+		-- 1280x720 layout at 1.5x, so the smallest HUD text is about 18 pixels or more)
+		local biggest = Gamepad.active and 1.5 or 1.3
 		if Ui.isTouch then
 			width, height = mobileWidth, mobileHeight
+			biggest = 1.3
 		end
-		local factor = math.min(size.X / width, size.Y / height, 1.3)
+		local factor = math.min(size.X / width, size.Y / height, biggest)
 		scale.Scale = factor
 		root.Size = UDim2.fromScale(1 / factor, 1 / factor)
 	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	Gamepad.OnChanged(fit)
 	fit()
 	return scale
 end

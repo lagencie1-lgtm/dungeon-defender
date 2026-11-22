@@ -1,0 +1,21 @@
+{
+  "name": "htd-autotest-gamepad",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "../src/shared" },
+      "GamepadTest": { "$className": "RemoteEvent" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "../src/server" },
+      "GamepadServer": { "$path": "gamepad/Gamepad.server.luau" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "../src/client" },
+        "GamepadClient": { "$path": "gamepad/Gamepad.client.luau" }
+      }
+    },
+    "MaterialService": { "$path": "../src/materials" }
+  }
+}

@@ -278,7 +278,7 @@ for i, towerType in Config.TowerOrder do
 		Text = info.Cost .. " mana · " .. (Config.BuildPoints[towerType] or 0) .. " bp",
 		TextColor3 = Ui.MANA, Parent = b })
 	if not isTouch then
-		label({ Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -18, 0, -8), Text = tostring(i),
+		label({ Name = "KeyHint", Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -18, 0, -8), Text = tostring(i),
 			BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(90, 70, 130), ZIndex = 3, Parent = b }, {})
 	end
 	local lock = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
@@ -345,7 +345,7 @@ local function abilityButton(text, key, order)
 	local nameLabel = label({ Size = UDim2.new(1, -8, 0.45, 0), Position = UDim2.fromScale(0, 0.12), AnchorPoint = Vector2.new(0, 0),
 		Text = text, Parent = b })
 	if not isTouch then
-		label({ Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0, 4, 1, -20), Text = "[" .. key .. "]",
+		label({ Name = "KeyHint", Size = UDim2.new(1, -8, 0, 16), Position = UDim2.new(0, 4, 1, -20), Text = "[" .. key .. "]",
 			Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, Parent = b })
 	end
 	local shade = make("Frame", { Size = UDim2.fromScale(1, 0), Position = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0, 1),
@@ -365,8 +365,11 @@ end
 -------------------------------------------------------------------------------
 -- defender info panel (shows when you click one of your defenders)
 -------------------------------------------------------------------------------
+-- (phones: 60-tall buttons, so upgrade and sell are at least 44 pixels on a small phone)
+local INFO_BUTTON = isTouch and 60 or 38
 local infoPanel = make("Frame", {
-	Size = UDim2.fromOffset(240, 176),
+	Name = "TowerInfo",
+	Size = UDim2.fromOffset(240, 100 + INFO_BUTTON * 2),
 	Position = isTouch and UDim2.new(1, -124, 0.42, 0) or UDim2.new(1, -10, 0.5, 0),
 	AnchorPoint = Vector2.new(1, 0.5),
 	BackgroundColor3 = Ui.DARK,
@@ -377,9 +380,9 @@ local infoPanel = make("Frame", {
 local infoTitle = label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 8), Text = "", Parent = infoPanel })
 local infoStats = label({ Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 36), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextWrapped = true, Parent = infoPanel })
-local upgradeButton = button({ Size = UDim2.new(1, -20, 0, 38), Position = UDim2.fromOffset(10, 82),
+local upgradeButton = button({ Name = "Upgrade", Size = UDim2.new(1, -20, 0, INFO_BUTTON), Position = UDim2.fromOffset(10, 82),
 	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Upgrade", Parent = infoPanel })
-local sellButton = button({ Size = UDim2.new(1, -20, 0, 38), Position = UDim2.fromOffset(10, 128),
+local sellButton = button({ Name = "Sell", Size = UDim2.new(1, -20, 0, INFO_BUTTON), Position = UDim2.fromOffset(10, 90 + INFO_BUTTON),
 	BackgroundColor3 = Color3.fromRGB(140, 50, 50), Text = "Sell", Parent = infoPanel })
 
 -- phones: confirm where to build
@@ -1177,6 +1180,7 @@ end)
 -- placing defenders
 -------------------------------------------------------------------------------
 local placing = nil -- the defender type we're placing, or nil
+local placingWithPad = false -- true: a controller is placing, the ghost stands in front of the hero
 local ghost = nil
 local ghostPos = nil -- phones: the spot that was tapped
 local displayedPos, displayedReason
@@ -1249,9 +1253,11 @@ end
 
 local function stopPlacing()
 	placing = nil
+	placingWithPad = false
 	ghostPos, displayedPos, displayedReason = nil, nil, nil
 	confirmBar.Visible = false
 	tapHint.Visible = false
+	tapHint.Text = "Tap the ground where it should go"
 	if ghost then
 		ghost:Destroy()
 		ghost = nil
@@ -1382,6 +1388,21 @@ local function refreshPlacement(pos)
 	ghost.Parent = workspace
 end
 
+-- controllers: the spot a few studs in front of the hero (walk to move the ghost)
+local PAD_REACH = 7
+local function padSpot()
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		return nil
+	end
+	local look = rootPart.CFrame.LookVector
+	local forward = Vector3.new(look.X, 0, look.Z)
+	forward = forward.Magnitude > 0.01 and forward.Unit or Vector3.new(0, 0, -1)
+	local spot = rootPart.Position + forward * PAD_REACH
+	return Vector3.new(spot.X, 0, spot.Z)
+end
+
 local placementElapsed = 0
 RunService.Heartbeat:Connect(function(dt)
 	if not placing or not ghost then
@@ -1390,7 +1411,10 @@ RunService.Heartbeat:Connect(function(dt)
 	placementElapsed += dt
 	if placementElapsed >= (isTouch and 0.12 or 0.03) then
 		placementElapsed = 0
-		if isTouch then
+		if placingWithPad then
+			ghostPos = padSpot()
+			refreshPlacement(ghostPos)
+		elseif isTouch then
 			refreshPlacement(ghostPos)
 		else
 			refreshPlacement(groundUnder(UserInputService:GetMouseLocation()))
@@ -1473,7 +1497,7 @@ local function selectTower(model)
 	refreshInfo()
 end
 
-upgradeButton.Activated:Connect(function()
+local function upgradeSelected()
 	if not selected then
 		return
 	end
@@ -1484,7 +1508,10 @@ upgradeButton.Activated:Connect(function()
 		showMessage(reason or "Can't upgrade", Ui.BAD)
 	end
 	refreshInfo()
-end)
+end
+upgradeButton.Activated:Connect(upgradeSelected)
+-- the test build presses this button through here (scripts can't press A on a real controller)
+make("BindableEvent", { Name = "Press", Parent = upgradeButton }).Event:Connect(upgradeSelected)
 
 sellButton.Activated:Connect(function()
 	if not selected then
@@ -1574,7 +1601,7 @@ end
 startButton.Activated:Connect(function()
 	Remotes.StartWave:FireServer()
 end)
-speedButton.Activated:Connect(function()
+local function nextSpeed()
 	local current = GameState:GetAttribute("Speed") or 1
 	local speeds = table.clone(Config.Speeds)
 	if player:GetAttribute("PassSpeed3x") then
@@ -1582,7 +1609,8 @@ speedButton.Activated:Connect(function()
 	end
 	local idx = table.find(speeds, current) or 1
 	Remotes.SetSpeed:FireServer(speeds[idx % #speeds + 1])
-end)
+end
+speedButton.Activated:Connect(nextSpeed)
 playAgainButton.Activated:Connect(function()
 	Remotes.PlayAgain:FireServer()
 end)
@@ -1657,8 +1685,9 @@ GameState:GetAttributeChangedSignal("Gold"):Connect(function()
 	end
 end)
 
+local shortcuts
 if not isTouch then
-	local shortcuts = label({ BackgroundColor3 = Color3.fromRGB(37, 29, 25), BackgroundTransparency = 0.12, Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
+	shortcuts = label({ BackgroundColor3 = Color3.fromRGB(37, 29, 25), BackgroundTransparency = 0.12, Size = UDim2.fromOffset(300, 40), Position = UDim2.new(1, -10, 1, -10), AnchorPoint = Vector2.new(1, 1),
 		Text = "1-5 build · click a defender to upgrade · Shift builds more · B shop · Q cancel",
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextStrokeTransparency = 0.5, TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Center, Parent = root })
@@ -1668,6 +1697,193 @@ if not isTouch then
 	GameState:GetAttributeChangedSignal("State"):Connect(showShortcuts)
 	showShortcuts()
 end
+
+-------------------------------------------------------------------------------
+-- controllers (the full button table is at the top of Gamepad.luau)
+-------------------------------------------------------------------------------
+local GuiService = game:GetService("GuiService")
+local Gamepad = Ui.Gamepad
+
+-- panels: the highlight jumps in when they open, B closes them
+Gamepad.Panel(shopPanel, { closeButton = shopClose, default = function()
+	return tabButtons[shopTab] -- the tab that is showing
+end })
+Gamepad.Panel(dailyPanel, { default = claimButton, closeButton = dailyClose })
+Gamepad.Panel(mapPanel, { closeButton = mapClose })
+Gamepad.Panel(endPanel, { default = playAgainButton, closable = false })
+Gamepad.Panel(infoPanel, { default = upgradeButton, close = closeInfo })
+Gamepad.Hint(infoPanel, Enum.KeyCode.ButtonB, UDim2.new(1, -6, 0, 6))
+
+local function panelOpen()
+	return shopPanel.Visible or dailyPanel.Visible or mapPanel.Visible or endPanel.Visible
+end
+
+-- the defender cards: d-pad left/right moves a gold frame, X builds the framed one
+local padIndex = 1
+local padCards = {}
+for i, towerType in Config.TowerOrder do
+	local b = towerButtons[towerType].button
+	local focus = make("Frame", { Name = "PadFocus", Size = UDim2.new(1, 8, 1, 8), Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Visible = false, ZIndex = 6, Parent = b },
+		{ corner(12), make("UIStroke", { Color = Ui.GOLD, Thickness = 3 }) })
+	padCards[i] = { focus = focus, badge = Gamepad.Hint(b, Enum.KeyCode.ButtonX), keyHint = b:FindFirstChild("KeyHint") }
+end
+local function showPadCards()
+	for i, card in padCards do
+		card.focus.Visible = Gamepad.active and i == padIndex
+		Gamepad.ShowHint(card.badge, i == padIndex)
+		if card.keyHint then
+			card.keyHint.Visible = not Gamepad.active
+		end
+	end
+end
+
+-- placing with a controller: the ghost stands in front of the hero, A builds, B cancels
+local function padStartPlacing(towerType)
+	startPlacing(towerType)
+	if placing then
+		placingWithPad = true
+		GuiService.SelectedObject = nil
+		ghostPos = padSpot()
+		confirmBar.Visible = true
+		tapHint.Text = "Walk to move it"
+		tapHint.Visible = true
+	end
+end
+
+-- the nearest of your own defenders, at most 14 studs away
+local PICK_RANGE = 14
+local function nearestDefender()
+	local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		return nil
+	end
+	local best, bestDistance = nil, PICK_RANGE
+	for _, tower in workspace.Towers:GetChildren() do
+		if tower:GetAttribute("Owner") == player.UserId and tower.PrimaryPart then
+			local offset = tower.PrimaryPart.Position - rootPart.Position
+			local distance = Vector3.new(offset.X, 0, offset.Z).Magnitude
+			if distance <= bestDistance then
+				best, bestDistance = tower, distance
+			end
+		end
+	end
+	return best
+end
+
+Gamepad.Bind("TowerStep", { Enum.KeyCode.DPadLeft, Enum.KeyCode.DPadRight }, function(keyCode)
+	if not towerBar.Visible or panelOpen() then
+		return false
+	end
+	local step = keyCode == Enum.KeyCode.DPadRight and 1 or -1
+	padIndex = (padIndex - 1 + step) % #Config.TowerOrder + 1
+	showPadCards()
+	local towerType = Config.TowerOrder[padIndex]
+	Ui.pop(towerButtons[towerType].button, 1.06)
+	if placingWithPad then
+		padStartPlacing(towerType) -- swap the ghost for the new card
+	end
+	return true
+end)
+Gamepad.Bind("Build", { Enum.KeyCode.ButtonX }, function()
+	if not towerBar.Visible or panelOpen() then
+		return false -- (in the Outpost X belongs to the station prompts)
+	end
+	local towerType = Config.TowerOrder[padIndex]
+	if placing == towerType then
+		stopPlacing()
+	else
+		padStartPlacing(towerType)
+	end
+	return true
+end)
+Gamepad.Bind("Confirm", { Enum.KeyCode.ButtonA }, function()
+	if not placingWithPad or not placing then
+		return false -- A jumps
+	end
+	task.spawn(tryPlace, ghostPos)
+	return true
+end)
+Gamepad.Bind("PickDefender", { Enum.KeyCode.ButtonY }, function()
+	if not towerBar.Visible or panelOpen() then
+		return false
+	end
+	local tower = nearestDefender()
+	if tower then
+		selectTower(tower) -- the info panel opens with Upgrade highlighted
+	else
+		showMessage("Walk up to one of your defenders first", Ui.TEXT_DIM)
+	end
+	return true
+end)
+Gamepad.Bind("Attack", { Enum.KeyCode.ButtonR2 }, function()
+	Remotes.HeroAttack:FireServer()
+	return true
+end)
+Gamepad.Bind("Whirl", { Enum.KeyCode.ButtonR1 }, function()
+	doWhirl()
+	return true
+end)
+Gamepad.Bind("Leap", { Enum.KeyCode.ButtonL1 }, function()
+	doLeap()
+	return true
+end)
+Gamepad.Bind("StartWave", { Enum.KeyCode.ButtonL2 }, function()
+	if not startButton.Visible or panelOpen() then
+		return false
+	end
+	Remotes.StartWave:FireServer()
+	return true
+end)
+Gamepad.Bind("Down", { Enum.KeyCode.DPadDown }, function()
+	if lobbyBar.Visible and not panelOpen() then
+		GuiService.SelectedObject = runButton -- the Outpost: highlight Start run (A starts, B leaves)
+		return true
+	elseif speedButton.Visible and not panelOpen() then
+		nextSpeed()
+		return true
+	end
+	return false
+end)
+lobbyBar.SelectionGroup = true
+Gamepad.OnBack(function()
+	if placing then
+		stopPlacing()
+		return true
+	end
+	return false
+end)
+
+-- the badges next to the action buttons (they show only while a controller is in use)
+Gamepad.Hint(confirmButton, Enum.KeyCode.ButtonA)
+Gamepad.Hint(cancelButton, Enum.KeyCode.ButtonB)
+Gamepad.Hint(startButton, Enum.KeyCode.ButtonL2)
+Gamepad.Hint(speedButton, Enum.KeyCode.DPadDown)
+Gamepad.Hint(runButton, Enum.KeyCode.DPadDown)
+Gamepad.Hint(attackButton, Enum.KeyCode.ButtonR2)
+Gamepad.Hint(whirlButton, Enum.KeyCode.ButtonR1)
+Gamepad.Hint(leapButton, Enum.KeyCode.ButtonL1)
+
+Gamepad.OnChanged(function(active)
+	showPadCards()
+	for _, b in { attackButton, whirlButton, leapButton } do
+		local keyHint = b:FindFirstChild("KeyHint")
+		if keyHint then
+			keyHint.Visible = not active
+		end
+	end
+	if shortcuts then
+		shortcuts.Text = active
+			and ("Left/Right pick · " .. Gamepad.Name(Enum.KeyCode.ButtonX) .. " build · " .. Gamepad.Name(Enum.KeyCode.ButtonY)
+				.. " your defender · " .. Gamepad.Name(Enum.KeyCode.ButtonL2) .. " start wave · Up menu")
+			or "1-5 build · click a defender to upgrade · Shift builds more · B shop · Q cancel"
+	end
+	-- picked up the controller in the middle of placing: the ghost follows the hero from now on
+	if active and placing and not placingWithPad then
+		padStartPlacing(placing)
+	end
+end)
+
 
 -- stalls in the Outpost open these screens
 Remotes.OpenPanel.OnClientEvent:Connect(function(name)

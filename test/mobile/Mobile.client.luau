@@ -27,9 +27,27 @@ local function fits(item, bounds)
 		item.Name .. " exceeds the safe area")
 end
 
+-- Touch rule: every main button is at least 44 pixels tall, here and on a small phone.
+-- Studio's window is bigger than a phone, so the size is also worked out for a small phone in landscape
+-- (800x360 safe area), with the same fit-to-screen rule as Ui.fitRoot (phone layout sizes, at most 1.3x).
+local PHONE = Vector2.new(800, 360)
+local PHONE_LAYOUT = { RealmGuardiansHud = Vector2.new(930, 480), SideMenu = Vector2.new(520, 330) }
+local function phoneHeight(item)
+	local screen = item:FindFirstAncestorOfClass("ScreenGui")
+	local layout = PHONE_LAYOUT[screen.Name]
+	local scale = screen.Root:FindFirstChildOfClass("UIScale").Scale
+	local phoneScale = math.min(PHONE.X / layout.X, PHONE.Y / layout.Y, 1.3)
+	return item.AbsoluteSize.Y / scale * phoneScale
+end
+local function bigEnough(item)
+	assert(item.AbsoluteSize.Y >= 44, item.Name .. " under 44 pixels tall")
+	local small = phoneHeight(item)
+	assert(small >= 44, string.format("%s only %.0f pixels tall on a small phone", item.Name, small))
+end
+
 local function readableButton(item, bounds)
 	fits(item, bounds)
-	assert(item.AbsoluteSize.Y >= 40, item.Name .. " under 40 pixels tall")
+	bigEnough(item)
 	assert(item.BackgroundTransparency < 1, item.Name .. " hid its background")
 	assert(#item.Text > 0 and item.TextTransparency == 0 and item.TextFits, item.Name .. " native label is missing or clipped")
 	assert(not item:FindFirstChild("SkinText"), item.Name .. " moved text into a separate render layer")
@@ -84,21 +102,36 @@ local function check(name)
 	assertGround(name)
 	local hud = gui:WaitForChild("RealmGuardiansHud", 8)
 	assert(hud and hud.ScreenInsets == Enum.ScreenInsets.CoreUISafeInsets, "HUD escaped safe insets")
+	-- every screen of ours stays out of the notch and the home bar
+	for _, screen in gui:GetChildren() do
+		if screen:IsA("ScreenGui") and (screen.Name:match("Hud$") or screen.Name == "SideMenu") then
+			assert(screen.ScreenInsets == Enum.ScreenInsets.CoreUISafeInsets, screen.Name .. " escaped safe insets")
+		end
+	end
 	local root = hud.Root
 	if name == "Outpost" then
 		assert(not workspace:FindFirstChild("Map"), "the first join already has a battlefield")
 		local hub = workspace.Outpost
-		local gate = hub:WaitForChild("RangerGatehouse", 10)
-		assert(gate and gate:WaitForChild("WallWalk", 5), "gatehouse did not stream")
-		waitFor(function() return gate:GetAttribute("ArrowOrigin") end)
+		-- the Watch Keep hub: a spawn, the first map pad (StartPad) and a walk-in ring per station
+		local pad = hub:WaitForChild("StartPad", 10)
+		assert(pad and hub:WaitForChild("OutpostSpawn", 5), "the Keep's spawn or start pad did not stream")
 		local character = player.Character or player.CharacterAdded:Wait()
 		local humanoid = character:WaitForChild("Humanoid")
 		local rootPart = character:WaitForChild("HumanoidRootPart")
-		local chest = hub:WaitForChild("outpost_chest"):FindFirstChildOfClass("ProximityPrompt")
-		assert((rootPart.Position - chest.Parent.Position).Magnitude > chest.MaxActivationDistance, "chest prompt at spawn")
-		humanoid:MoveTo(Config.OutpostCenter + Vector3.new(0, 1, -20))
-		assert(humanoid.MoveToFinished:Wait(), "walk from spawn under the gate failed")
-		assert((rootPart.Position - hub.StartPad.Position).Magnitude < 6, "missed the portal approach")
+		local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
+		for _, station in HubLayout.Stations do
+			local ring = hub:WaitForChild(station.Id .. "Ring", 5)
+			assert(ring, station.Id .. "Ring missing")
+			local offset = rootPart.Position - ring.Position
+			assert(Vector3.new(offset.X, 0, offset.Z).Magnitude > HubLayout.RingRadius, station.Id .. " opens at spawn")
+		end
+		-- walk from the spawn to just in front of the pad (standing on it would start a run)
+		local toPad = Vector3.new(pad.Position.X - rootPart.Position.X, 0, pad.Position.Z - rootPart.Position.Z)
+		local approach = pad.Position - toPad.Unit * (HubLayout.PadRadius + 3)
+		humanoid:MoveTo(approach)
+		assert(humanoid.MoveToFinished:Wait(), "walk from spawn to the start pad failed")
+		assert((Vector3.new(rootPart.Position.X, 0, rootPart.Position.Z) - Vector3.new(approach.X, 0, approach.Z)).Magnitude < 4,
+			"missed the portal approach")
 		local dock = gui:WaitForChild("SideMenu").Root
 		assert(not dock.Dock.Visible, "phone joined with an expanded menu")
 		for _, item in { dock.OpenMenu, root:FindFirstChild("StartRun", true), root:FindFirstChild("PickMap", true) } do
@@ -117,8 +150,17 @@ local function check(name)
 			local item = root:FindFirstChild(id, true)
 			assert(item, id .. " missing")
 			fits(item, root)
-			assert(item.AbsoluteSize.Y >= 40, item.Name .. " under 40 pixels tall")
+			bigEnough(item)
 		end
+		-- the placing and defender buttons (hidden now, their size is what counts)
+		for _, id in { "ConfirmBuild", "CancelBuild", "Upgrade", "Sell" } do
+			local item = root:FindFirstChild(id, true)
+			assert(item, id .. " missing")
+			bigEnough(item)
+		end
+		print("[MOBILE] touch targets on a small phone: tower card", math.floor(phoneHeight(root.TowerBar)),
+			"upgrade", math.floor(phoneHeight(root.TowerInfo.Upgrade)), "menu",
+			math.floor(phoneHeight(gui.SideMenu.Root.OpenMenu)))
 	end
 end
 

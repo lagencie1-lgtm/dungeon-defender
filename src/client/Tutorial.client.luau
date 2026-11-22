@@ -23,7 +23,19 @@ if player:GetAttribute("TutorialDone") ~= false then
 	return
 end
 
-local gui = make("ScreenGui", { Name = "TutorialHud", ResetOnSpawn = false, DisplayOrder = 5, Parent = player:WaitForChild("PlayerGui") })
+local gui = make("ScreenGui", { Name = "TutorialHud", ResetOnSpawn = false, DisplayOrder = 5,
+	ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets, Parent = player:WaitForChild("PlayerGui") })
+local Gamepad = Ui.Gamepad
+-- the hint in the words of the device in use: a controller, a phone, or a keyboard and mouse
+local function pick(pad, touch, pc)
+	if Gamepad.active then
+		return pad
+	end
+	return isTouch and touch or pc
+end
+local function key(keyCode)
+	return Gamepad.Name(keyCode)
+end
 local box = make("Frame", { Size = UDim2.new(isTouch and 0.23 or 0.6, 0, 0, isTouch and 52 or 56),
 	Position = isTouch and UDim2.new(0, 8, 0.42, 0) or UDim2.new(0.5, 0, 1, -150),
 	AnchorPoint = isTouch and Vector2.zero or Vector2.new(0.5, 1),
@@ -78,15 +90,20 @@ while not finished do
 	local wave = GameState:GetAttribute("Wave") or 0
 	if s == "Lobby" then
 		local pad = workspace:FindFirstChild("Outpost") and workspace.Outpost:FindFirstChild("StartPad")
-		show(isTouch and "Tap Start run or walk to the portal" or
-			"Welcome, hero! Walk to the glowing circle and press E to start a run", pad and pad.Position)
+		show(pick("Welcome, hero! Walk to the glowing circle to start a run", "Tap Start run or walk to the portal",
+			"Welcome, hero! Walk to the glowing circle and press E to start a run"), pad and pad.Position)
 	elseif s == "Break" and wave == 0 and myTowers() == 0 then
-		show(isTouch and "Tap Ranger, tap by the arrow, then tap Build here" or
-			"Press 1 (or click Ranger), then click near the arrow to build", goodSpot())
+		show(pick("Press " .. key(Enum.KeyCode.ButtonX) .. " for a Ranger, walk to the arrow, then press " .. key(Enum.KeyCode.ButtonA),
+			"Tap Ranger, tap by the arrow, then tap Build here",
+			"Press 1 (or click Ranger), then click near the arrow to build"), goodSpot())
 	elseif s == "Break" and wave == 0 then
-		show(isTouch and "Tap Start wave when ready" or "Nice! Build a few more if you like, then press Start wave now", nil)
+		show(pick("Nice! Build a few more if you like, then press " .. key(Enum.KeyCode.ButtonL2) .. " to start the wave",
+			"Tap Start wave when ready", "Nice! Build a few more if you like, then press Start wave now"), nil)
 	elseif s == "Wave" and wave == 1 then
-		show(isTouch and "Goblins! Run to them and tap Sword to hit them" or "Goblins! Run to them and press F to hit them (E and R are big attacks)", nil)
+		show(pick("Goblins! Run to them and press " .. key(Enum.KeyCode.ButtonR2) .. " to hit them ("
+			.. key(Enum.KeyCode.ButtonR1) .. " and " .. key(Enum.KeyCode.ButtonL1) .. " are big attacks)",
+			"Goblins! Run to them and tap Sword to hit them",
+			"Goblins! Run to them and press F to hit them (E and R are big attacks)"), nil)
 	elseif (s == "Break" and wave >= 1) or s == "Won" or s == "Lost" then
 		show("You've got it! Kill goblins, grab loot, upgrade gear at the Blacksmith. Have fun!", nil)
 		task.wait(6)

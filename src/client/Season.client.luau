@@ -149,3 +149,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		panel.Visible = false
 	end
 end)
+
+-- controllers: the highlight jumps into the panel when it opens, B closes it
+Ui.Gamepad.Panel(panel, { closeButton = closeButton })

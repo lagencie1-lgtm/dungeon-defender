@@ -311,3 +311,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		reveal.Visible = false
 	end
 end)
+
+-- controllers: the highlight jumps into the panel when it opens, B closes it (the hatch reveal first)
+Ui.Gamepad.Panel(panel, { closeButton = closeButton, close = function()
+	panel.Visible = false
+	reveal.Visible = false
+end })
+Ui.Gamepad.Panel(reveal, { default = revealOk })

@@ -55,6 +55,47 @@ if isTouch then
 	end)
 end
 
+-- controllers: d-pad up puts the highlight on the first menu button (and opens the dock on a phone with a
+-- controller), B leaves the menu
+local GuiService = game:GetService("GuiService")
+local Gamepad = Ui.Gamepad
+dock.SelectionGroup = true
+local function menuHasFocus()
+	local current = GuiService.SelectedObject
+	return current ~= nil and current:IsDescendantOf(dock)
+end
+local function leaveMenu()
+	GuiService.SelectedObject = nil
+	if menuButton then
+		dock.Visible = false
+	end
+end
+function Menu.Focus()
+	if menuHasFocus() then
+		leaveMenu()
+		return
+	end
+	dock.Visible = true
+	local first
+	for _, b in dock:GetChildren() do
+		if b:IsA("GuiButton") and b.Visible and (not first or b.LayoutOrder < first.LayoutOrder) then
+			first = b
+		end
+	end
+	GuiService.SelectedObject = first
+end
+Gamepad.Bind("Menu", { Enum.KeyCode.DPadUp }, function()
+	Menu.Focus()
+	return true
+end)
+Gamepad.OnBack(function()
+	if menuHasFocus() then
+		leaveMenu()
+		return true
+	end
+end)
+Gamepad.Hint(menuButton or dock, Enum.KeyCode.DPadUp, UDim2.new(1, -4, 0, 2))
+
 -- adds a button. Returns the button and a red dot to show "something new"
 function Menu.Add(name, icon, order, color)
 	local b = make("TextButton", {

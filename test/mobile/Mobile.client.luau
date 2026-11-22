@@ -67,7 +67,7 @@ local function assertGround(name)
 				return false
 			end
 			local tint = workspace.Terrain:GetMaterialColor(material)
-			local expected = GroundLooks.Colors[texture]:Lerp(Color3.new(1, 1, 1), 0.15)
+			local expected = GroundLooks.Tint(texture)
 			if math.max(math.abs(tint.R - expected.R), math.abs(tint.G - expected.G), math.abs(tint.B - expected.B)) > 0.012 then
 				return false
 			end

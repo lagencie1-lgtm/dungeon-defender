@@ -33,4 +33,11 @@ for _, name in { "t_ash", "basalt", "t_cave_floor", "t_cave_wall" } do
 	GroundLooks.Colors[name .. "_flat"] = GroundLooks.Colors[name]
 end
 
+-- how far each painting's tint goes towards white (white shows the painting as painted). The meadow grass is lifted
+-- more: from the run camera it was a dark green carpet on a phone (cycle 5 film).
+GroundLooks.Lift = { t_grass = 0.42 }
+function GroundLooks.Tint(texture)
+	return GroundLooks.Colors[texture]:Lerp(Color3.new(1, 1, 1), GroundLooks.Lift[texture] or 0.15)
+end
+
 return GroundLooks

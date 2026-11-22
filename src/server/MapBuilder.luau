@@ -456,6 +456,45 @@ function MapBuilder.BuildBattlefield(mapId)
 
 	MapProps.Place(decor, mapInfo, Config.PathWidth, Config.DistanceToPath)
 
+	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides) with a barrel or crate now and
+	-- then, all inside the no-build band beside the road so they never stand where a defender goes
+	task.spawn(function()
+		ArtService.WaitModel("keep_lantern", 20)
+		local Ground = require(ReplicatedStorage.Shared.Ground)
+		local pts = Config.Path
+		local n = 0
+		for i = 1, #pts - 1 do
+			local a, b = pts[i], pts[i + 1]
+			local length = (b - a).Magnitude
+			local dir = (b - a).Unit
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for d = 14, length - 8, 28 do
+				n += 1
+				local s = (n % 2 == 0) and 1 or -1
+				local spot = a + dir * d + side * s * (Config.PathWidth / 2 + 1.8)
+				spot = Vector3.new(spot.X, (Ground.At(spot.X, spot.Z)), spot.Z)
+				local look = placeModel(decor, "keep_lantern", CFrame.lookAt(spot, spot - side * s), 6.5)
+				if look then
+					for _, p in look:GetDescendants() do
+						if p:IsA("BasePart") and p.Material == Enum.Material.Neon and n % 2 == 0 then
+							local light = Instance.new("PointLight")
+							light.Color = Color3.fromRGB(255, 200, 120)
+							light.Range = 12
+							light.Brightness = 0.7
+							light.Parent = p
+						end
+					end
+				end
+				if n % 3 == 0 then
+					local prop = (n % 6 == 0) and "keep_crate" or "keep_barrel"
+					local at = spot + dir * 2.4
+					placeModel(decor, prop, CFrame.new(Vector3.new(at.X, (Ground.At(at.X, at.Z)), at.Z)) * CFrame.Angles(0, n, 0),
+						prop == "keep_crate" and 2.2 or 2.8)
+				end
+			end
+		end
+	end)
+
 	-- folders the game fills while you play
 	for _, name in { "Towers", "Enemies" } do
 		local old = workspace:FindFirstChild(name)

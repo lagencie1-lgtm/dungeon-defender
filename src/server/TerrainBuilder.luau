@@ -117,7 +117,7 @@ local function applyLooks(theme)
 		end
 		local own = GroundLooks.Colors[texture]
 		-- This tint is also what low-detail clients see when Roblox omits the image.
-		t:SetMaterialColor(material, variant and own:Lerp(Color3.new(1, 1, 1), 0.15) or own)
+		t:SetMaterialColor(material, variant and GroundLooks.Tint(texture) or own)
 	end
 end
 
@@ -253,8 +253,9 @@ function TerrainBuilder.Forest(map, camp)
 	end
 
 	-- the path: packed sandy dirt inside a cobbled kerb (leafy soil read as a red carpet in the violet light)
-	pathStrip(Config.PathWidth + 5, M.Cobblestone, -1.2, 2.6)
-	pathStrip(Config.PathWidth, M.Ground, -1.0, 2.4)
+	-- a cobbled road with a packed-earth verge (the old orange dirt road read as a red carpet on the phone)
+	pathStrip(Config.PathWidth + 5, M.Mud, -1.2, 2.6)
+	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
 
 	-- a few still ponds away from the path
 	local ponds, tries = 0, 0

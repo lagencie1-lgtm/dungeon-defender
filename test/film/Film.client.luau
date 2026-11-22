@@ -85,6 +85,15 @@ for _, s in HubLayout.Stations do
 		at + Vector3.new(0, s.Height * 0.45, 0))
 	task.wait(1.6)
 end
+-- each station's ring from above, at an angle (layout check: ring clear of the building and of decor)
+for _, s in HubLayout.Stations do
+	local at = c + s.At
+	local inward = (Vector3.new(c.X, 0, c.Z) - Vector3.new(at.X, 0, at.Z)).Unit
+	local ringAt = at + inward * (s.RingOffset or HubLayout.RingOffset)
+	mark("ring " .. s.Id)
+	workspace.CurrentCamera.CFrame = CFrame.lookAt(ringAt + inward * 14 + Vector3.new(0, 22, 0), (at + ringAt) / 2)
+	task.wait(1.4)
+end
 workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 
 -- 4 the run
@@ -117,7 +126,45 @@ ask("Defenders")
 await("DefendersReady", 10)
 mark("wave")
 Remotes.StartWave:FireServer()
-task.wait(22)
+-- framing measured while the wave runs, with the player's own camera (rule, 2026-11-22: the hero is 12-15% of the
+-- screen height, a monster is on screen for at least 80% of the wave, and a monster is at least 6% tall)
+local samples, withMonster, heroSum, heroN, monsterMax = 0, 0, 0, 0, 0
+local function screenHeight(cf, size)
+	local cam = workspace.CurrentCamera
+	local top = cam:WorldToViewportPoint(cf.Position + Vector3.new(0, size.Y / 2, 0))
+	local bottom = cam:WorldToViewportPoint(cf.Position - Vector3.new(0, size.Y / 2, 0))
+	return math.abs(top.Y - bottom.Y) / cam.ViewportSize.Y
+end
+local waveStart = os.clock()
+while os.clock() - waveStart < 22 do
+	task.wait(0.5)
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	if char then
+		local cf, size = char:GetBoundingBox()
+		heroSum += screenHeight(cf, size)
+		heroN += 1
+	end
+	if (workspace:GetAttribute("WaveRunning") ~= false) then
+		local seen = false
+		for _, m in (workspace:FindFirstChild("Enemies") or workspace):GetChildren() do
+			if m:IsA("Model") and m:FindFirstChild("Look") then
+				local cf, size = m.Look:GetBoundingBox()
+				local p, onScreen = cam:WorldToViewportPoint(cf.Position)
+				if onScreen and p.Z > 0 then
+					seen = true
+					monsterMax = math.max(monsterMax, screenHeight(cf, size))
+				end
+			end
+		end
+		if #((workspace:FindFirstChild("Enemies") or workspace):GetChildren()) > 0 then
+			samples += 1
+			withMonster += seen and 1 or 0
+		end
+	end
+end
+print(string.format("[FILM] framing: hero %.1f%% of screen height, monster on screen %d of %d samples (%.0f%%), biggest monster %.1f%%",
+	heroSum / math.max(1, heroN) * 100, withMonster, samples, withMonster / math.max(1, samples) * 100, monsterMax * 100))
 
 -- 6 ground close-ups: low cameras at towers' feet and along the path (where sinking shows)
 workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable

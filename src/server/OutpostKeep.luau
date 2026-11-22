@@ -10,6 +10,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
 local ArtService = require(script.Parent.ArtService)
 local State = require(script.Parent.State)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 
 local Keep = {}
 
@@ -148,6 +149,7 @@ local function ring(ctx, parent, name, at, radius, color, fill)
 end
 
 function Keep.Build(hub, c, ctx)
+	task.wait(0.3) -- the fresh terrain reaches physics before anything is set on it (Ground rays)
 	local spawnAt = c + HubLayout.Spawn
 	local portalAt = c + HubLayout.Portal
 	local spawn = ctx.part({ ClassName = "SpawnLocation", Name = "OutpostSpawn", Size = Vector3.new(10, 1, 10),
@@ -219,6 +221,7 @@ function Keep.Build(hub, c, ctx)
 	for _, info in HubLayout.Pads do
 		local map = Config.Maps[info.Map]
 		local at = c + info.At
+		at = Vector3.new(at.X, (Ground.Footprint(at, HubLayout.PadRadius + 0.6)), at.Z) -- on top of the paving
 		-- (the first map's pad keeps the old name StartPad: the tutorial arrow and the tests look for it)
 		local pad = disc(ctx, hub, info.Map == Config.MapOrder[1] and "StartPad" or "Pad_" .. info.Map, at,
 			HubLayout.PadRadius, map.Color, 0.25)
@@ -269,7 +272,9 @@ function Keep.Build(hub, c, ctx)
 		local facing = CFrame.lookAt(at, at + inward)
 		piece(ctx, hub, s.Model, facing, s.Height, Vector3.new(8, s.Height, 6))
 		sign(ctx, hub, s.Id .. "Sign", at + Vector3.new(0, s.Height + 4, 0) + inward * 2, at + inward * 20, s.Word, s.Icon, s.Color)
-		local ringAt = at + inward * HubLayout.RingOffset
+		local ringAt = at + inward * (s.RingOffset or HubLayout.RingOffset)
+		-- lying on the real ground (the paving), never under it
+		ringAt = Vector3.new(ringAt.X, (Ground.Footprint(ringAt, HubLayout.RingRadius)), ringAt.Z)
 		-- one soft cream ring for every station (the sign above carries its colour): calmer than six colours on the grass
 		local walkIn = ring(ctx, hub, s.Id .. "Ring", ringAt, HubLayout.RingRadius, CREAM, 0.88)
 		ctx.prompt(walkIn, s.Word:sub(1, 1) .. s.Word:sub(2):lower(), "", s.Action, 0)

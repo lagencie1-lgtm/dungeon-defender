@@ -11,30 +11,31 @@ HubLayout.PortalHeight = 12 -- the portal model, sized to fit the Tripo tower's 
 HubLayout.BeaconHeight = 42
 -- walk-in map pads in front of the gate (one per map, in Config.MapOrder)
 HubLayout.Pads = {
-	{ Map = "CursedForest", At = Vector3.new(-19, 0, -15) },
-	{ Map = "MagmaFortress", At = Vector3.new(0, 0, -13) },
-	{ Map = "CrystalCaves", At = Vector3.new(19, 0, -15) },
+	{ Map = "CursedForest", At = Vector3.new(-14, 0, -19) },
+	{ Map = "MagmaFortress", At = Vector3.new(0, 0, -17) },
+	{ Map = "CrystalCaves", At = Vector3.new(14, 0, -19) },
 }
-HubLayout.PadRadius = 5.5
+HubLayout.PadRadius = 4.5
 HubLayout.PadCountdown = 4 -- seconds standing on a pad before the run starts
 
 -- stations on the ring around the plaza: one big word, the icon beside it, the painted prop, a walk-in ring
 HubLayout.Stations = {
-	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "keep_forge", Height = 17, At = Vector3.new(-37, 0, -15),
+	{ Id = "Forge", Word = "FORGE", Icon = "backpack", Model = "keep_forge", Height = 17, At = Vector3.new(-37, 0, -15), RingOffset = 16.5,
 		Action = "Backpack", Color = Color3.fromRGB(255, 170, 80) },
-	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 20, At = Vector3.new(-37, 0, 13),
+	{ Id = "Heroes", Word = "HEROES", Icon = "heroes", Model = "keep_hero", Height = 20, At = Vector3.new(-37, 0, 13), RingOffset = 14.2,
 		Action = "Heroes", Color = Color3.fromRGB(120, 230, 120) },
-	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "keep_shop", Height = 15, At = Vector3.new(37, 0, -15),
+	{ Id = "Shop", Word = "SHOP", Icon = "shop", Model = "keep_shop", Height = 15, At = Vector3.new(37, 0, -15), RingOffset = 13.2,
 		Action = "Shop", Color = Color3.fromRGB(90, 220, 255) },
-	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 14, At = Vector3.new(37, 0, 13),
+	{ Id = "Pets", Word = "PETS", Icon = "pets", Model = "keep_pets", Height = 14, At = Vector3.new(37, 0, 13), RingOffset = 15.7,
 		Action = "Pets", Color = Color3.fromRGB(170, 240, 120) },
-	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "keep_quests", Height = 13, At = Vector3.new(-25, 0, 31),
+	{ Id = "Quests", Word = "QUESTS", Icon = "quests", Model = "keep_quests", Height = 13, At = Vector3.new(-25, 0, 31), RingOffset = 12.2,
 		Action = "Quests", Color = Color3.fromRGB(255, 215, 120) },
-	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "keep_chest", Height = 8, At = Vector3.new(25, 0, 31),
+	{ Id = "Rewards", Word = "REWARDS", Icon = "daily", Model = "keep_chest", Height = 8, At = Vector3.new(25, 0, 31), RingOffset = 13.4,
 		Action = "Daily", Color = Color3.fromRGB(255, 205, 80) },
 }
 HubLayout.RingRadius = 5 -- walk into it to open the station
-HubLayout.RingOffset = 9 -- the ring lies this far in front of the station, towards the plaza
+HubLayout.RingOffset = 9 -- default: how far in front of its building a ring lies; each station sets its own
+-- (RingOffset = the building's half-depth + 2 studs + the ring radius; test/hublayout checks the 2-stud gap)
 
 -- the five real defenders on pedestals by the gate (left three, right two), and the trophy board
 HubLayout.Showcase = {
@@ -59,25 +60,23 @@ HubLayout.Dressing = {
 	-- the forge works: coal, a weapon rack, a quench barrel
 	{ Model = "keep_coal", At = Vector3.new(-28, 0, -24), Height = 2.2 },
 	{ Model = "keep_rack", At = Vector3.new(-45, 0, -4), Turn = 90, Height = 3.4 },
-	{ Model = "keep_barrel", At = Vector3.new(-27, 0, -8), Height = 3 },
+	{ Model = "keep_barrel", At = Vector3.new(-47, 0, -25), Height = 3 },
 	-- the shop's stock waits in crates and barrels
 	{ Model = "keep_crate", At = Vector3.new(29, 0, -24), Turn = 20, Height = 2.6 },
 	{ Model = "keep_crate", At = Vector3.new(31.5, 0, -26), Turn = -10, Height = 2.2 },
 	{ Model = "keep_barrel", At = Vector3.new(46, 0, -6), Height = 3 },
 	-- the well in the middle of the plaza (water for the keep, a meeting point)
-	{ Model = "keep_well", At = Vector3.new(11, 0, 6), Height = 6.5 }, -- (off the spawn-to-portal line)
+	{ Model = "keep_well", At = Vector3.new(46, 0, 35), Height = 6.5 }, -- (in the corner: off every line from the spawn)
 	-- lanterns light the avenue and the paths to the stations
-	{ Model = "keep_lantern", At = Vector3.new(-8, 0, 30), Turn = 0, Height = 6.5 },
-	{ Model = "keep_lantern", At = Vector3.new(8, 0, 30), Turn = 180, Height = 6.5 },
-	{ Model = "keep_lantern", At = Vector3.new(-8, 0, -24), Turn = 0, Height = 6.5 },
-	{ Model = "keep_lantern", At = Vector3.new(8, 0, -24), Turn = 180, Height = 6.5 },
-	{ Model = "keep_lantern", At = Vector3.new(-20, 0, 0), Turn = 90, Height = 6.5 },
-	{ Model = "keep_lantern", At = Vector3.new(20, 0, 0), Turn = -90, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(-8, 0, 42), Turn = 0, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(8, 0, 42), Turn = 180, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(-7, 0, -30), Turn = 0, Height = 6.5 },
+	{ Model = "keep_lantern", At = Vector3.new(7, 0, -30), Turn = 180, Height = 6.5 },
 	-- flower beds where people don't walk
-	{ Model = "keep_flowerbed", At = Vector3.new(-14, 0, 22), Turn = 0, Height = 1.4 },
-	{ Model = "keep_flowerbed", At = Vector3.new(14, 0, 22), Turn = 0, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(-14, 0, 42), Turn = 0, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(14, 0, 42), Turn = 0, Height = 1.4 },
 	{ Model = "keep_flowerbed", At = Vector3.new(-48, 0, 30), Turn = 90, Height = 1.4 },
-	{ Model = "keep_flowerbed", At = Vector3.new(48, 0, 30), Turn = 90, Height = 1.4 },
+	{ Model = "keep_flowerbed", At = Vector3.new(50, 0, 22), Turn = 90, Height = 1.4 },
 	{ Model = "keep_flowerbed", At = Vector3.new(-17, 0, -30), Turn = 0, Height = 1.4 },
 	{ Model = "keep_flowerbed", At = Vector3.new(17, 0, -30), Turn = 0, Height = 1.4 },
 }

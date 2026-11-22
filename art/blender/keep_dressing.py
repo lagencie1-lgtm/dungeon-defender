@@ -106,6 +106,56 @@ elif name == "ring":
         a = i / 6 * math.pi * 2 + 0.26
         paint.glow(lib.box(f"Rune{i}", (0.55, 0.32, 0.06), (math.cos(a) * 4.5, math.sin(a) * 4.5, 0.27), W,
                            rotation=(0, 0, a + math.pi / 2)), (1.0, 1.0, 1.0))
+elif name == "field_rock":
+    # a mossy boulder group: three faceted rocks (faceting is charm, 6A), moss on top
+    for i, (x, y, r) in enumerate(((0, 0, 1.6), (1.5, 0.6, 1.0), (-1.2, 0.8, 0.8))):
+        rock = lib.sphere(f"Rock{i}", r, (x, y, r * 0.55), W, segments=7)
+        rock.scale = (1.15, 0.95, 0.75)
+        paint.paint(rock, "stone", (0.82, 0.8, 0.76), 1.4)
+        moss = lib.sphere(f"Moss{i}", r * 0.75, (x - 0.1, y, r * 1.05), W, segments=7)
+        moss.scale = (1.1, 0.9, 0.35)
+        paint.paint(moss, "leaves", (0.8, 1.0, 0.75), 1.0)
+elif name == "field_bush":
+    for i in range(5):
+        a = i / 5 * math.pi * 2
+        b = lib.sphere(f"Bush{i}", rnd.uniform(0.9, 1.3), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.9 + rnd.uniform(0, 0.3)), W, segments=8)
+        paint.paint(b, "leaves", (0.9, 1.05, 0.8), 1.0)
+    paint.paint(lib.sphere("Top", 1.2, (0, 0, 1.7), W, segments=8), "leaves", W, 1.0)
+    for i in range(4):
+        a = i / 4 * math.pi * 2 + 0.4
+        paint.paint(lib.sphere(f"Berry{i}", 0.18, (math.cos(a) * 1.5, math.sin(a) * 1.5, 1.4), W, segments=6), None, (0.85, 0.2, 0.3))
+elif name == "field_stump":
+    paint.paint(smooth(lib.cylinder("Stump", 1.1, 1.4, (0, 0, 0.7), W, vertices=10)), "bark", W, 1.4)
+    paint.paint(lib.cylinder("Top", 1.05, 0.06, (0, 0, 1.42), W, vertices=10), "wood", (1.0, 0.92, 0.8), 1.0)
+    for i in range(4):
+        a = i / 4 * math.pi * 2
+        root = lib.cone(f"Root{i}", 0.45, 1.6, (math.cos(a) * 1.2, math.sin(a) * 1.2, 0.2), W, vertices=6)
+        root.rotation_euler = (math.sin(a) * 1.2, -math.cos(a) * 1.2, 0)
+        paint.paint(root, "bark", W, 1.0)
+    for i in range(3):
+        paint.paint(lib.sphere(f"Mush{i}", 0.3, (0.9 + i * 0.3, -0.6, 0.35), W, segments=6), None, (0.85, 0.3, 0.25))
+elif name == "field_ruin":
+    # a ruined watchtower: three broken stone walls of a square tower, rubble, a fallen beam (an old fight here)
+    s = 7.0
+    for i, (x, y, w, d, h) in enumerate(((0, -s / 2, s, 1.0, 7.5), (-s / 2, 0, 1.0, s, 5.0), (s / 2, 0.8, 1.0, s - 1.6, 3.2))):
+        wall = lib.box(f"Wall{i}", (w, d, h), (x, y, h / 2), W)
+        paint.paint(bevel(wall, 0.15), "stone", (0.92, 0.9, 0.85), 2.0)
+    for i in range(9):
+        r = rnd.uniform(0.35, 0.8)
+        st = lib.box(f"Rubble{i}", (r * 2, r * 1.6, r), (rnd.uniform(-4.5, 4.5), rnd.uniform(-1.0, 4.5), r / 2), W,
+                     rotation=(0, 0, rnd.uniform(0, 3)))
+        paint.paint(bevel(st, 0.08), "stone", (0.85, 0.83, 0.78), 1.2)
+    beam = lib.box("Beam", (0.6, 6.5, 0.6), (1.5, 1.2, 0.9), W, rotation=(0.25, 0.1, 0.6))
+    paint.paint(beam, "wood_dark", W, 1.4)
+    paint.paint(lib.box("Banner", (1.6, 0.1, 2.6), (-1.2, -s / 2 - 0.6, 5.0), W), "cloth", (0.55, 0.35, 0.7), 1.0)
+elif name == "field_mushrooms":
+    for i in range(7):
+        x, y = rnd.uniform(-1.4, 1.4), rnd.uniform(-1.0, 1.0)
+        h = rnd.uniform(0.4, 0.9)
+        paint.paint(lib.cylinder(f"Stem{i}", 0.12, h, (x, y, h / 2), W, vertices=6), None, (0.95, 0.92, 0.82))
+        cap = lib.sphere(f"Cap{i}", rnd.uniform(0.28, 0.42), (x, y, h), W, segments=8)
+        cap.scale = (1, 1, 0.55)
+        paint.paint(cap, None, (0.62, 0.42, 0.85) if i % 2 else (0.85, 0.35, 0.3))
 else:
     raise SystemExit("unknown piece " + name)
 

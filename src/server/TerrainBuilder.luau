@@ -469,7 +469,7 @@ function TerrainBuilder.Keep(c)
 	for _, s in HubLayout.Stations do
 		local station = Vector3.new(s.At.X, 0, s.At.Z)
 		local inward = -station.Unit
-		local ringAt = station + inward * HubLayout.RingOffset
+		local ringAt = station + inward * (s.RingOffset or HubLayout.RingOffset)
 		local from = HubLayout.Plaza.At + (ringAt - HubLayout.Plaza.At).Unit * (HubLayout.Plaza.Radius - 2)
 		local to = station
 		surface(CFrame.lookAt(c + (from + to) / 2 + Vector3.new(0, -2, 0), c + to + Vector3.new(0, -2, 0)),

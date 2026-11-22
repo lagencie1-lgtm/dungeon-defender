@@ -9,11 +9,11 @@ local RunService = game:GetService("RunService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 local player = Players.LocalPlayer
 
-local RUN_DISTANCE = 30 -- studs from the hero when a run starts: the hero is about 13% of the screen height
+local RUN_DISTANCE = 20.5 -- studs from the hero in a run: the hero is 12-15% of the screen height (film rig measures it)
 local HUB_DISTANCE = 14
 local MAX_DISTANCE = 60
 
-local PITCH = math.rad(40) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
+local PITCH = math.rad(42) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
 
 local function zoomTo(distance, pitch, toward)
 	-- forcing the minimum to the wanted distance moves the camera out at once; letting it go next frame keeps it there

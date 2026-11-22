@@ -2,15 +2,17 @@
 local Config = {}
 
 -- The Cursed Forest path. Goblins walk from the first point to the last one.
+-- (2026-11-22, phone first: the old loop ran 30+ studs from the hero, so on a phone the wave was never on screen;
+-- this one wraps a 36-stud yard round the hero's spawn, so the lanes on three sides are always close)
 local ForestPath = {
-	Vector3.new(-90, 0, -60), -- start (goblin camp)
-	Vector3.new(-40, 0, -60),
-	Vector3.new(-40, 0, 20),
-	Vector3.new(20, 0, 20),
-	Vector3.new(20, 0, -40),
-	Vector3.new(70, 0, -40),
-	Vector3.new(70, 0, 50),
-	Vector3.new(95, 0, 50), -- the magic portal you defend
+	Vector3.new(-95, 0, -44), -- start (goblin camp)
+	Vector3.new(-24, 0, -44),
+	Vector3.new(-24, 0, 10),
+	Vector3.new(12, 0, 10),
+	Vector3.new(12, 0, -34),
+	Vector3.new(52, 0, -34),
+	Vector3.new(52, 0, 42),
+	Vector3.new(95, 0, 42), -- the magic portal you defend
 }
 Config.PathWidth = 10
 Config.MapSize = Vector2.new(240, 180) -- ground size (X, Z)
@@ -292,7 +294,7 @@ local CaveWaves = {
 Config.Maps = {
 	CursedForest = {
 		Name = "Cursed Forest", Description = "Goblins. Lots of goblins. The starter map",
-		Theme = "Forest", Path = ForestPath, Waves = ForestWaves, SpawnPoint = Vector3.new(-10, 0, -20),
+		Theme = "Forest", Path = ForestPath, Waves = ForestWaves, SpawnPoint = Vector3.new(-6, 0, -12),
 		Health = 1, Gems = 1, ItemLevel = 0, Color = Color3.fromRGB(90, 160, 60),
 	},
 	MagmaFortress = {

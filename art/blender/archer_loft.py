@@ -286,12 +286,13 @@ band(body, SPEC["belt"]["z0"], SPEC["belt"]["z1"], 0.022, "leather")
 band(body, SPEC["hem"]["z0"], SPEC["hem"]["z1"], 0.014, "cream")
 bz0, bz1, bhw = SPEC["buckle"]["z0"], SPEC["buckle"]["z1"], SPEC["buckle"]["hw"]
 by = interp(torso_rows, "front", (bz0 + bz1) / 2) - 0.03
-for c, s in (((0, by, bz1 - 0.02), (bhw, 0.03, 0.02)), ((0, by, bz0 + 0.02), (bhw, 0.03, 0.02)),
-             ((-bhw + 0.02, by, (bz0 + bz1) / 2), (0.02, 0.03, (bz1 - bz0) / 2)), ((bhw - 0.02, by, (bz0 + bz1) / 2), (0.02, 0.03, (bz1 - bz0) / 2)),
-             ((0, by - 0.005, (bz0 + bz1) / 2), (0.012, 0.03, (bz1 - bz0) / 2 - 0.02))):
+for c, s in (((0, by, bz1 - 0.026), (bhw, 0.03, 0.026)), ((0, by, bz0 + 0.026), (bhw, 0.03, 0.026)),   # a plain chunky frame
+             ((-bhw + 0.026, by, (bz0 + bz1) / 2), (0.026, 0.03, (bz1 - bz0) / 2)), ((bhw - 0.026, by, (bz0 + bz1) / 2), (0.026, 0.03, (bz1 - bz0) / 2)),
+             ):
     body.add(box(body.bm, c, (s[0] * 2, s[1] * 2, s[2] * 2)), "gold")
 sz0, sz1 = SPEC["slit"]["z0"], SPEC["slit"]["z1"]
 sy = interp(torso_rows, "front", (sz0 + sz1) / 2)
+sz1 -= 0.04   # (starts clear of the belt and buckle)
 body.add(tube(body.bm, [Vector((0, interp(torso_rows, "front", sz1) - 0.004, sz1)), Vector((0, interp(torso_rows, "front", sz0) - 0.01, sz0 + 0.02))],
               [0.022], seg=10, per=3, flat=0.6), "cream")
 # collar: a cream V at the neck under the chin
@@ -381,7 +382,7 @@ def to_object(part):
                     if e > 0:
                         w = max(0.0, min(1.0, (e - 0.075) / 0.05))
                         # only where the surface looks to the front: the painting is never stretched round a side
-                        nf = max(0.0, min(1.0, (-loop.vert.normal.y - 0.35) / 0.3))
+                        nf = max(0.0, min(1.0, (-loop.vert.normal.y - 0.55) / 0.25))
                         w *= nf
                         if w < 1.0:   # the strip right inside the trim: the hood's shaded inside
                             ci = lin(PAL["hood_inner"])

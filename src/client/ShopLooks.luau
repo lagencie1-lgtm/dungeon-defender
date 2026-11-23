@@ -270,8 +270,9 @@ function ShopLooks.new(shop, list, notify)
 		end
 	end
 
-	for i, info in { { "Outfit", "Outfits" }, { "Defenders", "Defenders" }, { "Pet", "Pets" }, { "Cape", "Capes" } } do
-		local filter = button({ Size = UDim2.new(0.25, -6, 1, 0), Text = info[2], LayoutOrder = i, ZIndex = 22, Parent = filters })
+	for i, info in { { "Outfit", "Outfits" }, { "Defenders", "Defenders" }, { "Pet", "Pets" }, { "Cape", "Capes" },
+		{ "Aura", "Glows" } } do
+		local filter = button({ Size = UDim2.new(0.2, -7, 1, 0), Text = info[2], LayoutOrder = i, ZIndex = 22, Parent = filters })
 		filterButtons[info[1]] = filter
 		filter.Activated:Connect(function()
 			category = info[1]

@@ -101,6 +101,29 @@ step("equip baby dragon", function()
 	require(Server.PetService).Equip(player, "testdragon") -- and on the server, so the runs below have a pet
 end)
 
+-- three pets walk with the hero: the lead and two helpers (slots opened for the test)
+step("pet team", function()
+	local PetService = require(Server.PetService)
+	Config.PetTeamLevels = { 1, 1, 1 }
+	local profile = DataService.Get(player)
+	table.insert(profile.Pets, { id = "testslime", kind = "Slimey", level = 1, xp = 0, evolved = false })
+	table.insert(profile.Pets, { id = "testowl", kind = "CrystalOwl", level = 1, xp = 0, evolved = false })
+	PetService.Equip(player, "testdragon", "Lead")
+	PetService.Equip(player, "testslime")
+	PetService.Equip(player, "testowl")
+	local team = PetService.Team(player)
+	log("team", #team, team[1] and team[1].kind, "followers", #PetService.FollowersOf(player), "slots", PetService.SlotsOf(player))
+	assert(#team == 3 and #PetService.FollowersOf(player) == 3, "three pets should walk with the hero")
+	assert(team[1].kind == "BabyDragon", "the dragon should lead")
+	local bonuses = PetService.TeamBonuses(player)
+	log("bonuses", #bonuses, bonuses[1][1], bonuses[1][2], bonuses[2][1], bonuses[2][2])
+	assert(bonuses[2][2] == Config.Pets.Slimey.Bonus * Config.PetHelperBonus, "a helper gives half its bonus")
+	PetService.Equip(player, "testslime", "Off")
+	assert(#PetService.Team(player) == 2, "a pet can rest")
+	PetService.Equip(player, "testslime")
+	assert(#PetService.FollowersOf(player) == 3)
+end)
+
 -- a line-up of every enemy type at the Outpost, for the look check
 step("enemy line-up", function()
 	local EnemyService = require(Server.EnemyService)
@@ -219,6 +242,14 @@ for _, run in RUNS do
 			ItemService.OnEnemyKilled({ name = "Test", stats = { DropChance = 50 }, position = spot + Vector3.new(0, 0, 3) },
 				State.Get("Difficulty"), 1)
 			local pet = require(Server.PetService).FollowerOf(player)
+			-- trips of the whole team (any of the three pets may be the one that goes)
+			local function teamTrips()
+				local trips = 0
+				for _, f in require(Server.PetService).FollowersOf(player) do
+					trips += f.model:GetAttribute("PetFetched") or 0
+				end
+				return trips
+			end
 			local waited = 0
 			while waited < 12 and (#DataService.Get(player).Items == before or DataService.Get(player).Gems == gemsBefore) do
 				task.wait(0.25)
@@ -227,10 +258,25 @@ for _, run in RUNS do
 			task.wait(0.3)
 			player:SetAttribute("PassAutoCollect", hadAuto)
 			log("pet fetch: items", #DataService.Get(player).Items - before, "gems", DataService.Get(player).Gems - gemsBefore,
-				"after", waited, "s, trips", pet and pet:GetAttribute("PetFetched") or 0, "phase", pet and pet:GetAttribute("FetchPhase"))
+				"after", waited, "s, trips", teamTrips(), "lead's phase", pet and pet:GetAttribute("FetchPhase"))
 			assert(#DataService.Get(player).Items > before, "the pet did not fetch the gear drop")
 			assert(DataService.Get(player).Gems > gemsBefore, "the pet did not fetch the gems")
-			assert((pet:GetAttribute("PetFetched") or 0) > 0, "the loot came in, but not by the pet")
+			assert(teamTrips() > 0, "the loot came in, but not by a pet")
+			-- with the Auto Collect pass the pets still do the fetching: twice as fast, from the whole map
+			player:SetAttribute("PassAutoCollect", true)
+			local far = root.Position + Vector3.new(60, 0, 0)
+			local itemsBefore = #DataService.Get(player).Items
+			ItemService.OnEnemyKilled({ name = "Test", stats = { DropChance = 50 }, position = far }, State.Get("Difficulty"), 1)
+			task.wait(0.3)
+			assert(#DataService.Get(player).Items == itemsBefore, "with a pet, the pass must not put loot in the backpack at once")
+			local waitedPass = 0.3
+			while waitedPass < 12 and #DataService.Get(player).Items == itemsBefore do
+				task.wait(0.25)
+				waitedPass += 0.25
+			end
+			log("pet fetch with the pass, 60 studs away: items", #DataService.Get(player).Items - itemsBefore, "after", waitedPass, "s")
+			assert(#DataService.Get(player).Items > itemsBefore, "the pet did not fetch the far drop with the pass")
+			player:SetAttribute("PassAutoCollect", hadAuto)
 		end
 		Clock.scale = 8
 		local started = os.clock()
@@ -277,11 +323,14 @@ step("mythic tiers and might", function()
 	-- a Mythic-rank hero is really bigger (measured, then back to its own rank)
 	local character = player.Character
 	local rankBefore = player:GetAttribute("MightRank")
+	local torso = character:FindFirstChild("UpperTorso")
+	local torsoBefore = torso and torso.Size.Y or 0
 	local heightBefore = character:GetExtentsSize().Y
 	player:SetAttribute("MightRank", 6)
 	task.wait(1)
 	local heightAfter = character:GetExtentsSize().Y
-	log("hero height", string.format("%.2f -> %.2f", heightBefore, heightAfter), "rank", rankBefore, "-> 6")
+	log("hero height", string.format("%.2f -> %.2f", heightBefore, heightAfter), "rank", rankBefore, "-> 6",
+		"torso", string.format("%.3f -> %.3f", torsoBefore, torso and torso.Size.Y or 0))
 	player:SetAttribute("MightRank", rankBefore)
 	task.wait(0.5)
 	assert(heightAfter > heightBefore * 1.05, "the hero did not grow at Mythic rank")
@@ -301,6 +350,23 @@ step("quests", function()
 	for _, quest in q.List do
 		log("quest", quest.Id, quest.Progress, quest.Claimed)
 	end
+end)
+-- the pets screen (team, Pet Index) and the shop are built on the player's device: open them once, so an error
+-- in them shows in the log; a Might style is put on and taken off
+step("screens and a Might style", function()
+	local Remotes = require(game:GetService("ReplicatedStorage").Shared.Remotes)
+	Remotes.OpenPanel:FireClient(player, "Pets")
+	task.wait(2)
+	local profile = DataService.Get(player)
+	assert(profile.Owned.Skins and profile.Owned.Skins.AuraForest, "the free Might style should be owned")
+	player:SetAttribute("MightRank", 6)
+	profile.Equipped.Skins.Aura = "AuraForest"
+	player:SetAttribute("EquippedAura", "AuraForest")
+	task.wait(1.5)
+	player:SetAttribute("EquippedAura", "")
+	profile.Equipped.Skins.Aura = nil
+	require(Server.ItemService).ApplyBonuses(player)
+	log("might style worn and taken off, rank back to", player:GetAttribute("MightRank"))
 end)
 log("DONE")
 pcall(function()

@@ -111,6 +111,31 @@ local function skinPreview(player, skin)
 		model:SetAttribute("RearView", true)
 		return model
 	end
+	if skin.Target == "Aura" then
+		-- a wooden figure with everything a Mythic hero shows, in this style: ring at the feet, halo, a few sparks
+		local model = Instance.new("Model")
+		figurePart(model, "Legs", V(1.5, 2, 0.9), 0, 1, 0, cloth)
+		figurePart(model, "UpperTorso", V(2, 2, 1), 0, 3, 0, wood)
+		figurePart(model, "Head", V(1.2, 1.2, 1.2), 0, 4.6, 0, wood)
+		local function bead(x, y, z, size, color)
+			local part = figurePart(model, "Bead", V(size, size, size), x, y, z, color,
+				skin.Bead == "Block" and CFrame.Angles(math.rad(45), math.rad(45), 0) or nil)
+			part.Shape = skin.Bead == "Block" and Enum.PartType.Block or Enum.PartType.Ball
+			part.Material = Enum.Material.Neon
+		end
+		for i = 1, 16 do
+			local a = i / 16 * math.pi * 2
+			bead(math.cos(a) * 2.1, 0.15, math.sin(a) * 2.1, 0.3, skin.Primary)
+		end
+		for i = 1, 10 do
+			local a = i / 10 * math.pi * 2
+			bead(math.cos(a) * 0.8, 5.75, math.sin(a) * 0.8, 0.2, skin.Accent or skin.Primary)
+		end
+		for i, spot in { V(-1.3, 2.2, 0.3), V(1.4, 3.4, -0.2), V(-0.9, 4.1, -0.4), V(1.1, 1.3, 0.4) } do
+			bead(spot.X, spot.Y, spot.Z, 0.14, i % 2 == 0 and skin.Primary or (skin.Accent or skin.Primary))
+		end
+		return model
+	end
 	local modelName = Config.TowerIcons[skin.Target]
 	if skin.Target == "Pet" then
 		local pet = PetService.EquippedPet(player)

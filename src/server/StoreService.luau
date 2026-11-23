@@ -29,10 +29,12 @@ local function publish(player)
 	player:SetAttribute("EquippedSkins", HttpService:JSONEncode(equipped))
 	player:SetAttribute("EquippedCape", equipped.Cape or "")
 	player:SetAttribute("EquippedPetSkin", equipped.Pet or "")
+	player:SetAttribute("EquippedAura", equipped.Aura or "") -- the Might style (MightLook.client.luau)
 	player:SetAttribute("StarterBought", profile.StarterBought == true)
 	local boosts = profile.Boosts or {}
 	player:SetAttribute("BoostXpUntil", boosts.Xp or 0)
 	player:SetAttribute("BoostGoldUntil", boosts.Gold or 0)
+	player:SetAttribute("BoostPetXpUntil", boosts.PetXp or 0)
 end
 
 -- the skin a player wears for a target ("Ranger", "Cape"...), or nil

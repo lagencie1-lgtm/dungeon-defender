@@ -213,8 +213,9 @@ end
 -- drops in the world (each player sees only their own)
 -------------------------------------------------------------------------------
 local function dropFor(player, item, position)
-	if player:GetAttribute("PassAutoCollect") then
-		-- Auto Collect pass: straight into the backpack
+	if player:GetAttribute("PassAutoCollect") and (player:GetAttribute("PetTeamSize") or 0) == 0 then
+		-- Auto Collect pass without a pet: straight into the backpack. With pets, they fetch it (twice as fast, from
+		-- the whole map: Config.PetCarryPass)
 		addItem(player, item)
 		Remotes.LootPicked:FireClient(player, item.id, item)
 		return

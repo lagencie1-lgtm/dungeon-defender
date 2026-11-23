@@ -177,6 +177,11 @@ local function buildEggs()
 					end
 				end
 				message.Text = ""
+				if (result.indexGold or 0) > 0 then
+					-- a new kind: what the Pet Index paid for it
+					message.Text = string.format("New for your Pet Index: +%d gold, +%d gems", result.indexGold, result.indexGems or 0)
+					message.TextColor3 = Ui.GOLD
+				end
 				task.spawn(showReveal, egg, result, chance)
 			else
 				message.Text = result or "Can't hatch"
@@ -196,19 +201,94 @@ local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 450), Positio
 		make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingTop = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }) })
 
 local pets, equippedId = {}, nil
+local team, index, slots = {}, {}, 1 -- the ids walking with you (lead first), the kinds ever hatched, open team slots
 
-local function bonusText(pet)
+local function take(list2, equipped, team2, index2, slots2)
+	pets, equippedId = list2 or {}, equipped
+	team, index, slots = team2 or (equipped and { equipped } or {}), index2 or {}, slots2 or 1
+end
+
+-- helper = a team pet that is not the lead: it gives a part of its bonus
+local function bonusText(pet, helper)
 	local info = Config.Pets[pet.kind]
-	local value = info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1)
+	local value = info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) * (helper and Config.PetHelperBonus or 1)
 	return string.format("+%.1f%% %s", value, Items.Stats[info.Stat] and Items.Stats[info.Stat].Name or info.Stat)
+end
+
+-- the Pet Index on top of the eggs: every kind of pet, the ones you have hatched in colour
+local function buildIndex()
+	local old = eggColumn:FindFirstChild("IndexCard")
+	if old then
+		old:Destroy()
+	end
+	local kinds = {}
+	for kind in Config.Pets do
+		table.insert(kinds, kind)
+	end
+	table.sort(kinds, function(a, b)
+		local ra, rb = Config.Pets[a].Rarity, Config.Pets[b].Rarity
+		if ra ~= rb then
+			return ra < rb
+		end
+		return a < b
+	end)
+	local found = 0
+	for _, kind in kinds do
+		if index[kind] then
+			found += 1
+		end
+	end
+	local nextAt = nil
+	for _, m in Config.PetIndexMilestones do
+		if found < m.At then
+			nextAt = m
+			break
+		end
+	end
+	local rows = math.ceil(#kinds / 6)
+	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 62 + rows * 68), BackgroundColor3 = Ui.PANEL,
+		LayoutOrder = 0, ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(Ui.GOLD, 2) })
+	label({ Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(12, 6), Text = string.format("Pet Index %d/%d", found, #kinds),
+		TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	label({ Size = UDim2.new(1, -24, 0, 18), Position = UDim2.fromOffset(12, 34),
+		Text = nextAt and string.format("Every new pet pays gold and gems · bonus at %d pets: %d gold", nextAt.At, nextAt.Gold)
+			or "Complete! You found every pet",
+		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	local grid = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 68), Position = UDim2.fromOffset(10, 58),
+		BackgroundTransparency = 1, ZIndex = 33, Parent = card },
+		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(62, 62), CellPadding = UDim2.fromOffset(6, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder }) })
+	for n, kind in kinds do
+		local cell = make("Frame", { BackgroundTransparency = 1, LayoutOrder = n, ZIndex = 33, Parent = grid })
+		petTile(cell, kind, 62, 34)
+		if not index[kind] then
+			-- not found yet: in the dark, with the reward it will pay
+			local rarity = Config.Pets[kind].Rarity
+			local shade = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(20, 16, 24),
+				BackgroundTransparency = 0.18, ZIndex = 36, Parent = cell }, { corner(10) })
+			label({ Size = UDim2.new(1, -4, 0, 30), Position = UDim2.fromOffset(2, 6), Text = "?", TextColor3 = rarityColor(kind),
+				ZIndex = 37, Parent = shade })
+			label({ Size = UDim2.new(1, -4, 0, 16), Position = UDim2.new(0, 2, 1, -20),
+				Text = "+" .. (Config.PetIndexGold[rarity] or 0), TextColor3 = Ui.GOLD, ZIndex = 37, Parent = shade })
+		end
+	end
 end
 
 local function refresh()
 	goldLabel.Text = (player:GetAttribute("Gold") or 0) .. " gold"
+	buildIndex()
 	for _, child in list:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
+	end
+	do
+		-- the team line: how many walk with you, and when the next slot opens
+		local nextLevel = Config.PetTeamLevels[slots + 1]
+		local line = make("Frame", { Size = UDim2.new(1, -12, 0, 24), BackgroundTransparency = 1, LayoutOrder = -1, ZIndex = 32, Parent = list })
+		label({ Size = UDim2.fromScale(1, 1), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = line,
+			Text = string.format("Team %d/%d · the lead fights, all fetch loot", #team, slots)
+				.. (nextLevel and (" · next slot: hero level " .. nextLevel) or "") })
 	end
 	if #pets == 0 then
 		local empty = make("Frame", { Size = UDim2.new(1, -12, 0, 60), BackgroundTransparency = 1, ZIndex = 32, Parent = list })
@@ -219,8 +299,9 @@ local function refresh()
 	local sorted = table.clone(pets)
 	table.sort(sorted, function(a, b)
 		local ra, rb = Config.Pets[a.kind].Rarity, Config.Pets[b.kind].Rarity
-		if (a.id == equippedId) ~= (b.id == equippedId) then
-			return a.id == equippedId
+		local ta, tb = table.find(team, a.id), table.find(team, b.id)
+		if ta ~= tb then
+			return (ta or 99) < (tb or 99) -- the team first, the lead on top
 		end
 		if ra ~= rb then
 			return ra > rb
@@ -231,41 +312,56 @@ local function refresh()
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
 		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 108), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
-			Parent = list }, { corner(8), stroke(color, pet.id == equippedId and 3 or 1) })
+			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
+		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
 		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
 		label({ Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(76, 10),
-			Text = info.Name .. (pet.evolved and " (evolved)" or ""), TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
+			Text = info.Name .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
+			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
 		label({ Size = UDim2.fromOffset(170, 20), Position = UDim2.fromOffset(76, 40),
-			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
+			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet, place ~= nil and place > 1), Font = Enum.Font.Gotham,
+			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
 			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 68),
-				Text = "In a fight · " .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD,
+				Text = (place == 1 and "In a fight · " or "As lead · ") .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham,
+				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
-		local carry = Config.PetCarryOf(pet.kind, pet.evolved)
+		local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true)
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
 			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 86),
-				Text = string.format("Fetches %s%s · %d per trip", carry.Gems and "gems and " or "", best, carry.Carry),
+				Text = string.format("Fetches %s%s · %d per trip%s", carry.Gems and "gems and " or "", best, carry.Carry,
+					carry.Pass and " · 2x speed, whole map" or ""),
 				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
 		local equip = button({ Size = UDim2.fromOffset(70, 40), Position = UDim2.new(1, -164, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
-			Text = pet.id == equippedId and "On" or "Equip",
-			BackgroundColor3 = pet.id == equippedId and Color3.fromRGB(60, 60, 70) or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
+			Text = place == 1 and "Lead" or place and "Lead it" or "Equip",
+			BackgroundColor3 = place == 1 and Color3.fromRGB(60, 60, 70) or place and Color3.fromRGB(150, 110, 40)
+				or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
 		equip.Activated:Connect(function()
-			Remotes.EquipPet:InvokeServer(pet.id)
+			if place ~= 1 then
+				-- not in the team: it joins. A helper: it becomes the lead
+				Remotes.EquipPet:InvokeServer(pet.id, place and "Lead" or nil)
+			end
 		end)
 		local maxed = (pet.level or 1) >= Config.PetMaxLevel and not pet.evolved
 		local other = button({ Size = UDim2.fromOffset(84, 40), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
-			Text = maxed and "Evolve" or "Release", ZIndex = 33,
-			BackgroundColor3 = maxed and Color3.fromRGB(150, 110, 40) or Color3.fromRGB(110, 60, 60), Parent = row })
+			Text = maxed and "Evolve" or place and "Rest" or "Release", ZIndex = 33,
+			BackgroundColor3 = maxed and Color3.fromRGB(150, 110, 40) or place and Color3.fromRGB(60, 60, 70)
+				or Color3.fromRGB(110, 60, 60), Parent = row })
 		other.Activated:Connect(function()
 			local ok, result
+			if place and not maxed then
+				-- a team pet takes a rest (leaves the team)
+				Remotes.EquipPet:InvokeServer(pet.id, "Off")
+				return
+			end
 			if maxed then
 				ok, result = Remotes.EvolvePet:InvokeServer(pet.id)
 				message.Text = ok and (info.Name .. " evolved!") or (result or "Can't evolve")
@@ -278,8 +374,8 @@ local function refresh()
 	end
 end
 
-Remotes.Pets.OnClientEvent:Connect(function(list2, equipped)
-	pets, equippedId = list2 or {}, equipped
+Remotes.Pets.OnClientEvent:Connect(function(list2, equipped, team2, index2, slots2)
+	take(list2, equipped, team2, index2, slots2)
 	if panel.Visible then
 		refresh()
 	end
@@ -294,8 +390,7 @@ local function toggle()
 	panel.Visible = not panel.Visible
 	if panel.Visible then
 		buildEggs() -- (before asking the server, so the screen is never empty while it answers)
-		local p, e = Remotes.GetPets:InvokeServer()
-		pets, equippedId = p or {}, e
+		take(Remotes.GetPets:InvokeServer())
 		message.Text = "Eggs cost gold. Gold is earned by playing"
 		message.TextColor3 = Ui.TEXT_DIM
 		Ui.pop(panel, 0.85)

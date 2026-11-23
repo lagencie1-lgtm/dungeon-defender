@@ -119,7 +119,9 @@ function LootService.Start()
 			end
 			local autoCollect = false
 			for _, player in Players:GetPlayers() do
-				autoCollect = autoCollect or player:GetAttribute("PassAutoCollect") == true
+				-- (the Auto Collect pass works through the owner's pets; only an owner without a pet collects at once)
+				autoCollect = autoCollect
+					or (player:GetAttribute("PassAutoCollect") == true and (player:GetAttribute("PetTeamSize") or 0) == 0)
 			end
 			if not taken and (now - g.dropped > AUTO_COLLECT_AFTER or (autoCollect and now - g.dropped > 1)) then
 				collect(part, nil)

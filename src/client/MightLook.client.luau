@@ -1,12 +1,14 @@
 -- How grand a hero looks, from the Might of its gear (Config.MightRanks): a soft glow, a few slow rising sparks,
 -- a thin ring of light at the feet and one over the head, in the rank's colour. The size step comes from the server
 -- (MightService.luau). Drawn on this device for every hero.
+-- A Might style from the shop (Store.Skins, Target "Aura") changes the colours and the bead shape, never what shows.
 -- 6A: small and quiet; beads turn slowly on a fixed speed, nothing flashes; far heroes are not updated.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Items = require(ReplicatedStorage.Shared.Items)
+local Store = require(ReplicatedStorage.Shared.Store)
 
 local FAR = 160
 local FEET_BEADS, HALO_BEADS = 16, 10
@@ -33,10 +35,10 @@ local function clear(player)
 	looks[player] = nil
 end
 
-local function bead(color, size)
+local function bead(color, size, shape)
 	local p = Instance.new("Part")
-	p.Shape = Enum.PartType.Ball
-	p.Size = Vector3.one * size
+	p.Shape = shape == "Block" and Enum.PartType.Block or Enum.PartType.Ball
+	p.Size = Vector3.one * size * (shape == "Block" and 0.85 or 1)
 	p.Material = Enum.Material.Neon
 	p.Color = color
 	p.Transparency = 0.35
@@ -55,8 +57,15 @@ local function build(player)
 	if not root or not rank or rankIndex <= 1 then
 		return
 	end
-	local color = colorOf(rankIndex)
-	local look = { rank = rankIndex, things = {}, feet = {}, halo = {}, character = character, root = root }
+	local style = Store.Skins[player:GetAttribute("EquippedAura") or ""]
+	if style and style.Target ~= "Aura" then
+		style = nil
+	end
+	local color = style and style.Primary or colorOf(rankIndex)
+	local accent = style and (style.Accent or style.Primary) or color
+	local shape = style and style.Bead or "Ball"
+	local look = { rank = rankIndex, things = {}, feet = {}, halo = {}, character = character, root = root,
+		tumble = shape == "Block" }
 	if rank.Glow then
 		local light = Instance.new("PointLight")
 		light.Name = "MightGlow"
@@ -72,7 +81,7 @@ local function build(player)
 		local e = Instance.new("ParticleEmitter")
 		e.Name = "MightMotes"
 		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-		e.Color = ColorSequence.new(color)
+		e.Color = ColorSequence.new(accent)
 		e.LightEmission = 1
 		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) })
 		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
@@ -87,14 +96,14 @@ local function build(player)
 	end
 	if rank.Ring then
 		for _ = 1, FEET_BEADS do
-			local p = bead(color, 0.22)
+			local p = bead(color, 0.22, shape)
 			table.insert(look.feet, p)
 			table.insert(look.things, p)
 		end
 	end
 	if rank.Halo then
 		for _ = 1, HALO_BEADS do
-			local p = bead(color, 0.16)
+			local p = bead(accent, 0.16, shape)
 			table.insert(look.halo, p)
 			table.insert(look.things, p)
 		end
@@ -107,9 +116,11 @@ local function watch(player)
 		character:WaitForChild("HumanoidRootPart", 10)
 		build(player)
 	end)
-	player:GetAttributeChangedSignal("MightRank"):Connect(function()
-		build(player)
-	end)
+	for _, attribute in { "MightRank", "EquippedAura" } do
+		player:GetAttributeChangedSignal(attribute):Connect(function()
+			build(player)
+		end)
+	end
 	if player.Character then
 		task.spawn(build, player)
 	end
@@ -140,7 +151,8 @@ RunService.RenderStepped:Connect(function(dt)
 				p.Position = Vector3.new(0, -500, 0)
 			else
 				local a = clock * 0.6 + i / #look.feet * math.pi * 2
-				p.Position = feet + Vector3.new(math.cos(a) * 2.1, 0, math.sin(a) * 2.1)
+				local at = feet + Vector3.new(math.cos(a) * 2.1, 0, math.sin(a) * 2.1)
+				p.CFrame = look.tumble and CFrame.new(at) * CFrame.Angles(a, a * 1.3, 0) or CFrame.new(at)
 			end
 		end
 		for i, p in look.halo do
@@ -148,7 +160,8 @@ RunService.RenderStepped:Connect(function(dt)
 				p.Position = Vector3.new(0, -500, 0)
 			else
 				local a = -clock * 0.8 + i / #look.halo * math.pi * 2
-				p.Position = top + Vector3.new(math.cos(a) * 0.75, math.sin(clock * 1.3) * 0.04, math.sin(a) * 0.75)
+				local at = top + Vector3.new(math.cos(a) * 0.75, math.sin(clock * 1.3) * 0.04, math.sin(a) * 0.75)
+				p.CFrame = look.tumble and CFrame.new(at) * CFrame.Angles(a, a * 1.3, 0) or CFrame.new(at)
 			end
 		end
 	end

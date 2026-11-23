@@ -16,7 +16,7 @@ Store.GamePasses = {
 	BigBackpack = { Id = 2092377025, Name = "Bigger Backpack", Price = 199,
 		Text = "Backpack holds 120 items instead of 60" },
 	AutoCollect = { Id = 2094050984, Name = "Auto Collect", Price = 149,
-		Text = "Loot and gems are picked up for you" },
+		Text = "Your pets fetch loot twice as fast, from the whole map" },
 	Speed3x = { Id = 2092245079, Name = "3x Speed", Price = 249,
 		Text = "Adds a 3x step to the speed button" },
 }
@@ -32,12 +32,16 @@ Store.Products = {
 	Gems2600 = { Id = 3733004858, Name = "2,600 Gems", Price = 799, Gems = 2600, Text = "30% bonus" },
 	BoostXp = { Id = 3733004860, Name = "2x XP (30 min)", Price = 79, Boost = "Xp", Minutes = 30 },
 	BoostGold = { Id = 3733004862, Name = "2x Gold (30 min)", Price = 79, Boost = "Gold", Minutes = 30 },
+	-- time, not power: pets learn twice as fast, the max level stays the same for everyone
+	-- (Id = 0 until the product is made in Creator Hub: it shows as "Coming soon")
+	BoostPetXp = { Id = 0, Name = "Pet Trainer (30 min)", Price = 79, Boost = "PetXp", Minutes = 30,
+		Text = "Your pets learn twice as fast" },
 	SeasonPass = { Id = 3733004863, Name = "Season Pass", Price = 399, SeasonPass = true,
 		Text = "Unlocks the paid rewards of this season (skins, titles, gems)" },
 	StarterPack = { Id = 3733004864, Name = "Starter Pack", Price = 99, Gems = 300, Skin = "CapeHero", Once = true,
 		Text = "300 gems + the Hero cape. Only once!" },
 }
-Store.ProductOrder = { "SeasonPass", "StarterPack", "Gems100", "Gems550", "Gems1200", "Gems2600", "BoostXp", "BoostGold" }
+Store.ProductOrder = { "SeasonPass", "StarterPack", "Gems100", "Gems550", "Gems1200", "Gems2600", "BoostXp", "BoostGold", "BoostPetXp" }
 
 -------------------------------------------------------------------------------
 -- Skins: change looks only. Placeholders for now (colour changes = "Rare").
@@ -74,13 +78,31 @@ Store.Skins = {
 		Primary = Color3.fromRGB(90, 160, 60), Accent = Color3.fromRGB(255, 220, 80) },
 	BallistaSeason = { Target = "Ballista", Name = "Uprising Ballista", Tier = "Rare", Price = 0, NotForSale = true,
 		Primary = Color3.fromRGB(60, 50, 80), Accent = Color3.fromRGB(120, 255, 120) },
+	-- Might styles: the colours (and bead shape) of the glow, sparks, ring and halo a hero EARNS with its gear
+	-- (Config.MightRanks). A style only shows the parts the hero's rank has earned: you buy the look, never the rank.
+	AuraForest = { Target = "Aura", Name = "Forest Glow", Tier = "Rare", Price = 0, Free = true,
+		Primary = Color3.fromRGB(120, 220, 110), Accent = Color3.fromRGB(230, 255, 170),
+		Description = "Leaf green. Shows what your Might rank has earned" },
+	AuraEmber = { Target = "Aura", Name = "Ember Glow", Tier = "Epic", Price = 150,
+		Primary = Color3.fromRGB(255, 120, 40), Accent = Color3.fromRGB(255, 225, 120),
+		Description = "Ember orange. Shows what your Might rank has earned" },
+	AuraFrost = { Target = "Aura", Name = "Frost Glow", Tier = "Epic", Price = 150,
+		Primary = Color3.fromRGB(130, 215, 255), Accent = Color3.fromRGB(240, 250, 255),
+		Description = "Ice blue. Shows what your Might rank has earned" },
+	AuraVoid = { Target = "Aura", Name = "Void Glow", Tier = "Epic", Price = 220, Bead = "Block",
+		Primary = Color3.fromRGB(150, 80, 255), Accent = Color3.fromRGB(255, 110, 220),
+		Description = "Void purple, square shards. Shows what your Might rank has earned" },
+	AuraGold = { Target = "Aura", Name = "Royal Glow", Tier = "Legendary", Price = 300, Bead = "Block",
+		Primary = Color3.fromRGB(255, 205, 70), Accent = Color3.fromRGB(255, 250, 225),
+		Description = "Royal gold, square shards. Shows what your Might rank has earned" },
 	-- free ones, so everyone has something to show
 	CapeGreen = { Target = "Cape", Name = "Forest Cape", Tier = "Rare", Price = 0, Free = true, Primary = Color3.fromRGB(50, 120, 60) },
 	RangerForest = { Target = "Ranger", Name = "Forest Ranger", Tier = "Rare", Price = 0, Free = true,
 		Primary = Color3.fromRGB(60, 100, 50), Accent = Color3.fromRGB(150, 220, 100) },
 }
 Store.SkinOrder = { "CapeGreen", "RangerForest", "CapeRed", "CapeNight", "RangerRoyal", "RangerShadow", "FlameCandy",
-	"FlameGold", "FrostToxic", "StormSunset", "BallistaBone", "CapeHero", "CapeVIP" }
+	"FlameGold", "FrostToxic", "StormSunset", "BallistaBone", "CapeHero", "CapeVIP",
+	"AuraForest", "AuraEmber", "AuraFrost", "AuraVoid", "AuraGold" }
 
 local defenderSet = {
 	Ranger = "Brambleguard", FlameCannon = "Cinderforge", FrostCrystal = "Rimewarden",

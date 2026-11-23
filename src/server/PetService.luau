@@ -1,5 +1,6 @@
--- Pets: hatch eggs with gold, equip one pet, it follows your hero and gives
--- a small bonus. Pets level up while you play and can evolve once.
+-- Pets: hatch eggs with gold, equip up to three (Config.PetTeamLevels), they follow your hero and give
+-- a small bonus. The first one is the lead. Pets level up while you play and can evolve once.
+-- New kinds go into the Pet Index and pay a one-off reward.
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,7 +15,7 @@ local StoreService = require(script.Parent.StoreService)
 
 local PetService = {}
 
-local followers = {} -- [player] = model following the hero
+local followers = {} -- [player] = list of { pet = the pet's data, model = its model following the hero }, lead first
 local rng = Random.new()
 
 -- set by HeroService: recomputes stats when the pet changes
@@ -39,24 +40,108 @@ function PetService.BonusOf(pet)
 	return info.Stat, value
 end
 
--- the model following this player's hero (or nil)
+-- how many pets may walk with this player: by the level of their best hero
+function PetService.SlotsOf(player)
+	local profile = DataService.Get(player)
+	local best = 1
+	for _, hero in (profile and profile.Heroes) or {} do
+		best = math.max(best, type(hero) == "table" and hero.Level or 1)
+	end
+	if profile and (profile.Rebirths or 0) > 0 then
+		best = math.huge -- a reborn hero starts at level 1 again, but keeps its pet team
+	end
+	local slots = 0
+	for _, level in Config.PetTeamLevels do
+		if best >= level then
+			slots += 1
+		end
+	end
+	return math.max(slots, 1)
+end
+
+-- the ids of the team, lead first. Older saves only know EquippedPet: that one is the lead.
+local function teamIds(profile, slots)
+	local ids = {}
+	local function add(id)
+		if id and #ids < slots and not table.find(ids, id) and findPet(profile, id) then
+			table.insert(ids, id)
+		end
+	end
+	add(profile.EquippedPet)
+	for _, id in profile.PetTeam or {} do
+		add(id)
+	end
+	return ids
+end
+
+local function setTeam(profile, ids)
+	profile.EquippedPet = ids[1]
+	profile.PetTeam = ids
+end
+
+-- the pets walking with this player, lead first
+function PetService.Team(player)
+	local profile = DataService.Get(player)
+	local team = {}
+	if profile then
+		for _, id in teamIds(profile, PetService.SlotsOf(player)) do
+			table.insert(team, (findPet(profile, id)))
+		end
+	end
+	return team
+end
+
+-- every bonus of the team as { stat, percent }: the lead in full, helpers a part (Config.PetHelperBonus)
+function PetService.TeamBonuses(player)
+	local list = {}
+	for i, pet in PetService.Team(player) do
+		local stat, value = PetService.BonusOf(pet)
+		if stat then
+			table.insert(list, { stat, value * (i == 1 and 1 or Config.PetHelperBonus) })
+		end
+	end
+	return list
+end
+
+-- the lead pet's model following this player's hero (or nil)
 function PetService.FollowerOf(player)
 	local f = followers[player]
-	return f and f.model
+	return f and f[1] and f[1].model
+end
+
+-- every pet of the team with its model: a list of { pet, model }
+function PetService.FollowersOf(player)
+	return followers[player] or {}
 end
 
 function PetService.EquippedPet(player)
 	local profile = DataService.Get(player)
-	if not profile or not profile.EquippedPet then
+	if not profile then
 		return nil
 	end
-	return findPet(profile, profile.EquippedPet)
+	local lead = teamIds(profile, 1)[1]
+	if not lead then
+		return nil
+	end
+	return findPet(profile, lead)
+end
+
+-- kinds this player has ever hatched (older saves: the pets they still have)
+local function indexOf(profile)
+	if type(profile.PetIndex) ~= "table" then
+		profile.PetIndex = {}
+	end
+	for _, pet in profile.Pets or {} do
+		profile.PetIndex[pet.kind] = true
+	end
+	return profile.PetIndex
 end
 
 local function send(player)
 	local profile = DataService.Get(player)
 	if profile then
-		Remotes.Pets:FireClient(player, profile.Pets or {}, profile.EquippedPet)
+		Remotes.Pets:FireClient(player, profile.Pets or {}, profile.EquippedPet,
+			teamIds(profile, PetService.SlotsOf(player)), indexOf(profile), PetService.SlotsOf(player))
 	end
 end
 
@@ -167,16 +252,7 @@ local function buildModel(pet, skin)
 	return model, offsets
 end
 
-local function refreshFollower(player)
-	local old = followers[player]
-	if old then
-		old.model:Destroy()
-		followers[player] = nil
-	end
-	local pet = PetService.EquippedPet(player)
-	if not pet then
-		return
-	end
+local function placeFollower(player, pet, slot)
 	local model, offsets = buildModel(pet, StoreService.SkinFor(player, "Pet"))
 	-- The server only places the pet once, as one welded piece. Every player's own device then moves it
 	-- (src/client/PetFollow.client.luau): motion sent from the server stutters on phones.
@@ -194,9 +270,25 @@ local function refreshFollower(player)
 	model:SetAttribute("PetOwner", player.UserId)
 	model:SetAttribute("PetKind", pet.kind)
 	model:SetAttribute("PetScale", pet.evolved and 1.6 or 1)
+	model:SetAttribute("PetSlot", slot) -- 1 = lead; where it walks (PetFollow.client.luau)
 	CollectionService:AddTag(model, "PetFollower")
 	model.Parent = workspace
-	followers[player] = { model = model }
+	return model
+end
+
+local function refreshFollower(player)
+	for _, f in followers[player] or {} do
+		f.model:Destroy()
+	end
+	followers[player] = nil
+	local list = {}
+	for slot, pet in PetService.Team(player) do
+		table.insert(list, { pet = pet, model = placeFollower(player, pet, slot) })
+	end
+	if #list > 0 then
+		followers[player] = list
+	end
+	player:SetAttribute("PetTeamSize", #list) -- (the Auto Collect pass works through the pets, ItemService and LootService)
 end
 
 -------------------------------------------------------------------------------
@@ -230,9 +322,33 @@ local function hatch(player, eggId)
 		end
 	end
 	local pet = { id = HttpService:GenerateGUID(false):sub(1, 12), kind = kind, level = 1, xp = 0, evolved = false }
+	local index = indexOf(profile)
+	local isNew = not index[kind]
 	table.insert(profile.Pets, pet)
-	if not profile.EquippedPet then
-		profile.EquippedPet = pet.id
+	index[kind] = true
+	local indexGold, indexGems = 0, 0
+	if isNew then
+		-- a new kind for the Pet Index: a one-off reward, and maybe a milestone
+		local rarity = Config.Pets[kind].Rarity
+		indexGold, indexGems = Config.PetIndexGold[rarity] or 0, Config.PetIndexGems[rarity] or 0
+		local found = 0
+		for _ in index do
+			found += 1
+		end
+		for _, m in Config.PetIndexMilestones do
+			if found == m.At then
+				indexGold += m.Gold or 0
+				indexGems += m.Gems or 0
+			end
+		end
+		profile.Gold += indexGold
+		DataService.AddGems(player, indexGems)
+	end
+	local ids = teamIds(profile, PetService.SlotsOf(player))
+	if #ids < PetService.SlotsOf(player) then
+		-- a free place in the team: it joins straight away
+		table.insert(ids, pet.id)
+		setTeam(profile, ids)
 		refreshFollower(player)
 		PetService.OnPetChanged(player)
 	end
@@ -251,15 +367,41 @@ local function hatch(player, eggId)
 		Remotes.Notify:FireAllClients(string.format("%s hatched a %s %s! (%.2f%% chance)", player.DisplayName,
 			Items.Rarities[info.Rarity].Name, info.Name, chance), Items.Rarities[info.Rarity].Color)
 	end
-	return true, pet
+	-- (a copy for the hatch screen, with what the Pet Index paid)
+	local shown = table.clone(pet)
+	shown.indexGold, shown.indexGems = indexGold, indexGems
+	return true, shown
 end
 
-local function equip(player, id)
+-- action: nil = join the team (when it is full, it takes the last place), "Lead" = becomes the lead,
+-- "Off" = leaves the team
+local function equip(player, id, action)
 	local profile = DataService.Get(player)
 	if not profile or not findPet(profile, id) then
 		return false, "Pet not found"
 	end
-	profile.EquippedPet = id
+	local slots = PetService.SlotsOf(player)
+	local ids = teamIds(profile, slots)
+	local at = table.find(ids, id)
+	if action == "Off" then
+		if at then
+			table.remove(ids, at)
+		end
+	elseif action == "Lead" then
+		if at then
+			table.remove(ids, at)
+		end
+		table.insert(ids, 1, id)
+		while #ids > slots do
+			table.remove(ids)
+		end
+	elseif not at then
+		if #ids >= slots then
+			table.remove(ids)
+		end
+		table.insert(ids, id)
+	end
+	setTeam(profile, ids)
 	refreshFollower(player)
 	PetService.OnPetChanged(player)
 	send(player)
@@ -284,7 +426,7 @@ local function evolve(player, id)
 	profile.Gold -= Config.PetEvolveGold
 	pet.evolved = true
 	DataService.Publish(player)
-	if profile.EquippedPet == id then
+	if table.find(teamIds(profile, PetService.SlotsOf(player)), id) then
 		refreshFollower(player)
 		PetService.OnPetChanged(player)
 	end
@@ -301,8 +443,8 @@ local function release(player, id)
 	if not pet then
 		return false, "Pet not found"
 	end
-	if profile.EquippedPet == id then
-		return false, "Equip another pet first"
+	if table.find(teamIds(profile, PetService.SlotsOf(player)), id) then
+		return false, "Take it out of your team first"
 	end
 	table.remove(profile.Pets, index)
 	local gold = Config.PetReleaseGold[Config.Pets[pet.kind].Rarity] or 50
@@ -311,27 +453,33 @@ local function release(player, id)
 	return true, gold
 end
 
--- the equipped pet learns from every enemy defeated
+-- every pet of the team learns from every enemy defeated
 function PetService.AddXpAll(amount)
 	for _, player in Players:GetPlayers() do
-		local pet = PetService.EquippedPet(player)
-		if pet and (pet.level or 1) < Config.PetMaxLevel then
-			pet.xp = (pet.xp or 0) + amount
-			if pet.xp >= Config.PetXpPerLevel * pet.level then
-				pet.xp -= Config.PetXpPerLevel * pet.level
-				pet.level += 1
-				Remotes.Notify:FireClient(player, Config.Pets[pet.kind].Name .. " is now level " .. pet.level .. "!",
-					Config.Pets[pet.kind].Color)
-				refreshFollower(player)
-				PetService.OnPetChanged(player)
-				send(player)
+		local leveled = false
+		local gain = amount * (StoreService.Boosted(player, "PetXp") and 2 or 1) -- the Pet Trainer boost
+		for _, pet in PetService.Team(player) do
+			if (pet.level or 1) < Config.PetMaxLevel then
+				pet.xp = (pet.xp or 0) + gain
+				if pet.xp >= Config.PetXpPerLevel * pet.level then
+					pet.xp -= Config.PetXpPerLevel * pet.level
+					pet.level += 1
+					leveled = true
+					Remotes.Notify:FireClient(player, Config.Pets[pet.kind].Name .. " is now level " .. pet.level .. "!",
+						Config.Pets[pet.kind].Color)
+				end
 			end
+		end
+		if leveled then
+			refreshFollower(player)
+			PetService.OnPetChanged(player)
+			send(player)
 		end
 	end
 end
 
-PetService.Equip = function(player, id)
-	return equip(player, id)
+PetService.Equip = function(player, id, action)
+	return equip(player, id, action)
 end
 
 function PetService.Start()
@@ -341,7 +489,11 @@ function PetService.Start()
 	Remotes.ReleasePet.OnServerInvoke = release
 	Remotes.GetPets.OnServerInvoke = function(player)
 		local profile = DataService.Get(player)
-		return profile and profile.Pets or {}, profile and profile.EquippedPet
+		if not profile then
+			return {}, nil, {}, {}, 1
+		end
+		return profile.Pets or {}, profile.EquippedPet, teamIds(profile, PetService.SlotsOf(player)), indexOf(profile),
+			PetService.SlotsOf(player)
 	end
 	table.insert(DataService.OnLoaded, function(player)
 		-- what the equipped pet dug up while its owner was away (Config.ComeBack)
@@ -367,15 +519,29 @@ function PetService.Start()
 		player:GetAttributeChangedSignal("EquippedPetSkin"):Connect(function()
 			refreshFollower(player)
 		end)
+		-- a new team slot may open with a hero level
+		local slotsBefore = PetService.SlotsOf(player)
+		player:GetAttributeChangedSignal("HeroLevel"):Connect(function()
+			local slotsNow = PetService.SlotsOf(player)
+			if slotsNow ~= slotsBefore then
+				if slotsNow > slotsBefore then
+					Remotes.Notify:FireClient(player, "Pet team slot " .. slotsNow .. " unlocked! Equip another pet",
+						Color3.fromRGB(140, 255, 160))
+				end
+				slotsBefore = slotsNow
+				refreshFollower(player)
+				PetService.OnPetChanged(player)
+				send(player)
+			end
+		end)
 		refreshFollower(player)
 		send(player)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
-		local f = followers[player]
-		if f then
+		for _, f in followers[player] or {} do
 			f.model:Destroy()
-			followers[player] = nil
 		end
+		followers[player] = nil
 	end)
 end
 

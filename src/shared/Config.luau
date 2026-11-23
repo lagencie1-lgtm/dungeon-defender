@@ -177,6 +177,17 @@ Config.PetEvolveGold = 2500
 Config.PetBagSize = 30
 Config.PetReleaseGold = { 50, 80, 150, 400, 1000, 4000 }
 
+-- Pet team: up to three pets walk with the hero. Slot 2 and 3 open with the level of your best hero.
+-- The first pet is the LEAD: full bonus, and it does its move in a fight. Helpers give half their bonus.
+-- Every pet of the team fetches loot (Config.PetCarry) and learns from kills.
+Config.PetTeamLevels = { 1, 10, 25 }
+Config.PetHelperBonus = 0.5
+
+-- Pet Index: the first time you hatch each kind of pet pays a reward, by its rarity. Milestones pay extra.
+Config.PetIndexGold = { 100, 200, 500, 1500, 5000, 15000 }
+Config.PetIndexGems = { 5, 10, 20, 40, 100, 250 }
+Config.PetIndexMilestones = { { At = 4, Gold = 500 }, { At = 8, Gold = 2500 }, { At = 12, Gold = 12000, Gems = 300 } }
+
 -- What the equipped pet does in a fight, picked by its bonus stat (server: PetMoves.luau, looks: PetFollow.client.luau).
 -- 6A: rare and small, no button needed. Every = seconds between moves (game time). Numbers grow 10% per pet level
 -- and x1.5 when evolved; evolved pets also move a third more often. Damage scales like the hero's own hits.
@@ -198,6 +209,9 @@ Config.PetEvolvedEvery = 0.75 -- evolved pets wait only 75% as long between move
 --   Carry         drops per trip (lying close together)
 --   Rest          seconds between trips
 -- Evolved pets: 25% faster, one more per trip, rest 25% shorter.
+-- The Auto Collect pass (Lemp 2026-11-23: "pets fetch twice as fast, from the whole map"): Config.PetCarryPass.
+-- It sells time, not loot: the same drops, only sooner. (An owner without any pet gets the loot at once, as before.)
+Config.PetCarryPass = { Speed = 2, Rest = 0.5, Range = 2000 }
 Config.PetCarry = {
 	{ Gems = true, MaxItemRarity = 2, Range = 18, Speed = 8, Carry = 1, Rest = 3 },
 	{ Gems = true, MaxItemRarity = 3, Range = 22, Speed = 9, Carry = 1, Rest = 2.6 },
@@ -206,7 +220,7 @@ Config.PetCarry = {
 	{ Gems = true, MaxItemRarity = 6, Range = 36, Speed = 15, Carry = 3, Rest = 1.4 },
 	{ Gems = true, MaxItemRarity = 6, Range = 44, Speed = 18, Carry = 4, Rest = 1 },
 }
-function Config.PetCarryOf(kind, evolved)
+function Config.PetCarryOf(kind, evolved, pass)
 	local info = Config.Pets[kind]
 	if not info then
 		return nil
@@ -219,6 +233,12 @@ function Config.PetCarryOf(kind, evolved)
 		carry.Speed *= 1.25
 		carry.Carry += 1
 		carry.Rest *= 0.75
+	end
+	if pass then
+		carry.Speed *= Config.PetCarryPass.Speed
+		carry.Rest *= Config.PetCarryPass.Rest
+		carry.Range = Config.PetCarryPass.Range
+		carry.Pass = true
 	end
 	return carry
 end

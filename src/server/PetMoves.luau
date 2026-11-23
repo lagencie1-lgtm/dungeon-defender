@@ -4,6 +4,7 @@
 --   Engineering Spark   the nearest defender shoots faster for a moment
 --   Crit        Mark    an enemy gets a small mark; the next hit on it is a sure crit
 --   GoldFind    Dig     now and then the pet digs up a little mana for the team
+-- Only the LEAD pet of the team does its move. Every pet of the team fetches loot.
 -- Every pet also fetches loot from the ground (Config.PetCarry: what, how far, how fast, by pet rarity):
 -- it trots to gems and gear lying near its hero, grabs them and carries them back. Better pets carry more, faster.
 -- 6A: rare and small, nothing to press, the same on phone, console and PC.
@@ -153,10 +154,21 @@ end
 -- fetching loot from the ground (real time: it is only walking, and the walk is drawn in real time)
 -------------------------------------------------------------------------------
 local GEM_COLOR = Color3.fromRGB(90, 220, 255)
-local trips = {} -- [player] = { busy = true while on a trip, next = os.clock() of the next trip }
+local trips = {} -- [player] = { [pet id] = { busy = true while on a trip, next = os.clock() of the next trip } }
+local claimed = {} -- loot a pet is already walking to: [gem part or drop id] = true
 
 local function flatDistance(a, b)
 	return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
+end
+
+-- the model of one pet of the team (looked up every time: a level-up rebuilds the models)
+local function modelOf(player, petId)
+	for _, f in PetService.FollowersOf(player) do
+		if f.pet.id == petId then
+			return f.model
+		end
+	end
+	return nil
 end
 
 -- the nearest loot this pet may take, plus whatever lies close to it (up to `carry` pieces)
@@ -164,11 +176,15 @@ local function pickLoot(player, root, carry)
 	local found = {}
 	if carry.Gems then
 		for _, g in LootService.GemsNear(root.Position, carry.Range) do
-			table.insert(found, g)
+			if not claimed[g.gem] then
+				table.insert(found, g)
+			end
 		end
 	end
 	for _, d in ItemService.DropsNear(player, root.Position, carry.Range, carry.MaxItemRarity) do
-		table.insert(found, d)
+		if not claimed[d.dropId] then
+			table.insert(found, d)
+		end
 	end
 	if #found == 0 then
 		return nil
@@ -204,28 +220,35 @@ local function setTrip(model, phase, at, speed, color)
 end
 
 local function fetchStep(player, pet, root)
-	local trip = trips[player]
+	trips[player] = trips[player] or {}
+	local trip = trips[player][pet.id]
 	if not trip then
-		trip = { next = os.clock() + 1 }
-		trips[player] = trip
+		trip = { next = os.clock() + 0.5 + math.random() } -- the team doesn't set off in the same instant
+		trips[player][pet.id] = trip
 	end
 	if trip.busy or os.clock() < trip.next then
 		return
 	end
-	local carry = Config.PetCarryOf(pet.kind, pet.evolved)
+	local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true)
 	local at, load = pickLoot(player, root, carry)
 	if not at then
 		trip.next = os.clock() + 0.5
 		return
 	end
-	local model = PetService.FollowerOf(player)
 	trip.busy = true
+	for _, piece in load do
+		claimed[piece.gem or piece.dropId] = true
+	end
 	local there = math.max(flatDistance(at, root.Position) - 2, 1) / carry.Speed + 0.25
-	setTrip(model, "go", at, carry.Speed, nil)
+	setTrip(modelOf(player, pet.id), "go", at, carry.Speed, nil)
 	task.delay(there, function()
 		-- grab: whatever is still lying there (someone may have walked over it) goes into the backpack now
 		local best = nil
 		for _, piece in load do
+			claimed[piece.gem or piece.dropId] = nil
+			if not player.Parent then
+				continue
+			end
 			if piece.gem then
 				if LootService.TakeGem(piece.gem, player) then
 					best = best or GEM_COLOR
@@ -235,6 +258,7 @@ local function fetchStep(player, pet, root)
 				best = r and r.Color or best
 			end
 		end
+		local model = modelOf(player, pet.id)
 		if best and model and model.Parent then
 			model:SetAttribute("PetFetched", (model:GetAttribute("PetFetched") or 0) + 1) -- read by the autotest
 		end
@@ -242,7 +266,7 @@ local function fetchStep(player, pet, root)
 		local back = hero and flatDistance(at, hero.Position) / carry.Speed or 1
 		setTrip(model, "back", nil, nil, best)
 		task.delay(back, function()
-			setTrip(model, "", nil, nil, nil)
+			setTrip(modelOf(player, pet.id), "", nil, nil, nil)
 			trip.busy = false
 			trip.next = os.clock() + carry.Rest
 		end)
@@ -258,8 +282,11 @@ local function step()
 		local info = pet and Config.Pets[pet.kind]
 		local move = info and Config.PetMoves[info.Stat]
 		local root = rootOf(player)
-		if pet and root and inRun then
-			fetchStep(player, pet, root)
+		if root and inRun then
+			-- every pet of the team fetches; only the lead does its move
+			for _, follower in PetService.FollowersOf(player) do
+				fetchStep(player, follower.pet, root)
+			end
 		end
 		if not move or not root or not inWave then
 			timers[player] = nil -- a fresh start every wave, so nothing fires the moment a wave begins

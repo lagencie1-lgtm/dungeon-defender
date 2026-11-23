@@ -82,11 +82,9 @@ function HeroService.RefreshStats(player)
 		per[s.Id] = (points[s.Id] or 0) * s.Per
 	end
 	local extra = { Power = 0, Command = 0, Engineering = 0, Crit = 0, GoldFind = 0 }
-	local pet = PetService.EquippedPet(player)
-	if pet then
-		local stat, value = PetService.BonusOf(pet)
-		if stat and extra[stat] then
-			extra[stat] += value
+	for _, bonus in PetService.TeamBonuses(player) do
+		if extra[bonus[1]] then
+			extra[bonus[1]] += bonus[2]
 		end
 	end
 	local profile = DataService.Get(player)

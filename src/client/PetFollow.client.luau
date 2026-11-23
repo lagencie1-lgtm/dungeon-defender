@@ -14,7 +14,9 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local CombatLooks = require(script.Parent.CombatLooks)
 
 local FLYERS = { Glowbug = true, CrystalOwl = true, Phoenix = true }
-local SIDE, BACK = 3.2, 2.4 -- where the pet stands: to the hero's right and a little behind
+local SIDE, BACK = 3.2, 2.4 -- where the lead pet stands: to the hero's right and a little behind
+-- the team (PetSlot 1 to 3): the lead on the right, the second on the left, the third behind the hero
+local SLOTS = { { SIDE, BACK }, { -SIDE, BACK }, { 0, BACK + 2.6 } }
 local FOLLOW_HZ = 1.9 -- how eagerly it catches up (critically damped)
 local TURN_HZ = 2.6
 local HOP_TIME, HOP_HEIGHT = 0.36, 0.85
@@ -163,7 +165,8 @@ RunService.RenderStepped:Connect(function(dt)
 		local flat = Vector3.new(look.X, 0, look.Z)
 		flat = flat.Magnitude > 0.01 and flat.Unit or Vector3.zAxis
 		local right = Vector3.new(-flat.Z, 0, flat.X)
-		local follow = root.Position + right * SIDE - flat * BACK
+		local place = SLOTS[model:GetAttribute("PetSlot") or 1] or SLOTS[1]
+		local follow = root.Position + right * place[1] - flat * place[2]
 		-- fetching: the spot the pet follows walks to the loot and back at the pet's own speed
 		local phase = model:GetAttribute("FetchPhase") or ""
 		local fetchAt = model:GetAttribute("FetchAt")

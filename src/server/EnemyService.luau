@@ -194,12 +194,18 @@ local function makeGoblin(name, stats)
 		if ok and skin then
 			model:SetAttribute("Mesh", true)
 			if stats.Boss then
-				-- a floating golden crown and a glow, so the boss stands out in a crowd
-				for i = 0, 5 do
-					local angle = i / 6 * math.pi * 2
-					newPart(model, { Name = "Crown", Size = Vector3.new(s * 0.1, s * 0.28, s * 0.1), Color = Color3.fromRGB(255, 205, 60),
-						Material = Enum.Material.Neon,
-						CFrame = head.CFrame * CFrame.new(math.cos(angle) * s * 0.24, s * 0.62, math.sin(angle) * s * 0.24) })
+				-- a glow, so the boss stands out in a crowd. A boss with its own painted model wears its own crown;
+				-- only one without gets the floating golden one, above the head of the bigger drawn look.
+				-- (2026-11-23, Lemp: "yellow bars in front of the bosses face": the six crown bars were placed for the
+				-- old size and sat across the eyes since monsters are drawn 1.35x.)
+				if not stats.Model then
+					for i = 0, 5 do
+						local angle = i / 6 * math.pi * 2
+						newPart(model, { Name = "Crown", Size = Vector3.new(s * 0.1, s * 0.28, s * 0.1), Color = Color3.fromRGB(255, 205, 60),
+							Material = Enum.Material.Neon,
+							CFrame = head.CFrame * CFrame.new(math.cos(angle) * s * 0.24, s * (0.62 + (LOOK_SCALE - 1) * 1.6),
+								math.sin(angle) * s * 0.24) })
+					end
 				end
 				local light = Instance.new("PointLight")
 				light.Color = stats.Color

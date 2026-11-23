@@ -1527,6 +1527,17 @@ local function refreshInfo()
 	infoTitle.Text = info.DisplayName .. "  Lv " .. level
 	infoStats.Text = "Damage " .. stats.Damage .. " · Range " .. stats.Range .. " · every " .. stats.Cooldown .. "s"
 	local nextLevel = info.Levels[level + 1]
+	-- the next level's painted picture beside the panel (docs/tower-pipeline.md), when that tower has one
+	local preview = infoPanel:FindFirstChild("NextLook")
+	if not preview then
+		preview = make("ImageLabel", { Name = "NextLook", BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1,
+			Size = UDim2.fromOffset(96, 96), Position = UDim2.new(0, -104, 0, 0), Parent = infoPanel }, { corner(12), stroke() })
+		label({ Name = "Caption", Size = UDim2.new(1, 0, 0, 16), Position = UDim2.new(0, 0, 1, -18), Text = "Next",
+			TextColor3 = Ui.GOLD, Parent = preview })
+	end
+	local nextImage = nextLevel and ReplicatedStorage.ArtImages:GetAttribute(Config.TowerIcons[towerType] .. "_l" .. (level + 1))
+	preview.Image = nextImage or ""
+	preview.Visible = nextImage ~= nil
 	if nextLevel then
 		local gold = GameState:GetAttribute("Gold") or 0
 		upgradeButton.Text = "Upgrade (" .. nextLevel.Cost .. " mana)"
@@ -1541,7 +1552,7 @@ local function refreshInfo()
 		rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
 	end
 	rangeCircle.Size = Vector3.new(0.15, stats.Range * 2, stats.Range * 2)
-	rangeCircle.CFrame = CFrame.new(base.X, 0.2, base.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	rangeCircle.CFrame = CFrame.new(base.X, base.Y + 0.2, base.Z) * CFrame.Angles(0, 0, math.pi / 2)
 	rangeCircle.Parent = workspace
 end
 

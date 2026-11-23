@@ -3,6 +3,9 @@
 local Art = {}
 
 Art.Icons = {
+	tower_ranger_l1 = "118703978125392",
+	tower_ranger_l2 = "104610686037522",
+	tower_ranger_l3 = "89886234665497",
 	ab_bolt = "119832190117032",
 	ab_leap = "86946605393438",
 	ab_meteor = "101177442088402",
@@ -77,6 +80,9 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	tower_ranger_l3 = "106820033469061",
+	tower_ranger_l2 = "136567419817335",
+	tower_ranger_l1 = "103645933473298",
 	keep_field_stump = "134816274889515",
 	keep_field_ruin = "127713057153295",
 	keep_field_rock = "82713901015455",
@@ -165,6 +171,9 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
+	paint_tower_ranger_l1 = "139417951987975",
+	paint_tower_ranger_l2 = "83157167288044",
+	paint_tower_ranger_l3 = "137587952134994",
 	paint_keep_field_rock = "120975158242403",
 	paint_keep_field_bush = "111402986721543",
 	paint_keep_field_stump = "71846125457326",

@@ -122,9 +122,29 @@ local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", Frost
 	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
 local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector3.new(0, 4.6, -3.2), FrostCrystal = Vector3.new(0, 6.6, 0),
 	StormObelisk = Vector3.new(0, 11.75, 0), Ballista = Vector3.new(0, 5.6, -4.6) }
-local function useModel(model, towerType, at, drop)
-	local template = MODEL_NAME[towerType] and ArtService.Model(MODEL_NAME[towerType])
-	local height = MODEL_HEIGHT[towerType]
+-- a look per level (docs/tower-pipeline.md): the tower grows and changes as it is upgraded. Heights and muzzles
+-- from the Blender builds (art/blender/tower_ranger_levels.py prints HEIGHT). Towers without a level set keep one look.
+local LEVEL_LOOKS = {
+	Ranger = {
+		{ Name = "tower_ranger_l1", Height = 10.43, Muzzle = Vector3.new(0, 6.3, -2.1) },
+		{ Name = "tower_ranger_l2", Height = 15.66, Muzzle = Vector3.new(0, 9.4, -2.7) },
+		{ Name = "tower_ranger_l3", Height = 19.45, Muzzle = Vector3.new(0, 12.65, -3.3) },
+	},
+}
+TowerService.LevelLooks = LEVEL_LOOKS
+
+local function lookFor(towerType, level)
+	local set = LEVEL_LOOKS[towerType]
+	local entry = set and set[level or 1]
+	if entry and ArtService.Model(entry.Name) then
+		return entry.Name, entry.Height, entry.Muzzle
+	end
+	return MODEL_NAME[towerType], MODEL_HEIGHT[towerType], MODEL_MUZZLE[towerType]
+end
+
+local function useModel(model, towerType, at, drop, level)
+	local name, height = lookFor(towerType, level)
+	local template = name and ArtService.Model(name)
 	if not template or not height then
 		return false
 	end
@@ -144,6 +164,9 @@ local function useModel(model, towerType, at, drop)
 	-- the stone plinth keeps upgrades, labels and effects working; on a gentle slope it reaches down to the
 	-- lowest ground under the footprint (drop studs below the stand), so no edge ever floats
 	drop = drop or 0
+	if model:FindFirstChild("Base") then
+		return true -- an upgrade swaps only the look; the plinth stays
+	end
 	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55 + drop, 5), CFrame = at * CFrame.new(0, (0.55 - drop) / 2, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
 		CanCollide = false })
 	return true
@@ -252,8 +275,8 @@ function TowerService.Place(player, towerType, position)
 	model.Name = info.DisplayName
 	local at = CFrame.new(position)
 	local muzzle, kicker, turners
-	if useModel(model, towerType, at, height - low + 0.02) then
-		muzzle = MODEL_MUZZLE[towerType]
+	if useModel(model, towerType, at, height - low + 0.02, 1) then
+		muzzle = select(3, lookFor(towerType, 1))
 	else
 		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
 	end
@@ -322,21 +345,60 @@ function TowerService.Upgrade(_player, model)
 	model:SetAttribute("Range", nextLevel.Range)
 	model:SetAttribute("Spent", t.spent)
 	setLevelLabel(model, t.level)
-	-- grow a little with each level
 	local base = model.PrimaryPart
-	base.Size += Vector3.new(0.6, 0.2, 0.6)
-	if t.level == #info.Levels then
-		-- max level: a golden glow
-		local glow = Instance.new("PointLight")
-		glow.Color = Color3.fromRGB(255, 210, 80)
-		glow.Range = 10
-		glow.Parent = base
-		local sparkles = Instance.new("Sparkles")
-		sparkles.SparkleColor = Color3.fromRGB(255, 220, 90)
-		sparkles.Parent = base
+	local name, height, muzzle = lookFor(t.type, t.level)
+	local oldLook = model:FindFirstChild("Look")
+	if LEVEL_LOOKS[t.type] and oldLook and name and ArtService.Model(name) then
+		-- the new level's own look: swap the model and let it settle on a spring (90% -> 100% size in about 0.35 s,
+		-- a little overshoot), with a small dust ring; no ceremony
+		oldLook:Destroy()
+		local at = CFrame.new(t.position)
+		useModel(model, t.type, at, 0, t.level)
+		local look = model:FindFirstChild("Look")
+		if muzzle then
+			t.muzzle = t.position + muzzle
+		end
+		local label = model:FindFirstChild("LevelLabel")
+		if label then
+			label.StudsOffsetWorldSpace = Vector3.new(0, height + 1, 0)
+		end
+		local volume = model:FindFirstChild("SelectionVolume")
+		if volume then
+			volume.Size = Vector3.new(6, height, 6)
+			volume.CFrame = at * CFrame.new(0, height / 2, 0)
+		end
+		if look then
+			local full = look:GetScale()
+			local started = os.clock()
+			local connection
+			connection = RunService.Heartbeat:Connect(function()
+				local s = os.clock() - started
+				if not look.Parent or s > 0.45 then
+					connection:Disconnect()
+					s = 10
+				end
+				-- a damped spring: starts at 90%, overshoots a touch, settles
+				look:ScaleTo(full * (1 - 0.1 * math.exp(-9 * s) * math.cos(14 * s)))
+				local box, size = look:GetBoundingBox()
+				look:PivotTo(look:GetPivot() + (t.position - (box.Position - Vector3.new(0, size.Y / 2, 0))))
+			end)
+		end
+		Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
+		if typeof(t.owner) == "Instance" then
+			StoreService.ApplyModelSkin(model, StoreService.SkinFor(t.owner, t.type))
+		end
+	else
+		-- towers with one look grow their plinth a little, and glow at the top level
+		base.Size += Vector3.new(0.6, 0.2, 0.6)
+		if t.level == #info.Levels then
+			local glow = Instance.new("PointLight")
+			glow.Color = Color3.fromRGB(255, 210, 80)
+			glow.Range = 10
+			glow.Parent = base
+		end
+		Effects.Burst(t.position + Vector3.new(0, 4, 0), 6, Color3.fromRGB(255, 220, 90), 0.4)
 	end
-	Effects.Burst(t.position + Vector3.new(0, 4, 0), 6, Color3.fromRGB(255, 220, 90), 0.4)
-	Effects.Text(t.position + Vector3.new(0, 10, 0), "LEVEL UP", Color3.fromRGB(255, 220, 90))
+	Effects.Text(t.position + Vector3.new(0, (height or 10) + 1.5, 0), "LEVEL " .. t.level, Color3.fromRGB(255, 220, 90))
 	Sound.Play("Coin", t.position)
 	return true
 end

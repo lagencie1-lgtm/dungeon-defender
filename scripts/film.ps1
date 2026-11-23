@@ -4,6 +4,14 @@
 # and .marks.txt (each line: seconds into the clip, mark name). Closes that Studio afterwards.
 param([string]$Name = "take", [string]$Mode = "phone", [int]$Limit = 300)
 $ErrorActionPreference = "Stop"
+# one Studio run at a time on this PC (shared with the pets thread): tools\studio.lock, stale after 25 minutes
+$lockFile = Join-Path (Split-Path $PSScriptRoot -Parent) "tools\studio.lock"
+while ((Test-Path $lockFile) -and ((Get-Date) - (Get-Item $lockFile).LastWriteTime).TotalMinutes -lt 25) {
+    Write-Output "waiting for the Studio lock: $(Get-Content $lockFile -Raw)"
+    Start-Sleep 60
+}
+Set-Content $lockFile "hub thread (film/test) $(Get-Date -Format s)"
+try {
 $root = Split-Path $PSScriptRoot -Parent
 $outDir = Join-Path $root "tools\film"
 New-Item -ItemType Directory -Force $outDir | Out-Null
@@ -59,3 +67,5 @@ Select-String -Path $log -Pattern "\[FILM\]|Error|error" | Select-Object -Last 6
 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
 Write-Output "clip $clip (window '$title')"
 $marks
+
+} finally { Remove-Item $lockFile -Force -ErrorAction SilentlyContinue }

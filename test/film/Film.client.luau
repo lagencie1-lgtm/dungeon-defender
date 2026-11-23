@@ -105,7 +105,7 @@ task.wait(6)
 mark("run map")
 ask("Mana")
 task.wait(0.5)
-local spot = Config.SpawnPoint + Vector3.new(14, 0, 4)
+local spot = Config.SpawnPoint + Vector3.new(-4, 0, 6) -- (an open build spot beside the hero on the new path)
 mark("place ranger")
 local ok, reason = Remotes.PlaceTower:InvokeServer("Ranger", spot)
 print("[FILM] place", ok, reason)
@@ -115,9 +115,25 @@ for _, t in workspace.Towers:GetChildren() do
 	ranger = t
 end
 if ranger then
-	mark("upgrade ranger")
+	-- the Ranger at each level, seen from the player's height at a short distance (the upgrade look pipeline)
+	local base = ranger:GetPivot().Position
+	local function closeUp(tag)
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		workspace.CurrentCamera.CFrame = CFrame.lookAt(base + Vector3.new(-14, 9, -20), base + Vector3.new(0, 7, 0))
+		mark(tag)
+	end
+	closeUp("ranger level 1")
+	task.wait(1.6)
 	Remotes.UpgradeTower:InvokeServer(ranger)
-	task.wait(2)
+	mark("upgrade ranger")
+	task.wait(1.6)
+	closeUp("ranger level 2")
+	task.wait(1.2)
+	Remotes.UpgradeTower:InvokeServer(ranger)
+	task.wait(1.6)
+	closeUp("ranger level 3")
+	task.wait(1.6)
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	mark("sell ranger")
 	Remotes.SellTower:InvokeServer(ranger)
 	task.wait(2)

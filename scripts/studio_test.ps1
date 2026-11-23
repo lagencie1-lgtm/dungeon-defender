@@ -2,6 +2,14 @@
 # and prints the lines with the given tag.  scripts/studio_test.ps1 -Project test/ground.project.json -Tag GROUND
 param([Parameter(Mandatory)][string]$Project, [Parameter(Mandatory)][string]$Tag, [int]$Limit = 600)
 $ErrorActionPreference = "Stop"
+# one Studio run at a time on this PC (shared with the pets thread): tools\studio.lock, stale after 25 minutes
+$lockFile = Join-Path (Split-Path $PSScriptRoot -Parent) "tools\studio.lock"
+while ((Test-Path $lockFile) -and ((Get-Date) - (Get-Item $lockFile).LastWriteTime).TotalMinutes -lt 25) {
+    Write-Output "waiting for the Studio lock: $(Get-Content $lockFile -Raw)"
+    Start-Sleep 60
+}
+Set-Content $lockFile "hub thread (film/test) $(Get-Date -Format s)"
+try {
 $root = Split-Path $PSScriptRoot -Parent
 $name = ((Get-Content (Join-Path $root $Project) -Raw) | ConvertFrom-Json).name
 $place = Join-Path $root "tools\$name.rbxl"
@@ -27,3 +35,5 @@ Start-Sleep 2
 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
 Select-String -Path $log -Pattern "\[$Tag\]|Script '.*', Line|Error: " | ForEach-Object {
     $_.Line -replace '^[^\[]*\[FLog::\w+\] ', '' } | Select-Object -First 200
+
+} finally { Remove-Item $lockFile -Force -ErrorAction SilentlyContinue }

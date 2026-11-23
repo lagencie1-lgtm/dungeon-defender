@@ -327,9 +327,9 @@ function Keep.Build(hub, c, ctx)
 		local at = c + show.At
 		local facing = CFrame.lookAt(at, at + (flat(spawnAt) - flat(at)).Unit)
 		piece(ctx, hub, "keep_pedestal", facing, 1.55, Vector3.new(7, 1.55, 7))
-		local name = ({ Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
+		local name = ({ Ranger = "tower_ranger_l3", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
 			StormObelisk = "tower_storm", Ballista = "tower_ballista" })[show.Tower]
-		local heights = { Ranger = 11, FlameCannon = 5.5, FrostCrystal = 7.5, StormObelisk = 10, Ballista = 5.9 }
+		local heights = { Ranger = 12, FlameCannon = 5.5, FrostCrystal = 7.5, StormObelisk = 10, Ballista = 5.9 }
 		piece(ctx, hub, name, facing + Vector3.new(0, 1.6, 0), heights[show.Tower], nil)
 		sign(ctx, hub, "ShowcaseTag_" .. show.Tower, at + Vector3.new(0, 1, 0) + facing.LookVector * 4,
 			at + facing.LookVector * 20, Config.Towers[show.Tower].DisplayName, nil, Config.Towers[show.Tower].Color, 9, 1.6, 50)

@@ -132,6 +132,24 @@ if ranger then
 	task.wait(1.6)
 	archerShot("archer level 1", 4.4)
 	task.wait(1.4)
+	-- the rebuilt archer from four sides (2026-11-23, Lemp: "ripped apart face ... cut head ... missing piece on
+	-- the hoody"): front, his left, back, his right, close, at his own height
+	local archer = ranger:FindFirstChild("Archer", true)
+	if archer then
+		local pivot = archer:GetPivot()
+		local _, size = archer:GetBoundingBox()
+		local centre = pivot.Position + Vector3.new(0, size.Y * 0.15, 0)
+		local fov = workspace.CurrentCamera.FieldOfView
+		workspace.CurrentCamera.FieldOfView = 16
+		for i, side in { "front", "left", "back", "right" } do
+			local dir = (pivot * CFrame.Angles(0, math.rad(({ 0, 90, 165, 245 })[i]), 0)).LookVector   -- (corner posts hide the exact back and right)
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(centre + dir * 14 + Vector3.new(0, size.Y * 0.25, 0), centre)   -- (from outside the tower, a long lens)
+			mark("archer " .. side)
+			task.wait(1.2)
+		end
+		workspace.CurrentCamera.FieldOfView = fov
+	end
 	Remotes.UpgradeTower:InvokeServer(ranger)
 	mark("upgrade ranger")
 	task.wait(1.6)
@@ -177,6 +195,37 @@ if ranger then
 	Remotes.SellTower:InvokeServer(ranger)
 	task.wait(2)
 end
+-- every other defender at its three levels (2026-11-23: the kit-built level looks), a close camera on each
+ask("Own")
+for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
+	ask("Mana")
+	task.wait(0.4)
+	local okPlace = Remotes.PlaceTower:InvokeServer(kind, spot)
+	task.wait(2.2)
+	local tower
+	for _, t in workspace.Towers:GetChildren() do
+		if t:GetAttribute("TowerType") == kind or t.Name == kind then
+			tower = t
+		end
+	end
+	print("[FILM] place", kind, okPlace, tower ~= nil)
+	if tower then
+		local base = tower:GetPivot().Position
+		for level = 1, 3 do
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(base + Vector3.new(-8, 6.5, -11), base + Vector3.new(0, 3.5, 0))
+			mark(kind .. " level " .. level)
+			task.wait(1.6)
+			if level < 3 then
+				Remotes.UpgradeTower:InvokeServer(tower)
+				task.wait(1.0)
+			end
+		end
+		Remotes.SellTower:InvokeServer(tower)
+		task.wait(1.2)
+	end
+end
+workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 ask("Defenders")
 await("DefendersReady", 10)
 mark("wave")

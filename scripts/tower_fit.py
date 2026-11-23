@@ -23,7 +23,19 @@ BANDS = {
 }
 # the sizes the loop may change (by a few percent at a time, kept when the outline overlap gets better) and the
 # rules a tower must keep (a wall never grows toward the top, the roof stays wider than the lookout)
-SEARCH = {"ranger1": ["view_turn", "foot_r", "leg_half", "box_z0", "box_h", "box_half", "eave", "ridge", "roof_len", "roof_span"],
+SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "bend", "thick"],
+          "ballista2": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "bend", "thick"],
+          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "bow_w", "stock", "gap", "bend"],
+          "storm1": ["foot_r", "foot_h", "stone_w", "stone_h", "stone_d"],
+          "storm2": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_top", "ob_h", "rod"],
+          "storm3": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_top", "ob_h", "orb_r"],
+          "frost1": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "lean"],
+          "frost2": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "ring_r"],
+          "frost3": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "crown_r", "orb_r"],
+          "flame1": ["aim", "tilt", "foot_r", "foot_h", "cradle", "barrel_r", "barrel_len", "barrel_z"],
+          "flame2": ["aim", "tilt", "foot_r", "drum_r", "drum_h", "barrel_r", "barrel_len", "barrel_z"],
+          "flame3": ["aim", "tilt", "foot_r", "drum_r", "drum_h", "barrel_r", "barrel_len", "barrel_z"],
+          "ranger1": ["view_turn", "foot_r", "leg_half", "box_z0", "box_h", "box_half", "eave", "ridge", "roof_len", "roof_span"],
           "ranger2": ["roof_r", "roof_z0", "bell", "look_r", "wall_top", "wall_r0", "wall_r1", "foot_r", "foot_h", "post_top", "post_r", "flag_len", "flag_h"],
           "ranger3": ["roof_r", "roof_z0", "roof_z1", "look_r", "wall_top", "band_z", "wall_r0", "wall_r1", "wall2_r", "foot_r", "post_top"]}
 RULES = {"ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half"] <= p["leg_half"] + 0.7],

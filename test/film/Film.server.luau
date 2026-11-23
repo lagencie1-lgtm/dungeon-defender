@@ -37,6 +37,15 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 		cue:FireClient(player, "RunReady")
 	elseif step == "Mana" then
 		State.AddGold(2000)
+	elseif step == "Own" then
+		-- the film shows every defender's levels: unlock them for this test save only
+		local p = DataService.Get(player)
+		if p then
+			p.Owned.Towers = p.Owned.Towers or {}
+			for _, kind in Config.TowerOrder do
+				p.Owned.Towers[kind] = true
+			end
+		end
 	elseif step == "Defenders" then
 		-- a few defenders along the path, near the hero, for the wave shot
 		local pts = Config.Path

@@ -138,6 +138,28 @@ local LEVEL_LOOKS = {
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
 			Archers = { { Vector3.new(0.54, 10.8, -3.35), 11, 3.2 }, { Vector3.new(-2.15, 10.8, -2.63), 39, 3.1 } } },
 	},
+	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
+	-- scaled so each one is a step taller than the last)
+	FlameCannon = {
+		{ Name = "tower_flame_l1", Height = 5.22, Muzzle = Vector3.new(-1.48, 4.23, -0.74) },
+		{ Name = "tower_flame_l2", Height = 6.42, Muzzle = Vector3.new(-2.61, 5.37, -0.25) },
+		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-3.31, 6.03, -1.09) },
+	},
+	FrostCrystal = {
+		{ Name = "tower_frost_l1", Height = 7.84, Muzzle = Vector3.new(0.00, 6.98, 0.00) },
+		{ Name = "tower_frost_l2", Height = 8.70, Muzzle = Vector3.new(0.00, 7.50, 0.00) },
+		{ Name = "tower_frost_l3", Height = 9.92, Muzzle = Vector3.new(0.00, 7.68, 0.00) },
+	},
+	StormObelisk = {
+		{ Name = "tower_storm_l1", Height = 7.34, Muzzle = Vector3.new(0.00, 6.05, 0.00) },
+		{ Name = "tower_storm_l2", Height = 10.40, Muzzle = Vector3.new(0.00, 10.12, 0.00) },
+		{ Name = "tower_storm_l3", Height = 12.05, Muzzle = Vector3.new(0.00, 11.11, 0.00) },
+	},
+	Ballista = {
+		{ Name = "tower_ballista_l1", Height = 5.85, Muzzle = Vector3.new(-3.31, 5.93, -1.71) },
+		{ Name = "tower_ballista_l2", Height = 6.38, Muzzle = Vector3.new(-3.65, 6.44, -2.34) },
+		{ Name = "tower_ballista_l3", Height = 8.05, Muzzle = Vector3.new(-1.36, 7.95, -2.40) },
+	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
 
@@ -324,6 +346,8 @@ function TowerService.Place(player, towerType, position)
 	local muzzle, kicker, turners
 	if useModel(model, towerType, at, height - low + 0.02, 1) then
 		muzzle = select(3, lookFor(towerType, 1))
+		-- a look's own barrel part (the Flame Cannon's "Skin_barrel") kicks back on every shot
+		kicker = model.Look:FindFirstChild("Skin_barrel")
 	else
 		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
 	end
@@ -405,6 +429,7 @@ function TowerService.Upgrade(_player, model)
 		if muzzle then
 			t.muzzle = t.position + muzzle
 		end
+		t.kicker = look and look:FindFirstChild("Skin_barrel") or t.kicker
 		local label = model:FindFirstChild("LevelLabel")
 		if label then
 			label.StudsOffsetWorldSpace = Vector3.new(0, height + 2.4, 0)

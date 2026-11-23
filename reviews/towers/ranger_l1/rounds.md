@@ -7,3 +7,9 @@
 - round 3: ladder on the right side leaning out, big archer in the window, taller stone footing, grass hugging the base; repaint, sharpen, grade
   IoU 87.4%  width profile off 12.4%  region colour dE 9.7  (pixel dE 45.9)  detail 19.9% vs picture 15.9% (ratio 1.25)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 43/43)  lookout 7 (L 37/40)  wall 5 (L 45/49)  footing 2 (L 63/65)
+- round 4: shape loop on the new build (88.5%, footing wider, view turned); repaint, sharpen, grade
+  IoU 87.2%  width profile off 12.4%  region colour dE 9.7  (pixel dE 44.2)  detail 20.9% vs picture 15.9% (ratio 1.31)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 43/43)  lookout 5 (L 37/39)  wall 6 (L 45/51)  footing 3 (L 63/66)
+- round 5: same painting, lighter sharpening (detail was just over the gate)
+  IoU 87.2%  width profile off 12.4%  region colour dE 9.7  (pixel dE 43.8)  detail 20.0% vs picture 15.9% (ratio 1.25)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 43/43)  lookout 5 (L 37/39)  wall 6 (L 45/51)  footing 3 (L 63/66)

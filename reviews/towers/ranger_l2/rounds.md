@@ -28,3 +28,6 @@
 - round 9: big archers at the rail between the roof posts (one post behind the banner), threshold slab, softer grass; repaint, sharpen, grade
   IoU 89.3%  width profile off 10.0%  region colour dE 9.5  (pixel dE 48.3)  detail 24.7% vs picture 21.3% (ratio 1.16)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 7 (L 45/48)  lookout 4 (L 40/40)  wall 3 (L 58/57)  footing 5 (L 63/66)
+- round 10: refit with the new archer and banner (90.2%: narrower bell roof); repaint, sharpen, grade
+  IoU 89.9%  width profile off 9.0%  region colour dE 8.9  (pixel dE 44.9)  detail 23.2% vs picture 21.3% (ratio 1.09)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 45/47)  lookout 2 (L 40/40)  wall 2 (L 58/58)  footing 5 (L 63/65)

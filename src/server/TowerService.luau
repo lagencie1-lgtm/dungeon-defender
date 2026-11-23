@@ -126,7 +126,7 @@ local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector
 -- from the Blender builds (art/blender/tower_ranger_detail.py prints HEIGHT and MUZZLE, the archer's arrow tip). Towers without a level set keep one look.
 local LEVEL_LOOKS = {
 	Ranger = {
-		{ Name = "tower_ranger_l1", Height = 10.43, Muzzle = Vector3.new(0, 6.3, -2.1) },
+		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(-2.02, 6.10, -2.60) },
 		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-3.26, 8.18, -2.61) },
 		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(-4.91, 12.52, -3.29) },
 	},

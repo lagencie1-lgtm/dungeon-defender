@@ -45,7 +45,7 @@ def main():
     # crisp painted edges like the picture (the projection softens them a little): a light unsharp mask first, so
     # the grade below measures the sharpened paint
     from PIL import ImageFilter
-    Image.open(keep).convert("RGB").filter(ImageFilter.UnsharpMask(radius=2, percent=70, threshold=2)).save(keep)
+    Image.open(keep).convert("RGB").filter(ImageFilter.UnsharpMask(radius=2, percent=55, threshold=2)).save(keep)
     shutil.copy(keep, paint)
     render = fbx[:-4] + "_grade_render.png"
     subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"],

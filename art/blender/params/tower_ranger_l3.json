@@ -6,9 +6,9 @@
  "band_z": 7.303,
  "wall2_r": 3.55,
  "wall_top": 9.9,
- "rows": 7,
- "rows2": 6,
- "per_row": 22,
+ "rows": 4,
+ "rows2": 3,
+ "per_row": 13,
  "door_w": 2.1,
  "door_h": 2.8,
  "look_r": 4.35,
@@ -19,8 +19,9 @@
  "roof_z0": 14.1,
  "roof_z1": 18.232,
  "roof_r": 4.688,
- "tiers": 5,
- "per_tier": 24,
+ "tiers": 4,
+ "per_tier": 18,
  "bell": 1.1,
- "archer_s": 1.35
+ "archer_s": 1.35,
+ "foot_n": 11
 }

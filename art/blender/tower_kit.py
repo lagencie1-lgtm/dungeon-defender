@@ -31,7 +31,7 @@ STONE = (1.0, 0.88, 0.7)
 MORTAR = (0.72, 0.62, 0.5)
 WOOD = (0.8, 0.58, 0.4)
 WOOD_DARK = (0.5, 0.33, 0.21)
-ROOF = (0.8, 0.34, 0.27)       # the pictures' red-brown shingles
+ROOF = (0.74, 0.33, 0.26)      # the pictures' calm brick red (coordinator 2026-11-23: less orange-pink)
 ROOF_DARK = (0.55, 0.25, 0.2)
 GREEN = (0.34, 0.6, 0.25)
 LEAF = (0.36, 0.66, 0.26)
@@ -45,11 +45,28 @@ def at(a, r, z):
     return (math.cos(a) * r, math.sin(a) * r, z)
 
 
+ATLAS = ["body"]   # which texture a new part is painted into (see atlas() and bake_atlases())
+
+
+class atlas:
+    """with atlas("roof"): ... puts the parts made inside into their own texture (coordinator 2026-11-23: the
+    archer, the roof and the props each get texture room of their own)"""
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        ATLAS.append(self.name)
+
+    def __exit__(self, *a):
+        ATLAS.pop()
+
+
 def _link(name, mesh, color, key=None, tile=1.4):
     """puts a finished mesh in the scene with its paint, without selection operators (they slow down with every
     part in the scene; a tower has about a thousand parts)"""
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(obj)
+    obj["htd_atlas"] = ATLAS[-1]
     return paint.paint(obj, key, color, tile)
 
 
@@ -65,7 +82,7 @@ def block(name, pos, size, color, rot=(0, 0, 0), key=None, tile=1.4, bevel=0.04)
     bmesh.ops.create_cube(bm, size=1.0)
     bmesh.ops.scale(bm, vec=size, verts=bm.verts)
     if bevel > 0:
-        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=min(bevel, min(size) * 0.45), segments=1, affect="EDGES",
+        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=min(bevel, min(size) * 0.45), segments=2 if bevel >= 0.08 else 1, affect="EDGES",
                         profile=0.5)
     _place(bm, pos, rot)
     mesh = bpy.data.meshes.new(name)
@@ -154,7 +171,7 @@ def lathe(name, profile, color, key=None, tile=2.0, verts=24, cap=True):
     return _link(name, mesh, color, key, tile)
 
 
-def stone_wall(name, z0, z1, r0, r1, rows, per_row, gaps=(), depth=0.3, jitter=0.06):
+def stone_wall(name, z0, z1, r0, r1, rows, per_row, gaps=(), depth=0.42, jitter=0.05):
     """cut stones in offset rows on a tapering round wall; gaps = [(angle_deg, half_width_deg, z_top)]"""
     lathe(name + "Core", [(r0 - depth * 0.55, z0), (r1 - depth * 0.55, z1)], MORTAR, key="stone", verts=24)
     h = (z1 - z0) / rows
@@ -173,7 +190,7 @@ def stone_wall(name, z0, z1, r0, r1, rows, per_row, gaps=(), depth=0.3, jitter=0
             c = rnd.uniform(0.9, 1.05)
             block(f"{name}{row}_{i}", at(a, r - depth * 0.2 + rnd.uniform(-jitter, jitter), z),
                   (w, depth, h * rnd.uniform(0.82, 0.9)), tuple(min(1, v * c) for v in STONE), (0, 0, a + rad(90)),
-                  key="stone", tile=1.3, bevel=0.0)  # no chamfer: the paint draws the edges, and the triangles go to the archers
+                  key=None, tile=1.3, bevel=0.13)  # few big stones with soft edges, like the paintings (coordinator 2026-11-23)
 
 
 def stone_ring(name, z, r, h, n, depth=0.7, skip=()):
@@ -185,10 +202,10 @@ def stone_ring(name, z, r, h, n, depth=0.7, skip=()):
         w = 2 * math.pi * r / n * 0.92
         c = rnd.uniform(0.88, 1.02)
         block(f"{name}{i}", at(a, r - depth / 2, z + h / 2), (w, depth, h * rnd.uniform(0.9, 1.0)),
-              tuple(min(1, v * c) for v in STONE), (0, 0, a + rad(90)), key="stone", tile=1.2, bevel=0.12)
+              tuple(min(1, v * c) for v in STONE), (0, 0, a + rad(90)), key=None, tile=1.2, bevel=0.16)
 
 
-def shingle_roof(name, z0, z1, r_eave, tiers=5, per_tier=18, bell=0.75, overhang=0.35, thick=0.2):
+def shingle_roof(name, z0, z1, r_eave, tiers=4, per_tier=16, bell=0.75, overhang=0.4, thick=0.32):
     """a bell roof: profile radius r(u) = r_eave * (1-u)^bell for u in 0..1 up the roof"""
     def radius(u):
         return max(0.12, r_eave * (1 - u) ** bell)
@@ -210,7 +227,7 @@ def shingle_roof(name, z0, z1, r_eave, tiers=5, per_tier=18, bell=0.75, overhang
             c = rnd.uniform(0.86, 1.06)
             # tilt about the tangent, then turn round the axis
             block(f"{name}{t}_{i}", at(a, rm + thick, zm), (w, thick, length),
-                  tuple(min(1, v * c) for v in ROOF), (-(tilt + rad(9)), 0, a + rad(90)), key="wood", tile=1.0, bevel=0.0)  # a bit flatter than the roof: each tier's lower edge stands out as a step
+                  tuple(min(1, v * c) for v in ROOF), (-(tilt + rad(9)), 0, a + rad(90)), key=None, tile=1.0, bevel=0.09)  # a bit flatter than the roof: each tier's lower edge stands out as a step
 
 
 def finial(z, cup=0.55, pole=1.0, knob=0.3):
@@ -237,7 +254,7 @@ def wavy_flag(z_top, length, height, color=GREEN, waves=1.3, amp=0.22, cols=10):
     membrane("Flag", pts, faces, color, 0.06)
 
 
-def roof_posts(z0, z1, r, n, front, size=0.42, brace=True):
+def roof_posts(z0, z1, r, n, front, size=0.66, brace=True):
     for i in range(n):
         a = rad(front + 360 / n * (i + 0.5))
         block(f"RoofPost{i}", at(a, r, (z0 + z1) / 2), (size, size, z1 - z0), WOOD_DARK, rot=(0, 0, a), key="wood_dark", tile=1.2)
@@ -246,7 +263,7 @@ def roof_posts(z0, z1, r, n, front, size=0.42, brace=True):
                 b = a + s * rad(360 / n * 0.3)
                 p0 = Vector(at(a, r, z1 - 1.1))
                 p1 = Vector(at(b, r * 1.02, z1 - 0.1))
-                limb(f"Knee{i}{s}", tuple(p0), tuple(p1), 0.11, 0.11, WOOD_DARK, verts=4, end=False)
+                limb(f"Knee{i}{s}", tuple(p0), tuple(p1), 0.19, 0.19, WOOD_DARK, verts=6, end=False)
 
 
 def balcony(z, r, height, bays, front, floor_r=None, posts_out=0.15):
@@ -260,7 +277,7 @@ def balcony(z, r, height, bays, front, floor_r=None, posts_out=0.15):
         block(f"Corbel{i}", at(a, r - 0.35, z - 0.55), (0.42, 0.9, 0.75), WOOD_DARK, rot=(0, 0, a + rad(90)), key="wood_dark", tile=1.0)
         # corner post and brass plate with rivets
         p = at(a, r + posts_out, z + height / 2 + 0.2)
-        block(f"BPost{i}", p, (0.44, 0.44, height + 0.3), WOOD_DARK, rot=(0, 0, a), key="wood_dark", tile=1.0)
+        block(f"BPost{i}", p, (0.62, 0.62, height + 0.3), WOOD_DARK, rot=(0, 0, a), key="wood_dark", tile=1.0, bevel=0.1)
         pl = Vector(at(a, r + posts_out + 0.24, z + height * 0.55))
         block(f"Plate{i}", tuple(pl), (0.62, 0.08, height * 0.8), BRASS, rot=(0, 0, a + rad(90)), key="brass", tile=0.8, bevel=0.03)
         for dz in (-0.3, 0.3):
@@ -272,14 +289,14 @@ def balcony(z, r, height, bays, front, floor_r=None, posts_out=0.15):
         b = a + rad(step / 2)
         span = 2 * (r + 0.05) * math.sin(rad(step / 2)) - 0.4
         for zz, hh in ((z + 0.55, 0.32), (z + height, 0.4)):
-            block(f"Rail{i}{zz:.1f}", at(b, (r + 0.05) * math.cos(rad(step / 2)), zz), (span, 0.3, hh), WOOD, rot=(0, 0, b + rad(90)), key="wood", tile=1.4)
+            block(f"Rail{i}{zz:.1f}", at(b, (r + 0.05) * math.cos(rad(step / 2)), zz), (span, 0.42, hh * 1.35), WOOD, rot=(0, 0, b + rad(90)), key="wood", tile=1.4, bevel=0.1)
         diag = math.atan2(height - 0.75, span)
         for s in (-1, 1):
             block(f"Brace{i}{s}", at(b, (r - 0.05) * math.cos(rad(step / 2)), z + 0.55 + (height - 0.55) / 2),
-                  (math.hypot(span, height - 0.6) * 0.95, 0.16, 0.2), WOOD_DARK, (0, s * diag, b + rad(90)), key="wood_dark", tile=1.0)
+                  (math.hypot(span, height - 0.6) * 0.9, 0.26, 0.3), WOOD_DARK, (0, s * diag, b + rad(90)), key="wood_dark", tile=1.0)
 
 
-def arched_door(front, r_wall, z, w=1.6, h=2.2, steps=2, arch_stones=9):
+def arched_door(front, r_wall, z, w=1.6, h=2.2, steps=2, arch_stones=7):
     a = rad(front)
     n = Vector((math.cos(a), math.sin(a), 0))
     t = Vector((-math.sin(a), math.cos(a), 0))
@@ -306,11 +323,11 @@ def arched_door(front, r_wall, z, w=1.6, h=2.2, steps=2, arch_stones=9):
     for k in range(arch_stones):
         ang = math.pi * k / (arch_stones - 1)
         p = c + t * (math.cos(ang) * (w / 2 + 0.35)) + Vector((0, 0, math.sin(ang) * (w / 2 + 0.35)))
-        block(f"Voussoir{k}", tuple(p), (0.42, 0.45, 0.62), STONE, (0, -(ang - math.pi / 2), a + rad(90)), key="stone", tile=1.0, bevel=0.08)
+        block(f"Voussoir{k}", tuple(p), (0.62, 0.55, 0.75), STONE, (0, -(ang - math.pi / 2), a + rad(90)), key=None, tile=1.0, bevel=0.12)
     for s in (-1, 1):
         for k in range(3):
             block(f"Jamb{s}{k}", tuple(base + n * 0.12 + t * (s * (w / 2 + 0.35)) + Vector((0, 0, z + 0.35 + k * 0.55))),
-                  (0.5, 0.45, 0.5), STONE, rot=rot, key="stone", tile=1.0, bevel=0.08)
+                  (0.68, 0.55, 0.62), STONE, rot=rot, key=None, tile=1.0, bevel=0.12)
     # a threshold slab under the steps, so no ground shows through the gap in the footing ring
     block("Threshold", tuple(base + n * 0.55 + Vector((0, 0, 0.1))), (w + 1.6, 1.6, 0.2), STONE, rot, key="stone", tile=1.0, bevel=0.05)
     for k in range(steps):
@@ -415,37 +432,49 @@ def pebbles(r, n, skip=()):
 
 
 def archer(x, y, z, s=1.0, face=-90):
-    """a hooded green archer drawing a bow, facing the angle face (degrees)"""
-    a = rad(face)
-    f = Vector((math.cos(a), math.sin(a), 0))
-    rt = Vector((math.sin(a), -math.cos(a), 0))  # the archer's right hand side
-    o = Vector((x, y, z))
+    """the Ranger's archer, the tower's face (coordinator 2026-11-23): a chibi hooded archer like the pictures: big
+    head in a pointed green hood with the face showing, brown tunic and belt, arms out to a drawn bow, a quiver of
+    arrows on the back. About 700 triangles; it goes into its own texture (atlas "archer")."""
+    with atlas("archer"):
+        a = rad(face)
+        f = Vector((math.cos(a), math.sin(a), 0))
+        rt = Vector((math.sin(a), -math.cos(a), 0))  # the archer's right hand side
+        o = Vector((x, y, z))
 
-    def P(fw, side, up):
-        return tuple(o + f * (fw * s) + rt * (side * s) + Vector((0, 0, up * s)))
-    ball("ArcherBody", P(0, 0, 0.75), 0.5, GREEN, (1.0, 0.85, 1.25), seg=12, key="cloth", tile=1.0)
-    ball("ArcherBelt", P(0.02, 0, 0.5), 0.47, WOOD_DARK, (1.02, 0.88, 0.25), seg=12)
-    ball("ArcherHead", P(0.2, 0, 1.43), 0.37, (0.98, 0.78, 0.62), seg=14)   # the face shows out of the hood
-    ball("ArcherHood", P(-0.14, 0, 1.56), 0.44, GREEN, (1.0, 1.0, 1.05), seg=14, key="cloth", tile=1.0)
-    cone("ArcherHoodTip", P(-0.35, 0, 1.85), 0.2, 0.45, GREEN, (rad(-55) * f.y, rad(55) * f.x, 0), verts=8)
-    for k in (-1, 1):
-        ball(f"ArcherEye{k}", P(0.53, k * 0.13, 1.47), 0.06, (0.15, 0.1, 0.08), seg=6)
-    # arms out to the bow (held to the archer's left, string drawn to the right cheek)
-    limb("ArcherArmL", P(0.05, -0.38, 1.05), P(0.75, -0.55, 1.2), 0.12, 0.1, GREEN, verts=6)
-    limb("ArcherArmR", P(0.05, 0.38, 1.05), P(0.3, 0.2, 1.25), 0.12, 0.1, GREEN, verts=6)
-    bow = [P(0.8, -0.5 + 0.2 * math.cos(t), 1.2 + 0.7 * math.sin(t)) for t in (-1.3, -0.65, 0, 0.65, 1.3)]
-    chain("Bow", bow, [0.05, 0.065, 0.07, 0.065, 0.05], WOOD_DARK, seg=6)
-    limb("BowString", bow[0], P(0.3, 0.2, 1.25), 0.015, 0.015, CREAM, verts=4, end=False)
-    limb("BowString2", P(0.3, 0.2, 1.25), bow[-1], 0.015, 0.015, CREAM, verts=4, end=False)
-    limb("Arrow", P(0.3, 0.2, 1.25), P(1.35, -0.6, 1.22), 0.025, 0.025, (0.9, 0.85, 0.72), verts=4, end=False)
-    cone("ArrowHead", P(1.4, -0.63, 1.22), 0.07, 0.2, (0.75, 0.75, 0.78), (0, rad(90), a - rad(30)), verts=4)
-    # quiver on the back with feathers
-    limb("Quiver", P(-0.4, 0.15, 0.6), P(-0.5, 0.3, 1.5), 0.15, 0.17, WOOD, verts=8, end=False)
-    for k in range(3):
-        cone(f"Fletch{k}", P(-0.5 + k * 0.05, 0.25 + k * 0.08, 1.65), 0.08, 0.3, CREAM, verts=4)
+        def P(fw, side, up):
+            return tuple(o + f * (fw * s) + rt * (side * s) + Vector((0, 0, up * s)))
+        TUNIC = (0.36, 0.56, 0.22)
+        SKIN = (0.98, 0.79, 0.64)
+        LEATHER = (0.55, 0.34, 0.2)
+        ball("ArcherBody", P(0, 0, 0.62), 0.42, TUNIC, (1.0, 0.85, 1.15), seg=10)
+        ball("ArcherBelt", P(0.02, 0, 0.42), 0.4, LEATHER, (1.03, 0.9, 0.22), seg=10)
+        ball("ArcherBuckle", P(0.38, 0, 0.42), 0.07, BRASS, (1, 0.5, 1), seg=6)
+        # head: big, round, the face forward; the hood wraps the back and top and ends in a point
+        ball("ArcherHead", P(0.12, 0, 1.32), 0.4, SKIN, seg=12)
+        ball("ArcherHood", P(-0.1, 0, 1.42), 0.47, GREEN, (1.0, 1.04, 1.04), seg=12)
+        cone("ArcherHoodTip", P(-0.48, 0, 1.62), 0.22, 0.55, GREEN, (0, 0, 0), verts=6)
+        ball("ArcherHoodRim", P(0.18, 0, 1.6), 0.36, GREEN, (0.55, 1.05, 0.35), seg=10)
+        for k in (-1, 1):
+            ball(f"ArcherEye{k}", P(0.48, k * 0.14, 1.34), 0.065, (0.12, 0.08, 0.06), (0.6, 1, 1.2), seg=6)
+            block(f"ArcherBrow{k}", P(0.5, k * 0.15, 1.46), (0.05, 0.14, 0.04), (0.35, 0.22, 0.12), (0, 0, a + rad(90)), bevel=0.0)
+        ball("ArcherNose", P(0.52, 0, 1.27), 0.05, (0.95, 0.7, 0.56), seg=6)
+        # arms and hands, the bow held out to the left, the string drawn to the right cheek
+        limb("ArcherArmL", P(0.05, -0.36, 0.86), P(0.62, -0.5, 1.0), 0.11, 0.09, TUNIC, verts=6)
+        limb("ArcherArmR", P(0.05, 0.36, 0.86), P(0.32, 0.2, 1.1), 0.11, 0.09, TUNIC, verts=6)
+        ball("ArcherHandL", P(0.66, -0.5, 1.0), 0.1, SKIN, seg=6)
+        ball("ArcherHandR", P(0.34, 0.2, 1.12), 0.1, SKIN, seg=6)
+        bow = [P(0.7, -0.5 + 0.22 * math.cos(t), 1.0 + 0.72 * math.sin(t)) for t in (-1.3, -0.65, 0, 0.65, 1.3)]
+        chain("Bow", bow, [0.05, 0.07, 0.08, 0.07, 0.05], LEATHER, seg=6)
+        limb("BowString", bow[0], P(0.32, 0.2, 1.1), 0.018, 0.018, CREAM, verts=3, end=False)
+        limb("BowString2", P(0.32, 0.2, 1.1), bow[-1], 0.018, 0.018, CREAM, verts=3, end=False)
+        limb("Arrow", P(0.32, 0.2, 1.1), P(1.3, -0.62, 1.05), 0.03, 0.03, (0.92, 0.86, 0.7), verts=4, end=False)
+        cone("ArrowHead", P(1.36, -0.66, 1.05), 0.08, 0.22, (0.78, 0.78, 0.82), (0, rad(90), a - rad(35)), verts=4)
+        # quiver with three fletched arrows
+        limb("Quiver", P(-0.36, 0.12, 0.5), P(-0.5, 0.3, 1.35), 0.15, 0.17, LEATHER, verts=8, end=False)
+        for k in range(3):
+            cone(f"Fletch{k}", P(-0.5 + k * 0.06, 0.24 + k * 0.08, 1.52), 0.09, 0.32, CREAM, verts=4)
     global LAST_MUZZLE
-    LAST_MUZZLE = P(1.35, -0.6, 1.22)   # the arrow tip: where the game's shots start
-
+    LAST_MUZZLE = P(1.3, -0.62, 1.05)   # the arrow tip: where the game's shots start
 
 LAST_MUZZLE = None
 
@@ -665,3 +694,112 @@ def cull_hidden(reach=0.9, rays=16):
         bm.free()
     whole.free()
     print("CULLED %d of %d faces" % (removed, total))
+
+
+SIZES = {"body": 1024, "roof": 1024, "props": 512, "archer": 512}
+
+
+def bake_atlases(name, out, budget=16000):
+    """Joins the painted parts per atlas and bakes each into its own texture: the body is the MeshPart "Body"
+    (texture <out>_paint.png, the game's paint_<name>), the others "Skin_<atlas>" (<out>_paint_<atlas>.png, the
+    game's paint_<name>_<atlas>). Glowing parts stay c_R_G_B parts. Writes the fbx and prints HEIGHT/TRIANGLES."""
+    import os
+    import lib
+    scene = bpy.context.scene
+    out = os.path.abspath(out)
+    objs = [o for o in scene.objects if o.type == "MESH"]
+    glowing = [o for o in objs if not o.get("htd_paint")]
+    groups = {}
+    for o in objs:
+        if o.get("htd_paint"):
+            groups.setdefault(o.get("htd_atlas", "body"), []).append(o)
+    total = sum(len(p.vertices) - 2 for o in objs for p in o.data.polygons)
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 24
+    scene.render.bake.margin = 6
+    parts = []
+    for key, members in groups.items():
+        for i, o in enumerate(members):
+            o.name = f"{key}_piece_{i}"
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in members:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = members[0]
+        bpy.ops.object.join()
+        joined = bpy.context.active_object
+        joined.name = joined.data.name = "Body" if key == "body" else "Skin_" + key
+        count = sum(len(p.vertices) - 2 for p in joined.data.polygons)
+        share = budget * count / max(1, total)
+        if count > share * 1.02 and total > budget:
+            mod = joined.modifiers.new("decimate", "DECIMATE")
+            mod.ratio = share / count
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.004, area_weight=0.0, scale_to_bounds=True)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        size = SIZES.get(key, 512)
+        img = bpy.data.images.new(f"{name}_{key}", size, size)
+        for mat in joined.data.materials:
+            node = mat.node_tree.nodes.new("ShaderNodeTexImage")
+            node.image = img
+            mat.node_tree.nodes.active = node
+        bpy.ops.object.bake(type="EMIT")
+        img.filepath_raw = out[:-4] + ("_paint.png" if key == "body" else f"_paint_{key}.png")
+        img.file_format = "PNG"
+        img.save()
+        joined.data.materials.clear()
+        final = bpy.data.materials.new(f"{name}_{key}_baked")
+        final.use_nodes = True
+        tex = final.node_tree.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        final.node_tree.links.new(tex.outputs["Color"], final.node_tree.nodes.get("Principled BSDF").inputs["Base Color"])
+        joined.data.materials.append(final)
+        scene.cursor.location = (0, 0, 0)
+        bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+        parts.append(joined)
+        print("ATLAS", key, size, sum(len(p.vertices) - 2 for p in joined.data.polygons), "triangles")
+    colours = {}
+    for o in glowing:
+        c = [float(v) for v in o.get("htd_color", (1, 1, 1))]
+        lib._paint(o, (1, 1, 1))
+        colours.setdefault("c_%d_%d_%d" % tuple(round(max(0, min(1, v)) * 255) for v in c[:3]), []).append(o)
+    for key, members in colours.items():
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in members:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = members[0]
+        if len(members) > 1:
+            bpy.ops.object.join()
+        o = bpy.context.active_object
+        o.name = o.data.name = key
+        bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+        parts.append(o)
+    print("TRIANGLES", lib.triangles(parts))
+    print("HEIGHT %.2f" % max((o.matrix_world @ v.co).z for o in parts for v in o.data.vertices))
+    lib.export_fbx(out)
+    print("EXPORTED", out)
+
+
+def _in(name, fn):
+    def wrapped(*a, **k):
+        with atlas(name):
+            return fn(*a, **k)
+    wrapped.__doc__ = fn.__doc__
+    return wrapped
+
+
+# which texture each kind of part goes into: the roof and lookout, and the cloth and plants (banners, swags, ivy,
+# flag) get their own; stones, door and footing stay in the body
+shingle_roof = _in("roof", shingle_roof)
+gable_roof = _in("roof", gable_roof)
+roof_ribs = _in("roof", roof_ribs)
+roof_posts = _in("roof", roof_posts)
+balcony = _in("roof", balcony)
+finial = _in("roof", finial)
+crown = _in("roof", crown)
+banner = _in("props", banner)
+swag = _in("props", swag)
+ivy = _in("props", ivy)
+wavy_flag = _in("props", wavy_flag)

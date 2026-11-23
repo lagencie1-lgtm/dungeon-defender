@@ -11,5 +11,6 @@
  "roof_len": 5.65,
  "roof_span": 4.508,
  "archer_s": 1.25,
- "view_turn": -30.844
+ "view_turn": -30.844,
+ "foot_n": 9
 }

@@ -4,8 +4,8 @@
  "wall_r0": 2.951,
  "wall_r1": 2.95,
  "wall_top": 5.619,
- "rows": 10,
- "per_row": 18,
+ "rows": 5,
+ "per_row": 11,
  "door_w": 1.6,
  "door_h": 2.2,
  "look_r": 2.958,
@@ -16,8 +16,8 @@
  "roof_z0": 9.797,
  "roof_z1": 13.6,
  "roof_r": 3.365,
- "tiers": 5,
- "per_tier": 20,
+ "tiers": 4,
+ "per_tier": 16,
  "bell": 1.214,
  "banner_ang": -55,
  "banner_w": 1.75,
@@ -26,5 +26,6 @@
  "flag_h": 0.94,
  "archer_s": 1.55,
  "archer_x": 0.25,
- "archer_y": 0.0
+ "archer_y": 0.0,
+ "foot_n": 9
 }

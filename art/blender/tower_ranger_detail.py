@@ -24,15 +24,15 @@ rad = math.radians
 
 DEFAULTS = {
     1: dict(foot_r=2.95, foot_h=0.9, leg_half=1.75, leg=0.7, box_z0=3.65, box_h=1.75, box_half=2.2, eave=7.3,
-            ridge=9.75, roof_len=5.5, roof_span=5.9, archer_s=1.25, view_turn=-35),
-    2: dict(foot_r=3.95, foot_h=0.9, wall_r0=3.45, wall_r1=2.95, wall_top=6.0, rows=10, per_row=18,
+            ridge=9.75, roof_len=5.5, roof_span=5.9, archer_s=1.25, view_turn=-35, foot_n=9),
+    2: dict(foot_r=3.95, foot_h=0.9, wall_r0=3.45, wall_r1=2.95, wall_top=6.0, rows=5, per_row=11, foot_n=9,
             door_w=1.6, door_h=2.2, look_r=3.05, look_h=1.85, bays=8, post_r=2.55, post_top=9.85,
-            roof_z0=10.1, roof_z1=13.6, roof_r=3.85, tiers=5, per_tier=20, bell=1.15,
+            roof_z0=10.1, roof_z1=13.6, roof_r=3.85, tiers=4, per_tier=16, bell=1.15,
             banner_ang=-55, banner_w=1.45, banner_h=1.75, flag_len=3.3, flag_h=1.0,
             archer_s=1.3, archer_x=0.25, archer_y=0.0),
-    3: dict(foot_r=5.0, foot_h=1.0, wall_r0=4.65, wall_r1=3.9, band_z=6.5, wall2_r=3.55, wall_top=9.9, rows=7, rows2=6,
-            per_row=22, door_w=2.1, door_h=2.8, look_r=4.35, look_h=1.95, bays=10, post_r=3.9, post_top=14.0,
-            roof_z0=14.1, roof_z1=17.2, roof_r=4.85, tiers=5, per_tier=24, bell=1.1, archer_s=1.35),
+    3: dict(foot_r=5.0, foot_h=1.0, wall_r0=4.65, wall_r1=3.9, band_z=6.5, wall2_r=3.55, wall_top=9.9, rows=4, rows2=3, foot_n=11,
+            per_row=13, door_w=2.1, door_h=2.8, look_r=4.35, look_h=1.95, bays=10, post_r=3.9, post_top=14.0,
+            roof_z0=14.1, roof_z1=17.2, roof_r=4.85, tiers=4, per_tier=18, bell=1.1, archer_s=1.35),
 }
 
 P = dict(DEFAULTS[level])
@@ -56,7 +56,7 @@ def turn_all(deg):
 if level == 1:
     # a wooden watch post on a stone ring: four braced legs, a plank box with brass corners, posts, a shingled gable
     # roof with brass caps, a ladder at the front right; built facing -Y, then turned
-    K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], 11, depth=0.9)
+    K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], P["foot_n"], depth=1.0)
     K.lathe("FootCore", [(P["foot_r"] - 0.6, 0), (P["foot_r"] - 0.6, P["foot_h"] - 0.05)], K.MORTAR, key="stone")
     L, B = P["leg_half"], P["box_half"]
     z0, z1 = P["foot_h"], P["box_z0"]
@@ -108,7 +108,7 @@ elif level == 2:
     # a round warm-stone tower with ivy, an arched door and a banner, a timber lookout with brass corners, a shingled
     # bell roof with a brass finial and a green pennant
     r_of = lambda z: P["wall_r0"] + (P["wall_r1"] - P["wall_r0"]) * (z - P["foot_h"]) / (P["wall_top"] - P["foot_h"])  # noqa: E731
-    K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], 14, depth=max(0.8, P["foot_r"] - P["wall_r0"] + 0.35), skip=[(FRONT, 22)])
+    K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], P["foot_n"], depth=max(0.8, P["foot_r"] - P["wall_r0"] + 0.35), skip=[(FRONT, 22)])
     K.lathe("FootCore", [(P["foot_r"] - 0.5, 0), (P["foot_r"] - 0.5, P["foot_h"]), (P["wall_r0"] - 0.1, P["foot_h"] + 0.01)], K.MORTAR, key="stone")
     K.stone_wall("Wall", P["foot_h"], P["wall_top"], P["wall_r0"], P["wall_r1"], P["rows"], P["per_row"],
                  gaps=[(FRONT, 22, P["foot_h"] + P["door_h"] + 0.5)])
@@ -132,11 +132,11 @@ else:
     f0, z1, zb, z2 = P["foot_h"], P["band_z"], P["band_z"], P["wall_top"]
     r_low = lambda z: P["wall_r0"] + (P["wall_r1"] - P["wall_r0"]) * (z - f0) / (zb - f0)  # noqa: E731
     r_up = lambda z: P["wall_r1"] * 0.97 + (P["wall2_r"] - P["wall_r1"] * 0.97) * (z - zb) / (z2 - zb)  # noqa: E731
-    K.stone_ring("Foot", 0, P["foot_r"], f0, 16, depth=max(0.9, P["foot_r"] - P["wall_r0"] + 0.35), skip=[(FRONT, 18)])
+    K.stone_ring("Foot", 0, P["foot_r"], f0, P["foot_n"], depth=max(0.9, P["foot_r"] - P["wall_r0"] + 0.35), skip=[(FRONT, 18)])
     K.lathe("FootCore", [(P["foot_r"] - 0.6, 0), (P["foot_r"] - 0.6, f0), (P["wall_r0"] - 0.1, f0 + 0.01)], K.MORTAR, key="stone")
     K.stone_wall("Wall", f0, zb - 0.25, P["wall_r0"], P["wall_r1"], P["rows"], P["per_row"],
                  gaps=[(FRONT, 20, f0 + P["door_h"] + 0.6)])
-    K.stone_wall("Upper", zb + 0.25, z2, P["wall_r1"] * 0.97, P["wall2_r"], P["rows2"], P["per_row"] - 2,
+    K.stone_wall("Upper", zb + 0.25, z2, P["wall_r1"] * 0.97, P["wall2_r"], P["rows2"], P["per_row"] - 1,
                  gaps=[(FRONT - 28, 11, z2 - 0.6), (FRONT + 28, 11, z2 - 0.6)])
     K.brass_band("Band", zb, P["wall_r1"], 0.6, 18)
     for s in (-1, 1):
@@ -171,4 +171,4 @@ if os.environ.get("HTD_FAST"):   # outline only (the shape loop): no bake, no pa
     lib.export_fbx(os.path.abspath(out))
     print("EXPORTED", out)
 else:
-    S.finish(f"tower_ranger_l{level}", out, triangles=14000)
+    K.bake_atlases(f"tower_ranger_l{level}", out, budget=16000)   # body, roof, props and archer textures

@@ -95,7 +95,25 @@ def main():
     sheet.paste(diff, (width * 2, 0))
     if len(sys.argv) > 3:
         sheet.save(sys.argv[3])
-    print(f"IoU {iou * 100:.1f}%  width profile off {profile * 100:.1f}%  colour dE {de:.1f}")
+    # detail: how much painted detail (edges) there is inside each outline, so a plain model cannot pass on
+    # its outline alone (coordinator 2026-11-23: flat roofs, no brass, blob archers)
+    from PIL import ImageFilter
+    def detail(rgb, m):
+        edges = rgb.convert("L").filter(ImageFilter.FIND_EDGES).load()
+        mk = m.load()
+        inside = strong = 0
+        for y in range(1, H - 1):
+            for x in range(1, width - 1):
+                if mk[x, y]:
+                    inside += 1
+                    strong += edges[x, y] > 40
+        return strong / max(1, inside)
+    dt, dr = detail(t_rgb, t_m), detail(r_rgb, r_m)
+    ratio = dr / max(1e-6, dt)
+    passed = iou >= 0.85 and de <= 25 and ratio >= 0.7
+    print(f"IoU {iou * 100:.1f}%  width profile off {profile * 100:.1f}%  colour dE {de:.1f}  "
+          f"detail {dr * 100:.1f}% vs picture {dt * 100:.1f}% (ratio {ratio:.2f})  {'PASS' if passed else 'not yet'}"
+          "  [pass: IoU >= 85%, colour dE <= 25, detail ratio >= 0.7]")
 
 
 if __name__ == "__main__":

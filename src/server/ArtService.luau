@@ -81,6 +81,14 @@ function ArtService.Start()
 							part.Color = Color3.new(1, 1, 1)
 							local paintId = (Art.Textures or {})["paint_" .. name] or ""
 							local image = paintId ~= "" and decalImage(paintId)
+						-- a fresh upload can still be processing: try again a few times rather than stay grey
+						for _ = 1, 4 do
+							if image or paintId == "" then
+								break
+							end
+							task.wait(6)
+							image = decalImage(paintId)
+						end
 							if image then
 								part.TextureID = image
 							end

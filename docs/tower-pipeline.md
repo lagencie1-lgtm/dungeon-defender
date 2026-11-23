@@ -19,30 +19,51 @@ kid sees the level from across the lane on a phone. Glow only at the top level.
 Rules: same footprint at every level (it stands on the same plinth and keeps its spot), height grows about 15% per
 level, the turning head and the muzzle stay separate nodes on the game's pivots, feet on the ground (test/ground).
 
-## The pipeline, per tower
+## The pipeline, per tower (Blender from code, no Tripo; Lemp 2026-11-23)
+
+Lemp 2026-11-23: "you make a better workflow to make something amazing ... without the need of Tripo". Hub buildings
+stay the Tripo models they are; every tower is built in Blender from code.
 
 1. **Target pictures (Codex).** One image with the three levels side by side, same three-quarter view from slightly
-   above, white background, the game's painted style (art/STYLE.md), so the family reads as one. Cut into three files
-   `art/ref3d/tower_<kind>_l1..l3.png`. Lemp makes the taste call on the sheet before anything is built.
-2. **Build in Blender** (`art/blender/towers_hand.py`, kinds `<kind>1`, `<kind>2`, `<kind>3`): models as code with the
-   painted textures, the game's pivots and muzzle points as data.
-3. **Measured match** (`scripts/match_score.py`): render the model at the picture's angle and score
-   - silhouette overlap (IoU) of the two outlines, both scaled to the same height,
-   - width profile row by row,
-   - colour difference (CIE Lab) where both are solid.
-   Iterate until IoU >= 85%; report the numbers with a picture-vs-model sheet.
-4. **In game:** each level has its own model (`tower_<kind>`, `_l1`, `_l3`); upgrading swaps the look with a short
-   settle (the new model springs from 90% to 100% size in about 0.3 s) and a small dust ring; no ceremony. The upgrade
-   panel shows the next level's picture.
-5. **Judged** on the phone view in a real run, film rig plus Gemini, and by Lemp.
+   above, white background, the game's painted style (art/STYLE.md). Cut into `art/ref3d/tower_<kind>_l1..l3.png`
+   (`art/make_tower_sheets.py`). Lemp makes the taste call on the sheet before anything is built.
+2. **Part list from the picture.** Every part the picture shows, with its size measured off the picture (studs, the
+   picture's height = the level's height): written as the size table `DEFAULTS` at the top of the builder
+   (`art/blender/tower_<kind>_detail.py`) and checked by eye against the picture part by part.
+3. **Real detail in the model** (`art/blender/tower_kit.py`): separate cut stones in offset rows on a tapering wall, a
+   bell roof of overlapping shingles in tiers, lattice balconies with corbels and riveted brass plates, arched doors
+   with voussoirs, banners with sag and emblems, ivy vines with heart leaves, swags, brass bands, ribs, crowns, the
+   archer as built pieces. So light and occlusion already read like the picture before paint.
+4. **Shape loop** (`scripts/tower_fit.py <kind> <level>`): builds the outline only, renders it at the picture's angle
+   and tries every size a few percent bigger and smaller, keeping what overlaps the picture better (with rules such as
+   "a wall never widens toward the top"), with smaller steps each round. Results: `art/blender/params/*.json`.
+5. **Paint from our own views** (`scripts/tower_paint.py model.fbx picture.png`): the model is baked with the kit's
+   painted textures and occlusion, rendered from four sides (`art/blender/tower_project.py views`: the picture's own
+   angle plus three sides 90 degrees apart), Codex repaints that sheet in the look of the picture keeping every outline,
+   and the paint is projected back onto the model (each texel from the view that sees it best). A separately painted
+   picture never lines up with a model; a repaint of the model's own render does. The plain bake stays as
+   `<model>_base.png`.
+6. **Measured match, every round logged** (`scripts/tower_round.py <kind> <level> <round> model.fbx "what changed"`):
+   `reviews/towers/<kind>_l<level>/round_XX.png` (picture | model | outline diff, four sides, the numbers),
+   `round_XX_flicker.gif` (picture and model flipping in one frame) and `rounds.md`.
+   Gates (`scripts/match_score.py`): outline IoU >= 90%; region colour (mean CIE Lab per cell of a 6 x 12 grid) <= 10,
+   calibrated on the picture itself (`scripts/match_calibrate.py`: the picture 6% lighter or darker and softened scores
+   3-6); detail (edge density inside the outline) 0.85-1.3 of the picture's; every part of the part list present; a
+   blind Gemini comparison of 8 or more. At least 8 rounds per level.
+7. **In game:** each level has its own model (`tower_<kind>_l1..l3`, `LEVEL_LOOKS` in TowerService with height and
+   muzzle); upgrading swaps the look with a short spring settle and a small dust ring. The upgrade panel shows the
+   next level's picture. Triangles about 8-12k per level (one Body MeshPart plus glowing c_ parts).
+8. **Judged** on the phone view in a real run (film rig, Gemini) and by Lemp.
 
 Pilot: the Ranger, all three levels, end to end, before the other four.
 
-## Tools that could raise quality (none installed yet; Lemp decides)
+## Tools
 
-| Tool | What it buys | Cost |
+Everything above runs on what is on this PC: Blender 5.2 (bevel, lathe, bmesh, Cycles bake), Python with Pillow and
+numpy, Codex image generation (Lemp's ChatGPT login), Gemini for blind judging (free key). Nothing to install.
+
+| Tool | What it would add | Cost |
 |---|---|---|
-| Tripo image-to-3D from the level pictures | a closer first shape for complex tiers (Lemp generates, I clean as with the hub) | Lemp's Tripo credits; texture is baked in (lighting stains), needs the same clean-up as the hub models |
 | Roblox SurfaceAppearance (PBR maps) | real roughness and normal detail on stone and metal | free; one more texture set per model (memory on phones), must be judged on a phone |
-| Blender add-on: none needed | the sculpt kit already covers bevel, lathe, membranes | - |
-| An image upscaler for painted textures | sharper 1024 maps from 512 bakes | free tools exist (e.g. Real-ESRGAN); needs Lemp's OK to install |
+| An image upscaler (e.g. Real-ESRGAN) | sharper 2048 paint from the 1024 painted sheets | free; needs Lemp's OK to install |
+| Tripo image-to-3D | not used for towers any more (Lemp 2026-11-23) | - |

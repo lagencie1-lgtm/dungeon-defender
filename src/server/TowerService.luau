@@ -123,12 +123,12 @@ local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", Frost
 local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector3.new(0, 4.6, -3.2), FrostCrystal = Vector3.new(0, 6.6, 0),
 	StormObelisk = Vector3.new(0, 11.75, 0), Ballista = Vector3.new(0, 5.6, -4.6) }
 -- a look per level (docs/tower-pipeline.md): the tower grows and changes as it is upgraded. Heights and muzzles
--- from the Blender builds (art/blender/tower_ranger_levels.py prints HEIGHT). Towers without a level set keep one look.
+-- from the Blender builds (art/blender/tower_ranger_detail.py prints HEIGHT and MUZZLE, the archer's arrow tip). Towers without a level set keep one look.
 local LEVEL_LOOKS = {
 	Ranger = {
 		{ Name = "tower_ranger_l1", Height = 10.43, Muzzle = Vector3.new(0, 6.3, -2.1) },
-		{ Name = "tower_ranger_l2", Height = 15.66, Muzzle = Vector3.new(0, 9.4, -2.7) },
-		{ Name = "tower_ranger_l3", Height = 19.45, Muzzle = Vector3.new(0, 12.65, -3.3) },
+		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-3.26, 8.18, -2.61) },
+		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(-4.91, 12.52, -3.29) },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS

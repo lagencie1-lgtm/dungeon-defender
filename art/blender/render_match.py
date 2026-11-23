@@ -26,8 +26,17 @@ for o in meshes:
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if o.name.startswith("c_"):
-        r, g, b = (int(c) / 255 for c in o.name.split("_")[1:4])
+        r, g, b = (int(c) / 255 for c in o.name.split(".")[0].split("_")[1:4])
         bsdf.inputs["Base Color"].default_value = (r ** 2.2, g ** 2.2, b ** 2.2, 1)
+        # Workbench in texture mode draws a part without an image white: give it a one-colour image
+        img = bpy.data.images.new(o.name + "_c", 2, 2)
+        img.pixels = [r ** 2.2, g ** 2.2, b ** 2.2, 1] * 4
+        tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+        mat.node_tree.nodes.active = tex
+        if not o.data.uv_layers:   # (no UVs: Workbench would skip the image)
+            o.data.uv_layers.new()
     elif os.path.exists(paint):
         tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
         tex.image = bpy.data.images.load(paint)
@@ -45,6 +54,7 @@ scene.display.shading.light = "FLAT" # albedo only: the pictures carry their own
 scene.display.shading.color_type = "TEXTURE"
 scene.render.resolution_x = scene.render.resolution_y = size
 scene.render.film_transparent = True
+scene.view_settings.view_transform = "Standard"  # the paint as painted (the default AgX tone curve washes it grey)
 cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
 scene.collection.objects.link(cam)
 scene.camera = cam

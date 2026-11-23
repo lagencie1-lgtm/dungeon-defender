@@ -10,6 +10,11 @@ import sys
 from PIL import Image, ImageChops
 
 H = 360
+# gates (coordinator 2026-11-23): outline IoU 90%; region colour calibrated on the paintings themselves
+# (scripts/match_calibrate.py: the picture against itself 6% lighter/darker and softened scores 3-6, so 10 leaves room\n# for the outline differences a 90% IoU allows); detail: the picture softened by a 1.5 px blur keeps 0.83 of its detail
+GATE_IOU = 0.90
+GATE_REGION = 10.0
+GATE_DETAIL = (0.85, 1.3)
 
 
 def mask_target(im):
@@ -28,7 +33,9 @@ def mask_target(im):
 
 def mask_render(im):
     rgba = im.convert("RGBA")
-    return rgba.convert("RGB"), rgba.split()[3].point(lambda a: 255 if a > 40 else 0)
+    white = Image.new("RGB", rgba.size, (255, 255, 255))
+    white.paste(rgba, (0, 0), rgba)   # on white like the picture (the sheet showed it on black)
+    return white, rgba.split()[3].point(lambda a: 255 if a > 40 else 0)
 
 
 def normalise(rgb, m):
@@ -83,6 +90,38 @@ def main():
                 de += ((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2) ** 0.5
                 n += 1
     de = de / max(1, n)
+    # region colour: mean Lab per cell of a grid (a small misalignment of the outlines does not count as colour)
+    # and per band of the tower (roof, lookout, wall, footing), so the report says where the colour is off
+    def cell_means(lp, mk, x0, y0, x1, y1):
+        acc, cnt = [0.0, 0.0, 0.0], 0
+        for yy in range(y0, y1, 2):
+            for xx in range(x0, x1, 2):
+                if mk[xx, yy]:
+                    p = lp[xx, yy]
+                    acc = [acc[0] + p[0], acc[1] + p[1], acc[2] + p[2]]
+                    cnt += 1
+        return [v / max(1, cnt) for v in acc], cnt
+    def lab_d(p, q):
+        # PIL keeps L in 0..255; a and b are offset by 128 (bytes), so differences are fine; L is scaled to 0..100
+        return (((p[0] - q[0]) * 100 / 255) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2) ** 0.5
+    COLS, ROWS = 6, 12
+    cells = []
+    for cy in range(ROWS):
+        for cx in range(COLS):
+            x0, x1 = cx * width // COLS, (cx + 1) * width // COLS
+            y0, y1 = cy * H // ROWS, (cy + 1) * H // ROWS
+            mt, nt = cell_means(tl, a, x0, y0, x1, y1)
+            mr, nr = cell_means(rl, b, x0, y0, x1, y1)
+            full = (x1 - x0) * (y1 - y0) / 4
+            if nt > full * 0.35 and nr > full * 0.35:
+                cells.append(lab_d(mt, mr))
+    region = sum(cells) / max(1, len(cells))
+    BANDS = (("roof", 0.0, 0.42), ("lookout", 0.42, 0.62), ("wall", 0.62, 0.9), ("footing", 0.9, 1.0))
+    bands = []
+    for name, f0, f1 in BANDS:
+        mt, _ = cell_means(tl, a, 0, int(H * f0), width, int(H * f1))
+        mr, _ = cell_means(rl, b, 0, int(H * f0), width, int(H * f1))
+        bands.append(f"{name} {lab_d(mt, mr):.0f} (L {mt[0] * 100 / 255:.0f}/{mr[0] * 100 / 255:.0f})")
     diff = Image.new("RGB", (width, H), (255, 255, 255))
     d = diff.load()
     for y in range(H):
@@ -110,10 +149,20 @@ def main():
         return strong / max(1, inside)
     dt, dr = detail(t_rgb, t_m), detail(r_rgb, r_m)
     ratio = dr / max(1e-6, dt)
-    passed = iou >= 0.85 and de <= 25 and ratio >= 0.7
-    print(f"IoU {iou * 100:.1f}%  width profile off {profile * 100:.1f}%  colour dE {de:.1f}  "
-          f"detail {dr * 100:.1f}% vs picture {dt * 100:.1f}% (ratio {ratio:.2f})  {'PASS' if passed else 'not yet'}"
-          "  [pass: IoU >= 85%, colour dE <= 25, detail ratio >= 0.7]")
+    passed = iou >= GATE_IOU and region <= GATE_REGION and GATE_DETAIL[0] <= ratio <= GATE_DETAIL[1]
+    print(f"IoU {iou * 100:.1f}%  width profile off {profile * 100:.1f}%  region colour dE {region:.1f}  "
+          f"(pixel dE {de:.1f})  detail {dr * 100:.1f}% vs picture {dt * 100:.1f}% (ratio {ratio:.2f})  "
+          f"{'PASS' if passed else 'not yet'}  [pass: IoU >= {GATE_IOU * 100:.0f}%, region dE <= {GATE_REGION}, "
+          f"detail ratio {GATE_DETAIL[0]}-{GATE_DETAIL[1]}]")
+    print("bands (dE, lightness picture/model): " + "  ".join(bands))
+    if len(sys.argv) > 3:
+        # the flicker pair: picture and model in the same frame, to flip between (differences jump out)
+        t_img = Image.new("RGB", (width, H), (255, 255, 255))
+        t_img.paste(t_rgb, (0, 0), t_m)
+        r_img = Image.new("RGB", (width, H), (255, 255, 255))
+        r_img.paste(r_rgb, (0, 0), r_m)
+        stem = sys.argv[3].rsplit(".", 1)[0]
+        t_img.save(stem + "_flicker.gif", save_all=True, append_images=[r_img], duration=700, loop=0)
 
 
 if __name__ == "__main__":

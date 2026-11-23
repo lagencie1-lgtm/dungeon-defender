@@ -1,0 +1,15 @@
+{
+ "foot_r": 3.88,
+ "foot_h": 1,
+ "leg_half": 1.823,
+ "leg": 0.7,
+ "box_z0": 3.869,
+ "box_h": 1.799,
+ "box_half": 2.166,
+ "eave": 8.3,
+ "ridge": 10.45,
+ "roof_len": 5.65,
+ "roof_span": 4.508,
+ "archer_s": 1.25,
+ "view_turn": -30.844
+}

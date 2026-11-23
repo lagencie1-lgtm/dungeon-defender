@@ -144,6 +144,8 @@ function EnemyService.HealthBar(model, head, stats)
 	gui.AlwaysOnTop = true
 	gui.MaxDistance = 150
 	gui.Adornee = head
+	-- small bars only once a monster is hurt (EnemyService.Damage shows it); bosses always show theirs
+	gui.Enabled = stats.Boss == true
 	gui.Parent = model
 	local back = Instance.new("Frame")
 	back.Size = stats.Boss and UDim2.new(1, 0, 0, 14) or UDim2.fromScale(1, 1)
@@ -396,6 +398,13 @@ end
 function EnemyService.Spawn(name, healthMultiplier, startDistance)
 	local stats = Config.Enemies[name]
 	local model, fill, head, skin = makeGoblin(name, stats)
+	-- a soft dark blob under the feet: separates the monster from the grass on a phone even with shadows off
+	-- (no Highlight outlines: they crash weak phones, 6A)
+	local blob = newPart(model, { Name = "Blob", Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.1, stats.Size * 1.5 * LOOK_SCALE, stats.Size * 1.5 * LOOK_SCALE),
+		CFrame = model:GetPivot() * CFrame.new(0, -stats.Size * 0.74 + 0.07, 0) * CFrame.Angles(0, 0, math.pi / 2),
+		Color = Color3.fromRGB(25, 30, 20), Material = Enum.Material.SmoothPlastic, Transparency = 0.55, CastShadow = false })
+	blob.CanQuery = false
 	local hp = math.floor(stats.Health * (healthMultiplier or 1))
 	model:SetAttribute("Health", hp)
 	model:SetAttribute("MaxHealth", hp)
@@ -474,6 +483,10 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	enemy.health -= amount
 	enemy.model:SetAttribute("Health", enemy.health)
 	enemy.fill.Size = UDim2.fromScale(math.max(enemy.health / enemy.maxHealth, 0), 1)
+	local bar = enemy.model:FindFirstChild("HealthBar")
+	if bar and not bar.Enabled then
+		bar.Enabled = true
+	end
 	if amount >= 1 then
 		enemy.flashUntil = Clock.now + 0.08 -- quick white flash
 	end
@@ -575,8 +588,30 @@ function EnemyService.Start()
 				EnemyService.Damage(e, e.burnDps * dt)
 			end
 			if e.dead then
-				e.model:Destroy()
 				table.remove(active, i)
+				-- a short fall instead of vanishing (6A: nothing just pops): the body topples backwards over 0.3 s,
+				-- sinks a little, a small dust ring, then it is gone. Bosses keep their own big burst.
+				local model = e.model
+				local health = model:FindFirstChild("HealthBar")
+				if health then
+					health:Destroy()
+				end
+				local start = model:GetPivot()
+				local s = e.stats.Size
+				local t0 = os.clock()
+				Effects.Ring(e.position + Vector3.new(0, 0.2, 0), s * 0.9, Color3.fromRGB(190, 175, 150), 0.3)
+				local fall
+				fall = RunService.Heartbeat:Connect(function()
+					local t = math.min(1, (os.clock() - t0) / 0.3)
+					local ease = 1 - (1 - t) ^ 3
+					if model.Parent then
+						model:PivotTo(start * CFrame.new(0, -s * 0.35 * ease, 0) * CFrame.Angles(math.rad(75) * ease, 0, 0))
+					end
+					if t >= 1 then
+						fall:Disconnect()
+						model:Destroy()
+					end
+				end)
 				continue
 			end
 

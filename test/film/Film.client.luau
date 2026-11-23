@@ -154,7 +154,23 @@ if ranger then
 		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 		workspace.CurrentCamera.CFrame = held
 	end)
-	task.wait(20)
+	-- a test, not only a picture (2026-11-23: the archers once never moved and nothing said so): an archer's bow arm
+	-- must move during the wave
+	local arm, start, moved = nil, nil, 0
+	for _, d in workspace:GetDescendants() do
+		if d.Name == "ArmL" and d.Parent and d.Parent.Name == "Archer" then
+			arm = d
+			break
+		end
+	end
+	start = arm and arm.Position
+	for _ = 1, 100 do
+		task.wait(0.2)
+		if arm and arm.Parent then
+			moved = math.max(moved, (arm.Position - start).Magnitude)
+		end
+	end
+	mark(string.format("archer arm moved %.2f studs %s", moved, moved > 0.2 and "PASS" or "FAIL"))
 	game:GetService("RunService"):UnbindFromRenderStep("FilmHold")
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	mark("sell ranger")

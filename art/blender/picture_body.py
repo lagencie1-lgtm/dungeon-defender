@@ -165,6 +165,71 @@ padded = pad_colours(sheet, solid)
 pimg = bpy.data.images.new("sheet_padded", SW, SH)
 pimg.pixels.foreach_set(np.flipud(np.dstack([padded, np.ones((SH, SW))])).astype(np.float32).ravel())
 img = pimg
+
+
+def box_blur(a, r):
+    """a mean over a (2r+1) square, by running sums (numpy only)"""
+    c = np.cumsum(np.cumsum(np.pad(a, ((r + 1, r), (r + 1, r)) + ((0, 0),) * (a.ndim - 2), mode="edge"), 0), 1)
+    return (c[2 * r + 1:, 2 * r + 1:] - c[:-2 * r - 1, 2 * r + 1:] - c[2 * r + 1:, :-2 * r - 1] + c[:-2 * r - 1, :-2 * r - 1]) / (2 * r + 1) ** 2
+
+
+def poly_mask(shape, poly):
+    m = np.zeros(shape, dtype=bool)
+    n_ = len(poly)
+    for r in range(shape[0]):
+        xs = []
+        for i in range(n_):
+            (ax_, ay), (bx, by) = poly[i], poly[(i + 1) % n_]
+            if (ay <= r < by) or (by <= r < ay):
+                xs.append(ax_ + (r - ay) * (bx - ax_) / (by - ay))
+        xs.sort()
+        for a_, b_ in zip(xs[0::2], xs[1::2]):
+            m[r, max(0, int(a_)):min(shape[1], int(b_) + 1)] = True
+    return m
+
+
+# the hybrid paint rule (coordinator 2026-11-23): DETAIL regions (face, belt, strap, bracers...) keep the painting;
+# SIMPLE regions (hood, tunic, boots...) are nearly flat colour in the paintings, so they take a calm version of the
+# painting (its colours, blurred inside the figure) with painted light added on the model: no streaks when turning
+CALM_R = spec.get("calm_radius", 14)
+wsum = box_blur(solid.astype(np.float32), CALM_R)
+calm = box_blur(padded * solid[..., None], CALM_R) / np.maximum(wsum, 1e-4)[..., None]
+calm = np.where(solid[..., None], calm, padded)
+cimg = bpy.data.images.new("sheet_calm", SW, SH)
+cimg.pixels.foreach_set(np.flipud(np.dstack([np.clip(calm, 0, 1), np.ones((SH, SW))])).astype(np.float32).ravel())
+detail = np.zeros((SH, SW), dtype=np.float32)
+for vname, polys in spec.get("detail", {}).items():
+    x0, y0, x1, y1, _ = spec["views"][vname]
+    for poly in polys:
+        if len(poly) == 4 and not isinstance(poly[0], list):   # a box [x0, y0, x1, y1]
+            bx0, by0, bx1, by1 = poly
+            poly = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]]
+        detail[y0:y1, x0:x1] = np.maximum(detail[y0:y1, x0:x1], poly_mask((y1 - y0, x1 - x0), poly))
+detail = np.clip(box_blur(detail, 3), 0, 1)        # a soft 3 px edge between painting and calm paint
+dimg = bpy.data.images.new("sheet_detail", SW, SH)
+dimg.pixels.foreach_set(np.flipud(np.dstack([detail, detail, detail, np.ones((SH, SW))])).astype(np.float32).ravel())
+HYBRID = bool(spec.get("detail"))
+# model mode (coordinator 2026-11-23, the tower elevation pass): paint an existing model (the tower kit's relief)
+# with the sheet instead of building one. The model is turned so its front looks at -Y like the sheet's FRONT view,
+# stood on z = 0, painted into its own texture layout, and turned back.
+MODEL = None
+if spec.get("model"):
+    from mathutils import Matrix
+    bpy.ops.import_scene.fbx(filepath=os.path.join(os.path.dirname(os.path.abspath(args[0])), spec["model"]))
+    MODEL = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    for o in MODEL:
+        o.data.transform(o.matrix_world)
+        o.matrix_world = Matrix.Identity(4)
+    turn = Matrix.Rotation(math.radians(spec.get("turn", 0)), 4, "Z")
+    for o in MODEL:
+        o.data.transform(turn)
+    zs = [v.co.z for o in MODEL for v in o.data.vertices]
+    MODEL_Z = min(zs)
+    for o in MODEL:
+        o.data.transform(Matrix.Translation((0, 0, -MODEL_Z)))
+    spec["height"] = max(zs) - MODEL_Z
+    print("MODEL height %.2f" % spec["height"])
+
 HPX = V["front"]["y1"] - V["front"]["y0"]
 S = spec["height"] / HPX                                       # studs per pixel
 
@@ -326,7 +391,7 @@ def paint_material(o):
         m1.inputs[2].default_value = b
         return m1.outputs[0]
 
-    def projection(vname, horiz, sign):
+    def projection(vname, horiz, sign, image=None):
         v = V[vname]
         # sheet U from the horizontal coordinate, V from the height (image rows run downwards, UV upwards)
         u = lin(horiz, sign / S / SW, (v["x0"] + v["axis"]) / SW)
@@ -335,7 +400,7 @@ def paint_material(o):
         link(u, comb.inputs[0])
         link(vv, comb.inputs[1])
         tex = n("ShaderNodeTexImage")
-        tex.image = img
+        tex.image = image or img
         tex.extension = "EXTEND"
         link(comb.outputs[0], tex.inputs["Vector"])
         return tex.outputs["Color"]
@@ -406,36 +471,84 @@ def paint_material(o):
         link(val.outputs[0], mix.inputs[7])
         return mix.outputs[2]
 
-    a = scaled(front, wf)
-    b = scaled(back, wb)
-    c = scaled(side, ws)
-    add1 = n("ShaderNodeMix")
-    add1.data_type = "RGBA"
-    add1.blend_type = "ADD"
-    add1.inputs["Factor"].default_value = 1.0
-    link(a, add1.inputs[6])
-    link(b, add1.inputs[7])
-    add2 = n("ShaderNodeMix")
-    add2.data_type = "RGBA"
-    add2.blend_type = "ADD"
-    add2.inputs["Factor"].default_value = 1.0
-    link(add1.outputs[2], add2.inputs[6])
-    link(c, add2.inputs[7])
+    def blend(fc, bc, sc):
+        a = scaled(fc, wf)
+        b = scaled(bc, wb)
+        c = scaled(sc, ws)
+        add1 = n("ShaderNodeMix")
+        add1.data_type = "RGBA"
+        add1.blend_type = "ADD"
+        add1.inputs["Factor"].default_value = 1.0
+        link(a, add1.inputs[6])
+        link(b, add1.inputs[7])
+        add2 = n("ShaderNodeMix")
+        add2.data_type = "RGBA"
+        add2.blend_type = "ADD"
+        add2.inputs["Factor"].default_value = 1.0
+        link(add1.outputs[2], add2.inputs[6])
+        link(c, add2.inputs[7])
+        return add2.outputs[2]
+
+    painted = blend(front, back, side)
+    result = painted
+    if HYBRID and not wcfg.get("painting_only"):
+        calm_col = blend(projection("front", xyz.outputs["X"], 1, cimg), projection("back", xyz.outputs["X"], -1, cimg),
+                         projection("side", xyz.outputs["Y"], -1, cimg))
+        mask = blend(projection("front", xyz.outputs["X"], 1, dimg), projection("back", xyz.outputs["X"], -1, dimg),
+                     projection("side", xyz.outputs["Y"], -1, dimg))
+        # painted light: a key from the top left in front, soft shade underneath, ambient occlusion at low weight
+        key = n("ShaderNodeVectorMath")
+        key.operation = "DOT_PRODUCT"
+        link(geo.outputs["Normal"], key.inputs[0])
+        key.inputs[1].default_value = (-0.45, -0.55, 0.7)
+        lit = n("ShaderNodeMapRange")
+        lit.inputs["From Min"].default_value = -1
+        lit.inputs["From Max"].default_value = 1
+        lit.inputs["To Min"].default_value = 0.8
+        lit.inputs["To Max"].default_value = 1.12
+        link(key.outputs["Value"], lit.inputs["Value"])
+        ao = n("ShaderNodeAmbientOcclusion")
+        ao.inputs["Distance"].default_value = 0.25
+        aor = n("ShaderNodeMapRange")
+        aor.inputs["To Min"].default_value = 0.8
+        link(ao.outputs["AO"], aor.inputs["Value"])
+        light = n("ShaderNodeMath")
+        light.operation = "MULTIPLY"
+        link(lit.outputs["Result"], light.inputs[0])
+        link(aor.outputs["Result"], light.inputs[1])
+        shade = n("ShaderNodeMix")
+        shade.data_type = "RGBA"
+        shade.blend_type = "MULTIPLY"
+        shade.inputs["Factor"].default_value = 1.0
+        link(calm_col, shade.inputs[6])
+        lc = n("ShaderNodeCombineColor")
+        for k in range(3):
+            link(light.outputs[0], lc.inputs[k])
+        link(lc.outputs[0], shade.inputs[7])
+        msep = n("ShaderNodeSeparateColor")
+        link(mask, msep.inputs["Color"])
+        final = n("ShaderNodeMix")
+        final.data_type = "RGBA"
+        link(msep.outputs["Red"], final.inputs["Factor"])
+        link(shade.outputs[2], final.inputs[6])
+        link(painted, final.inputs[7])
+        result = final.outputs[2]
     emit = n("ShaderNodeEmission")
-    link(add2.outputs[2], emit.inputs["Color"])
+    link(result, emit.inputs["Color"])
     out = n("ShaderNodeOutputMaterial")
     link(emit.outputs["Emission"], out.inputs["Surface"])
     return mat
 
 
-def bake(o, size, keep_material=False):
+def bake(o, size, keep_material=False, path=None):
     bpy.ops.object.select_all(action="DESELECT")
     o.select_set(True)
     bpy.context.view_layer.objects.active = o
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.006, area_weight=0.0, scale_to_bounds=True)
-    bpy.ops.object.mode_set(mode="OBJECT")
+    if path is None:   # (a model brought in keeps its own texture layout)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.006, area_weight=0.0, scale_to_bounds=True)
+        bpy.ops.object.mode_set(mode="OBJECT")
     if keep_material:
         mat = o.data.materials[0]
     else:
@@ -449,10 +562,10 @@ def bake(o, size, keep_material=False):
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
-    scene.cycles.samples = 4
+    scene.cycles.samples = 16
     scene.render.bake.margin = 16       # wide margin: no dark gaps between islands when the game shows it small
     bpy.ops.object.bake(type="EMIT")
-    path = os.path.join(OUT, f"{NAME}_{o.name.lower()}_paint.png")
+    path = path or os.path.join(OUT, f"{NAME}_{o.name.lower()}_paint.png")
     tex.filepath_raw = path
     tex.file_format = "PNG"
     tex.save()
@@ -688,6 +801,19 @@ def place(o, pl):
 
 
 parts = []
+if MODEL:
+    from mathutils import Matrix
+    for o in MODEL:
+        base = o.name.split(".")[0]
+        if not (base == "Body" or base.startswith("Skin_")):
+            continue
+        suffix = "" if base == "Body" else "_" + base[5:]
+        size = spec.get("sizes", {}).get(base, 1024)
+        bake(o, size, path=os.path.join(OUT, f"{NAME}_paint{suffix}.png"))
+    for o in MODEL:   # back to how the game expects it: standing where it stood, front where it looked
+        o.data.transform(Matrix.Translation((0, 0, MODEL_Z)))
+        o.data.transform(Matrix.Rotation(math.radians(-spec.get("turn", 0)), 4, "Z"))
+    spec["parts"] = []
 for p in spec["parts"]:
     if p.get("flat"):
         o = build_tube(p) if p["flat"].get("tube") else build_flat(p)

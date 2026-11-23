@@ -67,3 +67,32 @@ numpy, Codex image generation (Lemp's ChatGPT login), Gemini for blind judging (
 | Roblox SurfaceAppearance (PBR maps) | real roughness and normal detail on stone and metal | free; one more texture set per model (memory on phones), must be judged on a phone |
 | An image upscaler (e.g. Real-ESRGAN) | sharper 2048 paint from the 1024 painted sheets | free; needs Lemp's OK to install |
 | Tripo image-to-3D | not used for towers any more (Lemp 2026-11-23) | - |
+## Painterly paint, shared with pets (Lemp 2026-11-23: "use the painterly workflow from the pets thread")
+What makes the pets look painterly (read from scripts/pet_paint.py and art/blender/pet_project.py; we call them, we
+never copy or edit them):
+- **Views.** `pet_project.py views` renders the model's own plain bake straight from four sides (front, its left,
+  back, its right) into one 2 x 2 sheet, orthographic, 512 px per view, white ground. Not 16 views and no top view.
+- **Painter.** Codex image generation repaints that sheet with the target painting as the second picture: "soft
+  painterly strokes, rich warm shading, small painted details, clean dark-brown outline", every view kept in place,
+  size, pose and outline. `--noface`: the painter gets the model with eyes and mouth already filled with the skin
+  round them (`no_face`, a diffusion inpaint of the `_keep.png` marks) and is told to paint none, so it never draws a
+  second face. One painting job at a time.
+- **Bad views.** `align` stretches each painted view's outline box onto the rendered one and measures the overlap;
+  a view under 62 % is not projected (`skip=`), so paint never lands on the wrong parts.
+- **Brush tone.** `--crisp N` (optional) median-filters the painter's small strokes into clean patches, doubles and
+  sharpens the sheet. Without it the strokes stay as painted.
+- **Seams between views.** Each texel takes its colour from the views that see it (depth test, facing > 0.3),
+  weighted by facing^8, the front view x6: one side wins clearly (no ghost faces from blending two paintings). The
+  painter's dark outline round each view is cut off (7 px rim refilled from inside) before projecting.
+- **Gaps.** Texels no view paints well get `painter_tone`: the plain bake shifted by a small 3D colour table learnt
+  from where the paint did land (a colour grade), so they match instead of showing flat patches.
+- **The base is protected.** The plain bake is copied once to `<name>_base.png` and never overwritten; the painted
+  result goes to the texture the game loads. Eyes and mouth (`_keep.png`) come back untouched from the base.
+- **Measure.** `pet_match.py` "detail": mean edge strength (FIND_EDGES) inside the outline at 256 px, as a percent of
+  the target picture's (Baby Dragon gen2 last: 71 %).
+
+For the archer (several parts, one picture each): `scripts/archer_paint.py` packs Head, Body and both arms into one
+temporary mesh with one atlas (`art/blender/archer_project.py pack`), runs the pets' views, painter (our own
+humanoid wording of the no-face prompt), `align` and `project` on it unchanged, then cuts the atlas back into the
+parts' own pictures. The bow and quiver are not sent to the painter and keep their paint. The face keeps the front
+painting only: eyes, brows and mouth are the `_keep.png` marks.

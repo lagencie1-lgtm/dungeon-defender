@@ -76,6 +76,14 @@ function ArtService.Start()
 					if part:IsA("MeshPart") then
 						local r, g, b = part.Name:match("^c_(%d+)_(%d+)_(%d+)")
 						part.Material = Enum.Material.SmoothPlastic
+						if name == "ranger_archer" then
+							-- matte like the paintings (coordinator 2026-11-23: "everything renders like shiny vinyl"): a rough
+							-- material, no reflectance, no sun glints on the cloth
+							part.Material = Enum.Material.SmoothPlastic   -- (Fabric turned his painted face black in the hood's shade)
+							part.Reflectance = 0
+							-- no shadow from the hood over his own face (it went black in the hood's shade); the face is painted
+							part.CastShadow = false
+						end
 						-- painted parts: "Body" wears paint_<model> (or paint_<model>_body), any other painted part its own
 						-- texture paint_<model>_<part> (tower kit "Skin_roof" -> _roof; picture bodies "ArmL" -> _arml)
 						local own = (Art.Textures or {})["paint_" .. name .. "_" .. part.Name:lower():gsub("^skin_", "")]

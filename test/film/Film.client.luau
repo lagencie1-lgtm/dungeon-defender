@@ -132,23 +132,15 @@ if ranger then
 	task.wait(1.6)
 	archerShot("archer level 1", 4.4)
 	task.wait(1.4)
-	-- the rebuilt archer from four sides (2026-11-23, Lemp: "ripped apart face ... cut head ... missing piece on
-	-- the hoody"): front, his left, back, his right, close, at his own height
-	local archer = ranger:FindFirstChild("Archer", true)
-	if archer then
-		local pivot = archer:GetPivot()
-		local _, size = archer:GetBoundingBox()
-		local centre = pivot.Position + Vector3.new(0, size.Y * 0.15, 0)
-		local fov = workspace.CurrentCamera.FieldOfView
-		workspace.CurrentCamera.FieldOfView = 16
-		for i, side in { "front", "left", "back", "right" } do
-			local dir = (pivot * CFrame.Angles(0, math.rad(({ 0, 90, 165, 245 })[i]), 0)).LookVector   -- (corner posts hide the exact back and right)
+	do   -- his face up close (2026-11-23: it read black in game; is it the paint, the light or the mesh?)
+		local archer = ranger:FindFirstChild("Archer", true)
+		local head = archer and archer:FindFirstChild("Head")
+		if head then
 			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
-			workspace.CurrentCamera.CFrame = CFrame.lookAt(centre + dir * 14 + Vector3.new(0, size.Y * 0.25, 0), centre)   -- (from outside the tower, a long lens)
-			mark("archer " .. side)
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(head.Position + head.CFrame.LookVector * 5 + Vector3.new(0, 0.6, 0), head.Position)
+			mark("archer face")
 			task.wait(1.2)
 		end
-		workspace.CurrentCamera.FieldOfView = fov
 	end
 	Remotes.UpgradeTower:InvokeServer(ranger)
 	mark("upgrade ranger")
@@ -163,6 +155,28 @@ if ranger then
 	task.wait(1.6)
 	archerShot("archer level 3", 10.8)
 	task.wait(1.4)
+	-- the archer from four sides on the level 3 tower (2026-11-23 painterly pass): front, his left, back, his right,
+	-- from outside the tower with a long lens; the way he faces is read from his head (he turns while he aims)
+	local function archerSides()
+		local archer = ranger:FindFirstChild("Archer", true)
+		local head = archer and archer:FindFirstChild("Head")
+		if not head then
+			return
+		end
+		local _, size = archer:GetBoundingBox()
+		local centre = head.Position - Vector3.new(0, size.Y * 0.25, 0)
+		local fov = workspace.CurrentCamera.FieldOfView
+		workspace.CurrentCamera.FieldOfView = 16
+		for i, side in { "front", "left", "back", "right" } do
+			local dir = (head.CFrame * CFrame.Angles(0, math.rad(({ 0, 90, 180, 270 })[i]), 0)).LookVector
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(centre + dir * 16 + Vector3.new(0, size.Y * 0.6, 0), centre)
+			mark("archer " .. side)
+			task.wait(1.2)
+		end
+		workspace.CurrentCamera.FieldOfView = fov
+	end
+	archerSides()
 	-- the archers at work (2026-11-23): a wave starts while the level 3 Ranger stands, the camera stays on it
 	Remotes.StartWave:FireServer()
 	mark("ranger shooting")

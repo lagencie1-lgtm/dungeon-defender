@@ -117,11 +117,19 @@ def hull_dents(m):
     return out
 
 
-PAINT = os.path.join(ROOT, "art", "ref3d", "archer", "ranger_archer_bare.png")
-# the face's marks in the front painting (pixels, x0 y0 x1 y1)
-TEMPLATES = {"eye": [(342, 175, 383, 223), (445, 175, 485, 223)], "brow": [(333, 150, 388, 180), (440, 158, 495, 180)],
-             "mouth": [(378, 240, 450, 259)]}
-PAINT_HEAD_W = 350     # the hood's width in the front painting
+SPEC = json.load(open(os.path.join(ROOT, "art", "ref3d", "archer", "ranger_archer_loft.json")))
+PAINT = os.path.join(ROOT, "art", "ref3d", "archer", SPEC["sheet"])
+# the face's marks in the front painting (pixels, x0 y0 x1 y1), per sheet
+MARKS = {
+    "ranger_archer_bare.png": {"eye": [(342, 175, 383, 223), (445, 175, 485, 223)], "brow": [(333, 150, 388, 180), (440, 158, 495, 180)],
+                               "mouth": [(378, 240, 450, 259)]},
+    "ranger_archer_elf.png": {"eye": [(252, 215, 300, 267), (352, 217, 400, 267)], "brow": [(242, 192, 303, 220), (348, 192, 410, 223)],
+                              "mouth": [(287, 293, 365, 307)]},
+}
+TEMPLATES = SPEC.get("marks") or MARKS[SPEC["sheet"]]
+EYE_THR = 0.9
+FACE_DENT = 0.03
+PAINT_HEAD_W = 2 * max(r["hw"] for r in SPEC["head"]) / SPEC["scale"]     # the hood's width in the front painting
 
 
 def face_features(im, head_w_px):
@@ -151,8 +159,12 @@ def face_features(im, head_w_px):
         for (x0, y0, x1, y1) in boxes:
             t = ref[y0:y1, x0:x1]
             th, tw = t.shape
-            for f in np.linspace(0.3, 1.1, 17):
-                ts = cv2.resize(t, (max(4, int(tw * f)), th), interpolation=cv2.INTER_AREA)
+            for f, g, rot in [(f, g, r) for f in np.linspace(0.3, 1.1, 17) for g in (0.85, 1.0, 1.15) for r in (-8, 0, 8)]:
+                # squeezed sideways as the head turns, a little taller or shorter and tilted as the face plane leans
+                ts = cv2.resize(t, (max(4, int(tw * f)), max(4, int(th * g))), interpolation=cv2.INTER_AREA)
+                if rot:
+                    M = cv2.getRotationMatrix2D((ts.shape[1] / 2, ts.shape[0] / 2), rot, 1.0)
+                    ts = cv2.warpAffine(ts, M, (ts.shape[1], ts.shape[0]), borderMode=cv2.BORDER_REPLICATE)
                 if ts.std() < 1:
                     continue
                 r = cv2.matchTemplate(gray, ts, cv2.TM_CCOEFF_NORMED)
@@ -162,9 +174,28 @@ def face_features(im, head_w_px):
                 full[oy:oy + r.shape[0], ox:ox + r.shape[1]] = r
                 best = np.maximum(best, full)
         maps[name] = (best, th, tw)
-    # eyes: the painting's own eyes match at 0.95+ (anything else on the head stays under 0.85)
-    eyes = peaks(*maps["eye"], 0.9)
-    mouth = peaks(*maps["mouth"], 0.7)
+    # the mouth first (it is found surely at every angle), then the eyes in the band just above it: two at most,
+    # each the painting's own eye; a doubled or torn face shows up as a third, a split or a missing one
+    mm, mth, mtw = maps["mouth"]
+    mouth_all = peaks(mm, mth, mtw * 2, 0.7)
+    mouth = []
+    if mouth_all:
+        mouth = [mouth_all[0]] + [f for f in mouth_all[1:] if f[2] >= max(0.85, mouth_all[0][2] * 0.95)]
+    eyes = []
+    if mouth:
+        my = mouth[0][1]
+        em, eth, etw = maps["eye"]
+        region = np.full(em.shape, -1.0, np.float32)
+        x0, x1 = max(0, mouth[0][0] - 110), mouth[0][0] + 110
+        region[max(0, my - 85):max(0, my - 35), x0:x1] = em[max(0, my - 85):max(0, my - 35), x0:x1]
+        eyes = peaks(region, eth * 2, int(etw * 1.8), 0.78)    # (one eye's own edges suppressed: a full eye height)
+        # an eye has its white (sclera or shine) and its dark pupil inside the match; a hair lock's edge has neither
+        def real_eye(e):
+            win = gray[max(0, e[1] - eth // 2):e[1] + eth // 2 + 1, max(0, e[0] - etw // 2):e[0] + etw // 2 + 1]
+            return win.size and win.max() >= 232 and win.min() <= 70
+        eyes = [e for e in eyes if real_eye(e)]
+        if eyes:   # an eye is a match nearly as good as the best one (the brow's and lashes' edges score lower)
+            eyes = [e for e in eyes if e[2] >= max(0.78, eyes[0][2] * 0.9)]
     brows = []
     bm, bth, btw = maps["brow"]
     _, eth, etw = maps["eye"]
@@ -177,7 +208,9 @@ def face_features(im, head_w_px):
         if found:
             best = found[0][2]
             # a second bar nearly as good in the same place = a doubled or split brow
-            brows += [found[0]] + [f for f in found[1:] if f[2] >= max(0.85, best * 0.95)]
+            for f in [found[0]] + [f for f in found[1:] if f[2] >= max(0.9, best * 0.97)]:
+                if not any(abs(f[0] - b[0]) < btw * 0.6 and abs(f[1] - b[1]) < bth for b in brows):   # (one brow seen twice)
+                    brows.append(f)
     for name, found in (("eye", eyes), ("brow", brows), ("mouth", mouth)):
         out[name] = [{"x": int(x / k), "y": int(y / k), "score": round(v, 2)} for x, y, v in found]
     return out
@@ -195,16 +228,36 @@ def main():
     for part, bad in build["watertight"].items():
         if bad:
             res["fails"].append(f"watertight {part}: {bad} open edges")
+    if build.get("vertex_colours"):
+        res["fails"].append(f"{build['vertex_colours']} vertex colour layers in the file (Roblox tints the paint with them)")
+    res["turned"] = build.get("turned", {})
+    for part, n in res["turned"].items():
+        if n:
+            res["fails"].append(f"facing {part}: {n} edges between turned-over faces (Roblox would show holes)")
     res["seam"] = build["seam"]
-    for part, s in build["seam"].items():
-        if s["p99"] > 14:
-            res["fails"].append(f"seam {part}: {s['p99']}/255")
+    if "seen" in build:
+        # a painted texture: its brush strokes differ texel to texel, so the texel test flags them; the gate is the
+        # rendered picture (art/blender/archer_seams_seen.py): seams must not show more than ordinary edges do
+        res["seam_seen"] = build["seen"]
+        if not build["seen"]["ok"]:
+            res["fails"].append(f"seam (as seen): p95 {build['seen']['seam_p95']} vs ordinary edges {build['seen']['ordinary_p95']}")
+    else:
+        for part, s in build["seam"].items():
+            if s["p99"] > 14:
+                res["fails"].append(f"seam {part}: {s['p99']}/255")
     res["symmetry"] = {}
     for name, az in (("front", -90), ("back", 90)):
         a = symmetry(mask_of(render(fbx, os.path.join(d, f"gate_sym_{name}.png"), az, grey=True)))
         res["symmetry"][name] = round(a * 100, 2)
         if a > 0.02:
             res["fails"].append(f"symmetry {name}: {a * 100:.1f}% (limit 2%)")
+    # the face opening may dent the side outline as deep as the painting's own side view does, plus the 3 % tolerance
+    sheet = np.asarray(Image.open(PAINT).convert("RGB")).min(axis=2) < 235
+    sv = SPEC.get("side_view", [630, 25, 1045, 345])
+    dents = hull_dents(sheet[sv[1]:sv[3], sv[0]:sv[2]])
+    global FACE_DENT
+    FACE_DENT = min(0.07, max([c["depth"] for c in dents if c["x"] > 0.75 and 0.3 < c["y"] < 0.75] or [0.03]))   # (capped at 7 %)
+    res["face_dent_in_painting"] = round(FACE_DENT * 100, 1)
     res["notch"] = []
     for k in range(16):
         turn = k * 22.5
@@ -216,7 +269,7 @@ def main():
             spec = abs(s) > 0.5 and (c["x"] > 0.55 if s > 0 else c["x"] < 0.45) and c["y"] > 0.4
             bottom = c["y"] > 0.92        # under the hood's hem (it sits on the shoulders), not its outline
             # in the spec too: the face opening at the front, the trim standing proud of the recessed face (<= 6 %)
-            opening = abs(s) > 0.3 and (c["x"] < 0.15 if s > 0 else c["x"] > 0.85) and 0.25 < c["y"] < 0.95 and c["depth"] <= 0.06
+            opening = abs(s) > 0.3 and (c["x"] < 0.15 if s > 0 else c["x"] > 0.85) and 0.25 < c["y"] < 0.95 and c["depth"] <= FACE_DENT + 0.03
             if not spec and not bottom and not opening and (worst is None or c["depth"] > worst["depth"]):
                 worst = c
         dep = worst["depth"] if worst else 0.0
@@ -232,7 +285,7 @@ def main():
         f = face_features(im, head_w)
         n = {k: len(v) for k, v in f.items()}
         res["face"][str(ang)] = f
-        two = abs(ang) <= 45
+        two = abs(ang) <= 30     # (at 45-60 degrees the far eye turns away round the face: one or two, never more)
         ok = ((n["eye"] == 2 if two else n["eye"] in (1, 2)) and (n["brow"] == 2 if two else n["brow"] in (1, 2))
               and n["mouth"] == 1)
         print(f"face {ang:+3d}: eyes {n['eye']} brows {n['brow']} mouth {n['mouth']}  " +

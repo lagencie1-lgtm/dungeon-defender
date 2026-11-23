@@ -87,14 +87,14 @@ def loft(bm, rows, grow=0.0, n_front=2.4, n_back=2.2, seg=SEG, dome=0.0, base=0.
     return shell_from_rings(bm, rings, top, bot)
 
 
-def frame_along(pts):
+def frame_along(pts, nvec=None):
     """per point: tangent and two normals (parallel transport)"""
     out = []
     up = Vector((0, 0, 1))
     prev_n = None
     for i, p in enumerate(pts):
         t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
-        n = prev_n if prev_n is not None else (up if abs(t.dot(up)) < 0.9 else Vector((1, 0, 0)))
+        n = prev_n if prev_n is not None else (Vector(nvec) if nvec is not None else up if abs(t.dot(up)) < 0.9 else Vector((1, 0, 0)))
         n = (n - t * n.dot(t)).normalized()
         out.append((t, n, t.cross(n)))
         prev_n = n
@@ -116,7 +116,7 @@ def catmull(points, per=6):
     return out
 
 
-def tube(bm, points, radii, seg=16, per=6, flat=1.0, caps="dome"):
+def tube(bm, points, radii, seg=16, per=6, flat=1.0, caps="dome", nvec=None):
     """a lofted tube along a smooth centre line, round ends (closed)"""
     pts = catmull(points, per)
     rr = [radii[0]] * len(pts) if len(radii) == 1 else None
@@ -126,7 +126,7 @@ def tube(bm, points, radii, seg=16, per=6, flat=1.0, caps="dome"):
             f = k / (len(pts) - 1) * (len(radii) - 1)
             i = min(int(f), len(radii) - 2)
             rr.append(radii[i] + (radii[i + 1] - radii[i]) * (f - i))
-    fr = frame_along(pts)
+    fr = frame_along(pts, nvec)
 
     def ring(p, r, frame, f=1.0, off=0.0):
         t, n, b = frame
@@ -201,68 +201,129 @@ def head_surface(x, zz, n_front=2.4):
 # Head
 # ---------------------------------------------------------------------------------------------------------------
 head = Part("Head")
-# the hood's soft point at the back: the sections turn pointed (in plan) round the row that reaches furthest back,
-# so the point is part of the one solid, not a piece stuck on
-Z_TIP = max(SPEC["head"], key=lambda r: r["back"])["z"]
-head_rows = [dict(r, nb=2.2 - 0.8 * math.exp(-((r["z"] - Z_TIP) / 0.22) ** 2)) for r in SPEC["head"]]
-hood_faces = head.add(loft(head.bm, head_rows, dome=0.0, seg=40), "hood")
-# smooth the rows into each other (no row banding): along z only
+# the elf hood: one solid; where it reaches far back the plan sections turn to a teardrop (pointed toward the back),
+# so the hood runs back to a ridge and a point instead of a round dome
+head_rows = []
+for r in SPEC["head"]:
+    reach = max(0.0, min(1.0, (r["back"] + r["front"]) / 0.35))    # how much further back than forward it reaches
+    head_rows.append(dict(r, nb=2.3 - 1.0 * reach))
+hood_faces = head.add(loft(head.bm, head_rows, dome=0.035, seg=40), "hood")
 hood_verts = list({v for f in hood_faces for v in f.verts})
-for _ in range(6):
+for _ in range(3):
     bmesh.ops.smooth_vert(head.bm, verts=hood_verts, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=False)
+# the centre crease: a soft ridge along the top and down the back (as in the painting's back view)
+head.bm.normal_update()
+for v in hood_verts:
+    ctr = (interp(SPEC["head"], "front", v.co.z) + interp(SPEC["head"], "back", v.co.z)) / 2
+    if v.co.z > 1.7 and v.co.y > ctr - 0.05 and abs(v.co.x) < 0.16:
+        k = (1 - abs(v.co.x) / 0.16) ** 2 * min(1.0, (v.co.z - 1.7) / 0.2)
+        v.co += v.normal * 0.022 * k
 
 OPEN = sorted(SPEC["opening"], key=lambda r: r["z"])
 Z_OPEN_TOP, Z_OPEN_BOT = OPEN[-1]["z"], OPEN[0]["z"]
+TW = SPEC["trim_w"]
 
 
 def opening_w(zz):
-    if zz > Z_OPEN_TOP or zz < Z_OPEN_BOT:
+    if zz > Z_OPEN_TOP or zz < Z_OPEN_BOT - 0.06:
         return 0.0
     return interp(OPEN, "ow", zz)
 
 
 def edge_distance(x, zz):
-    """how far (x, z) is inside the opening, seen from the front (0 at the edge, negative outside)"""
-    ow = opening_w(zz)
-    d_side = ow - abs(x)
-    d_top = Z_OPEN_TOP - zz
-    return min(d_side, d_top)
+    """how far (x, z) is inside the trim band's inner edge, seen from the front (0 at that edge, negative outside)"""
+    ow = opening_w(zz) - TW
+    return min(ow - abs(x), Z_OPEN_TOP - TW - zz, zz - (Z_OPEN_BOT - 0.04))
 
 
-RECESS = 0.035
+RECESS = 0.025
 for v in hood_verts:
     c = (interp(SPEC["head"], "front", v.co.z) + interp(SPEC["head"], "back", v.co.z)) / 2
-    if v.co.y < c:   # front half only
-        e = edge_distance(v.co.x, v.co.z)
+    if v.co.y < c:
+        e = edge_distance(v.co.x, v.co.z) + TW * 0.5
         if e > 0:
-            f = min(1.0, e / 0.08)
+            f = min(1.0, e / 0.07)
             v.co.y += RECESS * (f * f * (3 - 2 * f))
 
-# the cream trim: a band along the opening's edge, left side up over the top and down the right side
-edge = []
-for r in OPEN:
-    edge.append((-r["ow"], r["z"]))
-edge.append((0.0, Z_OPEN_TOP + 0.01))
-for r in reversed(OPEN):
-    edge.append((r["ow"], r["z"]))
+HEAD_C = Vector((0, (interp(SPEC["head"], "front", 1.85) + interp(SPEC["head"], "back", 1.85)) / 2, 1.85))
+
+
+def band_loop(bm, pts, half_w, half_t, centre, seg=12, lift=None):
+    """a closed flat band (soft rounded-rectangle section) along a closed loop of points, lying on a surface whose
+    outward normal is taken from `centre` (a point inside); closed all round, so watertight"""
+    n = len(pts)
+    rings = []
+    for i in range(n):
+        p = pts[i]
+        t = (pts[(i + 1) % n] - pts[i - 1]).normalized()
+        nn = (p - centre)
+        if lift is not None:
+            nn = Vector((nn.x, nn.y, nn.z * lift))
+        nn = (nn - t * nn.dot(t)).normalized()
+        b = t.cross(nn).normalized()
+        q = p + nn * half_t
+        ring = []
+        for k in range(seg):
+            a = 2 * math.pi * k / seg
+            cu, su = math.cos(a), math.sin(a)
+            u = math.copysign(abs(cu) ** 0.5, cu) * half_w
+            w = math.copysign(abs(su) ** 0.5, su) * half_t
+            ring.append(q + b * u + nn * w)
+        rings.append(ring)
+    vs = [[bm.verts.new(p) for p in ring] for ring in rings]
+    faces = []
+    for i in range(n):
+        a, b2 = vs[i], vs[(i + 1) % n]
+        for k in range(seg):
+            j = (k + 1) % seg
+            faces.append(bm.faces.new((a[k], a[j], b2[j], b2[k])))
+    return faces
+
+
+# the cream trim: a wide flat band round the opening, closed under the chin
+loop = []
+for r in OPEN[::2]:
+    loop.append((-(r["ow"] - TW / 2), r["z"]))
+loop.append((0.0, Z_OPEN_TOP - TW / 2 + 0.005))
+for r in reversed(OPEN[::2]):
+    loop.append((r["ow"] - TW / 2, r["z"]))
+xb = OPEN[0]["ow"] - TW / 2
+for k in range(1, 8):     # under the chin, right to left, dipping a little
+    x = xb - 2 * xb * k / 8
+    loop.append((x, Z_OPEN_BOT + TW * 0.3))   # resting on the chin's rim, not hanging below it
 pts = []
-for x, zz in edge[::2]:
-    y, _ = head_surface(x * 0.985, zz)
-    pts.append(Vector((x, y - 0.006, zz)))
-head.add(tube(head.bm, pts, [0.036], seg=12, per=3, flat=0.75), "cream")
+for x, zz in loop:
+    y, _ = head_surface(x, max(zz, SPEC["head"][-1]["z"]))
+    sink = 0.016 * max(0.0, min(1.0, (zz - (Z_OPEN_TOP - 0.2)) / 0.15))   # over the brow it lies flush: no lip in profile
+    pts.append(Vector((x, y + sink, zz)))
+head.add(band_loop(head.bm, pts, TW / 2, 0.016, HEAD_C), "cream")
 
-# the hair fringe: small tufts hanging from under the trim at the top of the opening, ahead of the recessed face
-for x, ln, tilt in ((-0.2, 0.12, -0.6), (0.0, 0.13, -0.25), (0.2, 0.12, 0.5)):
-    zt = Z_OPEN_TOP
-    while opening_w(zt) < abs(x) + 0.03 and zt > Z_OPEN_BOT:
+# the hair: big flat locks across the forehead and down by the cheeks, lying on the face under the trim
+LOCKS = [(-0.2, 0.09, -0.5), (-0.02, 0.12, -0.15), (0.18, 0.09, 0.45)]   # (above the brows: they stay clear)
+for x, ln, tilt in LOCKS:
+    zt = Z_OPEN_TOP - TW
+    while opening_w(zt) - TW < abs(x) + 0.05 and zt > Z_OPEN_BOT:
         zt -= 0.005
-    y0, _ = head_surface(x, zt - 0.02)
-    a = Vector((x, y0 + RECESS * 0.8, zt - 0.08))      # lying on the forehead, under the trim
-    b = a + Vector((math.sin(tilt) * ln, -0.005, -math.cos(tilt) * ln))
-    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.02, 0)), b], [0.1, 0.075, 0.03], seg=12, per=3, flat=0.4), "hair")
+    y0, _ = head_surface(x, zt)
+    a = Vector((x, y0 + RECESS * 0.6, zt - 0.025))    # (its top tucked under the trim)
+    b = a + Vector((math.sin(tilt) * ln, -0.025, -math.cos(tilt) * ln))
+    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.07, 0.06, 0.025], seg=12, per=3, flat=0.4, nvec=(0, 1, 0)), "hair")
+for s in (-1, 1):       # side locks by the cheeks
+    zt = 1.8
+    x = s * (opening_w(zt) - TW - 0.045)     # (by the cheek, clear of the eye)
+    y0, _ = head_surface(x * 0.95, zt)
+    a = Vector((x, y0 + RECESS * 0.7, zt))
+    b = a + Vector((-s * 0.03, 0.0, -0.17))
+    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((s * 0.01, -0.012, 0)), b], [0.065, 0.058, 0.025], seg=12, per=3, flat=0.6,
+                  nvec=(s * 0.9, 0.45, 0)), "hair")
 
-# the hood's soft point at the back, curling down (the side painting's tail)
-
+# the hanging tip at the back (the side view's separate run): a soft cone from inside the hood down to its point
+if SPEC["tip"]:
+    tp = sorted(SPEC["tip"], key=lambda r: -r["z"])
+    bt = interp(SPEC["head"], "back", 1.95)
+    pts = [Vector((0, bt - 0.12, 1.98)), Vector((0, bt + 0.02, 1.86)), Vector((0, tp[0]["y"] + 0.03, tp[0]["z"] - 0.02)),
+           Vector((0, tp[-1]["y"], tp[-1]["z"] - 0.02))]
+    head.add(tube(head.bm, pts, [0.17, 0.12, 0.06, 0.015], seg=16, per=4, flat=1.25), "hood")
 
 # ---------------------------------------------------------------------------------------------------------------
 # Body
@@ -270,9 +331,20 @@ for x, ln, tilt in ((-0.2, 0.12, -0.6), (0.0, 0.13, -0.25), (0.2, 0.12, 0.5)):
 body = Part("Body")
 torso_rows = [dict(r) for r in SPEC["torso"]]
 top = max(torso_rows, key=lambda r: r["z"])
-for dz, f in ((0.04, 0.85), (0.08, 0.65)):     # up inside the hood: nothing to see through at the neck
+for dz, f in ((0.05, 0.85), (0.1, 0.6)):     # up inside the hood: nothing to see through at the neck
     torso_rows.append(dict(top, z=top["z"] + dz, hw=top["hw"] * f))
 body.add(loft(body.bm, torso_rows, n_front=2.6, n_back=2.6), "tunic")
+
+
+def torso_surface(x, zz, side=-1, n=2.6):
+    """the torso's surface y at (x, z), front (side -1) or back (+1)"""
+    hw = interp(torso_rows, "hw", zz)
+    fr, bk = interp(torso_rows, "front", zz), interp(torso_rows, "back", zz)
+    c, d = (fr + bk) / 2, (bk - fr) / 2
+    u = min(abs(x) / hw, 0.98)
+    cos_t = u ** (n / 2)
+    sin_t = math.sqrt(max(0.0, 1 - cos_t * cos_t))
+    return c + side * d * sin_t ** (2 / n)
 
 
 def band(part, z0, z1, grow, pal, rows=None, cx=0.0):
@@ -282,24 +354,64 @@ def band(part, z0, z1, grow, pal, rows=None, cx=0.0):
     return part.add(loft(part.bm, rr, grow=grow, n_front=2.6, n_back=2.6), pal)
 
 
-band(body, SPEC["belt"]["z0"], SPEC["belt"]["z1"], 0.022, "leather")
-band(body, SPEC["hem"]["z0"], SPEC["hem"]["z1"], 0.014, "cream")
-bz0, bz1, bhw = SPEC["buckle"]["z0"], SPEC["buckle"]["z1"], SPEC["buckle"]["hw"]
-by = interp(torso_rows, "front", (bz0 + bz1) / 2) - 0.03
-for c, s in (((0, by, bz1 - 0.026), (bhw, 0.03, 0.026)), ((0, by, bz0 + 0.026), (bhw, 0.03, 0.026)),   # a plain chunky frame
-             ((-bhw + 0.026, by, (bz0 + bz1) / 2), (0.026, 0.03, (bz1 - bz0) / 2)), ((bhw - 0.026, by, (bz0 + bz1) / 2), (0.026, 0.03, (bz1 - bz0) / 2)),
-             ):
+band(body, SPEC["belt"]["z0"], SPEC["belt"]["z1"], 0.024, "leather")
+band(body, SPEC["hem"]["z0"], SPEC["hem"]["z1"], 0.016, "lime")
+# the collar roll where the hood meets the shoulders
+co = SPEC["collar"]
+cz = co["z"] - 0.005
+fr, bk = interp(torso_rows, "front", cz) - 0.05, interp(torso_rows, "back", cz) + 0.05
+cc, cd = (fr + bk) / 2, (bk - fr) / 2
+cring = []
+for k in range(32):
+    a = 2 * math.pi * k / 32
+    cs, sn = math.cos(a), math.sin(a)
+    cring.append(Vector((math.copysign(abs(cs) ** (2 / 2.4), cs) * co["hw"], cc + math.copysign(abs(sn) ** (2 / 2.4), sn) * cd, cz)))
+body.add(band_loop(body.bm, cring, co["r"] * 0.95, co["r"] * 0.95, Vector((0, cc, cz - 0.25)), seg=12), "roll")   # a soft round roll on the shoulders
+# the big gold buckle: a chunky square frame on the belt
+bz0, bz1, bhw, bar = SPEC["buckle"]["z0"], SPEC["buckle"]["z1"], SPEC["buckle"]["hw"], SPEC["buckle"]["bar"]
+by = torso_surface(0, (bz0 + bz1) / 2) - 0.035
+for c, s in (((0, by, bz1 - bar / 2), (bhw, 0.022, bar / 2)), ((0, by, bz0 + bar / 2), (bhw, 0.022, bar / 2)),
+             ((-bhw + bar / 2, by, (bz0 + bz1) / 2), (bar / 2, 0.022, (bz1 - bz0) / 2)),
+             ((bhw - bar / 2, by, (bz0 + bz1) / 2), (bar / 2, 0.022, (bz1 - bz0) / 2)),
+             ((-bhw / 2 + bar / 2, by + 0.004, (bz0 + bz1) / 2), (bhw / 2, 0.02, 0.011))):   # the prong, across
     body.add(box(body.bm, c, (s[0] * 2, s[1] * 2, s[2] * 2)), "gold")
-sz0, sz1 = SPEC["slit"]["z0"], SPEC["slit"]["z1"]
-sy = interp(torso_rows, "front", (sz0 + sz1) / 2)
-sz1 -= 0.04   # (starts clear of the belt and buckle)
-body.add(tube(body.bm, [Vector((0, interp(torso_rows, "front", sz1) - 0.004, sz1)), Vector((0, interp(torso_rows, "front", sz0) - 0.01, sz0 + 0.02))],
-              [0.022], seg=10, per=3, flat=0.6), "cream")
-# collar: a cream V at the neck under the chin
-for s in (-1, 1):   # (the painting: from under the hood's chin at 305 px down to a point at 335 px)
-    vz = [(0.10, 1.41), (0.05, 1.35), (0.0, 1.29)]
-    body.add(tube(body.bm, [Vector((s * x, interp(torso_rows, "front", zz) - 0.004, zz)) for x, zz in vz],
-                  [0.024], seg=10, per=3, flat=0.6), "cream")
+# the tunic's front split with lime edging, the trousers showing in it
+sp = SPEC["split"]
+for s in (-1, 1):
+    pa = Vector((s * sp["top_w"], torso_surface(s * sp["top_w"], sp["z1"]) - 0.006, sp["z1"]))
+    pb = Vector((s * sp["bottom_w"], torso_surface(s * sp["bottom_w"], sp["z0"]) - 0.012, sp["z0"] + 0.01))
+    body.add(tube(body.bm, [pa, pb], [sp["w"] / 2], seg=10, per=3, flat=0.45, nvec=(0, 1, 0)), "lime")
+
+# the chest strap: over his left shoulder, across the chest to his right hip, round the back (a closed band)
+st = SPEC["strap"]
+(x0, z0), (x1, z1) = st["from"], st["to"]
+spts = []
+for k in range(10):                       # front, shoulder to hip
+    t = k / 9
+    x, zz = x0 + (x1 - x0) * t, z0 + (z1 - z0) * t
+    spts.append(Vector((x, torso_surface(x, zz, -1) - 0.004, zz)))
+xs = x1 - 0.06
+yc = (torso_surface(xs, z1, -1) + torso_surface(xs, z1, 1)) / 2
+yd = (torso_surface(xs, z1, 1) - torso_surface(xs, z1, -1)) / 2
+for k in range(1, 4):                     # round his right side
+    a = math.pi * k / 4
+    spts.append(Vector((xs - math.sin(a) * 0.06, yc - math.cos(a) * yd, z1)))
+for k in range(10):                       # back, hip to shoulder
+    t = k / 9
+    x, zz = x1 + (x0 - x1) * t, z1 + (z0 - z1) * t
+    spts.append(Vector((x, torso_surface(x, zz, 1) + 0.004, zz)))
+yc = (torso_surface(x0, z0, -1) + torso_surface(x0, z0, 1)) / 2
+yd = (torso_surface(x0, z0, 1) - torso_surface(x0, z0, -1)) / 2
+for k in range(1, 4):                     # over his left shoulder
+    a = math.pi * k / 4
+    spts.append(Vector((x0, yc + math.cos(a) * yd, z0 + math.sin(a) * 0.06)))
+tc = Vector((0, (interp(torso_rows, "front", 1.2) + interp(torso_rows, "back", 1.2)) / 2, 1.2))
+body.add(band_loop(body.bm, spts, st["w"] / 2, 0.012, tc, lift=0.0), "strap")
+bx, bz = st["buckle"]
+bby = torso_surface(bx, bz) - 0.026
+for c, s in (((bx, bby, bz + 0.04), (0.048, 0.013, 0.011)), ((bx, bby, bz - 0.04), (0.048, 0.013, 0.011)),
+             ((bx - 0.04, bby, bz), (0.011, 0.013, 0.048)), ((bx + 0.04, bby, bz), (0.011, 0.013, 0.048))):
+    body.add(box(body.bm, c, (s[0] * 2, s[1] * 2, s[2] * 2)), "gold")
 for s in (-1, 1):
     legs = [dict(r, cx=s * r["cx"]) for r in SPEC["leg"]]
     hi = max(legs, key=lambda r: r["z"])
@@ -311,13 +423,37 @@ for s in (-1, 1):
     body.add(loft(body.bm, boot, seg=24, n_front=2.2, n_back=2.6), "boot")
     bc = SPEC["boot_cuff"]
     body.add(loft(body.bm, [dict(hw=interp(boot, "hw", zz), front=interp(boot, "front", zz), back=interp(boot, "back", zz), z=zz, cx=interp(boot, "cx", zz))
-                            for zz in (bc["z0"], (bc["z0"] + bc["z1"]) / 2, bc["z1"])], grow=0.018, seg=24), "boot")
+                            for zz in (bc["z0"], (bc["z0"] + bc["z1"]) / 2, bc["z1"])], grow=0.03, seg=24), "boot_cuff")
+    zs = SPEC["sole"]["z1"]
+    body.add(loft(body.bm, [dict(hw=interp(boot, "hw", zz), front=interp(boot, "front", zz), back=interp(boot, "back", zz), z=zz, cx=interp(boot, "cx", zz))
+                            for zz in (0.003, zs / 2, zs)], grow=0.014, seg=24, n_front=2.2, n_back=2.6), "sole")
 
 # ---------------------------------------------------------------------------------------------------------------
-# Arms (character's right arm at -X)
+# Arms (character's right arm at -X): short sleeve, wide lime cuff, bare forearm, big bracer with raised edges, fist
 # ---------------------------------------------------------------------------------------------------------------
 arms = []
 A = SPEC["arm"]
+
+
+def rounded_box(bm, c, size, frame, e=4.0, seg=20, rings=12):
+    """a soft box (superellipsoid) at c with half sizes `size` along the frame's axes (x, y, z)"""
+    ax, ay, az = frame
+    rs = []
+    for k in range(1, rings):
+        ph = -math.pi / 2 + math.pi * k / rings
+        cp, sp_ = math.cos(ph), math.sin(ph)
+        ring = []
+        for i in range(seg):
+            th = 2 * math.pi * i / seg
+            ct, st_ = math.cos(th), math.sin(th)
+            fx = math.copysign(abs(cp) ** (2 / e), cp) * math.copysign(abs(ct) ** (2 / e), ct)
+            fy = math.copysign(abs(cp) ** (2 / e), cp) * math.copysign(abs(st_) ** (2 / e), st_)
+            fz = math.copysign(abs(sp_) ** (2 / e), sp_)
+            ring.append(Vector(c) + ax * (fx * size[0]) + ay * (fy * size[1]) + az * (fz * size[2]))
+        rs.append(ring)
+    return shell_from_rings(bm, rs, Vector(c) + az * size[2], Vector(c) - az * size[2])
+
+
 for name, s in (("ArmR", 1), ("ArmL", -1)):
     p = Part(name)
 
@@ -326,11 +462,27 @@ for name, s in (("ArmR", 1), ("ArmL", -1)):
     p.add(tube(p.bm, [m(v) for v in A["sleeve"]["path"]], A["sleeve"]["r"], seg=16), "tunic")
     cu = A["cuff"]
     d = Vector((cu["dir"][0] * s, cu["dir"][1], cu["dir"][2])).normalized()
-    p.add(tube(p.bm, [m(cu["at"]) - d * cu["w"] / 2, m(cu["at"]) + d * cu["w"] / 2], [cu["r"] * 1.06], seg=16, per=2), "cream")
-    p.add(tube(p.bm, [m(v) for v in A["upper"]["path"]], A["upper"]["r"], seg=14), "skin")
-    p.add(tube(p.bm, [m(v) for v in A["bracer"]["path"]], A["bracer"]["r"], seg=16, flat=0.92), "bracer")
+    p.add(tube(p.bm, [m(cu["at"]) - d * cu["w"] / 2, m(cu["at"]) + d * cu["w"] / 2], [cu["r"]], seg=16, per=2), "lime")
+    p.add(tube(p.bm, [m(v) for v in A["fore"]["path"]], A["fore"]["r"], seg=14), "skin")
+    bp = [m(v) for v in A["bracer"]["path"]]
+    p.add(tube(p.bm, bp, A["bracer"]["r"], seg=16), "bracer")
+    bd = (bp[-1] - bp[0]).normalized()
+    for end, rr in ((bp[0] + bd * 0.012, A["bracer"]["r"][0]), (bp[-1] - bd * 0.012, A["bracer"]["r"][-1])):   # raised edges
+        p.add(tube(p.bm, [end - bd * 0.012, end + bd * 0.012], [rr * 1.08], seg=16, per=2), "bracer_edge")
     fi = A["fist"]
-    p.add(ellipsoid(p.bm, m(fi["at"]), fi["r"]), "skin")
+    fc = m(fi["at"])
+    az = (bp[-1] - bp[0]).normalized()          # the fist continues the forearm
+    ay_ = Vector((0, -1, 0))                    # knuckles to the front
+    ax_ = ay_.cross(az).normalized()
+    ay_ = az.cross(ax_).normalized()
+    sz = fi["size"]
+    p.add(rounded_box(p.bm, fc, (sz[0], sz[1], sz[2]), (ax_, ay_, az), e=3.0), "skin")
+    # the thumb on the inner side, and finger lines (thin darker grooves across the knuckles)
+    tcen = fc + ax_ * (-s * sz[0] * 0.55) + ay_ * (sz[1] * 0.75) + az * (sz[2] * 0.25)
+    p.add(ellipsoid(p.bm, tcen, (sz[0] * 0.32, sz[1] * 0.35, sz[2] * 0.5), seg=12, rings=8), "skin")
+    for k in (-1, 0, 1):
+        q = fc + ay_ * (sz[1] * 0.98) + az * (k * sz[2] * 0.35 - sz[2] * 0.1)
+        p.add(tube(p.bm, [q - ax_ * sz[0] * 0.55, q + ax_ * sz[0] * 0.55], [0.006], seg=6, per=2), "skin_line")
     arms.append(p)
 
 parts = [head, body] + arms
@@ -359,8 +511,10 @@ for p in parts:
 img = bpy.data.images.load(SHEET)
 IW, IH = img.size
 S, CX, GROUND = SPEC["scale"], SPEC["cx"], SPEC["ground"]
-NAMES = sorted(PAL) + ["hood_inner"]
-PAL["hood_inner"] = [v * 0.55 for v in PAL["hood"]]
+PAL["roll"] = [(a + b) / 2 for a, b in zip(PAL["hood"], PAL["lime"])]   # the collar roll: the hood's cloth, catching light
+PAL["boot_cuff"] = [min(1.0, v * 1.06) for v in PAL["boot"]]
+PAL["bracer_edge"] = [v * 0.78 for v in PAL["bracer"]]
+PAL["skin_line"] = [v * 0.8 for v in PAL["skin"]]
 
 
 def to_object(part):
@@ -380,14 +534,12 @@ def to_object(part):
                 if v.y < ctr:
                     e = edge_distance(v.x, v.z)
                     if e > 0:
-                        w = max(0.0, min(1.0, (e - 0.075) / 0.05))
+                        w = max(0.0, min(1.0, (e - 0.01) / 0.04))
                         # only where the surface looks to the front: the painting is never stretched round a side
                         nf = max(0.0, min(1.0, (-loop.vert.normal.y - 0.55) / 0.25))
                         w *= nf
-                        if w < 1.0:   # the strip right inside the trim: the hood's shaded inside
-                            ci = lin(PAL["hood_inner"])
-                            k = max(0.0, min(1.0, e / 0.06))
-                            c = tuple(a * (1 - k) + b * k for a, b in zip(lin(PAL["hood"]), ci)) + (1.0,)
+                        # inside the opening, wherever the painting does not reach: the hood's own dark inside
+                        c = lin(PAL["hood_inner"]) + (1.0,)
             loop[col] = c
             loop[facew] = (w, w, w, 1.0)
     bm.to_mesh(mesh)
@@ -398,7 +550,9 @@ def to_object(part):
     return o
 
 
-def material(o):
+def material(o, image=None):
+    """image: project this picture instead of the front painting and return only it, where the face is (no palette,
+    no light): used to bake the face marks' mask (eyes, brows, mouth) for the painterly pass"""
     mat = bpy.data.materials.new(o.name + "_m")
     mat.use_nodes = True
     nt = mat.node_tree
@@ -429,7 +583,7 @@ def material(o):
     nt.links.new(mu.outputs[0], comb.inputs[0])
     nt.links.new(mv.outputs[0], comb.inputs[1])
     tex = nt.nodes.new("ShaderNodeTexImage")
-    tex.image = img
+    tex.image = image or img
     tex.interpolation = "Cubic"
     tex.extension = "EXTEND"
     nt.links.new(comb.outputs[0], tex.inputs[0])
@@ -438,6 +592,11 @@ def material(o):
     nt.links.new(fw.outputs["Color"], mix.inputs["Factor"])
     nt.links.new(pal.outputs["Color"], mix.inputs["A"])
     nt.links.new(tex.outputs["Color"], mix.inputs["B"])
+    if image is not None:
+        nt.links.remove(mix.inputs["A"].links[0])
+        mix.inputs["A"].default_value = (0, 0, 0, 1)
+        nt.links.new(mix.outputs["Result"], emit.inputs["Color"])
+        return mat, nt
     # painted light: ambient + soft key from the top left front + ambient occlusion (the painting has its own light,
     # so the face gets only a little of it)
     geo = nt.nodes.new("ShaderNodeNewGeometry")
@@ -453,16 +612,17 @@ def material(o):
     shade = nt.nodes.new("ShaderNodeMath")
     shade.operation = "MULTIPLY_ADD"  # 0.62 .. 1.12
     nt.links.new(wrap.outputs[0], shade.inputs[0])
-    shade.inputs[1].default_value = 0.5
-    shade.inputs[2].default_value = 0.62
+    shade.inputs[1].default_value = 0.22   # (a light touch: the game lights the mesh too)
+    shade.inputs[2].default_value = 0.82
     ao = nt.nodes.new("ShaderNodeAmbientOcclusion")
-    ao.samples = 16
+    ao.samples = 48
+    ao.only_local = True     # (no hard dark rings where one part runs into another)
     ao.inputs["Distance"].default_value = 0.25
     aom = nt.nodes.new("ShaderNodeMath")
     aom.operation = "MULTIPLY_ADD"    # AO 0..1 -> 0.6..1
     nt.links.new(ao.outputs["AO"], aom.inputs[0])
-    aom.inputs[1].default_value = 0.4
-    aom.inputs[2].default_value = 0.6
+    aom.inputs[1].default_value = 0.2
+    aom.inputs[2].default_value = 0.8
     light = nt.nodes.new("ShaderNodeMath")
     light.operation = "MULTIPLY"
     nt.links.new(shade.outputs[0], light.inputs[0])
@@ -475,7 +635,7 @@ def material(o):
     sepw = nt.nodes.new("ShaderNodeSeparateColor")
     nt.links.new(fw.outputs["Color"], sepw.inputs[0])
     nt.links.new(sepw.outputs[0], fwm.inputs[0])
-    fwm.inputs[1].default_value = 0.7
+    fwm.inputs[1].default_value = 1.0     # the face keeps the painting's own colours: no baked light on it
     nt.links.new(fwm.outputs[0], soft.inputs["Factor"])
     nt.links.new(light.outputs[0], soft.inputs["A"])
     soft.inputs["B"].default_value = 1.0
@@ -515,7 +675,7 @@ def seam_check(o, tex):
     def sample(px, x, y):   # a 3x3 texel average (the bake's own grain is not a seam)
         i, j = int(y * h), int(x * w)
         return px[max(0, i - 1):min(h, i + 2), max(0, j - 1):min(w, j + 2)].reshape(-1, 3).mean(axis=0)
-    jumps = []
+    jumps, where = [], []
     for key, sides in by_edge.items():
         if len(sides) != 2:
             continue
@@ -525,10 +685,38 @@ def seam_check(o, tex):
         c0 = sample(px, x0, y0)
         c1 = sample(px, x1, y1)
         jumps.append(float(np.abs(c0 - c1).max()) * 255)
+        where.append((jumps[-1], (o.data.vertices[key[0]].co + o.data.vertices[key[1]].co) / 2))
+    where.sort(key=lambda t: -t[0])
+    for j, c in where[:4]:
+        print("  SEAM JUMP %.0f at (%.2f, %.2f, %.2f)" % (j, c.x, c.y, c.z))
     jumps.sort()
     p99 = jumps[int(len(jumps) * 0.99)] if jumps else 0
     GATES.setdefault("seam", {})[o.name] = {"edges": len(jumps), "p99": round(p99, 1), "max": round(jumps[-1], 1) if jumps else 0}
     print("SEAM", o.name, len(jumps), "seam edges, 99th percentile jump %.1f /255" % p99, "ok" if p99 <= 14 else "FAIL")
+
+
+def bake_keep(o, size):
+    """the face (the front painting's part of the head) as a white-on-black picture in the head's own texture
+    layout: the painterly pass keeps it exactly (scripts/archer_paint.py, the pets' _keep.png)"""
+    import numpy as np
+    # the whole face (where the front painting is used): the painterly pass keeps it as painted; boxes round the
+    # marks alone left square patches of two skin tones
+    m = np.ones((IH, IW), dtype=np.float32)
+    mimg = bpy.data.images.new("marks", IW, IH)
+    mimg.pixels.foreach_set(np.dstack([np.flipud(m)] * 3 + [np.ones_like(m)]).astype(np.float32).ravel())
+    mat, nt = material(o, image=mimg)
+    o.data.materials.clear()
+    o.data.materials.append(mat)
+    keep = bpy.data.images.new(o.name + "_keep", size, size)
+    node = nt.nodes.new("ShaderNodeTexImage")
+    node.image = keep
+    nt.nodes.active = node
+    bpy.context.scene.cycles.samples = 4
+    bpy.ops.object.bake(type="EMIT")
+    bpy.context.scene.cycles.samples = 96
+    keep.filepath_raw = os.path.join(OUT, f"{NAME}_head_keep.png")
+    keep.file_format = "PNG"
+    keep.save()
 
 
 def bake(o, size):
@@ -538,7 +726,7 @@ def bake(o, size):
     o.data.uv_layers.new(name="UVMap")
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.01, area_weight=0.0, scale_to_bounds=True)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(72), island_margin=0.01, area_weight=0.0, scale_to_bounds=True)
     bpy.ops.object.mode_set(mode="OBJECT")
     mat, nt = material(o)
     o.data.materials.append(mat)
@@ -556,6 +744,8 @@ def bake(o, size):
     tex.filepath_raw = path
     tex.file_format = "PNG"
     tex.save()
+    if o.name == "Head" and SPEC.get("marks"):
+        bake_keep(o, size)
     fin = bpy.data.materials.new(o.name + "_baked")
     fin.use_nodes = True
     t = fin.node_tree.nodes.new("ShaderNodeTexImage")
@@ -582,7 +772,20 @@ for o in objs:
         bpy.ops.object.modifier_apply(modifier=dec.name)
     bm = bmesh.new()
     bm.from_mesh(o.data)
+    # the triangle reduction can turn faces over (the face's recess came out inside-out: Roblox shows only the
+    # front of a face, so you looked through his face): every shell's faces outward again
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(o.data)
     bad = len([e for e in bm.edges if len(e.link_faces) != 2])
+    # gate: faces that run an edge the same way as their neighbour (turned over), and shells with negative volume
+    turned = 0
+    for e in bm.edges:
+        if len(e.link_loops) == 2:
+            l1, l2 = e.link_loops
+            if l1.vert == l2.vert:
+                turned += 1
+    GATES.setdefault("turned", {})[o.name] = turned
+    print("FACING (final)", o.name, "ok" if turned == 0 else f"FAIL {turned} edges between turned-over faces")
     bm.free()
     GATES["watertight"][o.name] = bad
     print("WATERTIGHT (final)", o.name, "ok" if bad == 0 else f"FAIL {bad} open or non-manifold edges")
@@ -613,9 +816,23 @@ for base, o in props.items():
         fist.x = -fist.x   # the left fist (+X)
         o.location += fist - (lo + hi) / 2 + Vector((0.02, 0, 0))
     else:
-        zc = (lo.z + hi.z) / 2
-        back = interp(torso_rows, "back", 1.15)
-        o.location += Vector((-0.1 - (lo.x + hi.x) / 2, back - 0.04 - lo.y, 1.12 - zc))
+        # high on his back, top over his right shoulder: the feathers show beside the hood from the front (the painting)
+        import numpy as np
+        from mathutils import Matrix
+        co = np.array([tuple(o.matrix_world @ v.co) for v in o.data.vertices])
+        mean = co.mean(axis=0)
+        w, vec = np.linalg.eigh(np.cov((co - mean).T))
+        axis = Vector(vec[:, -1])
+        proj = (co - mean) @ np.array(axis)
+        if co[proj.argmax()][2] < co[proj.argmin()][2]:
+            axis = -axis                                      # the end with the feathers up
+        length = float(proj.max() - proj.min())
+        d = Vector((-0.55, 0.1, 0.83)).normalized()
+        rot = axis.rotation_difference(d).to_matrix().to_4x4()
+        top = Vector((-0.58, 0, 1.64))
+        centre = top - d * (length / 2)
+        centre.y = interp(torso_rows, "back", 1.25) + 0.15
+        o.matrix_world = Matrix.Translation(centre) @ rot @ Matrix.Translation(-Vector(mean)) @ o.matrix_world
     shutil.copy(os.path.join(os.path.dirname(OLD), f"{NAME}_{base.lower()}_paint.png"), os.path.join(OUT, f"{NAME}_{base.lower()}_paint.png"))
 
 for o, size in zip(objs, (1024, 1024, 512, 512)):
@@ -623,6 +840,12 @@ for o, size in zip(objs, (1024, 1024, 512, 512)):
 
 import lib  # noqa: E402
 out_fbx = os.path.join(OUT, NAME + ".fbx")
+# no vertex colours in the file: Roblox multiplies the texture by them (the build's palette and face-weight layers
+# made his face dark green and the hood lime in game)
+for o in bpy.context.scene.objects:
+    if o.type == "MESH":
+        for ca in list(o.data.color_attributes):
+            o.data.color_attributes.remove(ca)
 lib.export_fbx(out_fbx)
 json.dump(GATES, open(os.path.join(OUT, "gates_build.json"), "w"), indent=1)
 print("HEIGHT %.2f" % SPEC["height"])

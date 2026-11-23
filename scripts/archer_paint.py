@@ -1,9 +1,18 @@
-"""Hand-painted surface for the Ranger's archer (both parts: ranger_archer and ranger_archer_arms), the same way the
-pets get theirs (art/blender/pet_project.py): four ortho sides rendered into a 2 x 2 sheet, Codex repaints the sheet
-in the look of the archer painting, each painted view is fitted onto its rendered outline (scripts/pet_paint.py
-align), and the paint is projected back. The eyes, brows, mouth and fringe are "keep" paint (petkit) and stay crisp.
+"""Painterly paint for the archer, with the pets' own workflow (Lemp 2026-11-23: "use the painterly workflow from the
+pets thread"; docs/tower-pipeline.md "Painterly paint, shared with pets"). The pet scripts are called, never copied or
+changed: scripts/pet_paint.py (no_face, align, the Blender runner) and art/blender/pet_project.py (views, project).
+(This replaces the first archer_paint.py, written for the pet-kit archer with separate arms.)
 
-Run: python scripts/archer_paint.py [folder=tools/archer] [--reuse]"""
+  python scripts/archer_paint.py <build dir> <out dir> [--reuse] [--strength 1.0] [--crisp 5]
+  (two painter runs: the whole archer for the arms, then head and body alone for them)
+
+1. art/blender/archer_project.py packs Head, Body and both arms into one mesh with one atlas (the bow and quiver stay
+   out and keep their paint); the plain bake is archer_pack_base.png and is never overwritten.
+2. no_face: the painter gets him with eyes, brows and mouth filled with the skin round them (the face comes from the
+   front painting only; the painter must not draw another one).
+3. pet_project views -> the painter repaints the 2 x 2 sheet in the style of the main painting -> align (views under
+   62 % outline overlap are skipped) -> pet_project project (noface) -> the atlas is cut back into the parts.
+<out dir> gets ranger_archer.fbx (the build's, unchanged) and every part's painted picture."""
 import os
 import shutil
 import subprocess
@@ -11,60 +20,86 @@ import sys
 
 from PIL import Image
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from pet_paint import align  # noqa: E402
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+import pet_paint  # noqa: E402  (the pets' painter steps, used as they are)
 from tower_paint import codex_paint  # noqa: E402
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-PIC = os.path.join(ROOT, "art", "ref3d", "archer", "ranger_archer.png")
+BLENDER = pet_paint.BLENDER
+NAME = "ranger_archer"
+TARGET = os.path.join(ROOT, "art", "ref3d", "archer", "ranger_archer_34.png")
+CELLS = {"head": (0, 0, 1024), "body": (1, 0, 1024), "armr": (0, 1, 512), "arml": (1, 1, 512)}
 
-PROMPT = """Image 1 is a model sheet: the same 3D {what} seen from four sides in a 2 by 2 grid (top left front,
-top right its left side, bottom left back, bottom right its right side) on a white ground. Image 2 is the concept
-painting of this archer.
+# the pets' no-face wording, for a character (pet_paint.NOFACE speaks of a pet with fur)
+PROMPT = """Image 1 is a model sheet: the same 3D game character, a hooded archer, seen from four sides in a 2 by 2
+grid (top left front, top right his left side, bottom left back, bottom right his right side) on a white ground. The
+model has NO FACE on purpose: its eyes, eyebrows and mouth are added later by the game. Image 2 is the concept
+painting of this character.
 
 Repaint image 1 as a finished hand-painted model sheet in the exact painting style, colours and surface of image 2:
-soft painterly cloth folds on the green hood and tunic with a cream lining, warm brown leather with stitched edges on
-the belt, bracers, boots and quiver, wood grain on the bow, warm skin with soft shading, rich soft light from the top
-left, small painted details as image 2 shows them.
+soft painterly strokes on the cloth, leather and skin, rich warm shading, small painted details (cloth folds,
+leather grain and stitching, the hood's soft creases, the sheen on the gold buckles), matte, no shine. Do NOT paint
+eyes, eyebrows, eyelashes or a mouth anywhere: where they would be, paint plain skin like the rest of the face
+(cheek blush is fine). The nose, the hair locks, the trim and the buckles that image 1 already shows stay where they
+are and keep their own colour.
 
 Hard rules: keep the 2 by 2 layout. Every view stays in exactly the same place, at the same size, in the same pose,
-with the same outline as in image 1: do not move, turn, resize, add or remove any part. Keep the face exactly as it
-is in image 1 (eyes, brows, mouth, hair). Plain pure white background, no ground, no shadows, no text, no border, no
-extra objects. Square image.
+with the same outline as in image 1: do not move, turn, resize, add or remove any part. The side views stay pure
+side views, the back view shows the back. Plain pure white background, no ground, no shadows, no text, no border,
+no extra objects. Square image.
 
-Use your image generation tool with both images as references and save the result as {{name}} in the current folder.
+Use your image generation tool with both images as references and save the result as {name} in the current folder.
 Reply only with the file path."""
 
-PARTS = {"ranger_archer": "chibi archer character (body, head in a hood, quiver; no arms)",
-         "ranger_archer_arms": "pair of archer arms holding a drawn bow and arrow (only the arms and the bow)"}
 
-
-def blender(*a):
-    r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "pet_project.py"), "--", *a],
+def paint_pass(fbx, work, strength, noarms, reuse):
+    """one run of the pets' steps on a packed mesh; returns the painted atlas"""
+    os.makedirs(work, exist_ok=True)
+    r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "archer_project.py"), "--", "pack", fbx, work,
+                        *(["noarms"] if noarms else [])], capture_output=True, text=True, encoding="utf-8", errors="ignore")
+    if "PACKED" not in r.stdout:
+        raise SystemExit("pack failed: " + r.stdout[-1500:])
+    pack = os.path.join(work, "archer_pack.fbx")
+    base = os.path.join(work, "archer_pack_base.png")
+    keep = os.path.join(work, "archer_pack_keep.png")
+    views = os.path.join(work, "archer_views.png")
+    painted = os.path.join(work, "archer_painted.png")
+    if not reuse:
+        shown = pet_paint.no_face(base, keep, os.path.join(work, "archer_noface.png"))
+        pet_paint.blender("views", pack, shown, views)
+        if os.path.exists(painted):
+            os.remove(painted)
+        codex_paint(PROMPT.format(name=os.path.basename(painted)), os.path.basename(painted), work, [views, TARGET])
+    aligned, bad = pet_paint.align(views, painted)[:2]   # (it also returns the lowest overlap now)
+    atlas = os.path.join(work, "archer_pack_painted_texture.png")
+    pet_paint.blender("project", pack, base, aligned, atlas, strength, "noface", *(["skip=" + ",".join(bad)] if bad else []))
+    r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "archer_project.py"), "--", "pad", pack, atlas],
                        capture_output=True, text=True, encoding="utf-8", errors="ignore")
-    lines = [ln for ln in r.stdout.splitlines() if ln.startswith(("SHEET", "PROJECTED")) or "Traceback" in ln]
-    print("\n".join(lines), flush=True)
-    if not any(ln.startswith(("SHEET", "PROJECTED")) for ln in lines):
-        raise SystemExit("Blender step failed:\n" + r.stdout[-1500:])
+    padded = [ln for ln in r.stdout.splitlines() if ln.startswith("PADDED")]
+    print(padded[0] if padded else "pad failed: " + r.stdout[-800:])
+    if bad:
+        print("skipped views:", ", ".join(bad))
+    return atlas
 
 
 def main():
-    folder = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith("--")), os.path.join(ROOT, "tools", "archer")))
-    for name, what in PARTS.items():
-        fbx = os.path.join(folder, name + ".fbx")
-        tex, base = fbx[:-4] + "_paint.png", fbx[:-4] + "_base.png"
-        views, painted = fbx[:-4] + "_views.png", fbx[:-4] + "_painted.png"
-        if "--reuse" not in sys.argv or not os.path.exists(base):
-            shutil.copy(tex, base)
-        if "--reuse" not in sys.argv:
-            blender("views", fbx, base, views)
-            codex_paint(PROMPT.format(what=what), os.path.basename(painted), folder, [views, PIC])
-        im = Image.open(painted).convert("RGB")
-        if im.size != (1024, 1024):
-            im.resize((1024, 1024), Image.LANCZOS).save(painted)
-        fitted = align(views, painted)
-        blender("project", fbx, base, fitted, tex, "1.0")
+    build, out = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
+    strength = sys.argv[sys.argv.index("--strength") + 1] if "--strength" in sys.argv else "1.0"
+    reuse = "--reuse" in sys.argv
+    fbx = os.path.join(build, NAME + ".fbx")
+    # two runs: the whole archer (the arms take their paint from it), then head and body alone, so the torso's sides
+    # that the arms hide in the side views are painted too (in one run they got only the painter's tone: a flat band)
+    whole = paint_pass(fbx, os.path.join(out, "paint"), strength, False, reuse)
+    alone = paint_pass(fbx, os.path.join(out, "paint_noarms"), strength, True, reuse)
+    for part, (cx, cy, size) in CELLS.items():
+        a = Image.open(alone if part in ("head", "body") else whole).convert("RGB")
+        c = a.width // 2
+        a.crop((cx * c, cy * c, (cx + 1) * c, (cy + 1) * c)).resize((size, size), Image.LANCZOS).save(
+            os.path.join(out, f"{NAME}_{part}_paint.png"))
+    for f in (NAME + ".fbx", f"{NAME}_bow_paint.png", f"{NAME}_quiver_paint.png", "gates_build.json"):
+        shutil.copy(os.path.join(build, f), os.path.join(out, f))
+    print("PAINTED", out)
 
 
 if __name__ == "__main__":

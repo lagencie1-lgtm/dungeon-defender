@@ -18,3 +18,8 @@
   IoU 69.6%  width profile off 18.3%  region colour dE 17.9  (pixel dE 68.1)  detail 14.2% vs picture 13.5% (ratio 1.05)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
 - round 10: eyes with whites, brown iris, one small shine; new repaint of the new shape (body; arms if the painter accepts)
   IoU 69.6%  width profile off 18.3%  region colour dE 19.6  (pixel dE 64.9)  detail 6.6% vs picture 13.5% (ratio 0.49)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+
+- 2026-11-23 21:36  painterly (pets' detail measure) 69%  rich 90%  Baby Dragon 71%  band +-20: PASS  tools\archer3\ranger_archer.fbx  before this pass (lofted v1, archer3)
+- 2026-11-23 21:36  painterly (pets' detail measure) 87%  rich 100%  Baby Dragon 71%  band +-20: PASS  tools\archer5\ranger_archer.fbx  geometry pass, plain bake (archer5)
+- 2026-11-23 21:37  painterly (pets' detail measure) 87%  rich 100%  Baby Dragon 71%  band +-20: PASS  |  stroke texture 12.42 (painting 14.05, Baby Dragon 9.74)  tools\archer5\ranger_archer.fbx  geometry pass, plain bake (archer5)
+- 2026-11-23 22:25  painterly (pets' detail measure) 103%  rich 102%  Baby Dragon 71%  band +-20: FAIL  |  stroke texture 13.71 (painting 14.05, Baby Dragon 9.74)  tools\archer6\ranger_archer.fbx  painterly pass (pets' workflow, two runs), archer6

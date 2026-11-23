@@ -148,7 +148,7 @@ end
 -------------------------------------------------------------------------------
 -- the pet model following the hero
 -------------------------------------------------------------------------------
-local function buildModel(pet, skin)
+local function buildModel(pet, skin, withTag)
 	local info = Config.Pets[pet.kind]
 	local color = skin and skin.Primary or info.Color
 	local scale = pet.evolved and 1.6 or 1
@@ -235,8 +235,12 @@ local function buildModel(pet, skin)
 		sparkles.SparkleColor = skin and skin.Accent or info.Color
 		sparkles.Parent = body
 	end
+	if withTag == false then
+		return model, offsets -- helpers of the team carry no name tag: three labels round one hero is clutter
+	end
+	-- (sized in studs, not pixels: from the far battle camera on a phone a pixel-sized tag was bigger than the pet)
 	local tag = Instance.new("BillboardGui")
-	tag.Size = UDim2.fromOffset(140, 22)
+	tag.Size = UDim2.fromScale(5, 0.8)
 	tag.StudsOffset = Vector3.new(0, 1.8 * scale, 0)
 	tag.MaxDistance = 60
 	tag.Parent = body
@@ -253,7 +257,7 @@ local function buildModel(pet, skin)
 end
 
 local function placeFollower(player, pet, slot)
-	local model, offsets = buildModel(pet, StoreService.SkinFor(player, "Pet"))
+	local model, offsets = buildModel(pet, StoreService.SkinFor(player, "Pet"), slot == 1)
 	-- The server only places the pet once, as one welded piece. Every player's own device then moves it
 	-- (src/client/PetFollow.client.luau): motion sent from the server stutters on phones.
 	local body = model.PrimaryPart

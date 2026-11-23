@@ -96,14 +96,14 @@ local function build(player)
 	end
 	if rank.Ring then
 		for _ = 1, FEET_BEADS do
-			local p = bead(color, 0.22, shape)
+			local p = bead(color, 0.28, shape)
 			table.insert(look.feet, p)
 			table.insert(look.things, p)
 		end
 	end
 	if rank.Halo then
 		for _ = 1, HALO_BEADS do
-			local p = bead(accent, 0.16, shape)
+			local p = bead(accent, 0.2, shape)
 			table.insert(look.halo, p)
 			table.insert(look.things, p)
 		end

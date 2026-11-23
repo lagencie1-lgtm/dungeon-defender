@@ -221,6 +221,8 @@ local function buildIndex()
 	if old then
 		old:Destroy()
 	end
+	-- (lists sort by name unless told otherwise: the Index is card 0, above the eggs)
+	eggColumn:FindFirstChildOfClass("UIListLayout").SortOrder = Enum.SortOrder.LayoutOrder
 	local kinds = {}
 	for kind in Config.Pets do
 		table.insert(kinds, kind)
@@ -277,6 +279,7 @@ end
 local function refresh()
 	goldLabel.Text = (player:GetAttribute("Gold") or 0) .. " gold"
 	buildIndex()
+	list:FindFirstChildOfClass("UIListLayout").SortOrder = Enum.SortOrder.LayoutOrder
 	for _, child in list:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -311,22 +314,22 @@ local function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 108), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
 		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
 		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
-		label({ Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(76, 10),
+		label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 8),
 			Text = info.Name .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
 			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
-		label({ Size = UDim2.fromOffset(170, 20), Position = UDim2.fromOffset(76, 40),
+		label({ Size = UDim2.fromOffset(170, 22), Position = UDim2.fromOffset(76, 38),
 			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet, place ~= nil and place > 1), Font = Enum.Font.Gotham,
 			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
-			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 68),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 72),
 				Text = (place == 1 and "In a fight · " or "As lead · ") .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham,
 				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
@@ -335,12 +338,12 @@ local function refresh()
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
-			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 86),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 94),
 				Text = string.format("Fetches %s%s · %d per trip%s", carry.Gems and "gems and " or "", best, carry.Carry,
 					carry.Pass and " · 2x speed, whole map" or ""),
 				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
-		local equip = button({ Size = UDim2.fromOffset(70, 40), Position = UDim2.new(1, -164, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		local equip = button({ Size = UDim2.fromOffset(70, 44), Position = UDim2.new(1, -164, 0, 36), AnchorPoint = Vector2.new(0, 0.5),
 			Text = place == 1 and "Lead" or place and "Lead it" or "Equip",
 			BackgroundColor3 = place == 1 and Color3.fromRGB(60, 60, 70) or place and Color3.fromRGB(150, 110, 40)
 				or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
@@ -351,7 +354,7 @@ local function refresh()
 			end
 		end)
 		local maxed = (pet.level or 1) >= Config.PetMaxLevel and not pet.evolved
-		local other = button({ Size = UDim2.fromOffset(84, 40), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		local other = button({ Size = UDim2.fromOffset(84, 44), Position = UDim2.new(1, -8, 0, 36), AnchorPoint = Vector2.new(1, 0.5),
 			Text = maxed and "Evolve" or place and "Rest" or "Release", ZIndex = 33,
 			BackgroundColor3 = maxed and Color3.fromRGB(150, 110, 40) or place and Color3.fromRGB(60, 60, 70)
 				or Color3.fromRGB(110, 60, 60), Parent = row })

@@ -66,7 +66,8 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 		player.Character:PivotTo(CFrame.lookAt(spot + Vector3.new(0, 5, 0), a:Lerp(b, 0.5) + Vector3.new(0, 5, 0)))
 		State.AddGold(3000)
 		local placed = 0
-		for j = 1, #pts - 1 do
+		-- defenders only on the last stretch, so the wave walks past the hero and the lead pet has something to pounce on
+		for j = #pts - 1, #pts - 1 do
 			local p, q = pts[j], pts[j + 1]
 			local d = (q - p).Unit
 			local s = Vector3.new(-d.Z, 0, d.X)

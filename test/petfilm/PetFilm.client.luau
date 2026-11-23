@@ -85,15 +85,33 @@ mark("loot")
 ask("Loot")
 task.wait(9)
 
--- 4 a Mythic-rank hero
+-- 4 a Mythic-rank hero: first from the battle camera, then close from the front (before and after)
+local function closeUp(seconds)
+	local camera = workspace.CurrentCamera
+	local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not r then
+		return
+	end
+	camera.CameraType = Enum.CameraType.Scriptable
+	local at = r.Position + Vector3.new(0, 1.2, 0)
+	camera.CFrame = CFrame.lookAt(at + r.CFrame.LookVector * 11 + r.CFrame.RightVector * 3 + Vector3.new(0, 2.5, 0), at)
+	task.wait(seconds)
+	camera.CameraType = Enum.CameraType.Custom
+end
+mark("hero plain close")
+closeUp(2.5)
 mark("might")
 ask("Might", 6)
-task.wait(5)
+task.wait(3)
+mark("might close")
+closeUp(3.5)
 
 -- 5 a Might style
 mark("style")
 ask("Style", "AuraVoid")
-task.wait(4)
+task.wait(2)
+mark("style close")
+closeUp(3)
 
 -- 6 the pets screen
 mark("panel")

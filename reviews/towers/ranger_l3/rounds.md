@@ -31,3 +31,6 @@
 - round 11: big archers at the rail between the roof posts (one post behind the banner), threshold slab, softer grass; repaint, sharpen, grade
   IoU 91.0%  width profile off 12.2%  region colour dE 7.6  (pixel dE 52.8)  detail 25.4% vs picture 24.6% (ratio 1.03)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 3 (L 49/49)  lookout 5 (L 54/52)  wall 4 (L 61/61)  footing 3 (L 64/62)
+- round 12: chunky kit (fewer, bigger, thicker parts, soft bevels), roof/props in their own textures, the archer now its own model (not in this render); repaint, sharpen, grade
+  IoU 90.8%  width profile off 14.5%  region colour dE 9.1  (pixel dE 55.5)  detail 24.2% vs picture 24.6% (ratio 0.98)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/48)  lookout 4 (L 54/52)  wall 3 (L 61/62)  footing 2 (L 64/66)

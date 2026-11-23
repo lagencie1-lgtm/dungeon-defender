@@ -38,8 +38,13 @@ for o in meshes:
         if not o.data.uv_layers:   # (no UVs: Workbench would skip the image)
             o.data.uv_layers.new()
     elif os.path.exists(paint):
+        # each painted part wears its own texture: Body -> <model>_paint.png, Skin_roof -> <model>_paint_roof.png,
+        # picture bodies' Head -> <model>_head_paint.png
+        base = o.name.split(".")[0]
+        own = [src[:-4] + "_paint_" + base[5:] + ".png"] if base.startswith("Skin_") else []
+        own.append(src[:-4] + "_" + base.lower() + "_paint.png")
         tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
-        tex.image = bpy.data.images.load(paint)
+        tex.image = bpy.data.images.load(next((p for p in own if os.path.exists(p)), paint))
         mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
     if src.lower().endswith(".fbx"):
         o.data.materials.clear()

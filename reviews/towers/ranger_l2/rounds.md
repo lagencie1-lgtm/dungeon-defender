@@ -31,3 +31,6 @@
 - round 10: refit with the new archer and banner (90.2%: narrower bell roof); repaint, sharpen, grade
   IoU 89.9%  width profile off 9.0%  region colour dE 8.9  (pixel dE 44.9)  detail 23.2% vs picture 21.3% (ratio 1.09)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 5 (L 45/47)  lookout 2 (L 40/40)  wall 2 (L 58/58)  footing 5 (L 63/65)
+- round 11: chunky kit (fewer, bigger, thicker parts, soft bevels), roof/props in their own textures, the archer now its own model (not in this render); repaint, sharpen, grade
+  IoU 88.8%  width profile off 12.0%  region colour dE 10.5  (pixel dE 46.8)  detail 22.4% vs picture 21.3% (ratio 1.05)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 8 (L 45/48)  lookout 3 (L 40/39)  wall 1 (L 58/58)  footing 5 (L 63/67)

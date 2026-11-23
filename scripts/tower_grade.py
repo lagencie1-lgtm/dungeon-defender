@@ -42,6 +42,12 @@ def main():
     paint = fbx[:-4] + "_paint.png"
     keep = fbx[:-4] + "_ungraded.png"
     shutil.copy(paint, keep)
+    import glob
+    for skin in glob.glob(fbx[:-4] + "_paint_*.png"):   # the other parts (tower kit atlases), sharpened the same way
+        other = fbx[:-4] + "_ungraded_" + skin[len(fbx[:-4] + "_paint_"):]
+        from PIL import ImageFilter as _F
+        Image.open(skin).convert("RGB").filter(_F.UnsharpMask(radius=2, percent=55, threshold=2)).save(other)
+        shutil.copy(other, skin)
     # crisp painted edges like the picture (the projection softens them a little): a light unsharp mask first, so
     # the grade below measures the sharpened paint
     from PIL import ImageFilter

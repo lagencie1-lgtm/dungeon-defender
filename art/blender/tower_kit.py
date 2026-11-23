@@ -803,3 +803,33 @@ banner = _in("props", banner)
 swag = _in("props", swag)
 ivy = _in("props", ivy)
 wavy_flag = _in("props", wavy_flag)
+
+
+def archer_anchor(x, y, z, face, height=3.1):
+    """where an archer stands (the archer is its own model now, ranger_archer, placed by the game): an empty at his
+    feet, turned to `face` degrees (his front). anchors_report() prints them for TowerService and removes them."""
+    e = bpy.data.objects.new("ArcherAnchor", None)
+    e.location = (x, y, z)
+    e.rotation_euler = (0, 0, rad(face))
+    e["height"] = height
+    bpy.context.scene.collection.objects.link(e)
+    bpy.context.view_layer.update()   # (or its matrix stays the identity until the next update)
+    return e
+
+
+def anchors_report():
+    """ARCHER lines in the game's space: position (-x, z, y) and the yaw that turns the archer's front (-Z) there"""
+    lines = []
+    bpy.context.view_layer.update()
+    # the game stands a model by the bottom centre of its box: give the feet relative to that point
+    pts = [o.matrix_world @ Vector(c) for o in bpy.context.scene.objects if o.type == "MESH" for c in o.bound_box]
+    base = Vector(((min(p.x for p in pts) + max(p.x for p in pts)) / 2, (min(p.y for p in pts) + max(p.y for p in pts)) / 2,
+                   min(p.z for p in pts)))
+    for e in [o for o in bpy.context.scene.objects if o.name.startswith("ArcherAnchor")]:
+        p = e.matrix_world.translation - base
+        a = e.matrix_world.to_euler().z
+        yaw = math.degrees(math.atan2(math.cos(a), -math.sin(a)))
+        lines.append("ARCHER Vector3.new(%.2f, %.2f, %.2f) %.0f %.2f" % (-p.x, p.z, p.y, yaw, e["height"]))
+        bpy.data.objects.remove(e, do_unlink=True)
+    for ln in lines:
+        print(ln)

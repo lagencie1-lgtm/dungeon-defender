@@ -13,3 +13,6 @@
 - round 5: same painting, lighter sharpening (detail was just over the gate)
   IoU 87.2%  width profile off 12.4%  region colour dE 9.7  (pixel dE 43.8)  detail 20.0% vs picture 15.9% (ratio 1.25)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 3 (L 43/43)  lookout 5 (L 37/39)  wall 6 (L 45/51)  footing 3 (L 63/66)
+- round 6: chunky kit (fewer, bigger, thicker parts, soft bevels), roof/props in their own textures, the archer now its own model (not in this render); repaint, sharpen, grade
+  IoU 88.4%  width profile off 11.3%  region colour dE 9.6  (pixel dE 42.5)  detail 17.0% vs picture 15.9% (ratio 1.07)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 43/42)  lookout 9 (L 37/40)  wall 4 (L 45/48)  footing 3 (L 63/64)

@@ -76,10 +76,12 @@ function ArtService.Start()
 					if part:IsA("MeshPart") then
 						local r, g, b = part.Name:match("^c_(%d+)_(%d+)_(%d+)")
 						part.Material = Enum.Material.SmoothPlastic
-						if part.Name == "Body" then
-							-- the painted model: one mesh with its baked paint texture
+						-- painted parts: "Body" wears paint_<model> (or paint_<model>_body), any other painted part its own
+						-- texture paint_<model>_<part> (tower kit "Skin_roof" -> _roof; picture bodies "ArmL" -> _arml)
+						local own = (Art.Textures or {})["paint_" .. name .. "_" .. part.Name:lower():gsub("^skin_", "")]
+						if part.Name == "Body" or (own and own ~= "") then
 							part.Color = Color3.new(1, 1, 1)
-							local paintId = (Art.Textures or {})["paint_" .. name] or ""
+							local paintId = own or (Art.Textures or {})["paint_" .. name] or ""
 							local image = paintId ~= "" and decalImage(paintId)
 						-- a fresh upload can still be processing: try again a few times rather than stay grey
 						for _ = 1, 4 do

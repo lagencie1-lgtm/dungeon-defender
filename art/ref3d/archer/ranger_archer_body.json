@@ -1,0 +1,172 @@
+{
+    "name":  "ranger_archer",
+    "sheet":  "ranger_archer_ortho.png",
+    "height":  2.4,
+    "step":  5,
+    "views":  {
+                  "front":  [
+                                254,
+                                10,
+                                698,
+                                712,
+                                222
+                            ],
+                  "side":  [
+                               881,
+                               10,
+                               1244,
+                               712,
+                               195
+                           ],
+                  "back":  [
+                               1464,
+                               10,
+                               1864,
+                               712,
+                               200
+                           ]
+              },
+    "parts":  [
+                  {
+                      "name":  "Head",
+                      "front_keep":  [
+                                         [
+                                             0,
+                                             0,
+                                             444,
+                                             340
+                                         ]
+                                     ],
+                      "front_cut":  [
+                                        [
+                                            0,
+                                            190,
+                                            112,
+                                            345
+                                        ]
+                                    ],
+                      "texture":  1024,
+                      "triangles":  1600
+                  },
+                  {
+                      "name":  "Body",
+                      "front_cut":  [
+                                        [
+                                            20,
+                                            335,
+                                            133,
+                                            565
+                                        ],
+                                        [
+                                            312,
+                                            335,
+                                            430,
+                                            565
+                                        ],
+                                        [
+                                            0,
+                                            0,
+                                            444,
+                                            328
+                                        ]
+                                    ],
+                      "texture":  1024,
+                      "triangles":  1800
+                  },
+                  {
+                      "name":  "ArmR",
+                      "front_keep":  [
+                                         [
+                                             20,
+                                             335,
+                                             149,
+                                             565
+                                         ]
+                                     ],
+                      "side_box":  [
+                                       130,
+                                       335,
+                                       245,
+                                       565
+                                   ],
+                      "texture":  512,
+                      "triangles":  500
+                  },
+                  {
+                      "name":  "ArmL",
+                      "front_keep":  [
+                                         [
+                                             297,
+                                             335,
+                                             430,
+                                             565
+                                         ]
+                                     ],
+                      "side_box":  [
+                                       130,
+                                       335,
+                                       245,
+                                       565
+                                   ],
+                      "texture":  512,
+                      "triangles":  500
+                  },
+                  {
+                      "name":  "Quiver",
+                      "flat":  {
+                                   "sheet":  "ranger_archer_props.png",
+                                   "box":  [
+                                               1387,
+                                               158,
+                                               1671,
+                                               771
+                                           ],
+                                   "height":  0.95,
+                                   "thickness":  0.22
+                               },
+                      "place":  {
+                                    "location":  [
+                                                     -0.08,
+                                                     0.4,
+                                                     0.5
+                                                 ],
+                                    "rotation":  [
+                                                     -6,
+                                                     -32,
+                                                     0
+                                                 ]
+                                },
+                      "texture":  512
+                  },
+                  {
+                      "name":  "Bow",
+                      "flat":  {
+                                   "sheet":  "ranger_archer_props.png",
+                                   "box":  [
+                                               138,
+                                               39,
+                                               327,
+                                               847
+                                           ],
+                                   "height":  1.5,
+                                   "thickness":  0.07,
+                                   "mirror":  true
+                               },
+                      "place":  {
+                                    "location":  [
+                                                     0.5,
+                                                     -0.05,
+                                                     -0.05
+                                                 ],
+                                    "rotation":  [
+                                                     0,
+                                                     0,
+                                                     0
+                                                 ]
+                                },
+                      "texture":  512
+                  }
+              ],
+    "check_skip":  "Bow",
+    "test_view":  "ranger_archer_34.png"
+}

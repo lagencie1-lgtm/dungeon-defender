@@ -32,7 +32,9 @@ def main():
     run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"])
     out = run([sys.executable, os.path.join(ROOT, "scripts", "match_score.py"), picture, render, stem + "_match.png"]).splitlines()
     around = stem + "_around.png"
-    run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "tripo_render.py"), "--", fbx, around, "300"])
+    for k, az in enumerate((-75, 15, 105, -165)):
+        run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "parts_render.py"), "--", fbx, around[:-4] + f"_{k}.png",
+             str(az), "15", "300", "persp", "lit"])
     match = Image.open(stem + "_match.png")
     sides = [Image.open(around[:-4] + f"_{k}.png").convert("RGBA") for k in range(4) if os.path.exists(around[:-4] + f"_{k}.png")]
     w = max(match.size[0], 300 * len(sides))

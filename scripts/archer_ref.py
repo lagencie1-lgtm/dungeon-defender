@@ -25,6 +25,20 @@ JOBS = {
              "side at the same size, standing in a relaxed bow-ready pose (bow held in the left hand, lowered, no arrow "
              "drawn, so the arms read clearly): left to right front, three-quarter front-left, side (facing left), "
              "back. Plain pure white background, no text, no ground shadow. Wide image."),
+    "ortho": ("ranger_archer_ortho.png", "Paint a strict orthographic character model sheet of " + LOOK.replace(", a wooden bow drawn with an arrow nocked", "") +
+              " Three full-body views side by side at exactly the same size and height, feet on the same line, head tops on the "
+              "same line: FRONT view (looking straight at him), SIDE view (his left side, facing the right edge of the "
+              "image), BACK view. Neutral standing pose, legs slightly apart, both arms hanging a little away from the body "
+              "with empty hands in loose fists, so the arms do not cover the body. No bow in the hands. Flat orthographic "
+              "views, no perspective, no turning of the head. Plain pure white background, no text, no ground shadow. Wide image."),
+    "q34": ("ranger_archer_34.png", "Image 2 is the model sheet of this character (front, side, back). Paint the same "
+            "character in exactly the same neutral standing pose as image 2 (arms hanging a little away from the body, "
+            "the wooden longbow held lowered in his left hand, the quiver on his back), seen in three-quarter view from "
+            "the front-left (45 degrees) at eye level, orthographic, full body. Same proportions, colours and painterly "
+            "style as image 2. Plain pure white background, no text, no ground shadow. Square image."),
+    "props": ("ranger_archer_props.png", "Paint a flat prop sheet for " + LOOK + " Left: his wooden longbow with its "
+              "string, seen flat from the side, standing upright. Right: his brown leather quiver with white-fletched arrows, "
+              "seen flat from the front. Same painterly style. Plain pure white background, no text. Wide image."),
     "face": ("ranger_archer_face.png", "Paint a close-up of the head and shoulders of " + LOOK + " Seen from the front, "
              "a little from the left. Plain pure white background, no text. Square image."),
     "main": ("ranger_archer.png", "Paint " + LOOK + " Full body, seen in three-quarter view from the front-left and a "
@@ -39,7 +53,8 @@ def main():
         name, prompt = JOBS[key]
         full = (prompt + " Use your image generation tool with image 1 as the style reference and save the result as "
                 "{name} in the current folder. Reply only with the file path.")
-        codex_paint(full, name, OUT, [STYLE])
+        extra = [os.path.join(OUT, "ranger_archer_ortho.png")] if key == "q34" else []
+        codex_paint(full, name, OUT, [STYLE] + extra)
 
 
 if __name__ == "__main__":

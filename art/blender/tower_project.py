@@ -130,6 +130,27 @@ def texels(o, TS):
     return pos, nor, used
 
 
+def fill_gaps(img, used, rounds=24):
+    """Texels between the texture's islands are seen from far away (mip-maps average them in): the bake leaves them
+    black, which darkened the whole tower on the phone (level 2, 2026-11-23). Grow the islands' colours outwards into
+    the gaps, and give what is left the average colour."""
+    out = img.copy()
+    have = used.copy()
+    for _ in range(rounds):
+        acc = np.zeros_like(out[..., :3])
+        cnt = np.zeros(have.shape)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = np.roll(np.roll(have, dy, 0), dx, 1)
+            acc += np.roll(np.roll(out[..., :3], dy, 0), dx, 1) * sh[..., None]
+            cnt += sh
+        grow = (~have) & (cnt > 0)
+        out[..., :3][grow] = acc[grow] / cnt[grow][:, None]
+        have = have | grow
+    if (~have).any() and used.any():
+        out[..., :3][~have] = img[..., :3][used].mean(axis=0)
+    return out
+
+
 def to_view(points, az):
     d, r, u = basis(az)
     rel = points - center
@@ -203,7 +224,7 @@ elif mode == "grade":
         g = gains[k0] * (1 - w) + gains[k1] * w
         graded = base.copy()
         graded[..., :3] = np.clip(base[..., :3] * g, 0, 1)
-        save_png(skin_path(out, o), graded)
+        save_png(skin_path(out, o), fill_gaps(graded, used))
         print("GRADED", skin_path(out, o))
 
 elif mode == "project":
@@ -257,5 +278,5 @@ elif mode == "project":
         mix = cover[..., None] * strength
         result = base * (1 - mix) + (total / np.maximum(weight, 1e-6)[..., None]) * mix
         result = np.where(used[..., None], result, base)
-        save_png(skin_path(out, o), np.clip(result, 0, 1))
+        save_png(skin_path(out, o), np.clip(fill_gaps(result, used), 0, 1))
         print("PROJECTED", skin_path(out, o), "covered %.0f%%" % (100 * (mix[..., 0][used] > 0.5).mean()))

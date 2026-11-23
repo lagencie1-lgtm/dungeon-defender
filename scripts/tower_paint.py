@@ -111,6 +111,8 @@ def main():
     front_painted = stem + "_front_painted.png"
     if "--reuse" not in sys.argv or not os.path.exists(base):
         shutil.copy(tex, base)      # a fresh build wrote a fresh plain texture: that is the base
+        for skin in glob.glob(stem + "_paint_*.png"):   # the other parts' textures (tower kit atlases)
+            shutil.copy(skin, stem + "_base_" + skin[len(stem + "_paint_"):])
     if "--reuse" not in sys.argv:
         blender("views", fbx, base, views)
         folder = os.path.dirname(fbx)

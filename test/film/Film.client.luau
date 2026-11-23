@@ -133,6 +133,17 @@ if ranger then
 	task.wait(1.6)
 	closeUp("ranger level 3")
 	task.wait(1.6)
+	-- the archers at work (2026-11-23): a wave starts while the level 3 Ranger stands, the camera stays on it
+	Remotes.StartWave:FireServer()
+	mark("ranger shooting")
+	-- (the run camera takes over at a wave start: hold this shot after it, every frame)
+	local held = CFrame.lookAt(base + Vector3.new(-9, 13, -13), base + Vector3.new(0, 10, 0))
+	game:GetService("RunService"):BindToRenderStep("FilmHold", Enum.RenderPriority.Last.Value + 5, function()
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		workspace.CurrentCamera.CFrame = held
+	end)
+	task.wait(12)
+	game:GetService("RunService"):UnbindFromRenderStep("FilmHold")
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	mark("sell ranger")
 	Remotes.SellTower:InvokeServer(ranger)

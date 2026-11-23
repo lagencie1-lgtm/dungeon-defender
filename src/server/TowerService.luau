@@ -126,9 +126,16 @@ local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector
 -- from the Blender builds (art/blender/tower_ranger_detail.py prints HEIGHT and MUZZLE, the archer's arrow tip). Towers without a level set keep one look.
 local LEVEL_LOOKS = {
 	Ranger = {
-		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(-2.02, 6.10, -2.60) },
-		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-3.26, 8.18, -2.61) },
-		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(-4.91, 12.52, -3.29) },
+		-- Archers: where the archer (its own model, ranger_archer) stands: feet relative to the look's bottom centre,
+		-- the yaw his front looks to, his height (the paintings make him about a third of the tower on level 1: oversized so he reads on a phone, and as
+		-- tall as the lookout allows under the roof)
+		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
+			Archers = { { Vector3.new(0.51, 4.18, -1.13), 4, 3.4 } } },
+		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-0.68, 8.0, -2.2),
+			Archers = { { Vector3.new(-0.68, 6.23, -1.64), 30, 3.6 } } },
+		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(0.54, 12.3, -3.9),
+			-- two archers, not mirror copies: different turns, and the game gives them different breathing
+			Archers = { { Vector3.new(0.54, 10.49, -3.35), 11, 3.6 }, { Vector3.new(-2.15, 10.49, -2.63), 39, 3.5 } } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
@@ -142,7 +149,41 @@ local function lookFor(towerType, level)
 	return MODEL_NAME[towerType], MODEL_HEIGHT[towerType], MODEL_MUZZLE[towerType]
 end
 
-local function useModel(model, towerType, at, drop, level)
+local function levelEntry(towerType, level)
+	local set = LEVEL_LOOKS[towerType]
+	return set and set[math.clamp(level or 1, 1, #set)]
+end
+
+-- the archers of a look (the Ranger): their own painted model, standing on the look's floor, each with its own
+-- breathing phase; the client (ArcherLife) turns them, draws and releases
+local function placeArchers(look, entry, at, scale)
+	local template = ArtService.Model("ranger_archer")
+	if not template or not entry or not entry.Archers then
+		return
+	end
+	for i, a in entry.Archers do
+		local archer = template:Clone()
+		archer.Name = "Archer"
+		local _, size = archer:GetBoundingBox()
+		archer:ScaleTo(archer:GetScale() * a[3] * scale / size.Y)
+		local box, newSize = archer:GetBoundingBox()
+		local feet = CFrame.new(box.Position - Vector3.new(0, newSize.Y / 2, 0))
+		local spot = CFrame.new(at.Position + a[1] * scale) * CFrame.Angles(0, math.rad(a[2]), 0)
+		archer:PivotTo(spot * feet:Inverse() * archer:GetPivot())
+		for _, part in archer:GetChildren() do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+				part.CanCollide = false
+				part.CanQuery = false
+			end
+		end
+		archer:SetAttribute("Phase", i * 1.7)
+		archer:SetAttribute("Yaw", a[2])
+		archer.Parent = look
+	end
+end
+
+local function useModel(model, towerType, at, drop, level, noArchers)
 	local name, height = lookFor(towerType, level)
 	local template = name and ArtService.Model(name)
 	if not template or not height then
@@ -161,6 +202,9 @@ local function useModel(model, towerType, at, drop, level)
 		part.CanCollide = true
 	end
 	look.Parent = model
+	if not noArchers then
+		placeArchers(look, levelEntry(towerType, level), at, 1) -- (the looks are built at their game height: anchors are studs)
+	end
 	-- the stone plinth keeps upgrades, labels and effects working; on a gentle slope it reaches down to the
 	-- lowest ground under the footprint (drop studs below the stand), so no edge ever floats
 	drop = drop or 0
@@ -178,7 +222,9 @@ local function setLevelLabel(model, level)
 		gui = Instance.new("BillboardGui")
 		gui.Name = "LevelLabel"
 		gui.Size = UDim2.fromOffset(112, 20)
-		gui.StudsOffsetWorldSpace = Vector3.new(0, (MODEL_HEIGHT[model:GetAttribute("TowerType")] or 9) + 1, 0)
+		local _, lookHeight = lookFor(model:GetAttribute("TowerType"), level)
+		-- clear of the top (the level 3 gem sat under the text): 2.4 studs above the look's own height
+		gui.StudsOffsetWorldSpace = Vector3.new(0, (lookHeight or MODEL_HEIGHT[model:GetAttribute("TowerType")] or 9) + 2.4, 0)
 		gui.MaxDistance = 26 -- only up close: from the run camera the names piled up under the wave bar
 		gui.Adornee = model.PrimaryPart
 		gui.Parent = model
@@ -353,14 +399,14 @@ function TowerService.Upgrade(_player, model)
 		-- a little overshoot), with a small dust ring; no ceremony
 		oldLook:Destroy()
 		local at = CFrame.new(t.position)
-		useModel(model, t.type, at, 0, t.level)
+		useModel(model, t.type, at, 0, t.level, true) -- (the archers step up after the settle, so they never stretch)
 		local look = model:FindFirstChild("Look")
 		if muzzle then
 			t.muzzle = t.position + muzzle
 		end
 		local label = model:FindFirstChild("LevelLabel")
 		if label then
-			label.StudsOffsetWorldSpace = Vector3.new(0, height + 1, 0)
+			label.StudsOffsetWorldSpace = Vector3.new(0, height + 2.4, 0)
 		end
 		local volume = model:FindFirstChild("SelectionVolume")
 		if volume then
@@ -373,7 +419,8 @@ function TowerService.Upgrade(_player, model)
 			local connection
 			connection = RunService.Heartbeat:Connect(function()
 				local s = os.clock() - started
-				if not look.Parent or s > 0.45 then
+				local done = not look.Parent or s > 0.45
+				if done then
 					connection:Disconnect()
 					s = 10
 				end
@@ -381,6 +428,9 @@ function TowerService.Upgrade(_player, model)
 				look:ScaleTo(full * (1 - 0.1 * math.exp(-9 * s) * math.cos(14 * s)))
 				local box, size = look:GetBoundingBox()
 				look:PivotTo(look:GetPivot() + (t.position - (box.Position - Vector3.new(0, size.Y / 2, 0))))
+				if done and look.Parent then
+					placeArchers(look, levelEntry(t.type, t.level), at, 1)
+				end
 			end)
 		end
 		Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
@@ -542,7 +592,7 @@ local function runTurrets(now)
 	end
 end
 
-local function shoot(t, now)
+local function shoot(t, now, model)
 	if now < t.nextShot then
 		return
 	end
@@ -557,7 +607,22 @@ local function shoot(t, now)
 
 	if t.type == "Ranger" then
 		faceTarget(t, first.position)
-		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
+		-- the archers turn to the target, draw and release (client: ArcherLife); the arrow leaves the first one's bow
+		local look = model and model:FindFirstChild("Look")
+		local from = t.muzzle
+		for _, archer in look and look:GetChildren() or {} do
+			if archer.Name == "Archer" then
+				archer:SetAttribute("AimX", hitAt.X)
+				archer:SetAttribute("AimZ", hitAt.Z)
+				archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
+				if from == t.muzzle then
+					local box, size = archer:GetBoundingBox()
+					local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
+					from = box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero)
+				end
+			end
+		end
+		Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
 		EnemyService.Damage(first, stats.Damage)
 	elseif t.type == "FlameCannon" then
 		Effects.Kick(t.kicker, 0.5)
@@ -639,7 +704,7 @@ function TowerService.Start()
 		runTurrets(now)
 		for model, t in towers do
 			if model.Parent then
-				shoot(t, now)
+				shoot(t, now, model)
 			else
 				towers[model] = nil
 			end

@@ -49,7 +49,7 @@ S.start()
 def turn_all(deg):
     """the square level is built facing -Y, then turned so its front looks at FRONT"""
     for o in bpy.context.scene.objects:
-        if o.type == "MESH":
+        if o.type in ("MESH", "EMPTY"):
             o.matrix_world = __import__("mathutils").Matrix.Rotation(rad(deg), 4, "Z") @ o.matrix_world
 
 
@@ -101,7 +101,7 @@ if level == 1:
              across=(0, 1, 0))   # on the side the picture shows on the right, near the front, leaning out
     K.grass(P["foot_r"] - 0.1, 30, h=0.8)
     K.pebbles(P["foot_r"] + 0.25, 8)
-    K.archer(-0.2, -B + 0.9, z1 + 0.1, 1.75, face=-90 + 35)   # big in the window, like the picture
+    K.archer_anchor(-0.2, -B + 1.0, z1 + 0.05, -90 + 20, 2.9)   # the archer stands in the window (own model, placed by the game)
     # the picture sees the post from its front right (the front gable shows on the left, the box's right side shows)
     turn_all(FRONT + 90 + P["view_turn"])
 elif level == 2:
@@ -125,7 +125,7 @@ elif level == 2:
     K.ivy("IvyR", r_of, FRONT + 66, P["foot_h"] + 0.5, P["wall_top"] - 1.0, leaves=12, sway=10)
     K.grass(P["foot_r"] + 0.05, 34, h=0.8, skip=[(FRONT, 25)])
     K.pebbles(P["foot_r"] + 0.2, 7, skip=[(FRONT, 30)])
-    K.archer((P["look_r"] - 1.0) * math.cos(rad(FRONT + 4)), (P["look_r"] - 1.0) * math.sin(rad(FRONT + 4)), P["wall_top"] + 0.3, 1.85, face=FRONT + 35)
+    K.archer_anchor((P["look_r"] - 1.1) * math.cos(rad(FRONT + 4)), (P["look_r"] - 1.1) * math.sin(rad(FRONT + 4)), P["wall_top"] + 0.4, FRONT + 15, 3.1)
 else:
     # the keep: two stone storeys parted by a riveted brass band, arched windows, two side banners, a wide lookout with
     # a banner and green swags, two archers, a shingled roof with brass ribs, a brass crown and the glowing gem
@@ -161,8 +161,9 @@ else:
     for s in (-1, 1):
         a = rad(FRONT + s * 25)   # between the roof posts, either side of the banner like the picture
         # big, at the rail, leaning over it like the picture's archers (they are what makes level 3 read)
-        K.archer(math.cos(a) * (P["look_r"] - 0.95), math.sin(a) * (P["look_r"] - 0.95), z2 + 0.3, 1.9, face=FRONT + s * 12 + 25)
+        K.archer_anchor(math.cos(a) * (P["look_r"] - 1.05), math.sin(a) * (P["look_r"] - 1.05), z2 + 0.4, FRONT + s * 14 + 10, 3.1)
 
+K.anchors_report()
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

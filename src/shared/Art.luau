@@ -172,7 +172,7 @@ Art.Models = {
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
 	paint_tower_ranger_l1 = "139417951987975",
-	paint_tower_ranger_l2 = "83157167288044",
+	paint_tower_ranger_l2 = "114236331745423",
 	paint_tower_ranger_l3 = "137587952134994",
 	paint_keep_field_rock = "120975158242403",
 	paint_keep_field_bush = "111402986721543",

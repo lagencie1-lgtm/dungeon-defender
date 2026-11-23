@@ -128,14 +128,15 @@ local LEVEL_LOOKS = {
 	Ranger = {
 		-- Archers: where the archer (its own model, ranger_archer) stands: feet relative to the look's bottom centre,
 		-- the yaw his front looks to, his height (the paintings make him about a third of the tower on level 1: oversized so he reads on a phone, and as
-		-- tall as the lookout allows under the roof)
+		-- tall as the lookout allows under the roof; standing on a hidden step so chest and bow show above the rail,
+		-- as in the paintings)
 		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
-			Archers = { { Vector3.new(0.51, 4.18, -1.13), 4, 3.4 } } },
+			Archers = { { Vector3.new(0.51, 4.4, -1.13), 4, 3.2 } } },
 		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-0.68, 8.0, -2.2),
-			Archers = { { Vector3.new(-0.68, 6.23, -1.64), 30, 3.6 } } },
+			Archers = { { Vector3.new(-0.68, 6.5, -1.64), 30, 3.2 } } },
 		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(0.54, 12.3, -3.9),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
-			Archers = { { Vector3.new(0.54, 10.49, -3.35), 11, 3.6 }, { Vector3.new(-2.15, 10.49, -2.63), 39, 3.5 } } },
+			Archers = { { Vector3.new(0.54, 10.8, -3.35), 11, 3.2 }, { Vector3.new(-2.15, 10.8, -2.63), 39, 3.1 } } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS

@@ -47,11 +47,73 @@ solid = sheet.min(axis=2) < 0.9                                # the painter's w
 solid = solid & np.roll(solid, 1, 0) & np.roll(solid, -1, 0) & np.roll(solid, 1, 1) & np.roll(solid, -1, 1)
 
 
+def fill_holes(m):
+    """everything not reachable from the border is inside the figure: the white of the eyes, the cream trim and the
+    highlights punched holes in the silhouette (a face-shaped relief showed on the back of the hood)"""
+    outside = np.zeros_like(m)
+    outside[0, :] = ~m[0, :]
+    outside[-1, :] = ~m[-1, :]
+    outside[:, 0] = ~m[:, 0]
+    outside[:, -1] = ~m[:, -1]
+    while True:
+        grown = outside | (np.roll(outside, 1, 0) | np.roll(outside, -1, 0) | np.roll(outside, 1, 1) | np.roll(outside, -1, 1)) & ~m
+        if (grown == outside).all():
+            return ~outside
+        outside = grown
+
+
 def view(name):
     x0, y0, x1, y1, ax = spec["views"][name]
-    return {"x0": x0, "y0": y0, "x1": x1, "y1": y1, "axis": ax, "mask": solid[y0:y1, x0:x1].copy()}
+    return {"x0": x0, "y0": y0, "x1": x1, "y1": y1, "axis": ax, "mask": fill_holes(solid[y0:y1, x0:x1].copy())}
 
 
+def erase_parts():
+    """a separate part (quiver, bow...) is always erased from the body paintings before anything is projected or
+    measured (coordinator 2026-11-23: the back painting's own quiver plus the modelled one made two quivers): its
+    polygon (in a view's own pixels) is filled from the surrounding colours, and cut from that view's silhouette
+    where it stood out over the background."""
+    global sheet, solid
+    for vname, polys in spec.get("erase", {}).items():
+        x0, y0, x1, y1, _ = spec["views"][vname]
+        er = np.zeros((y1 - y0, x1 - x0), dtype=bool)
+        for poly in polys:   # scanline fill (Blender's Python has no PIL)
+            n = len(poly)
+            for r in range(er.shape[0]):
+                xs = []
+                for i in range(n):
+                    (ax_, ay), (bx, by) = poly[i], poly[(i + 1) % n]
+                    if (ay <= r < by) or (by <= r < ay):
+                        xs.append(ax_ + (r - ay) * (bx - ax_) / (by - ay))
+                xs.sort()
+                for a_, b_ in zip(xs[0::2], xs[1::2]):
+                    er[r, max(0, int(a_)):min(er.shape[1], int(b_) + 1)] = True
+        region = sheet[y0:y1, x0:x1]
+        known = solid[y0:y1, x0:x1] & ~er
+        out = region.copy()
+        have = known.copy()
+        for _ in range(400):
+            grow = (~have) & er
+            if not grow.any():
+                break
+            acc = np.zeros_like(out)
+            cnt = np.zeros(have.shape)
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                sh = np.roll(np.roll(have, dy, 0), dx, 1)
+                acc += np.roll(np.roll(out, dy, 0), dx, 1) * sh[..., None]
+                cnt += sh
+            step = grow & (cnt > 0)
+            if not step.any():
+                break
+            out[step] = acc[step] / cnt[step][:, None]
+            have |= step
+        sheet[y0:y1, x0:x1] = out
+        # the silhouette: what the part covered outside the body becomes background; holes inside close again
+        cut = solid[y0:y1, x0:x1] & ~er
+        solid[y0:y1, x0:x1] = fill_holes(cut | (er & fill_holes(cut)))
+        print("ERASED", vname, int(er.sum()), "pixels")
+
+
+erase_parts()
 V = {k: view(k) for k in ("front", "side", "back")}
 
 
@@ -238,6 +300,9 @@ def build(p):
     return o
 
 
+PART_WEIGHTS = {p["name"]: p.get("weights", {}) for p in spec["parts"]}
+
+
 def paint_material(o):
     """the paintings as the paint: three projections of the sheet, blended by the surface direction"""
     mat = bpy.data.materials.new(o.name + "_views")
@@ -307,9 +372,10 @@ def paint_material(o):
 
     # the front and back paintings own everything but the true sides: at 45 degrees a blend of the front face and
     # the side profile drew two faces (the side view's power is higher, so it only wins where it looks straight on)
-    wf = weight(nrm.outputs["Y"], "neg", 2.0, 4.0)
-    wb = weight(nrm.outputs["Y"], "pos", 2.0, 4.0)
-    ws = weight(nrm.outputs["X"], "abs", 10.0, 1.0)
+    wcfg = PART_WEIGHTS.get(o.name, {})
+    wf = weight(nrm.outputs["Y"], "neg", wcfg.get("front_power", 2.0), wcfg.get("front_gain", 4.0))
+    wb = weight(nrm.outputs["Y"], "pos", wcfg.get("back_power", 2.0), wcfg.get("back_gain", 4.0))
+    ws = weight(nrm.outputs["X"], "abs", wcfg.get("side_power", 10.0), wcfg.get("side_gain", 1.0))
     # mix: (front*wf + back*wb + side*ws) / (wf + wb + ws)
     total = n("ShaderNodeMath")
     total.operation = "ADD"
@@ -505,6 +571,113 @@ def build_flat(p):
     return o
 
 
+def build_tube(p):
+    """a round prop from its picture (coordinator 2026-11-23: no flat cut-outs for anything that turns): per row of the
+    picture, the widest run of the outline is the limb; its centre line and width become a tube with a round
+    section. "string": also a thin string between the two ends. "cards_above": rows above that one (feathers) become
+    two crossed painted cards instead."""
+    fl = p["flat"]
+    path = os.path.join(os.path.dirname(os.path.abspath(args[0])), fl["sheet"])
+    pim, m, w, h = load_sheet(path)
+    x0, y0, x1, y1 = fl["box"]
+    # (no hole filling here: the space between a bow and its string is not bow)
+    mask = m[y0:y1, x0:x1] if fl.get("string") else fill_holes(m[y0:y1, x0:x1])
+    hp = y1 - y0
+    sc = fl["height"] / hp
+    mir = -1 if fl.get("mirror") else 1
+    cx = (x1 - x0) / 2
+    st = max(2, int(hp / fl.get("rings", 60)))
+    card_row = fl.get("cards_above", 0)
+    bm = bmesh.new()
+    seg = 10
+    rings, tips = [], []
+    for r in range(card_row, mask.shape[0], st):
+        cols = np.where(mask[r])[0]
+        if len(cols) == 0:
+            continue
+        breaks = np.where(np.diff(cols) > 1)[0]
+        starts = np.concatenate(([cols[0]], cols[breaks + 1]))
+        ends = np.concatenate((cols[breaks], [cols[-1]]))
+        k = int(np.argmax(ends - starts))
+        a_, b_ = starts[k], ends[k]
+        rad_ = max(1.5, (b_ - a_ + 1) / 2) * sc
+        xc = mir * ((a_ + b_) / 2 - cx) * sc
+        z = (hp - r) * sc
+        ring = [bm.verts.new((xc + math.cos(2 * math.pi * i / seg) * rad_, math.sin(2 * math.pi * i / seg) * rad_ * fl.get("depth", 1.0), z)) for i in range(seg)]
+        rings.append(ring)
+        tips.append((xc, z))
+    for ra, rb in zip(rings, rings[1:]):
+        for i in range(seg):
+            j = (i + 1) % seg
+            bm.faces.new((ra[i], ra[j], rb[j], rb[i]))
+    if rings:
+        bm.faces.new(list(reversed(rings[0])))
+        bm.faces.new(rings[-1])
+    if fl.get("string") and len(tips) > 2:
+        # the string: from end to end on the far side from the bulge
+        (xa, za), (xb, zb) = tips[0], tips[-1]
+        bulge = max(tips, key=lambda t: abs(t[0] - (xa + xb) / 2))
+        off = -0.04 * (1 if bulge[0] > (xa + xb) / 2 else -1)
+        res = bmesh.ops.create_cone(bm, cap_ends=True, segments=5, radius1=0.012, radius2=0.012, depth=abs(za - zb))
+        bmesh.ops.translate(bm, vec=((xa + xb) / 2 + off, 0, (za + zb) / 2), verts=res["verts"])
+    if card_row > 0:
+        # feathers: the picture's top rows on two crossed cards
+        sub = mask[:card_row]
+        rows = np.where(sub.any(axis=1))[0]
+        colsx = np.where(sub.any(axis=0))[0]
+        if len(rows) and len(colsx):
+            xa, xb = mir * (colsx.min() - cx) * sc, mir * (colsx.max() - cx) * sc
+            za, zb = (hp - rows.max()) * sc, (hp - rows.min()) * sc
+            for k in range(2):
+                ang = math.radians(45 + 90 * k)
+                c, s_ = math.cos(ang), math.sin(ang)
+                mid = (xa + xb) / 2
+                half = (xb - xa) / 2
+                q = [bm.verts.new((mid + (-half) * c, (-half) * s_ * 0.6, za)), bm.verts.new((mid + half * c, half * s_ * 0.6, za)),
+                     bm.verts.new((mid + half * c, half * s_ * 0.6, zb)), bm.verts.new((mid + (-half) * c, (-half) * s_ * 0.6, zb))]
+                bm.faces.new(q)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    mesh = bpy.data.meshes.new(p["name"])
+    bm.to_mesh(mesh)
+    bm.free()
+    o = bpy.data.objects.new(p["name"], mesh)
+    bpy.context.scene.collection.objects.link(o)
+    for poly in mesh.polygons:
+        poly.use_smooth = True
+    # the picture straight on, as for flat props
+    mat = bpy.data.materials.new(p["name"] + "_pic")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    n, link = nt.nodes.new, nt.links.new
+    coord = n("ShaderNodeTexCoord")
+    xyz = n("ShaderNodeSeparateXYZ")
+    link(coord.outputs["Object"], xyz.inputs[0])
+    mu = n("ShaderNodeMath")
+    mu.operation = "MULTIPLY_ADD"
+    link(xyz.outputs["X"], mu.inputs[0])
+    mu.inputs[1].default_value = mir / sc / w
+    mu.inputs[2].default_value = (x0 + cx) / w
+    mv = n("ShaderNodeMath")
+    mv.operation = "MULTIPLY_ADD"
+    link(xyz.outputs["Z"], mv.inputs[0])
+    mv.inputs[1].default_value = 1 / sc / h
+    mv.inputs[2].default_value = 1 - y1 / h
+    comb = n("ShaderNodeCombineXYZ")
+    link(mu.outputs[0], comb.inputs[0])
+    link(mv.outputs[0], comb.inputs[1])
+    tex = n("ShaderNodeTexImage")
+    tex.image = pim
+    tex.extension = "EXTEND"
+    link(comb.outputs[0], tex.inputs["Vector"])
+    emit = n("ShaderNodeEmission")
+    link(tex.outputs["Color"], emit.inputs["Color"])
+    out = n("ShaderNodeOutputMaterial")
+    link(emit.outputs["Emission"], out.inputs["Surface"])
+    o.data.materials.append(mat)
+    return o
+
+
 def place(o, pl):
     from mathutils import Euler, Matrix, Vector
     o.matrix_world = Matrix.Translation(Vector(pl.get("location", (0, 0, 0)))) @ Euler([math.radians(v) for v in pl.get("rotation", (0, 0, 0))], "XYZ").to_matrix().to_4x4()
@@ -517,7 +690,7 @@ def place(o, pl):
 parts = []
 for p in spec["parts"]:
     if p.get("flat"):
-        o = build_flat(p)
+        o = build_tube(p) if p["flat"].get("tube") else build_flat(p)
         bake(o, p.get("texture", 512), keep_material=True)
         place(o, p.get("place", {}))
         parts.append(o)

@@ -18,10 +18,10 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEY = open(os.path.join(ROOT, "tools", "gemini-api-key.txt")).read().strip()
 MODELS = ["gemini-pro-latest", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest"]
-PROMPT = ("Picture A and picture B each show a game asset (a defense tower) on a plain background. Judge how closely they "
+PROMPT = ("Picture A and picture B each show a game asset (" + os.environ.get("HTD_SUBJECT", "a defense tower") + ") on a plain background. Judge how closely they "
           "show the same asset: overall shape and proportions, every part (roof, lookout, figures, banners, plants, "
           "door, footing, ornaments), colours and the painted surface detail. Ignore the background and small "
-          "differences in viewing angle or lighting. Reply as JSON: {\"score\": 1-10 (10 = the same asset, 8 = only "
+          "differences in viewing angle or lighting" + os.environ.get("HTD_EXTRA", "") + ". Reply as JSON: {\"score\": 1-10 (10 = the same asset, 8 = only "
           "small differences a player would not notice, 5 = clearly related but many differences), "
           "\"differences\": [the biggest differences, most important first, at most 6]}")
 
@@ -59,7 +59,7 @@ def main():
             for d in diffs:
                 print("  - " + d)
             return
-        except (urllib.error.HTTPError, urllib.error.URLError, KeyError, ValueError) as e:
+        except (urllib.error.HTTPError, urllib.error.URLError, KeyError, ValueError, TimeoutError, OSError) as e:
             print(f"({model} failed: {getattr(e, 'code', e)})", file=sys.stderr)
     print("GEMINI no model answered")
 

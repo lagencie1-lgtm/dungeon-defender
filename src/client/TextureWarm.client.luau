@@ -39,7 +39,7 @@ for _, name in { "Towers", "Map", "Outpost" } do
 	end)
 end
 workspace.ChildAdded:Connect(function(child)
-	if child.Name == "Map" or child.Name == "Outpost" then
+	if child.Name == "Map" or child.Name == "Outpost" or child.Name == "Towers" then
 		watch(child)
 	end
 end)

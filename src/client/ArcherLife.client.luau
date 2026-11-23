@@ -9,7 +9,11 @@ local RunService = game:GetService("RunService")
 local archers = {} -- [model] = state
 
 local function setup(archer)
-	if archers[archer] or not archer:IsA("Model") then
+	if not archer:IsA("Model") then
+		return
+	end
+	local old = archers[archer]
+	if old and old.count >= #archer:GetChildren() then
 		return
 	end
 	local pivot = archer:GetPivot()
@@ -31,6 +35,7 @@ local function setup(archer)
 	end
 	archers[archer] = {
 		model = archer,
+		count = #archer:GetChildren(),
 		pivot = pivot,
 		feet = feet,
 		height = size.Y,
@@ -56,16 +61,24 @@ local function watch(folder)
 	folder.DescendantAdded:Connect(function(d)
 		if d.Name == "Archer" then
 			task.defer(setup, d)
+		elseif d.Parent and d.Parent.Name == "Archer" and d:IsA("BasePart") then
+			task.defer(setup, d.Parent)   -- a part that arrived late: capture the archer again
 		end
 	end)
 end
 
-task.spawn(function()
-	local towers = workspace:WaitForChild("Towers", 60)
-	if towers then
-		watch(towers)
+-- (the Towers folder is made again for every map and run: watch each new one)
+local watched = {}
+local function maybeWatch(child)
+	if child.Name == "Towers" and not watched[child] then
+		watched[child] = true
+		watch(child)
 	end
-end)
+end
+for _, child in workspace:GetChildren() do
+	maybeWatch(child)
+end
+workspace.ChildAdded:Connect(maybeWatch)
 
 -- a damped spring step (stiffness k, damping c) toward `goal`
 local function spring(x, v, goal, k, c, dt)
@@ -114,14 +127,16 @@ RunService.RenderStepped:Connect(function(dt)
 		st.kick, st.kickVel = spring(st.kick, st.kickVel, 0, 220, 14, dt)
 		local breathe = math.sin(now * 1.7 + st.phase) * 0.012 * st.height
 
-		local frame = st.pivot * CFrame.new(st.feet) * CFrame.Angles(0, st.yaw, 0) * CFrame.new(-st.feet)
+		-- lean into the shot while drawn, and a small kick back at the release (readable at phone size)
+		local frame = st.pivot * CFrame.new(st.feet) * CFrame.Angles(0, st.yaw, 0)
+			* CFrame.Angles(math.rad(-7) * math.clamp(st.draw, 0, 1) + math.rad(5) * st.kick, 0, 0) * CFrame.new(-st.feet)
 		local d = math.clamp(st.draw, -0.2, 1.2)
 		for name, info in st.parts do
 			local cf
 			if name == "ArmL" or name == "Bow" then
 				-- the bow arm swings forward and up to point at the target
 				local s = st.shoulderL
-				local arm = CFrame.new(s) * CFrame.Angles(math.rad(84) * d, 0, math.rad(-6) * d) * CFrame.new(-s)
+				local arm = CFrame.new(s) * CFrame.Angles(math.rad(96) * d, 0, math.rad(-8) * d) * CFrame.new(-s)
 				cf = frame * arm * info.rel
 				if name == "Bow" then
 					-- the bow stands upright across the line of the shot

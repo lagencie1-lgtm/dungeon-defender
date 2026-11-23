@@ -122,27 +122,39 @@ if ranger then
 		workspace.CurrentCamera.CFrame = CFrame.lookAt(base + Vector3.new(-14, 9, -20), base + Vector3.new(0, 7, 0))
 		mark(tag)
 	end
+	-- the archer close-ups (2026-11-23): a camera per level at the archer's height, near enough to judge him
+	local function archerShot(tag, feet)
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		workspace.CurrentCamera.CFrame = CFrame.lookAt(base + Vector3.new(-5, feet + 2.2, -7), base + Vector3.new(0, feet + 1.7, 0))
+		mark(tag)
+	end
 	closeUp("ranger level 1")
 	task.wait(1.6)
+	archerShot("archer level 1", 4.4)
+	task.wait(1.4)
 	Remotes.UpgradeTower:InvokeServer(ranger)
 	mark("upgrade ranger")
 	task.wait(1.6)
 	closeUp("ranger level 2")
 	task.wait(1.2)
+	archerShot("archer level 2", 6.5)
+	task.wait(1.4)
 	Remotes.UpgradeTower:InvokeServer(ranger)
 	task.wait(1.6)
 	closeUp("ranger level 3")
 	task.wait(1.6)
+	archerShot("archer level 3", 10.8)
+	task.wait(1.4)
 	-- the archers at work (2026-11-23): a wave starts while the level 3 Ranger stands, the camera stays on it
 	Remotes.StartWave:FireServer()
 	mark("ranger shooting")
 	-- (the run camera takes over at a wave start: hold this shot after it, every frame)
-	local held = CFrame.lookAt(base + Vector3.new(-9, 13, -13), base + Vector3.new(0, 10, 0))
+	local held = CFrame.lookAt(base + Vector3.new(-10, 13.5, 2), base + Vector3.new(0, 12.2, -1))   -- from the side: the draw shows
 	game:GetService("RunService"):BindToRenderStep("FilmHold", Enum.RenderPriority.Last.Value + 5, function()
 		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 		workspace.CurrentCamera.CFrame = held
 	end)
-	task.wait(12)
+	task.wait(20)
 	game:GetService("RunService"):UnbindFromRenderStep("FilmHold")
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	mark("sell ranger")

@@ -1,172 +1,304 @@
 {
-    "name":  "ranger_archer",
-    "sheet":  "ranger_archer_ortho.png",
-    "height":  2.4,
-    "step":  5,
-    "views":  {
-                  "front":  [
-                                254,
-                                10,
-                                698,
-                                712,
-                                222
-                            ],
-                  "side":  [
-                               881,
-                               10,
-                               1244,
-                               712,
-                               195
-                           ],
-                  "back":  [
-                               1464,
-                               10,
-                               1864,
-                               712,
-                               200
-                           ]
-              },
-    "parts":  [
-                  {
-                      "name":  "Head",
-                      "front_keep":  [
-                                         [
-                                             0,
-                                             0,
-                                             444,
-                                             340
-                                         ]
-                                     ],
-                      "front_cut":  [
-                                        [
-                                            0,
-                                            190,
-                                            112,
-                                            345
-                                        ]
-                                    ],
-                      "texture":  1024,
-                      "triangles":  1600
-                  },
-                  {
-                      "name":  "Body",
-                      "front_cut":  [
-                                        [
-                                            20,
-                                            335,
-                                            133,
-                                            565
-                                        ],
-                                        [
-                                            312,
-                                            335,
-                                            430,
-                                            565
-                                        ],
-                                        [
-                                            0,
-                                            0,
-                                            444,
-                                            328
-                                        ]
-                                    ],
-                      "texture":  1024,
-                      "triangles":  1800
-                  },
-                  {
-                      "name":  "ArmR",
-                      "front_keep":  [
-                                         [
-                                             20,
-                                             335,
-                                             149,
-                                             565
-                                         ]
-                                     ],
-                      "side_box":  [
-                                       130,
-                                       335,
-                                       245,
-                                       565
-                                   ],
-                      "texture":  512,
-                      "triangles":  500
-                  },
-                  {
-                      "name":  "ArmL",
-                      "front_keep":  [
-                                         [
-                                             297,
-                                             335,
-                                             430,
-                                             565
-                                         ]
-                                     ],
-                      "side_box":  [
-                                       130,
-                                       335,
-                                       245,
-                                       565
-                                   ],
-                      "texture":  512,
-                      "triangles":  500
-                  },
-                  {
-                      "name":  "Quiver",
-                      "flat":  {
-                                   "sheet":  "ranger_archer_props.png",
-                                   "box":  [
-                                               1387,
-                                               158,
-                                               1671,
-                                               771
-                                           ],
-                                   "height":  0.95,
-                                   "thickness":  0.22
-                               },
-                      "place":  {
-                                    "location":  [
-                                                     -0.08,
-                                                     0.4,
-                                                     0.5
-                                                 ],
-                                    "rotation":  [
-                                                     -6,
-                                                     -32,
-                                                     0
-                                                 ]
-                                },
-                      "texture":  512
-                  },
-                  {
-                      "name":  "Bow",
-                      "flat":  {
-                                   "sheet":  "ranger_archer_props.png",
-                                   "box":  [
-                                               138,
-                                               39,
-                                               327,
-                                               847
-                                           ],
-                                   "height":  1.5,
-                                   "thickness":  0.07,
-                                   "mirror":  true
-                               },
-                      "place":  {
-                                    "location":  [
-                                                     0.5,
-                                                     -0.05,
-                                                     -0.05
-                                                 ],
-                                    "rotation":  [
-                                                     0,
-                                                     0,
-                                                     0
-                                                 ]
-                                },
-                      "texture":  512
-                  }
-              ],
-    "check_skip":  "Bow",
-    "test_view":  "ranger_archer_34.png"
+ "name": "ranger_archer",
+ "sheet": "ranger_archer_ortho.png",
+ "height": 2.4,
+ "step": 5,
+ "views": {
+  "front": [
+   254,
+   10,
+   698,
+   712,
+   222
+  ],
+  "side": [
+   881,
+   10,
+   1244,
+   712,
+   195
+  ],
+  "back": [
+   1464,
+   10,
+   1864,
+   712,
+   200
+  ]
+ },
+ "parts": [
+  {
+   "name": "Head",
+   "front_keep": [
+    [
+     0,
+     0,
+     444,
+     340
+    ]
+   ],
+   "front_cut": [
+    [
+     0,
+     190,
+     112,
+     345
+    ]
+   ],
+   "texture": 1024,
+   "triangles": 1600,
+   "weights": {
+    "front_power": 0.8,
+    "front_gain": 10.0,
+    "side_power": 14.0,
+    "side_gain": 1.0
+   }
+  },
+  {
+   "name": "Body",
+   "front_cut": [
+    [
+     20,
+     335,
+     133,
+     565
+    ],
+    [
+     312,
+     335,
+     430,
+     565
+    ],
+    [
+     0,
+     0,
+     444,
+     328
+    ]
+   ],
+   "texture": 1024,
+   "triangles": 1800
+  },
+  {
+   "name": "ArmR",
+   "front_keep": [
+    [
+     20,
+     335,
+     149,
+     565
+    ]
+   ],
+   "side_box": [
+    130,
+    335,
+    245,
+    565
+   ],
+   "texture": 512,
+   "triangles": 500
+  },
+  {
+   "name": "ArmL",
+   "front_keep": [
+    [
+     297,
+     335,
+     430,
+     565
+    ]
+   ],
+   "side_box": [
+    130,
+    335,
+    245,
+    565
+   ],
+   "texture": 512,
+   "triangles": 500
+  },
+  {
+   "name": "Quiver",
+   "flat": {
+    "sheet": "ranger_archer_props.png",
+    "box": [
+     1387,
+     158,
+     1671,
+     771
+    ],
+    "height": 0.95,
+    "thickness": 0.22,
+    "tube": true,
+    "cards_above": 175,
+    "rings": 40,
+    "depth": 0.85
+   },
+   "place": {
+    "location": [
+     -0.08,
+     0.3,
+     0.5
+    ],
+    "rotation": [
+     -6,
+     -32,
+     0
+    ]
+   },
+   "texture": 512
+  },
+  {
+   "name": "Bow",
+   "flat": {
+    "sheet": "ranger_archer_props.png",
+    "box": [
+     138,
+     39,
+     327,
+     847
+    ],
+    "height": 1.5,
+    "thickness": 0.07,
+    "mirror": true,
+    "tube": true,
+    "string": true,
+    "rings": 70,
+    "depth": 1.4
+   },
+   "place": {
+    "location": [
+     0.5,
+     -0.05,
+     -0.05
+    ],
+    "rotation": [
+     0,
+     0,
+     0
+    ]
+   },
+   "texture": 512
+  }
+ ],
+ "check_skip": "Bow",
+ "test_view": "ranger_archer_34.png",
+ "erase": {
+  "front": [
+   [
+    [
+     0,
+     205
+    ],
+    [
+     70,
+     195
+    ],
+    [
+     112,
+     250
+    ],
+    [
+     112,
+     345
+    ],
+    [
+     55,
+     345
+    ],
+    [
+     0,
+     290
+    ]
+   ]
+  ],
+  "side": [
+   [
+    [
+     5,
+     240
+    ],
+    [
+     60,
+     222
+    ],
+    [
+     105,
+     250
+    ],
+    [
+     137,
+     320
+    ],
+    [
+     137,
+     492
+    ],
+    [
+     95,
+     506
+    ],
+    [
+     38,
+     482
+    ],
+    [
+     38,
+     330
+    ],
+    [
+     8,
+     292
+    ]
+   ]
+  ],
+  "back": [
+   [
+    [
+     163,
+     440
+    ],
+    [
+     195,
+     488
+    ],
+    [
+     238,
+     482
+    ],
+    [
+     348,
+     345
+    ],
+    [
+     342,
+     302
+    ],
+    [
+     402,
+     268
+    ],
+    [
+     384,
+     212
+    ],
+    [
+     298,
+     206
+    ],
+    [
+     268,
+     280
+    ],
+    [
+     244,
+     290
+    ],
+    [
+     224,
+     330
+    ]
+   ]
+  ]
+ }
 }

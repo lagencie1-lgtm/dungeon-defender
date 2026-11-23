@@ -3,7 +3,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Items = require(ReplicatedStorage.Shared.Items)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -172,8 +172,25 @@ local function refreshFollower(player)
 		return
 	end
 	local model, offsets = buildModel(pet, StoreService.SkinFor(player, "Pet"))
+	-- The server only places the pet once, as one welded piece. Every player's own device then moves it
+	-- (src/client/PetFollow.client.luau): motion sent from the server stutters on phones.
+	local body = model.PrimaryPart
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	body.CFrame = root and root.CFrame * CFrame.new(3, 0, 2.5) or CFrame.new(0, -200, 0)
+	for part, offset in offsets do
+		part.CFrame = body.CFrame * offset
+		part.Anchored = false
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = body
+		weld.Part1 = part
+		weld.Parent = part
+	end
+	model:SetAttribute("PetOwner", player.UserId)
+	model:SetAttribute("PetKind", pet.kind)
+	model:SetAttribute("PetScale", pet.evolved and 1.6 or 1)
+	CollectionService:AddTag(model, "PetFollower")
 	model.Parent = workspace
-	followers[player] = { model = model, offsets = offsets, pos = nil }
+	followers[player] = { model = model }
 end
 
 -------------------------------------------------------------------------------
@@ -328,23 +345,6 @@ function PetService.Start()
 		if f then
 			f.model:Destroy()
 			followers[player] = nil
-		end
-	end)
-	-- pets float next to their hero and bob up and down
-	RunService.Heartbeat:Connect(function(dt)
-		local t = os.clock()
-		for player, f in followers do
-			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if root and f.model.Parent then
-				local target = root.CFrame * CFrame.new(3, 1 + math.sin(t * 3) * 0.4, 2.5)
-				f.pos = f.pos and f.pos:Lerp(target.Position, math.min(1, dt * 6)) or target.Position
-				local look = root.CFrame.LookVector
-				local cf = CFrame.lookAt(f.pos, f.pos + Vector3.new(look.X, 0, look.Z))
-				f.model.PrimaryPart.CFrame = cf
-				for part, offset in f.offsets do
-					part.CFrame = cf * offset
-				end
-			end
 		end
 	end)
 end

@@ -374,6 +374,12 @@ local function outpostTour()
 			log("camera-tour pet" .. i)
 			task.wait(4)
 		end
+		-- the pet is moved on this device (PetFollow): it must stand on the ground beside the hero, not at its spawn spot
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			local d = pet.PrimaryPart.Position - root.Position
+			log("pet-follow", string.format("side %.1f height %.1f", Vector3.new(d.X, 0, d.Z).Magnitude, d.Y))
+		end
 	end
 	-- each hero up close, from the front (weapon, hat, worn armor)
 	heroShots = true

@@ -88,6 +88,7 @@ local RUNS = {
 	{ "CursedForest", "BossRush", 40 },
 	{ "CursedForest", "Endless", 40 },
 }
+local fetchTested = false
 local mapPropNames = { CursedForest = "Bramble Waystone", MagmaFortress = "Forge Vent", CrystalCaves = "Crystal Survey Cairn" }
 -- the Baby Dragon follows the test player, for the pet look check
 step("equip baby dragon", function()
@@ -97,6 +98,7 @@ step("equip baby dragon", function()
 	profile.Pets = profile.Pets or {}
 	table.insert(profile.Pets, { id = "testdragon", kind = "BabyDragon", level = 1, xp = 0, evolved = false })
 	player:SetAttribute("TestPetLocked", true) -- the test client equips it (only a client can call that remote)
+	require(Server.PetService).Equip(player, "testdragon") -- and on the server, so the runs below have a pet
 end)
 
 -- a line-up of every enemy type at the Outpost, for the look check
@@ -201,6 +203,35 @@ for _, run in RUNS do
 		end)
 		State.Set("Gold", 100000)
 		placeTowers()
+		if not fetchTested then
+			fetchTested = true
+			-- pets fetch loot (PetMoves): gems and a gear drop 14 studs from the hero, out of the hero's own reach
+			local LootService = require(Server.LootService)
+			local ItemService = require(Server.ItemService)
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local spot = root.Position + Vector3.new(14, 0, 0)
+			-- (the place's owner has the Auto Collect pass in Studio: off for this check, or the pass takes the loot first)
+			local hadAuto = player:GetAttribute("PassAutoCollect")
+			player:SetAttribute("PassAutoCollect", false)
+			local before = #DataService.Get(player).Items
+			local gemsBefore = DataService.Get(player).Gems
+			LootService.DropGems(spot, 3)
+			ItemService.OnEnemyKilled({ name = "Test", stats = { DropChance = 50 }, position = spot + Vector3.new(0, 0, 3) },
+				State.Get("Difficulty"), 1)
+			local pet = require(Server.PetService).FollowerOf(player)
+			local waited = 0
+			while waited < 12 and (#DataService.Get(player).Items == before or DataService.Get(player).Gems == gemsBefore) do
+				task.wait(0.25)
+				waited += 0.25
+			end
+			task.wait(0.3)
+			player:SetAttribute("PassAutoCollect", hadAuto)
+			log("pet fetch: items", #DataService.Get(player).Items - before, "gems", DataService.Get(player).Gems - gemsBefore,
+				"after", waited, "s, trips", pet and pet:GetAttribute("PetFetched") or 0, "phase", pet and pet:GetAttribute("FetchPhase"))
+			assert(#DataService.Get(player).Items > before, "the pet did not fetch the gear drop")
+			assert(DataService.Get(player).Gems > gemsBefore, "the pet did not fetch the gems")
+			assert((pet:GetAttribute("PetFetched") or 0) > 0, "the loot came in, but not by the pet")
+		end
 		Clock.scale = 8
 		local started = os.clock()
 		local lastWave = 0
@@ -208,6 +239,12 @@ for _, run in RUNS do
 			local s = State.Get("State")
 			if s == "Won" or s == "Lost" then
 				break
+			end
+			-- keep the hero next to the fight, so the pet has enemies to pounce on and loot to fetch
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local target = require(Server.EnemyService).GetActive()[1]
+			if root and target and not target.dead then
+				root.CFrame = CFrame.new(target.position + Vector3.new(6, 4, 6))
 			end
 			if State.Get("Wave") ~= lastWave then
 				lastWave = State.Get("Wave")
@@ -217,6 +254,10 @@ for _, run in RUNS do
 		end
 		log(mapId, "result", State.Get("State"), "wave", State.Get("Wave"), "kills", State.Get("Kills"),
 			"portal", State.Get("PortalHealth"), "gold", player:GetAttribute("Gold"), "items", #DataService.Get(player).Items)
+		-- pets do something in a fight (PetMoves): the equipped Baby Dragon should have pounced during the waves
+		local pet = require(Server.PetService).FollowerOf(player)
+		log(mapId, "pet moves", pet and pet:GetAttribute("PetAct") or "no pet", pet and pet:GetAttribute("PetActMove") or "",
+			"fetch trips", pet and pet:GetAttribute("PetFetched") or 0)
 		Clock.scale = 1
 		if State.Get("State") == "Won" or State.Get("State") == "Lost" then
 			GameService.ToOutpost()
@@ -227,6 +268,24 @@ for _, run in RUNS do
 		task.wait(2)
 	end)
 end
+
+step("mythic tiers and might", function()
+	local t5 = Config.DifficultyFor("Mythic", 5)
+	assert(t5.Health > Config.DifficultyFor("Insane").Health, "mythic 5 is not tougher than insane")
+	log("mythic 5", t5.Name, "health x", string.format("%.2f", t5.Health), "gems x", t5.Gems)
+	log("might", player:GetAttribute("Might"), "rank", player:GetAttribute("MightRank"))
+	-- a Mythic-rank hero is really bigger (measured, then back to its own rank)
+	local character = player.Character
+	local rankBefore = player:GetAttribute("MightRank")
+	local heightBefore = character:GetExtentsSize().Y
+	player:SetAttribute("MightRank", 6)
+	task.wait(1)
+	local heightAfter = character:GetExtentsSize().Y
+	log("hero height", string.format("%.2f -> %.2f", heightBefore, heightAfter), "rank", rankBefore, "-> 6")
+	player:SetAttribute("MightRank", rankBefore)
+	task.wait(0.5)
+	assert(heightAfter > heightBefore * 1.05, "the hero did not grow at Mythic rank")
+end)
 
 step("rebirth and ascension", function()
 	local HeroService = require(Server.HeroService)

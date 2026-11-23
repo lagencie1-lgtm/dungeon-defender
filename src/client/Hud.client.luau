@@ -96,6 +96,12 @@ local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch
 local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 88 or 110, isTouch and 64 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
 
+-- the difficulty's name, with the Mythic tier ("Mythic 3")
+local function difficultyName()
+	local id = GameState:GetAttribute("Difficulty") or "Normal"
+	return Config.DifficultyFor(id, GameState:GetAttribute("Tier")).Name
+end
+
 -- difficulty picker, only before the first wave
 local diffPanel = make("Frame", {
 	Size = UDim2.fromOffset(#Config.Difficulties * 156 + 12, 92),
@@ -561,6 +567,10 @@ local function nextGoal()
 		if (player:GetAttribute("Wins") or 0) == 0 then
 			return "Next: win a run to unlock the Engineer"
 		end
+		if player:GetAttribute("FirstWinReady") then
+			local rift = Config.Maps[Config.RiftMap()]
+			return "Next: first win today gives double gold and a bonus chest" .. (rift and (" · Rift map: " .. rift.Name) or "")
+		end
 		local cleared = {}
 		pcall(function()
 			cleared = HttpService:JSONDecode(player:GetAttribute("Cleared") or "{}")[mapId] or {}
@@ -885,8 +895,12 @@ for day, reward in Config.DailyRewards do
 	local pictureSlot = make("Frame", { Size = UDim2.fromOffset(58, 58), Position = UDim2.new(0.5, 0, 0, 26),
 		AnchorPoint = Vector2.new(0.5, 0), BackgroundTransparency = 1, ZIndex = 23, Parent = box })
 	Ui.rewardPicture(pictureSlot, { Kind = "Gems", Amount = reward }, nil, 23)
-	label({ Size = UDim2.new(1, -6, 0, 24), Position = UDim2.fromOffset(3, 88), Text = "x" .. tostring(reward),
-		TextColor3 = Ui.GEM, ZIndex = 24, Parent = box })
+	label({ Size = UDim2.new(1, -6, 0, Config.DailyGold[day] and 16 or 24), Position = UDim2.fromOffset(3, Config.DailyGold[day] and 84 or 88),
+		Text = "x" .. tostring(reward), TextColor3 = Ui.GEM, ZIndex = 24, Parent = box })
+	if Config.DailyGold[day] then
+		label({ Size = UDim2.new(1, -6, 0, 14), Position = UDim2.fromOffset(3, 101), Text = "+" .. Config.DailyGold[day] .. " gold",
+			TextColor3 = Ui.GOLD, ZIndex = 24, Parent = box })
+	end
 	dayBoxes[day] = box
 end
 local claimButton = button({ Size = UDim2.fromOffset(260, 54), Position = UDim2.new(0.5, 0, 1, -18), AnchorPoint = Vector2.new(0.5, 1),
@@ -939,9 +953,10 @@ dailyClose.Activated:Connect(function()
 	dailyPanel.Visible = false
 end)
 claimButton.Activated:Connect(function()
-	local ok, result = Remotes.ClaimDaily:InvokeServer()
+	local ok, result, gold = Remotes.ClaimDaily:InvokeServer()
 	if ok then
-		showBanner("+" .. result .. " GEMS", "Daily reward claimed. Come back tomorrow!", Ui.GEM)
+		showBanner("+" .. result .. " GEMS" .. ((gold or 0) > 0 and (" and " .. gold .. " GOLD") or ""),
+			"Daily reward claimed. Come back tomorrow!", Ui.GEM)
 		Ui.playSound("Coin")
 		dailyPanel.Visible = false
 	else
@@ -1077,10 +1092,11 @@ local function refreshTop()
 		local mapInfo = Config.Maps[mapId] or Config.Maps.CursedForest
 		waveLabel.Text = "The Outpost"
 		local modeInfo = Config.FindById(Config.Modes, GameState:GetAttribute("Mode") or "Campaign")
-		stateLabel.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
+		stateLabel.Text = mapInfo.Name .. " · " .. difficultyName()
 			.. (modeInfo and modeInfo.Id ~= "Campaign" and (" · " .. modeInfo.Name) or "")
+			.. (mapId == Config.RiftMap() and " · Rift map: double drops" or "")
 
-		mapButton.Text = mapInfo.Name .. " · " .. (GameState:GetAttribute("Difficulty") or "Normal")
+		mapButton.Text = mapInfo.Name .. " · " .. difficultyName()
 	elseif s == "Break" then
 		stateLabel.Text = "Next wave in " .. (GameState:GetAttribute("NextWaveIn") or 0) .. "s"
 	elseif s == "Wave" then
@@ -1103,7 +1119,15 @@ local function refreshTop()
 		local locked = d.Unlock and not cleared[d.Unlock]
 		local sub = b:FindFirstChild("Sub")
 		if sub then
-			sub.Text = locked and ("Locked: beat " .. d.Unlock .. " here first") or (d.Subtitle .. " · gems x" .. d.Gems)
+			if locked then
+				sub.Text = "Locked: beat " .. d.Unlock .. " here first"
+			elseif d.Tiers then
+				local top = (player:GetAttribute("MythicBest") or 0) + 1
+				sub.Text = id == currentDiff and string.format("Tier %d of %d · tap for the next", GameState:GetAttribute("Tier") or 1, top)
+					or string.format("Endless tiers · %d open", top)
+			else
+				sub.Text = d.Subtitle .. " · gems x" .. d.Gems
+			end
 		end
 		b.BackgroundColor3 = locked and Color3.fromRGB(45, 38, 34) or Ui.PANEL
 		local st = b:FindFirstChildOfClass("UIStroke")

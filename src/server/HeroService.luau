@@ -283,6 +283,10 @@ local function attachGear(character, limb, modelName, center, fit, axis, color, 
 	if not template or not limb then
 		return false
 	end
+	-- a hero grown by its Might (MightService) wears its gear a size bigger too
+	local wearer = Players:GetPlayerFromCharacter(character)
+	local rank = wearer and Config.MightRanks[wearer:GetAttribute("MightRank") or 1]
+	fit *= rank and rank.Scale or 1
 	local look = template:Clone()
 	local _, size = look:GetBoundingBox()
 	look:ScaleTo(look:GetScale() * fit / size[axis or "Y"])
@@ -596,7 +600,20 @@ local function giveNameTag(player, character)
 		end
 	end
 	local titleItem = Config.FindById(Config.Titles, player:GetAttribute("EquippedTitle") or "None")
-	gui:FindFirstChild("Title").Text = (titleItem and titleItem.Id ~= "None") and titleItem.Name or ""
+	-- the title from the shop, then the gear's Might in its rank colour (Config.MightRanks)
+	local titleText = (titleItem and titleItem.Id ~= "None") and titleItem.Name or ""
+	local might = player:GetAttribute("Might") or 0
+	local titleLabel = gui:FindFirstChild("Title")
+	if might > 0 then
+		local rank = Config.MightRankOf(might)
+		local r = Config.MightRanks[rank]
+		local color = r.Color or (Items.Rarities[math.min(rank, #Items.Rarities)].Color)
+		titleLabel.RichText = true
+		titleLabel.Text = (titleText ~= "" and (titleText .. "  ") or "")
+			.. string.format('<font color="#%s">Might %d</font>', color:ToHex(), might)
+	else
+		titleLabel.Text = titleText
+	end
 	local hero = Config.Heroes[player:GetAttribute("HeroId") or "Swordmaster"]
 	local rebirths = player:GetAttribute("Rebirths") or 0
 	gui:FindFirstChild("Level").Text = (player:GetAttribute("PassVIP") and "[VIP] " or "")
@@ -1178,7 +1195,7 @@ function HeroService.Start()
 		end)
 	end)
 
-	local appearanceAttributes = { "WeaponType", "WeaponRarity", "WornHelmet", "WornArmor" }
+	local appearanceAttributes = { "WeaponType", "WeaponRarity", "WornHelmet", "WornArmor", "MightRank" }
 	for _, slot in GearLooks.Slots do
 		table.insert(appearanceAttributes, "Equipped" .. slot.Field)
 	end
@@ -1207,7 +1224,7 @@ function HeroService.Start()
 				refreshLook(player)
 			end)
 		end
-		for _, attr in { "EquippedTitle", "HeroLevel", "Rebirths", "PassVIP" } do
+		for _, attr in { "EquippedTitle", "HeroLevel", "Rebirths", "PassVIP", "Might" } do
 			player:GetAttributeChangedSignal(attr):Connect(function()
 				if player.Character then
 					giveNameTag(player, player.Character)

@@ -88,6 +88,18 @@ function Items.DisplayName(item)
 end
 
 -- add up everything a player has equipped. equipped = { Weapon = item, ... }
+-- one number for a set of gear (Might): every stat counts, rarer stats weigh more, upgrades included
+Items.MightWeights = { Power = 1, Command = 1, Engineering = 1.5, Crit = 3, GoldFind = 0.5 }
+function Items.Might(equipped)
+	local might = 0
+	for _, item in equipped do
+		for stat in item.stats do
+			might += Items.StatValue(item, stat) * (Items.MightWeights[stat] or 1)
+		end
+	end
+	return math.floor(might + 0.5)
+end
+
 function Items.Totals(equipped)
 	local totals = { Power = 0, Command = 0, Engineering = 0, Crit = 0, GoldFind = 0 }
 	for _, item in equipped do

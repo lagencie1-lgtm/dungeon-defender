@@ -39,6 +39,12 @@ function PetService.BonusOf(pet)
 	return info.Stat, value
 end
 
+-- the model following this player's hero (or nil)
+function PetService.FollowerOf(player)
+	local f = followers[player]
+	return f and f.model
+end
+
 function PetService.EquippedPet(player)
 	local profile = DataService.Get(player)
 	if not profile or not profile.EquippedPet then
@@ -324,6 +330,10 @@ function PetService.AddXpAll(amount)
 	end
 end
 
+PetService.Equip = function(player, id)
+	return equip(player, id)
+end
+
 function PetService.Start()
 	Remotes.HatchEgg.OnServerInvoke = hatch
 	Remotes.EquipPet.OnServerInvoke = equip
@@ -334,6 +344,26 @@ function PetService.Start()
 		return profile and profile.Pets or {}, profile and profile.EquippedPet
 	end
 	table.insert(DataService.OnLoaded, function(player)
+		-- what the equipped pet dug up while its owner was away (Config.ComeBack)
+		local profile = DataService.Get(player)
+		local pet = PetService.EquippedPet(player)
+		local cb = Config.ComeBack
+		if profile and pet and Config.Pets[pet.kind] and (profile.LastSeen or 0) > 0 then
+			local hours = math.min((os.time() - profile.LastSeen) / 3600, cb.AwayMaxHours)
+			if hours * 60 >= cb.AwayMinMinutes then
+				local info = Config.Pets[pet.kind]
+				local gold = math.floor(hours * (cb.AwayGoldPerHour[info.Rarity] or cb.AwayGoldPerHour[1])
+					* (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) + 0.5)
+				profile.LastSeen = os.time() -- counted once, also when this server keeps running
+				DataService.AddGold(player, gold)
+				task.delay(6, function() -- after the loading screen
+					if player.Parent then
+						Remotes.Notify:FireClient(player, string.format("Welcome back! %s dug up %d gold while you were away",
+							info.Name, gold), info.Color)
+					end
+				end)
+			end
+		end
 		player:GetAttributeChangedSignal("EquippedPetSkin"):Connect(function()
 			refreshFollower(player)
 		end)

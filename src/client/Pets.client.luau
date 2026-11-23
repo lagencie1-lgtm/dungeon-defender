@@ -230,7 +230,7 @@ local function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 72), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 108), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, pet.id == equippedId and 3 or 1) })
 		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
 		label({ Size = UDim2.fromOffset(170, 24), Position = UDim2.fromOffset(76, 10),
@@ -239,6 +239,21 @@ local function refresh()
 		label({ Size = UDim2.fromOffset(170, 20), Position = UDim2.fromOffset(76, 40),
 			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
+		local move = Config.PetMoves[info.Stat]
+		if move then
+			-- what it does in a fight, under its bonus
+			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 68),
+				Text = "In a fight · " .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD,
+				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
+		end
+		local carry = Config.PetCarryOf(pet.kind, pet.evolved)
+		if carry then
+			-- what it fetches from the ground (Config.PetCarry)
+			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
+			label({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 86),
+				Text = string.format("Fetches %s%s · %d per trip", carry.Gems and "gems and " or "", best, carry.Carry),
+				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
+		end
 		local equip = button({ Size = UDim2.fromOffset(70, 40), Position = UDim2.new(1, -164, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 			Text = pet.id == equippedId and "On" or "Equip",
 			BackgroundColor3 = pet.id == equippedId and Color3.fromRGB(60, 60, 70) or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })

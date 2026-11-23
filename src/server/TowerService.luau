@@ -544,6 +544,13 @@ local function boosted(t)
 		engineering = (owner:GetAttribute("BonusEngineering") or 0) / 100
 	end
 	local overclock = (t.overclockUntil and Clock.now < t.overclockUntil) and t.overclockSpeed or 1
+	-- a pet's Rally (damage) and Spark (speed), see PetMoves
+	if t.petRallyUntil and Clock.now < t.petRallyUntil then
+		command += t.petRally
+	end
+	if t.petSparkUntil and Clock.now < t.petSparkUntil then
+		overclock *= 1 + t.petSpark
+	end
 	local eventDamage = Config.WeeklyEvent().TowerDamage or 1
 	if command == 0 and engineering == 0 and overclock == 1 and eventDamage == 1 then
 		return base
@@ -577,6 +584,28 @@ function TowerService.Overclock(position, radius, speed, seconds)
 		end
 	end
 	return count
+end
+
+-- a pet cheers on the defender nearest to a spot: kind = "Rally" (+damage) or "Spark" (+speed).
+-- Prefers a defender that isn't boosted yet. Returns the defender's top position, or nil when none is near.
+function TowerService.PetBoost(position, radius, kind, amount, seconds)
+	local best, bestScore = nil, math.huge
+	for _, t in towers do
+		local d = (flat(t.position) - flat(position)).Magnitude
+		if d <= radius then
+			local busy = t["pet" .. kind .. "Until"] and Clock.now < t["pet" .. kind .. "Until"]
+			local score = d + (busy and 1000 or 0)
+			if score < bestScore then
+				best, bestScore = t, score
+			end
+		end
+	end
+	if not best then
+		return nil
+	end
+	best["pet" .. kind] = amount
+	best["pet" .. kind .. "Until"] = Clock.now + seconds
+	return best.position + Vector3.new(0, 5, 0)
 end
 
 -- Engineer's mini turret: shoots on its own for a while, then breaks down

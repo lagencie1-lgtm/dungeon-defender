@@ -108,6 +108,8 @@ local function publish(player)
 	player:SetAttribute("Gold", p.Gold)
 	player:SetAttribute("Scrap", p.Scrap)
 	player:SetAttribute("BestEndless", p.BestEndless or 0)
+	player:SetAttribute("MythicBest", p.MythicBest or 0)
+	player:SetAttribute("FirstWinReady", p.FirstWinDay ~= Config.Today())
 	player:SetAttribute("Cleared", HttpService:JSONEncode(p.Cleared or {}))
 	player:SetAttribute("TutorialDone", p.TutorialDone == true or (p.GamesPlayed or 0) > 0)
 
@@ -175,6 +177,10 @@ end
 
 DataService.OnLoaded = {} -- functions called with (player, profile) once a profile is loaded
 DataService.BeforeSave = {} -- functions called with (player, profile) just before saving
+-- when the player was last here (for what their pet dug up while they were away, PetService)
+table.insert(DataService.BeforeSave, function(_player, profile)
+	profile.LastSeen = os.time()
+end)
 
 function DataService.Publish(player)
 	publish(player)
@@ -384,10 +390,12 @@ local function claimDaily(player)
 		reward = math.floor(reward * 1.5) -- VIP bonus
 	end
 	p.Gems += reward
+	local gold = Config.DailyGold[math.min(p.DailyStreak, #Config.DailyRewards)] or 0
+	p.Gold += gold
 	p.DailyLast = now
 	publish(player)
 	task.spawn(save, player)
-	return true, reward
+	return true, reward, gold
 end
 
 function DataService.Start()

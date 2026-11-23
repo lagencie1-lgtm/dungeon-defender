@@ -13,7 +13,7 @@ local LootService = {}
 
 local gems = {} -- [part] = { amount, dropped, base }
 local GEM_COLOR = Color3.fromRGB(90, 220, 255)
-local AUTO_COLLECT_AFTER = 15
+local AUTO_COLLECT_AFTER = 45 -- long enough for a pet to fetch them first
 
 function LootService.DropGems(position, amount)
 	if amount <= 0 then
@@ -74,6 +74,25 @@ local function collect(part, player)
 	task.delay(0.25, function()
 		part:Destroy()
 	end)
+end
+
+-- for pets fetching loot (PetMoves): the gems lying near a spot, and taking one
+function LootService.GemsNear(position, radius)
+	local found = {}
+	for part, g in gems do
+		if Vector3.new(g.base.X - position.X, 0, g.base.Z - position.Z).Magnitude <= radius then
+			table.insert(found, { gem = part, position = g.base })
+		end
+	end
+	return found
+end
+
+function LootService.TakeGem(part, player)
+	if not gems[part] then
+		return false
+	end
+	collect(part, player)
+	return true
 end
 
 function LootService.Clear()

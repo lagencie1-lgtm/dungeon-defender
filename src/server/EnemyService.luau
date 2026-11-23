@@ -480,6 +480,16 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	if armor and amount >= 1 then
 		amount = math.max(amount - armor, amount * 0.25)
 	end
+	-- a pet's Mark (PetMoves): the next real hit is a sure crit, and the mark goes away
+	if enemy.petMark and amount >= 1 then
+		if not crit then
+			amount *= 2
+			crit = true
+		end
+		showNumber = true
+		enemy.petMark:Destroy()
+		enemy.petMark = nil
+	end
 	enemy.health -= amount
 	enemy.model:SetAttribute("Health", enemy.health)
 	enemy.fill.Size = UDim2.fromScale(math.max(enemy.health / enemy.maxHealth, 0), 1)

@@ -24,7 +24,24 @@ local DROP_CHANCE = { Goblin = 0.018, Runner = 0.018, Brute = 0.09, LootGoblin =
 -- Easy drops much worse loot; Insane the best
 local DIFF_LEVEL = { Easy = -4, Normal = 3, Hard = 9, Insane = 16 }
 local DIFF_LUCK = { Easy = 0.25, Normal = 1, Hard = 1.8, Insane = 3.2 }
-local DIFF_DROPS = { Easy = 0.5, Normal = 1, Hard = 1.2, Insane = 1.5 }
+local DIFF_DROPS = { Easy = 0.5, Normal = 1, Hard = 1.2, Insane = 1.5, Mythic = 1.5 }
+DIFF_LEVEL.Mythic, DIFF_LUCK.Mythic = DIFF_LEVEL.Insane, DIFF_LUCK.Insane
+
+-- item level bonus and luck, with the Mythic tier on top (Config.Mythic)
+local function levelBonus(difficultyId)
+	local bonus = DIFF_LEVEL[difficultyId] or 0
+	if difficultyId == "Mythic" then
+		bonus += Config.Mythic.ItemLevel * (State.Get("Tier") or 1)
+	end
+	return bonus
+end
+local function luckOf(difficultyId)
+	local luck = DIFF_LUCK[difficultyId] or 1
+	if difficultyId == "Mythic" then
+		luck += Config.Mythic.Luck * (State.Get("Tier") or 1)
+	end
+	return luck
+end
 
 local rng = Random.new()
 
@@ -142,6 +159,10 @@ function ItemService.ApplyBonuses(player)
 	for stat, value in totals do
 		player:SetAttribute("Gear" .. stat, value)
 	end
+	-- Might: one number for how strong the gear is; it drives how grand the hero looks (Config.MightRanks)
+	local might = Items.Might(equipped)
+	player:SetAttribute("Might", might)
+	player:SetAttribute("MightRank", Config.MightRankOf(might))
 	local weapon = equipped.Weapon
 	player:SetAttribute("WeaponType", weapon and weapon.base or "Longsword")
 	player:SetAttribute("WeaponRarity", weapon and weapon.rarity or 0)
@@ -211,9 +232,12 @@ function ItemService.OnEnemyKilled(enemy, difficultyId, wave)
 		return
 	end
 	local map = Config.Maps[State.Get("Map") or ""]
-	local level = math.max(1, wave * 2 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0))
+	local level = math.max(1, wave * 2 + levelBonus(difficultyId) + (map and map.ItemLevel or 0))
 	chance *= DIFF_DROPS[difficultyId] or 1
-	local luck = (DIFF_LUCK[difficultyId] or 1) * (Config.WeeklyEvent().Luck or 1)
+	if State.Get("Map") == Config.RiftMap() then
+		chance *= Config.ComeBack.RiftDrops -- this week's Rift map
+	end
+	local luck = luckOf(difficultyId) * (Config.WeeklyEvent().Luck or 1)
 	for _, player in Players:GetPlayers() do
 		if rng:NextNumber() < chance then
 			local offset = Vector3.new(rng:NextNumber(-3, 3), 0, rng:NextNumber(-3, 3))
@@ -225,14 +249,23 @@ end
 -- the Goblin King's chest: a guaranteed Rare or better item for everyone
 function ItemService.VictoryChest(difficultyId)
 	local map = Config.Maps[State.Get("Map") or ""]
-	local level = 22 + (DIFF_LEVEL[difficultyId] or 0) + (map and map.ItemLevel or 0)
-	local luck = (DIFF_LUCK[difficultyId] or 1) * 2
+	local level = 22 + levelBonus(difficultyId) + (map and map.ItemLevel or 0)
+	local luck = luckOf(difficultyId) * 2
 	for _, player in Players:GetPlayers() do
 		local item = ItemService.Roll(level, luck, 3)
 		local kept = addItem(player, item)
 		Remotes.VictoryChest:FireClient(player, item, kept)
 		task.spawn(DataService.Save, player)
 	end
+end
+
+-- the first win of the day: one more chest item, as good as this difficulty's Victory Chest
+function ItemService.BonusChest(player, difficultyId)
+	if not player.Parent then
+		return
+	end
+	local map = Config.Maps[State.Get("Map") or ""]
+	ItemService.GiveReward(player, 3, 22 + levelBonus(difficultyId) + (map and map.ItemLevel or 0))
 end
 
 -- a reward item straight into the backpack, shown like the Victory Chest
@@ -277,6 +310,30 @@ function ItemService.LeaveBehindAll()
 				Color3.fromRGB(255, 160, 120))
 		end
 	end
+end
+
+-- for pets fetching loot (PetMoves): this player's drops near a spot, up to a rarity, and taking one
+function ItemService.DropsNear(player, position, radius, maxRarity)
+	local found = {}
+	for dropId, drop in pending[player] or {} do
+		if drop.item.rarity <= maxRarity and (Vector3.new(drop.position.X - position.X, 0, drop.position.Z - position.Z)).Magnitude <= radius then
+			table.insert(found, { dropId = dropId, position = drop.position, rarity = drop.item.rarity })
+		end
+	end
+	return found
+end
+
+function ItemService.TakeDrop(player, dropId)
+	local list = pending[player]
+	local drop = list and list[dropId]
+	if not drop then
+		return false
+	end
+	list[dropId] = nil
+	addItem(player, drop.item)
+	Remotes.LootPicked:FireClient(player, dropId, drop.item)
+	Sound.Play("Coin", drop.position)
+	return true
 end
 
 function ItemService.CollectAllPlayers()

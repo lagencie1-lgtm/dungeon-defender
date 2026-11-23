@@ -40,8 +40,56 @@ Config.Difficulties = {
 		Color = Color3.fromRGB(230, 80, 80) },
 	{ Id = "Insane", Name = "Insane", Subtitle = "Bring gear, pets and upgrades", Health = 2.6, Gems = 3, Gold = 2.2, Unlock = "Hard",
 		Color = Color3.fromRGB(180, 60, 220) },
+	{ Id = "Mythic", Name = "Mythic", Subtitle = "Endless tiers. Tap again for the next", Health = 2.6, Gems = 3, Gold = 2.2,
+		Unlock = "Insane", Tiers = true, Color = Color3.fromRGB(255, 70, 120) },
 }
 Config.DefaultDifficulty = "Normal"
+
+-- Mythic Tiers: the endless ladder above Insane (Lemp 2026-11-23: "an ultimate grind"). Tier 1 opens after Insane;
+-- winning a Campaign run on a tier opens the next one, for the whole account. Per tier: monsters' health x HealthGrowth
+-- (it compounds, so somewhere the wall comes), item level +ItemLevel, rarity luck +Luck, gems and gold a bit more.
+Config.Mythic = { HealthGrowth = 1.2, ItemLevel = 8, Luck = 0.5, Gems = 0.25, Gold = 0.15 }
+
+-- Might ranks: how grand a hero looks, from the Might of the gear it wears (Items.Might). Colours follow the rarities.
+-- 6A: every step is small and quiet on its own; together they read "this one is strong" from across the map.
+--   Glow   a soft light around the hero       Motes  a few slow sparks rising from the gear
+--   Ring   a thin ring of light at the feet   Halo   a thin ring of light over the head
+--   Scale  the hero grows a little (1.0 = normal size)
+Config.MightRanks = {
+	{ Name = "Common", At = 0 },
+	{ Name = "Uncommon", At = 60, Glow = true },
+	{ Name = "Rare", At = 160, Glow = true, Motes = true },
+	{ Name = "Epic", At = 400, Glow = true, Motes = true, Ring = true, Scale = 1.04 },
+	{ Name = "Legendary", At = 900, Glow = true, Motes = true, Ring = true, Scale = 1.08 },
+	{ Name = "Mythic", At = 1800, Glow = true, Motes = true, Ring = true, Halo = true, Scale = 1.12 },
+	{ Name = "Ascendant", At = 4000, Glow = true, Motes = true, Ring = true, Halo = true, Scale = 1.16, Color = Color3.fromRGB(255, 240, 170) },
+}
+function Config.MightRankOf(might)
+	local rank = 1
+	for i, r in Config.MightRanks do
+		if (might or 0) >= r.At then
+			rank = i
+		end
+	end
+	return rank
+end
+
+-- a difficulty with its Mythic tier worked in (the plain entry for the others)
+function Config.DifficultyFor(id, tier)
+	local d = Config.FindById(Config.Difficulties, id) or Config.FindById(Config.Difficulties, Config.DefaultDifficulty)
+	if not d.Tiers then
+		return d
+	end
+	tier = math.max(1, math.floor(tier or 1))
+	local m = Config.Mythic
+	local t = table.clone(d)
+	t.Tier = tier
+	t.Name = d.Name .. " " .. tier
+	t.Health = d.Health * m.HealthGrowth ^ tier
+	t.Gems = d.Gems + m.Gems * tier
+	t.Gold = d.Gold + m.Gold * tier
+	return t
+end
 
 
 -------------------------------------------------------------------------------
@@ -99,16 +147,16 @@ Config.Codes = {
 -- rares so people want to farm them"). Picture = art/icons/pet_*.png.
 Config.Pets = {
 	Slimey = { Name = "Slimey", Rarity = 1, Stat = "GoldFind", Bonus = 5, Color = Color3.fromRGB(110, 220, 110), Shape = "Blob" },
-	Leafling = { Name = "Leafling", Rarity = 1, Stat = "Power", Bonus = 3, Color = Color3.fromRGB(90, 170, 70), Shape = "Sprout" },
+	Leafling = { Name = "Leafling", Rarity = 1, Stat = "Power", Bonus = 3, MoveSlow = true, Color = Color3.fromRGB(90, 170, 70), Shape = "Sprout" },
 	Stonepup = { Name = "Stonepup", Rarity = 2, Stat = "Command", Bonus = 4, Color = Color3.fromRGB(140, 130, 120), Shape = "Pup" },
 	MossKitten = { Name = "Moss Kitten", Rarity = 2, Stat = "Crit", Bonus = 2, Color = Color3.fromRGB(150, 200, 120), Shape = "Pup" },
 	Glowbug = { Name = "Glowbug", Rarity = 3, Stat = "Crit", Bonus = 3, Color = Color3.fromRGB(255, 240, 120), Shape = "Bug" },
 	EmberFox = { Name = "Ember Fox", Rarity = 3, Stat = "Engineering", Bonus = 5, Color = Color3.fromRGB(255, 120, 40), Shape = "Pup" },
 	CrystalOwl = { Name = "Crystal Owl", Rarity = 3, Stat = "Command", Bonus = 6, Color = Color3.fromRGB(150, 210, 255), Shape = "Bug" },
 	MiniGolem = { Name = "Mini Golem", Rarity = 4, Stat = "Command", Bonus = 8, Color = Color3.fromRGB(100, 70, 60), Shape = "Golem" },
-	BabyDragon = { Name = "Baby Dragon", Rarity = 5, Stat = "Power", Bonus = 9, Color = Color3.fromRGB(170, 60, 220), Shape = "Dragon" },
+	BabyDragon = { Name = "Baby Dragon", Rarity = 5, Stat = "Power", Bonus = 9, MoveBurn = true, Color = Color3.fromRGB(170, 60, 220), Shape = "Dragon" },
 	StarUnicorn = { Name = "Star Unicorn", Rarity = 5, Stat = "GoldFind", Bonus = 16, Color = Color3.fromRGB(255, 235, 250), Shape = "Pup" },
-	Phoenix = { Name = "Sunfire Phoenix", Rarity = 6, Stat = "Power", Bonus = 14, Color = Color3.fromRGB(255, 150, 40), Shape = "Dragon" },
+	Phoenix = { Name = "Sunfire Phoenix", Rarity = 6, Stat = "Power", Bonus = 14, MoveBurn = true, Color = Color3.fromRGB(255, 150, 40), Shape = "Dragon" },
 	VoidDrake = { Name = "Void Drake", Rarity = 6, Stat = "Command", Bonus = 14, Color = Color3.fromRGB(70, 40, 130), Shape = "Dragon" },
 }
 -- the chances are shown in the game before buying (with a picture of every pet)
@@ -128,6 +176,52 @@ Config.PetXpPerLevel = 60 -- pet xp per level (pets get 1 xp per enemy defeated)
 Config.PetEvolveGold = 2500
 Config.PetBagSize = 30
 Config.PetReleaseGold = { 50, 80, 150, 400, 1000, 4000 }
+
+-- What the equipped pet does in a fight, picked by its bonus stat (server: PetMoves.luau, looks: PetFollow.client.luau).
+-- 6A: rare and small, no button needed. Every = seconds between moves (game time). Numbers grow 10% per pet level
+-- and x1.5 when evolved; evolved pets also move a third more often. Damage scales like the hero's own hits.
+Config.PetMoves = {
+	Power = { Name = "Pounce", Text = "Pounces on nearby enemies", Every = 5, Range = 22, Damage = 10 },
+	Command = { Name = "Rally", Text = "Boosts a nearby defender's damage", Every = 8, Range = 30, Boost = 0.15, Time = 4 },
+	Engineering = { Name = "Spark", Text = "Makes a nearby defender shoot faster", Every = 8, Range = 30, Speed = 0.2, Time = 4 },
+	Crit = { Name = "Mark", Text = "Marks an enemy for a sure crit", Every = 6, Range = 26 },
+	GoldFind = { Name = "Dig", Text = "Digs up mana for the team", Every = 20, Mana = 4 },
+}
+Config.PetEvolvedEvery = 0.75 -- evolved pets wait only 75% as long between moves
+
+-- Every pet also fetches loot from the ground: it trots over, grabs it and brings it to its hero.
+-- By pet rarity (1 Common ... 6 Mythic). A pet in Config.Pets can override any of these with its own `Carry = { ... }`.
+--   Gems          picks up gems
+--   MaxItemRarity the best gear rarity it may pick up (6 = everything); better gear you fetch yourself
+--   Range         how far from the hero it looks (studs)
+--   Speed         how fast it trots there and back (studs per second)
+--   Carry         drops per trip (lying close together)
+--   Rest          seconds between trips
+-- Evolved pets: 25% faster, one more per trip, rest 25% shorter.
+Config.PetCarry = {
+	{ Gems = true, MaxItemRarity = 2, Range = 18, Speed = 8, Carry = 1, Rest = 3 },
+	{ Gems = true, MaxItemRarity = 3, Range = 22, Speed = 9, Carry = 1, Rest = 2.6 },
+	{ Gems = true, MaxItemRarity = 4, Range = 26, Speed = 11, Carry = 2, Rest = 2.2 },
+	{ Gems = true, MaxItemRarity = 5, Range = 30, Speed = 13, Carry = 2, Rest = 1.8 },
+	{ Gems = true, MaxItemRarity = 6, Range = 36, Speed = 15, Carry = 3, Rest = 1.4 },
+	{ Gems = true, MaxItemRarity = 6, Range = 44, Speed = 18, Carry = 4, Rest = 1 },
+}
+function Config.PetCarryOf(kind, evolved)
+	local info = Config.Pets[kind]
+	if not info then
+		return nil
+	end
+	local carry = table.clone(Config.PetCarry[info.Rarity] or Config.PetCarry[1])
+	for k, v in info.Carry or {} do
+		carry[k] = v
+	end
+	if evolved then
+		carry.Speed *= 1.25
+		carry.Carry += 1
+		carry.Rest *= 0.75
+	end
+	return carry
+end
 
 -------------------------------------------------------------------------------
 -- Rebirth and Ascension (for heroes at the level cap)
@@ -512,6 +606,30 @@ Config.Titles = {
 Config.DailyRewards = { 20, 30, 40, 50, 60, 80, 150 }
 Config.DailyCooldownHours = 20 -- how long until you can claim again
 Config.DailyStreakHours = 48 -- miss it longer than this and the streak resets
+
+-- gold on top of the gems on some days of the streak (day 7 is the big one)
+Config.DailyGold = { [3] = 300, [5] = 500, [7] = 1500 }
+
+-- Reasons to come back (Lemp 2026-11-23: "increase the player return rate"). All of it is earned by playing.
+Config.ComeBack = {
+	-- the first win of each day (UTC): the run's gold is multiplied and a bonus chest (Rare or better) is added
+	FirstWinGold = 2,
+	-- while you are away your equipped pet digs up gold: per hour by pet rarity, +10% per pet level, x2 evolved.
+	-- Counted from MinMinutes away, up to MaxHours, so a night's sleep fills it and a week away gives no more.
+	AwayGoldPerHour = { 25, 35, 50, 80, 120, 180 },
+	AwayMinMinutes = 30,
+	AwayMaxHours = 10,
+	-- the Rift map changes every Monday: gear drops this many times as often there
+	RiftDrops = 2,
+}
+function Config.Today()
+	return os.date("!%Y-%m-%d")
+end
+-- this week's Rift map (a different map each week, in Config.MapOrder)
+function Config.RiftMap()
+	local week = (os.time() - 4 * 86400) // (7 * 86400)
+	return Config.MapOrder[week % #Config.MapOrder + 1]
+end
 
 -- gold (kept between games, spent on gear upgrades) at the end of a game
 Config.GoldPerWave = 25

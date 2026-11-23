@@ -44,7 +44,7 @@ local function isOver()
 end
 
 local function difficulty()
-	return Config.FindById(Config.Difficulties, State.Get("Difficulty")) or Config.Difficulties[2]
+	return Config.DifficultyFor(State.Get("Difficulty"), State.Get("Tier"))
 end
 
 local function onKilled(enemy, player)
@@ -127,6 +127,15 @@ function GameService.EndGame(won)
 		local gold = math.floor((cleared * Config.GoldPerWave + (State.Get("Kills") or 0) * Config.GoldPerKill)
 			* (diff.Gold or 1) * mapInfo.Gems * (1 + goldFind) * (1 + (player:GetAttribute("Rebirths") or 0) * Config.RebirthBonus / 100)
 			* (((player:GetAttribute("BoostGoldUntil") or 0) > os.time()) and 2 or 1))
+		-- the first win of the day: more gold and a bonus chest (Config.ComeBack)
+		local profile = DataService.Get(player)
+		if won and profile and profile.FirstWinDay ~= Config.Today() then
+			profile.FirstWinDay = Config.Today()
+			gold = math.floor(gold * Config.ComeBack.FirstWinGold)
+			player:SetAttribute("FirstWinReady", false)
+			Remotes.Notify:FireClient(player, "First win of the day: double gold and a bonus chest!", Color3.fromRGB(255, 220, 90))
+			task.delay(2.5, ItemService.BonusChest, player, State.Get("Difficulty"))
+		end
 		DataService.AddGold(player, gold)
 		player:SetAttribute("LastGold", gold)
 		DataService.RecordGame(player, cleared, won, State.Get("Kills") or 0)
@@ -141,7 +150,7 @@ function GameService.EndGame(won)
 			SeasonService.AddXp(player, Store.Season.XpPerWin)
 			SeasonService.Funnel(player, 6)
 			QuestService.Add(player, "Win", 1)
-			if diff.Id == "Hard" or diff.Id == "Insane" then
+			if diff.Id == "Hard" or diff.Id == "Insane" or diff.Id == "Mythic" then
 				QuestService.Add(player, "WinHard", 1)
 			end
 		end
@@ -149,6 +158,11 @@ function GameService.EndGame(won)
 			profile.Cleared = profile.Cleared or {}
 			local mapId = State.Get("Map") or "CursedForest"
 			profile.Cleared[mapId] = profile.Cleared[mapId] or {}
+			if diff.Tier and diff.Tier > (profile.MythicBest or 0) then
+				profile.MythicBest = diff.Tier
+				player:SetAttribute("MythicBest", profile.MythicBest)
+				Remotes.Notify:FireClient(player, "Mythic " .. (diff.Tier + 1) .. " unlocked!", diff.Color)
+			end
 			if not profile.Cleared[mapId][diff.Id] then
 				profile.Cleared[mapId][diff.Id] = true
 				for _, d in Config.Difficulties do
@@ -461,7 +475,20 @@ function GameService.Start()
 			Remotes.Notify:FireClient(player, "Beat this map on " .. diff.Unlock .. " to unlock " .. diff.Name, Color3.fromRGB(255, 140, 140))
 			return
 		end
-		if diff and (State.Get("Wave") or 0) == 0 and State.Get("Difficulty") ~= id then
+		if diff and diff.Tiers and (State.Get("Wave") or 0) == 0 then
+			-- Mythic: the first tap picks the highest open tier; every tap after goes one up, round to Tier 1
+			local profile = DataService.Get(player)
+			local top = ((profile and profile.MythicBest) or 0) + 1
+			local tier = State.Get("Tier") or 0
+			if State.Get("Difficulty") ~= id then
+				tier = top
+			else
+				tier = tier >= top and 1 or tier + 1
+			end
+			State.Set("Tier", tier)
+			State.Set("Difficulty", id)
+			notify(player.DisplayName .. " picked Mythic " .. tier, diff.Color)
+		elseif diff and (State.Get("Wave") or 0) == 0 and State.Get("Difficulty") ~= id then
 			State.Set("Difficulty", id)
 			notify(player.DisplayName .. " picked " .. diff.Name .. ": " .. diff.Subtitle, diff.Color)
 		end

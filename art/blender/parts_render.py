@@ -34,6 +34,11 @@ for o in meshes:
         img.pixels = [r ** 2.2, g ** 2.2, b ** 2.2, 1] * 4
         if not o.data.uv_layers:
             o.data.uv_layers.new()
+    elif os.environ.get("HTD_GREY"):
+        img = bpy.data.images.new("grey", 2, 2)
+        img.pixels = [0.6, 0.6, 0.6, 1] * 4
+        if not o.data.uv_layers:
+            o.data.uv_layers.new()
     else:
         cands = [f"{stem}_{base.lower()}_paint.png", f"{stem}_paint_{base[5:]}.png" if base.startswith("Skin_") else "", f"{stem}_paint.png"]
         path = next(p for p in cands if p and os.path.exists(p))

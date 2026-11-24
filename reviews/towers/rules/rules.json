@@ -1,0 +1,59 @@
+{
+ "levels": {
+  "Ballista 1-2": 79.6,
+  "Ballista 1-3": 42.7,
+  "Ballista 2-3": 45.5,
+  "FlameCannon 1-2": 66.7,
+  "FlameCannon 1-3": 50.4,
+  "FlameCannon 2-3": 73.5,
+  "FrostCrystal 1-2": 80.9,
+  "FrostCrystal 1-3": 58.2,
+  "FrostCrystal 2-3": 71.7,
+  "StormObelisk 1-2": 57.0,
+  "StormObelisk 1-3": 55.5,
+  "StormObelisk 2-3": 69.8
+ },
+ "towers": {
+  "Ballista/FlameCannon level 1": 61.2,
+  "Ballista/FrostCrystal level 1": 13.7,
+  "Ballista/StormObelisk level 1": 21.5,
+  "FlameCannon/FrostCrystal level 1": 8.9,
+  "FlameCannon/StormObelisk level 1": 17.6,
+  "FrostCrystal/StormObelisk level 1": 43.0,
+  "Ballista/FlameCannon level 2": 33.1,
+  "Ballista/FrostCrystal level 2": 9.4,
+  "Ballista/StormObelisk level 2": 0.0,
+  "FlameCannon/FrostCrystal level 2": 31.3,
+  "FlameCannon/StormObelisk level 2": 6.6,
+  "FrostCrystal/StormObelisk level 2": 33.3,
+  "Ballista/FlameCannon level 3": 37.7,
+  "Ballista/FrostCrystal level 3": 13.1,
+  "Ballista/StormObelisk level 3": 0.0,
+  "FlameCannon/FrostCrystal level 3": 26.1,
+  "FlameCannon/StormObelisk level 3": 3.6,
+  "FrostCrystal/StormObelisk level 3": 27.0
+ },
+ "stands_out": {
+  "FlameCannon 1": 36.0,
+  "FlameCannon 2": 39.4,
+  "FlameCannon 3": 41.1,
+  "FrostCrystal 1": 38.0,
+  "FrostCrystal 2": 39.6,
+  "FrostCrystal 3": 39.3,
+  "StormObelisk 1": 41.9,
+  "StormObelisk 2": 35.9,
+  "StormObelisk 3": 37.1,
+  "Ballista 1": 34.6,
+  "Ballista 2": 32.6,
+  "Ballista 3": 34.7
+ },
+ "low_effects": {
+  "FlameCannon": "approximated (shadows and post effects off)",
+  "FrostCrystal": "approximated (shadows and post effects off)",
+  "StormObelisk": "approximated (shadows and post effects off)",
+  "Ballista": "approximated (shadows and post effects off)"
+ },
+ "fails": [
+  "FrostCrystal levels 1 and 2 overlap 80.9% (needs 80% or less)"
+ ]
+}

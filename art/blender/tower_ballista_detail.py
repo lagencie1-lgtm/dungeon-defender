@@ -95,8 +95,10 @@ def weapon(name, base, iron=False, scale=1.0):
             else:
                 K.ball(name + f"Knot{tip[0]:.1f}", tip, 0.24 * scale, ROPE, seg=8)
             K.limb(name + f"String{tip[0]:.1f}", tip, notch, 0.06 * scale, 0.06 * scale, ROPE, verts=6, end=False)
-        for s in (-1, 1):   # the rope wraps where the arms meet the stock
-            K.ball(name + f"Wrap{s}", (s * 0.4 * scale * th, yc + R * 0.55, 0.08 * scale), 0.24 * scale, ROPE, (1.0, 1.3, 1.0), seg=8)
+        for s in (-1, 1):   # the rope wraps where the arms meet the stock (on the arms, rolled with the bow)
+            wx, wz = s * 0.4 * scale * th, 0.0
+            K.ball(name + f"Wrap{s}", (wx * math.cos(roll) - wz * math.sin(roll), yc + R * 0.55, 0.08 * scale + wx * math.sin(roll) + wz * math.cos(roll)),
+                   0.24 * scale, ROPE, (1.0, 1.3, 1.0), seg=8)
         # the bolt
         K.limb(name + "Bolt", (0, -st * 0.36, 0.42 * scale), (0, st * 0.62, 0.42 * scale), 0.09 * scale, 0.09 * scale, K.WOOD_DARK, verts=6, end=False)
         K.cone(name + "Head", (0, st * 0.7, 0.42 * scale), 0.22 * scale, 0.55 * scale, IRON, rot=(rad(-90), 0, 0), verts=4)

@@ -42,21 +42,38 @@ task.spawn(function()
 	end
 end)
 
+-- (a fetch that failed counts as finished: the look draws what it has. And never longer than MAX_WAIT seconds from
+-- when a look appears: the film once caught a stand-in kept for good next to the real tower while one fresh texture
+-- was still processing on Roblox's side)
+local MAX_WAIT = 1.5
+local firstSeen = setmetatable({}, { __mode = "k" })
+local function finished(id)
+	local st = ContentProvider:GetAssetFetchStatus(id)
+	return st == Enum.AssetFetchStatus.Success or st == Enum.AssetFetchStatus.Failure
+end
+
 local function ready(look)
 	if not look then
 		return false
 	end
+	firstSeen[look] = firstSeen[look] or os.clock()
+	if os.clock() - firstSeen[look] > MAX_WAIT then
+		return true
+	end
+	local texturesDone = true
 	for _, d in look:GetDescendants() do
 		if d:IsA("MeshPart") then
-			if ContentProvider:GetAssetFetchStatus(d.MeshId) ~= Enum.AssetFetchStatus.Success then
+			if not finished(d.MeshId) then
 				return false
 			end
-			if d.TextureID ~= "" and ContentProvider:GetAssetFetchStatus(d.TextureID) ~= Enum.AssetFetchStatus.Success then
-				return false
+			if d.TextureID ~= "" and not finished(d.TextureID) then
+				texturesDone = false
 			end
 		end
 	end
-	return true
+	-- (the shapes are in: the paint gets a moment more, then the real look shows even unpainted, rather than the
+	-- stand-in standing beside it)
+	return texturesDone or os.clock() - firstSeen[look] > 0.8
 end
 
 local function show(standIn, visible)

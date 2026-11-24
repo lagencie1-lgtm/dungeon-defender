@@ -42,6 +42,8 @@ Each level's muzzles come from the builders' MUZZLE lines (`LEVEL_LOOKS[...].Muz
 - **Stand-in:** every placed tower carries a `StandIn` model (TowerService `setStandIn`): a body, a top and a weapon
   block in the tower's own colours, its footprint and its look's height. Each client shows it until that look's meshes
   and textures are fetched, then hides it (no pop: same footprint and height). Upgrades set a new one for the new look.
+  It gives way 0.8 s after the meshes are in even if a texture is still on its way, and 1.5 s after the look appears
+  at the latest (the film caught it standing beside a freshly uploaded ballista whose paint was still processing).
 - **Measured in the film** (Studio on Lemp's PC; its asset cache is warm, a phone's first run will be slower):
   stand-in drawn 0.05-0.10 s after the tap, swapped for the real look 0.37-0.65 s after it (gates 0.3 s and 1 s).
 - **Low effects:** a LocalScript may not set Roblox's graphics level ("lacking capability RobloxScript"), so the

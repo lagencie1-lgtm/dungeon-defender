@@ -16,7 +16,9 @@ for _ in $(seq 1 60); do
 done
 # wait until the play test ends (or about 12 minutes)
 for _ in $(seq 1 1100); do
-	grep -q "play test finished" "$log" && break
+	# (wait for the test's own last line: the plugin's "play test finished" line can come the moment the play test
+	# STARTS, and Studio was then closed before the test had run)
+	grep -q "AUTOTEST. DONE" "$log" && break
 	sleep 1
 done
 grep -E "AUTOTEST|CreatorError|Info: Script '" "$log" | grep -v "spend point false\|select hero" | sed -E 's/^[^[]*\[FLog::Creator(Output|Error)\] //' | cut -c1-260

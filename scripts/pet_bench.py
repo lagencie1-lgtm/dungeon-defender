@@ -95,6 +95,8 @@ def main():
             parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(open(f, "rb").read()).decode()}})
         video = any(f.lower().endswith(".mp4") for f in files)
         what = ", filmed in the game" if video else ", as still renders (each row is one pet from three sides)"
+        if any("roblox" in os.path.basename(f).lower() for f in files):
+            what += " and as screenshots taken inside Roblox (one pet per tile)"
         game, src = "Heroes Tower Defense (ours)", ", ".join(os.path.basename(f) for f in files)
         parts.append({"text": PROMPT_OURS.format(what=what)})
     else:

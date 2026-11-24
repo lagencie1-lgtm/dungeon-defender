@@ -72,6 +72,8 @@ def paint_pass(fbx, work, strength, noarms, reuse):
             os.remove(painted)
         codex_paint(PROMPT.format(name=os.path.basename(painted)), os.path.basename(painted), work, [views, TARGET])
     aligned, bad = pet_paint.align(views, painted)[:2]   # (it also returns the lowest overlap now)
+    # (HTD_SKIP_VIEWS=back: leave a view out by hand; round C: the painter drew a ghost face on the hood's back)
+    bad = list(bad) + [v for v in os.environ.get("HTD_SKIP_VIEWS", "").split(",") if v and v not in bad]
     atlas = os.path.join(work, "archer_pack_painted_texture.png")
     pet_paint.blender("project", pack, base, aligned, atlas, strength, "noface", *(["skip=" + ",".join(bad)] if bad else []))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "archer_project.py"), "--", "pad", pack, atlas],
@@ -123,7 +125,8 @@ def main():
         shutil.copy(os.path.join(build, f), os.path.join(out, f))
     # the colour blended across every texture seam (about 3 px), so a cut never shows as a line
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "seam_blend.py"), "--", os.path.join(out, NAME + ".fbx"),
-                        "radius=3", "skip=Bow,Quiver"], capture_output=True, text=True, encoding="utf-8", errors="ignore")
+                        "radius=3", "skip=Bow,Quiver", "keep=Head:" + os.path.join(build, f"{NAME}_head_keep.png")],
+                       capture_output=True, text=True, encoding="utf-8", errors="ignore")
     for ln in r.stdout.splitlines():
         if ln.startswith("BLENDED"):
             print(ln)

@@ -277,6 +277,58 @@ if ranger then
 			table.insert(detail, string.format("%d:%.0f%%", k * 45, best * 100))
 		end
 		mark(string.format("archer visible %d of 8 (%s) %s", passed, table.concat(detail, " "), passed >= 7 and "PASS" or "FAIL"))
+		-- round C (coordinator: "the game is the truth for the visibility test"): what the camera really draws. The
+		-- rays above meet the tower's collision shape, which is not what you see. Here each archer's head gets a flat
+		-- colour (magenta, cyan) drawn only where it is seen (Highlight, Occluded), then drawn whole (AlwaysOnTop);
+		-- scripts/film_probe.py counts both in the clip: a head is seen when at least half of it shows.
+		local colours = { Color3.fromRGB(255, 0, 255), Color3.fromRGB(0, 255, 255) }
+		local lights = {}
+		for i, h in heads do
+			local hl = Instance.new("Highlight")
+			hl.Adornee = h
+			hl.FillColor = colours[i] or Color3.new(1, 1, 0)
+			hl.FillTransparency = 0
+			hl.OutlineTransparency = 1
+			hl.Enabled = false
+			hl.Parent = h
+			table.insert(lights, hl)
+		end
+		-- (the HUD is hidden while it measures: it covered the gallery; and the camera is put back every frame, as the
+		-- run camera takes over when a wave starts)
+		local hidden = {}
+		for _, g in player:WaitForChild("PlayerGui"):GetChildren() do
+			if g:IsA("ScreenGui") and g.Enabled then
+				g.Enabled = false
+				table.insert(hidden, g)
+			end
+		end
+		local probeCam = CFrame.new()
+		game:GetService("RunService"):BindToRenderStep("FilmProbe", Enum.RenderPriority.Last.Value + 10, function()
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			workspace.CurrentCamera.CFrame = probeCam
+		end)
+		for k = 0, 7 do
+			local a = math.rad(k * 45)
+			local look = Vector3.new(math.sin(a), 0, math.cos(a))
+			local eye = focus - look * 20.5 * math.cos(math.rad(42)) + Vector3.new(0, 20.5 * math.sin(math.rad(42)), 0)
+			probeCam = CFrame.lookAt(eye, focus)
+			for _, mode in { "Occluded", "AlwaysOnTop" } do
+				for _, hl in lights do
+					hl.DepthMode = Enum.HighlightDepthMode[mode]
+					hl.Enabled = true
+				end
+				task.wait(0.5)
+				mark(string.format("probe %d %s", k * 45, mode))
+				task.wait(0.5)
+			end
+		end
+		for _, hl in lights do
+			hl:Destroy()
+		end
+		game:GetService("RunService"):UnbindFromRenderStep("FilmProbe")
+		for _, g in hidden do
+			g.Enabled = true
+		end
 	end
 	-- the archers at work (2026-11-23): a wave starts while the level 3 Ranger stands, the camera stays on it
 	Remotes.StartWave:FireServer()

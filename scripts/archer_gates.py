@@ -19,6 +19,7 @@ from collections import deque
 import numpy as np
 from PIL import Image, ImageDraw
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 OTHERS = "Body,ArmR,ArmL,Bow,Quiver"
@@ -267,6 +268,23 @@ def hood_side(fbx, d):
         return depth, tip, rows
     nd_m, tip_m, rows_m = notch_and_tip(a)
     nd_p, tip_p, rows_p = notch_and_tip(b)
+
+    def tail_measures(mm, rows, tip):
+        """round C: the tail's length from the notch's deepest point (the top of the hollow under the tail, where the
+        gap closes) to the tip, as a fraction of the box; and the row of the outline's rearmost point"""
+        if not rows or tip is None:
+            return None, None
+        y_top = int(min(rows) * mm.shape[0])
+        xs = np.where(mm[y_top])[0]
+        gaps = np.where(np.diff(xs) > 1)[0]
+        gx = (xs[gaps[0]] + xs[gaps[0] + 1]) / 2 if len(gaps) else xs.min()
+        apex = (gx / mm.shape[1], y_top / mm.shape[0])
+        length = float(np.hypot(tip[0] - apex[0], tip[1] - apex[1]))
+        left = np.array([np.where(r)[0].min() if r.any() else 10 ** 6 for r in mm])
+        rear_rows = np.where(left <= left.min() + 1)[0]
+        return length, float(rear_rows.mean() / mm.shape[0])
+    len_m, rear_m = tail_measures(a, rows_m, tip_m)
+    len_p, rear_p = tail_measures(b, rows_p, tip_p)
     # the notch must be under the tail: its rows inside the painting's notch rows (+-8 % of the height)
     notch_under = bool(rows_m) and bool(rows_p) and min(rows_m) >= min(rows_p) - 0.08 and max(rows_m) <= max(rows_p) + 0.08
     tip_off = None if (tip_m is None or tip_p is None) else float(np.hypot(tip_m[0] - tip_p[0], tip_m[1] - tip_p[1]))
@@ -274,7 +292,38 @@ def hood_side(fbx, d):
             "notch_depth": round(nd_m * 100, 1), "notch_depth_painting": round(nd_p * 100, 1),
             "tip_offset": None if tip_off is None else round(tip_off * 100, 1), "notch_under_tail": notch_under,
             "notch_rows": [round(min(rows_m), 2), round(max(rows_m), 2)] if rows_m else None,
-            "notch_rows_painting": [round(min(rows_p), 2), round(max(rows_p), 2)] if rows_p else None}
+            "notch_rows_painting": [round(min(rows_p), 2), round(max(rows_p), 2)] if rows_p else None,
+            "tail_length": None if len_m is None else round(len_m * 100, 1),
+            "tail_length_painting": None if len_p is None else round(len_p * 100, 1),
+            "rearmost_row": None if rear_m is None else round(rear_m, 2),
+            "rearmost_row_painting": None if rear_p is None else round(rear_p, 2),
+            "tail_rows": [round(min(rows_m) - (len_m or 0), 2), round(max(rows_m), 2)] if rows_m else None}
+
+
+def hood_three_quarter(fbx, d):
+    """the head (hood and collar: the upper 39.5 % of the figure) against the elf 3/4 sheet, boxes fitted. The sheet's
+    left figure faces the viewer's right: the model turned to -135; its right figure: -45"""
+    import archer_compare as C
+
+    def m_of(im, white):
+        a = np.asarray(im.convert("RGBA")).astype(int)
+        msk = (a[..., :3].min(-1) < 235) & (a[..., 3] > 0) if white else a[..., 3] > 20
+        ys, xs = np.where(msk)
+        return msk[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+    def top(msk, f=0.395):
+        t = msk[:int(msk.shape[0] * f)]
+        ys, xs = np.where(t)
+        c = t[ys.min():ys.max() + 1, xs.min():xs.max() + 1].astype(np.uint8) * 255
+        return np.asarray(Image.fromarray(c).resize((400, 300), Image.NEAREST)) > 127
+    out = {}
+    for nm, idx, az in (("left", 0, -135), ("right", 1, -45)):
+        p = top(m_of(C.view("ranger_archer_elf34.png", idx), True))
+        path = os.path.join(d, f"gate_q_{idx}_{az}.png")
+        render(fbx, path, az, el=4, grey=True, skip="Bow,Quiver")
+        a = top(m_of(Image.open(path), False))
+        out[nm] = round(float(100 * (a & p).sum() / (a | p).sum()), 1)
+    return out
 
 
 def tail_bump(fbx, d, ball_fbx):
@@ -349,8 +398,40 @@ def main():
         res["fails"].append(f"hood back outline has {hs['tips']} tips (needs exactly 1)")
     if hs["rear_overlap"] < 85:
         res["fails"].append(f"hood rear third overlap {hs['rear_overlap']}% (needs 85%)")
-    if hs["notch_depth"] < 0.7 * hs["notch_depth_painting"]:
-        res["fails"].append(f"notch under the tail {hs['notch_depth']}% (needs 70% of the painting's {hs['notch_depth_painting']}%)")
+    # round C: the notch at least 95 % of the painting's; the tail (notch's top to tip) at least 90 % of its length;
+    # the tail's tip the hood's rearmost point (the outline's rearmost row in the tail's rows, as in the painting)
+    if hs["notch_depth"] < 0.95 * hs["notch_depth_painting"]:
+        res["fails"].append(f"notch under the tail {hs['notch_depth']}% (needs 95% of the painting's {hs['notch_depth_painting']}%)")
+    if hs["tail_length"] is None or hs["tail_length"] < 0.9 * hs["tail_length_painting"]:
+        res["fails"].append(f"tail length {hs['tail_length']} (needs 90% of the painting's {hs['tail_length_painting']})")
+    if hs["rearmost_row"] is None or hs["tail_rows"] is None or not (hs["tail_rows"][0] - 0.02 <= hs["rearmost_row"] <= hs["tail_rows"][1]):
+        res["fails"].append(f"the hood's rearmost point (row {hs['rearmost_row']}) is not on the tail (rows {hs['tail_rows']})")
+    # the hood's three-quarter outline against the elf 3/4 sheet (round C: 80 % or more)
+    q = hood_three_quarter(fbx, d)
+    res["hood_three_quarter"] = q
+    if min(q.values()) < 80:
+        res["fails"].append(f"hood three-quarter outline overlap {q} (needs 80%)")
+    # the hair (round C, from the build): no hair outside the head's outline in the 16 turntable views, both brows
+    # fully seen from -45 to +45 degrees
+    if "hair" in build:
+        res["hair"] = build["hair"]
+        if not build["hair"].get("ok"):
+            res["fails"].append("hair gate (outline or brows) failed in the build")
+    else:
+        res["fails"].append("no hair gate in the build")
+    # per-part scores against the front painting (scripts/archer_parts_score.py): the face's skin gate (C2), the
+    # hair's colour (delta E of its overall colour under 8) and brush strokes (0.8 to 1.1 times the painting's hair:
+    # round B's flat chips scored 0.43)
+    import archer_parts_score as PS
+    ps = PS.score(fbx)
+    res["parts"] = ps
+    if not ps["face_gate"]["ok"]:
+        res["fails"].append(f"face skin gate {ps['face_gate']}")
+    h = ps.get("hair")
+    if not h or h["dE_mid"] >= 8:
+        res["fails"].append(f"hair colour {h and h['dE_mid']} (needs under 8)")
+    if not h or not (0.8 * h["stroke_painting"] <= h["stroke"] <= 1.1 * h["stroke_painting"]):
+        res["fails"].append(f"hair brush strokes {h and h['stroke']} (needs 0.8-1.1 x the painting's {h and h['stroke_painting']})")
     if not hs["notch_under_tail"]:
         res["fails"].append(f"the notch is not under the tail (rows {hs['notch_rows']}, painting {hs['notch_rows_painting']})")
     if hs["tip_offset"] is None or hs["tip_offset"] > 5:

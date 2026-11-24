@@ -106,8 +106,17 @@ def main():
     # (centre = the outline's back edge in that row + the half-thickness; the start sits inside the crown)
     back_edge = {80: 712, 100: 686, 120: 666, 140: 651, 160: 641, 180: 637, 200: 636, 220: 637, 240: 640, 260: 644, 280: 651}
     half = {80: 46, 100: 46, 120: 44, 140: 40, 160: 35, 180: 31, 200: 28, 220: 25, 240: 22, 260: 19, 280: 11}
-    spine = [(back_edge[y] + half[y], y, half[y]) for y in sorted(back_edge)] + [(660, 293, 3)]
-    spec["tail"] = [{"y": Y(x), "z": z(yy), "r": round(r * S, 4)} for x, yy, r in spine]
+    # round C: the tail starts inside the crown (its round start capped out of the crown's upper back before, a bulge
+    # 40 to 110 px behind the painting's slope there); from row 120 down it follows the painted outline
+    spine = [(752, 102, 38)] + [(back_edge[y] + half[y], y, half[y]) for y in sorted(back_edge) if y >= 120] + [(660, 293, 3)]
+    # the traced half-thickness is across the row (horizontal); the tube's radius is across the spine: where the spine
+    # runs slanted the row cuts the tube long, so r = half * (the spine's vertical share)
+    perp = []
+    for i, (x, yy, r) in enumerate(spine):
+        a, b = spine[max(0, i - 1)], spine[min(len(spine) - 1, i + 1)]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        perp.append(r * abs(dy) / math.hypot(dx, dy))
+    spec["tail"] = [{"y": Y(x), "z": z(yy), "r": round(r * S, 4)} for (x, yy, _), r in zip(spine, perp)]
 
     # ---- the collar roll where the hood meets the shoulders --------------------------------------------------------
     spec["collar"] = {"z": z(358), "hw": round(112 * S, 4), "r": round(15 * S, 4)}
@@ -179,6 +188,25 @@ def main():
     # looked for by the face gate (scripts/archer_gates.py)
     spec["marks"] = {"eye": [[252, 215, 300, 267], [352, 217, 400, 267]], "brow": [[242, 192, 303, 220], [348, 192, 410, 223]],
                      "mouth": [[287, 293, 365, 307]]}
+    # round C (coordinator: the hair as a thin cap hugging the forehead, the painting's fringe): the front painting's
+    # hair inside the hood (brown and dark classes, the eyes, brows and mouth cut out), the one piece joined to the
+    # fringe, softened 3 px so its lower edge is round lobes; stored as runs per row (every 2 px)
+    from scipy import ndimage
+    hair = ((cls == "h") | (cls == "d"))
+    reg = np.zeros_like(hair)
+    reg[100:300, 190:455] = True
+    hair &= reg
+    for boxes in spec["marks"].values():
+        for x0, y0, x1, y1 in boxes:
+            hair[y0 - 3:y1 + 3, x0 - 3:x1 + 3] = False
+    lab, _ = ndimage.label(hair)
+    comp = lab == lab[140, CX]
+    comp = ndimage.binary_fill_holes(ndimage.gaussian_filter(comp.astype(float), 3) > 0.5)
+    spec["fringe"] = []
+    for y in range(100, 300, 2):
+        rr = runs(comp[y, :])
+        if rr:
+            spec["fringe"].append({"y": y, "z": z(y), "runs": [[X(a), X(b)] for a, b in rr]})
     out = os.path.join(DIR, "ranger_archer_loft.json")
     json.dump(spec, open(out, "w"), indent=1)
     print("wrote", out, len(spec["head"]), "head rows,", len(spec["opening"]), "opening rows,", len(spec["tip"]), "tip rows")

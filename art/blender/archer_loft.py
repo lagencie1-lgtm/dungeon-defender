@@ -214,6 +214,19 @@ head = Part("Head")
 # the elf hood: one solid; where it reaches far back the plan sections turn to a teardrop (pointed toward the back),
 # so the hood runs back to a ridge and a point instead of a round dome
 # the skull is about as deep as it is wide: what the side outline shows behind that is the hood's cone and tail
+# round C (coordinator: "slim the hood's back bulge to the side painting's outline"): the skull loft came out fuller
+# than the painting at the upper back (the sections' round shape, the dome and the smooth join all add a little).
+# scripts/archer_side_true.py measures, row by row at the painting's own scale, how far the model's back edge lies
+# outside the painting's and writes the correction; it is taken off the rows' back here.
+FIT = os.path.join(ROOT, "art", "ref3d", "archer", "ranger_archer_side_fit.json")
+if os.path.exists(FIT) and not os.environ.get("HTD_NO_FIT"):
+    _fit = json.load(open(FIT))
+    _zs = sorted((float(k), v) for k, v in _fit["back"].items())
+    for r in SPEC["head"]:
+        if _zs[0][0] <= r["z"] <= _zs[-1][0]:
+            dz = interp([{"z": a, "d": b} for a, b in _zs], "d", r["z"])
+            r["back"] -= dz
+            r["body_back"] = r.get("body_back", r["back"] + dz) - dz
 for r in SPEC["head"]:
     # (above the tail's start the whole outline is crown: the crown runs back into the tail with no saddle)
     # the notch only where the side painting has it (the rows where the tail hangs free); above, the crown is merged
@@ -231,7 +244,7 @@ for r in SPEC["head"]:
 head_rows = [dict(r, back=r["body_back"]) for r in SPEC["head"]]
 for r in SPEC["head"]:
     r["back"] = r["body_back"]
-hood_faces = head.add(loft(head.bm, head_rows, dome=0.035, seg=40), "hood")
+hood_faces = head.add(loft(head.bm, head_rows, dome=float(os.environ.get("HTD_DOME", "0.035")), seg=40), "hood")
 hood_verts = list({v for f in hood_faces for v in f.verts})
 for _ in range(3):
     bmesh.ops.smooth_vert(head.bm, verts=hood_verts, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=False)
@@ -274,7 +287,12 @@ if SPEC.get("tail") and not os.environ.get("HTD_NO_TAIL"):   # (HTD_NO_TAIL: the
     tl = SPEC["tail"]
     tb = bmesh.new()
     TAIL_FAT = float(os.environ.get("HTD_TAIL_FAT", "1.0"))   # (as traced; fuller tails overshot the painting's outline)
-    tube(tb, [Vector((0, t["y"], t["z"])) for t in tl], [max(0.012, t["r"] * TAIL_FAT) for t in tl], seg=20, per=6, flat=1.15)
+    # (HTD_TAIL_BACK: the tail's lower half swung further back, metres at the tip; trials for the quarter views)
+    TB = float(os.environ.get("HTD_TAIL_BACK", "0"))
+    z_top, z_tip = tl[0]["z"], tl[-1]["z"]
+    tl = [dict(t, y=t["y"] + TB * max(0.0, (z_top - t["z"]) / (z_top - z_tip)) ** 1.5) for t in tl]
+    tube(tb, [Vector((0, t["y"], t["z"])) for t in tl], [max(0.012, t["r"] * TAIL_FAT) for t in tl], seg=20, per=6, flat=float(os.environ.get("HTD_TAIL_WIDE", "1.15")),
+         nvec=(1, 0, 0))   # (wider across, X only: the side outline keeps the traced thickness)
     tb.verts.index_update()
     t_pts = [v.co[:] for v in tb.verts]
     t_faces = [[v.index for v in f.verts] for f in tb.faces]
@@ -283,7 +301,7 @@ if SPEC.get("tail") and not os.environ.get("HTD_NO_TAIL"):   # (HTD_NO_TAIL: the
     idx = {v: i for i, v in enumerate(hv)}
     h_pts = [v.co[:] for v in hv]
     h_faces = [[idx[v] for v in f.verts] for f in hood_faces]
-    pts, faces = vdb_union.smooth_union([(h_pts, h_faces), (t_pts, t_faces)], voxel=0.011, k=0.1)
+    pts, faces = vdb_union.smooth_union([(h_pts, h_faces), (t_pts, t_faces)], voxel=0.011, k=float(os.environ.get("HTD_UNION_K", "0.04")))
     for f in hood_faces:
         head.tags.pop(f, None)
     bmesh.ops.delete(head.bm, geom=hv, context="VERTS")
@@ -349,26 +367,162 @@ for x, zz in loop:
     pts.append(Vector((x, y + sink, zz)))
 head.add(band_loop(head.bm, pts, TW / 2, 0.016, HEAD_C), "cream")
 
-# the hair: big flat locks across the forehead and down by the cheeks, lying on the face under the trim
-# three broad swept locks along the fringe line of the front painting, parted a little left of the middle, each a
-# flattened leaf with a soft point (round B: the forehead read as a row of small curls)
-LOCKS = [(-0.17, 0.12, -0.45), (-0.02, 0.14, -0.25), (0.14, 0.13, 0.38)]   # (kept well inside the opening)
-for x, ln, tilt in LOCKS:
-    zt = Z_OPEN_TOP - TW
-    while opening_w(zt) - TW < abs(x) + 0.05 and zt > Z_OPEN_BOT:
-        zt -= 0.005
-    y0, _ = head_surface(x, zt)
-    a = Vector((x, y0 + RECESS * 0.6, zt - 0.025))    # (its top tucked under the trim)
-    b = a + Vector((math.sin(tilt) * ln, -0.025, -math.cos(tilt) * ln))
-    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.11, 0.1, 0.03], seg=12, per=4, flat=0.32, nvec=(0, 1, 0)), "hair")
-for s in (-1, 1):       # side locks by the cheeks
-    zt = 1.8
-    x = s * (opening_w(zt) - TW - 0.12)      # (by the cheek, clear of the eye, inside the opening's outline seen side-on)
-    y0, _ = head_surface(x * 0.95, zt)
-    a = Vector((x, y0 + RECESS * 0.7, zt))
-    b = a + Vector((-s * 0.03, 0.0, -0.17))
-    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((s * 0.01, -0.012, 0)), b], [0.065, 0.058, 0.025], seg=12, per=3, flat=0.6,
-                  nvec=(s * 0.9, 0.45, 0)), "hair")
+# the hair (round C, coordinator: "a thin cap on the skull ... not free-standing leaves"): the front painting's fringe
+# and cheek locks (scripts/archer_elf_spec.py "fringe": its outline, softened into round lobes) as one thin shell lying
+# on the face, under the trim: thickest in the middle of the hair, thinning to a rounded edge. Made as a field and
+# meshed (OpenVDB), so it is one closed shell. Where the hair gate finds it standing out of the head's outline in a
+# turntable view, it is thinned there and made again (fringe_fit).
+def fringe_field(T0=0.017, D=0.03, voxel=0.0025):
+    import numpy as np
+    from mathutils.bvhtree import BVHTree
+    hv = sorted({v for f in hood_faces for v in f.verts}, key=lambda v: v.index)
+    idx = {v: i for i, v in enumerate(hv)}
+    tree = BVHTree.FromPolygons([v.co.copy() for v in hv], [[idx[v] for v in f.verts] for f in hood_faces])
+    rows = SPEC["fringe"]
+    xs = np.arange(-0.40, 0.40 + 1e-9, voxel)
+    zs = np.arange(min(r["z"] for r in rows) - 0.02, max(r["z"] for r in rows) + 0.02, voxel)
+    mask = np.zeros((len(zs), len(xs)), bool)
+    rz = np.array([r["z"] for r in rows])
+    for j, zz in enumerate(zs):
+        r = rows[int(np.argmin(np.abs(rz - zz)))]
+        if abs(r["z"] - zz) > 0.008:
+            continue
+        for x0, x1 in r["runs"]:
+            mask[j, (xs >= x0) & (xs <= x1)] = True
+    # the face surface under it, straight from the front (only where the surface looks to the front, not the
+    # opening's side wall) and only inside the trim's inner edge (the painting's hair beside the cheeks reaches over
+    # the hood's dark inside: on the model that is the hood's outer front)
+    ys = np.full(mask.shape, np.nan)
+    for j, zz in enumerate(zs):
+        for i, x in enumerate(xs):
+            h = tree.ray_cast(Vector((x, -3.0, zz)), Vector((0, 1, 0)))
+            if h[0] is not None and abs(h[1].y) > 0.5:
+                ys[j, i] = h[0].y
+            if mask[j, i] and edge_distance(x, zz) < 0.02:
+                mask[j, i] = False
+    mask &= ~np.isnan(ys)
+    ysf = np.where(np.isnan(ys), np.nanmax(ys), ys)
+    # 2-D distance to the hair's edge (in metres): inside positive, outside negative
+    edge = np.argwhere(mask & ~(np.roll(mask, 1, 0) & np.roll(mask, -1, 0) & np.roll(mask, 1, 1) & np.roll(mask, -1, 1)))
+    jj, ii = np.mgrid[0:len(zs), 0:len(xs)]
+    dist = np.full(mask.shape, 1e9)
+    for k in range(0, len(edge), 400):
+        e = edge[k:k + 400]
+        d2 = (jj[..., None] - e[:, 0]) ** 2 + (ii[..., None] - e[:, 1]) ** 2
+        dist = np.minimum(dist, np.sqrt(d2.min(-1)) * voxel)
+    sd = np.where(mask, dist, -dist)
+    T = np.where(sd > 0, T0 * np.sqrt(np.clip(sd / D, 0, 1)), sd)   # (rounded edge: a quarter ellipse)
+    return dict(xs=xs, zs=zs, ys=ys, ysf=ysf, sd=sd, T=T, mask=mask, voxel=voxel, T0=T0)
+
+
+def fringe_mesh(F, scale):
+    """mesh the cap with its thickness times `scale` (per cell, 1 = full): faces added to the head"""
+    import numpy as np
+    import openvdb
+    xs, zs, ys, ysf, sd, voxel = F["xs"], F["zs"], F["ys"], F["ysf"], F["sd"], F["voxel"]
+    T = np.where(sd > 0, np.maximum(F["T"] * scale, np.minimum(F["T"], 0.001)), F["T"])   # (never thinner than 1 mm)
+    yv = np.arange(np.nanmin(ys) - F["T0"] - 0.02, np.nanmax(ys) + 0.03, voxel)
+    # field over (x, y, z): the slab from just under the surface (-0.012) out to T, in front of the face (y smaller)
+    u = ysf[None, :, :] - yv[:, None, None]            # (y, z, x): how far in front of the surface
+    phi = np.maximum(u - T[None], -u - 0.012)
+    phi = np.ascontiguousarray(np.transpose(phi, (2, 0, 1)), dtype=np.float32)   # -> (x, y, z), laid out as OpenVDB reads it
+    band = 3 * voxel
+    g = openvdb.FloatGrid(background=float(band))
+    lo = (int(round(xs[0] / voxel)), int(round(yv[0] / voxel)), int(round(zs[0] / voxel)))
+    g.copyFromArray(np.clip(phi, -band, band), ijk=lo)
+    g.transform = openvdb.createLinearTransform(voxelSize=voxel)
+    g.gridClass = openvdb.GridClass.LEVEL_SET
+    pts, tris, quads = g.convertToPolygons(isovalue=0.0, adaptivity=0.0)
+    nv = [head.bm.verts.new(p) for p in np.asarray(pts).tolist()]
+    faces = []
+    for f in quads.tolist() + tris.tolist():
+        try:
+            faces.append(head.bm.faces.new([nv[i] for i in f]))
+        except ValueError:
+            pass
+    return faces
+
+
+def fringe_fit(rounds=6):
+    import numpy as np
+    global hair_faces
+    F = fringe_field()
+    scale = np.ones(F["T"].shape)
+    jj, ii = np.mgrid[0:len(F["zs"]), 0:len(F["xs"])]
+    for rnd in range(rounds):
+        hair_faces = head.add(fringe_mesh(F, scale), "hair")
+        out, outside = hair_gates(collect=True)
+        if not outside:
+            break
+        # thin the cap round each point that stood out (5 cm round it, to 60 %), then make it again
+        hit = np.zeros(scale.shape, bool)
+        for x, z in outside:
+            i = int(round((x - F["xs"][0]) / F["voxel"]))
+            j = int(round((z - F["zs"][0]) / F["voxel"]))
+            r = int(0.025 / F["voxel"])
+            hit |= ((jj - j) ** 2 + (ii - i) ** 2) <= r * r
+        scale = np.where(hit, scale * 0.6, scale)
+        print("FRINGE fit round %d: %d points stood out, thinned %d cells" % (rnd + 1, len(outside), hit.sum()))
+        verts = list({v for f in hair_faces for v in f.verts})
+        for f in hair_faces:
+            head.tags.pop(f, None)
+        bmesh.ops.delete(head.bm, geom=verts, context="VERTS")
+    print("FRINGE cap:", len(hair_faces), "faces")
+    return out
+
+
+def hair_gates(collect=False):
+    """round C gates on the hair, from the geometry (exact, no picture threshold):
+    outline: in all 16 turntable views (level and the turntable's 8 degrees down) no hair vertex lies outside the outline of the hood
+             with its trim (a line through it along the view must hit the hood);
+    brows:   from 45 degrees left to 45 degrees right both brows (the front painting's brow boxes, on the face) are
+             fully visible: no hair between them and the camera"""
+    from mathutils.bvhtree import BVHTree
+    hair_set = set(hair_faces)
+    others = [f for f in head.bm.faces if f not in hair_set]
+    head.bm.verts.index_update()
+    allv = list(head.bm.verts)
+    hood_tree = BVHTree.FromPolygons([v.co.copy() for v in allv], [[v.index for v in f.verts] for f in others])
+    hair_tree = BVHTree.FromPolygons([v.co.copy() for v in allv], [[v.index for v in f.verts] for f in hair_faces])
+    hverts = list({v for f in hair_faces for v in f.verts})
+    out = {"outline": {}, "brows": {}}
+    pts_out = []
+    for k in range(16):
+        for el in (0, 8, 42):   # (level; the turntable's 8 degrees; the run camera's 42, logged only)
+            az, e = math.radians(-90 + k * 22.5), math.radians(el)
+            c = Vector((math.cos(az) * math.cos(e), math.sin(az) * math.cos(e), math.sin(e)))
+            # (1 px tolerance at the 512 px turntable, 5 mm: the line through the point moved 5 mm toward the head's
+            # middle, across the view)
+            def inward(v):
+                d = HEAD_C - v.co
+                d = d - c * d.dot(c)
+                return v.co + d.normalized() * 0.005
+            outside = [v for v in hverts if hood_tree.ray_cast(inward(v) + c * 5.0, -c)[0] is None]
+            out["outline"][f"{k:02d}/{el}"] = len(outside)
+            if el != 42:
+                pts_out.extend((v.co.x, v.co.z) for v in outside)
+    S_, CX_, G_ = SPEC["scale"], SPEC["cx"], SPEC["ground"]
+    for b, (x0, y0, x1, y1) in enumerate(SPEC["marks"]["brow"]):
+        pts = []
+        for i in range(6):
+            for j in range(4):
+                px = x0 + 4 + (x1 - x0 - 8) * i / 5
+                py = y0 + 4 + (y1 - y0 - 8) * j / 3
+                h = hood_tree.ray_cast(Vector(((px - CX_) * S_, -3.0, (G_ - py) * S_)), Vector((0, 1, 0)))
+                if h[0] is not None:
+                    pts.append(h[0])
+        for ang in range(-45, 46, 15):
+            az = math.radians(-90 + ang)
+            c = Vector((math.cos(az), math.sin(az), 0))
+            hidden = sum(1 for p in pts if hair_tree.ray_cast(p + c * 0.002, c)[0] is not None)
+            out["brows"][f"{b}/{ang:+d}"] = round(1 - hidden / max(1, len(pts)), 3)
+    bad = [k for k, v in out["outline"].items() if v and not k.endswith("/42")] + [k for k, v in out["brows"].items() if v < 1.0]
+    out["ok"] = not bad
+    print("HAIR GATES", "ok" if not bad else "FAIL " + ", ".join(bad), out)
+    return (out, pts_out) if collect else out
+
+
+HAIR_GATE = fringe_fit()
 
 # ---------------------------------------------------------------------------------------------------------------
 # Body
@@ -543,7 +697,7 @@ def watertight(part):
     return len(bad)
 
 
-GATES = {"watertight": {}}
+GATES = {"watertight": {}, "hair": HAIR_GATE}
 for p in parts:
     bad = watertight(p)
     GATES["watertight"][p.name] = bad
@@ -583,14 +737,24 @@ def to_object(part):
                         w = max(0.0, min(1.0, (e - 0.01) / 0.04))
                         # only where the surface looks to the front: the painting is never stretched round a side
                         nf = max(0.0, min(1.0, (-loop.vert.normal.y - 0.55) / 0.25))
+                        # (round C: deep inside the opening the painting always wins: round B's thinned face mesh had
+                        # vertices at the nose bridge and the eye's inner corner turned a little sideways, and their
+                        # low weight spread the hood's dark inside over whole triangles: the smudge beside the nose)
+                        nf = max(nf, max(0.0, min(1.0, (e - 0.09) / 0.05)))
                         # and not where it turns down under the chin (a flat skin strip at oblique angles)
                         nd = max(0.0, min(1.0, (loop.vert.normal.z + 0.75) / 0.2))   # (only faces turned well down)
                         w *= nf * nd
                         # inside the opening, wherever the painting does not reach: the hood's own dark inside
                         c = lin(PAL["hood_inner"]) + (1.0,)
+            if part.name == "Head" and part.tags.get(f) == "hair":
+                # the fringe's front is the front painting's own hair (its light strokes and dark gaps); its sides
+                # are the hair colour, for the painterly pass to paint (round C)
+                w = max(0.0, min(1.0, (-loop.vert.normal.y - 0.35) / 0.25))
             loop[col] = c
             loop[facew] = (w, w, w, 1.0)
-            k = 1.0 if (part.name == "Head" and part.tags.get(f) in ("cream", "hair")) else 0.0   # (smooth as baked)
+            k = 1.0 if (part.name == "Head" and part.tags.get(f) == "cream") else 0.0   # (smooth as baked)
+            if part.name == "Head" and part.tags.get(f) == "hair":
+                k = w   # (kept where it is the painting's)
             loop[keepw] = (k, k, k, 1.0)
     bm.to_mesh(mesh)
     o = bpy.data.objects.new(part.name, mesh)
@@ -894,6 +1058,8 @@ for base, o in props.items():
     shutil.copy(os.path.join(os.path.dirname(OLD), f"{NAME}_{base.lower()}_paint.png"), os.path.join(OUT, f"{NAME}_{base.lower()}_paint.png"))
 
 for o, size in zip(objs, (1024, 1024, 512, 512)):
+    if os.environ.get("HTD_NO_BAKE"):   # (shape trials: grey renders need no paint)
+        continue
     bake(o, size)
 
 import lib  # noqa: E402

@@ -52,6 +52,10 @@ lo = Vector((min(min((o.matrix_world @ Vector(c))[i] for c in o.bound_box) for o
 hi = Vector((max(max((o.matrix_world @ Vector(c))[i] for c in o.bound_box) for o in meshes) for i in range(3)))
 center = (lo + hi) / 2
 radius = (hi - lo).length / 2
+frame = os.environ.get("HTD_FRAME")   # close-up: "x,y,z,width" (the view's centre and its width, Blender units)
+if frame:
+    fx, fy, fz, fw = (float(v) for v in frame.split(","))
+    center = Vector((fx, fy, fz))
 scene = bpy.context.scene
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "STUDIO" if lit else "FLAT"
@@ -65,7 +69,7 @@ scene.collection.objects.link(cam)
 scene.camera = cam
 if ortho:
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = (hi - lo).length * 1.05
+    cam.data.ortho_scale = fw if frame else (hi - lo).length * 1.05
 else:
     cam.data.lens = 50
 d = radius * 3.0

@@ -14,6 +14,9 @@ fbx = os.path.abspath(args[0])
 R = float(next((a[7:] for a in args[1:] if a.startswith("radius=")), 3))
 stem = fbx[:-4]
 SKIP = set(next((a[5:].split(",") for a in args[1:] if a.startswith("skip=")), []))   # parts whose paint stays as it is
+# keep=<part>:<mask.png>: texels the mask keeps (white) are left as they are (round C: the face is the front painting
+# projected straight on, the same on both sides of a cut already; blending there smeared an eye across a cut)
+KEEP = dict(a[5:].split(":", 1) for a in args[1:] if a.startswith("keep="))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=fbx)
 
@@ -36,6 +39,16 @@ for o in bpy.context.scene.objects:
     px = np.empty(w * h * 4, dtype=np.float32)
     im.pixels.foreach_get(px)
     px = px.reshape(h, w, 4)
+    keep = None
+    if base in KEEP:
+        km = bpy.data.images.load(KEEP[base])
+        kp = np.empty(km.size[0] * km.size[1] * 4, dtype=np.float32)
+        km.pixels.foreach_get(kp)
+        kp = kp.reshape(km.size[1], km.size[0], 4)[..., 0]
+        if kp.shape != (h, w):
+            kp = kp[np.ix_((np.arange(h) * kp.shape[0] // h), (np.arange(w) * kp.shape[1] // w))]
+        keep = kp[..., None]
+    orig = px.copy()
     uv = o.data.uv_layers.active.data
     sides = {}
     for poly in o.data.polygons:
@@ -71,6 +84,8 @@ for o in bpy.context.scene.objects:
                 x0, x1 = max(0, j - int(R) - 1), min(w, j + int(R) + 2)
                 f = fall[y0 - (i - int(R) - 1):y1 - (i - int(R) - 1), x0 - (j - int(R) - 1):x1 - (j - int(R) - 1)]
                 px[y0:y1, x0:x1, :3] = px[y0:y1, x0:x1, :3] * (1 - f) + c * f
+    if keep is not None:
+        px[..., :3] = px[..., :3] * (1 - keep) + orig[..., :3] * keep
     im.pixels.foreach_set(px.ravel())
     im.filepath_raw = path
     im.file_format = "PNG"

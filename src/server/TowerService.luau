@@ -14,6 +14,7 @@ local ArtService = require(script.Parent.ArtService)
 local StoreService = require(script.Parent.StoreService)
 local SeasonService = require(script.Parent.SeasonService)
 local Ground = require(ReplicatedStorage.Shared.Ground)
+local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
 
 local TowerService = {}
 
@@ -276,6 +277,11 @@ end
 function TowerService.CanPlace(position)
 	local half = Config.MapSize / 2
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
+		return false, "Too close to the edge"
+	end
+	-- the map's real outline (MapOutline): the valley side, crater wall or cave wall beyond it is scenery
+	local map = Config.Maps[Config.CurrentMap]
+	if map and MapOutline.OutsideOf(map.Theme, position.X, position.Z) > -MapOutline.BuildStop then
 		return false, "Too close to the edge"
 	end
 	if Config.DistanceToPath(position) < Config.PathWidth / 2 + 3 then

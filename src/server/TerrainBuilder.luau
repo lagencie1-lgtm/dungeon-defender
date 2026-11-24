@@ -233,9 +233,46 @@ local function abutment(b, material)
 	t:FillBlock(along + Vector3.new(0, -3, 0), Vector3.new(18.6, 6.2, 17), material)
 end
 
+-- The rise outside the field's outline (MapOutline, MapLayouts.RiseAt): ground that climbs away from the field in
+-- steps, so the battlefield is a valley, a crater or a cave and not a rectangle of floor. Each step has a rock face
+-- (its first MapLayouts.Face studs) and a tread of `top` (grass, ash, cave floor) behind it. Built one 4-stud cell
+-- at a time on the terrain's own grid (runs of equal height and material are one block), so every step is a whole
+-- number of cells and the first one starts exactly on the outline. Nothing on it can be built on: TowerService and
+-- the build ghost refuse anything within MapOutline.BuildStop of the outline.
+local RISE_REACH = 48 -- how far beyond the old rectangle it is built
+local function rise(layout, top, face)
+	if not layout.Border then
+		return
+	end
+	local t = terrain()
+	local half = Config.MapSize / 2
+	local first, last = -half.X - RISE_REACH + 2, half.X + RISE_REACH - 2
+	for z = -half.Y - RISE_REACH + 2, half.Y + RISE_REACH - 2, 4 do
+		local from, height, material = first, 0, nil
+		for x = first, last + 4, 4 do
+			local h, kind = 0, nil
+			if x <= last then
+				local height_, _, isFace = MapLayouts.RiseAt(layout, x, z)
+				h, kind = height_, isFace and face or top
+			end
+			if h ~= height or (h > 0 and kind ~= material) then
+				if height > 0 then
+					local a, b = from - 2, x - 2
+					local block = CFrame.new((a + b) / 2, (height - 2) / 2, z)
+					local size = Vector3.new(b - a, height + 2, 4)
+					t:FillBlock(block, size, M.Air) -- (a new material only replaces empty voxels)
+					t:FillBlock(block, size, material)
+				end
+				from, height, material = x, h, kind
+			end
+		end
+	end
+end
+
 -- everything in the layout except the lane (call before the lane and before anything scattered)
 local function shapeLayout(layout, look)
 	local t = terrain()
+	rise(layout, look.RiseTop or look.Mass, look.RiseFace or look.Mass)
 	for _, m in layout.Masses do
 		-- a solid mound of stacked discs: a wide foot, a blunt top
 		local steps = math.max(4, math.floor(m.H / 2.5))
@@ -291,7 +328,9 @@ function TerrainBuilder.Magma(map, camp)
 	-- the path: a cobbled border with packed ground inside, so it reads at a glance
 	-- (grey cobbles inside a dark basalt kerb: the path never looks like lava on this red map)
 	local layout = MapLayouts.Magma
-	shapeLayout(layout, { Top = M.Salt, Skirt = M.Slate, Bed = M.CrackedLava, BedY = -1.6, Rim = M.Basalt, Mass = M.Rock, Kerb = M.Salt })
+	-- (the crater's terraces: rough ash treads, red cliff faces)
+	shapeLayout(layout, { Top = M.Salt, Skirt = M.Slate, Bed = M.CrackedLava, BedY = -1.6, Rim = M.Basalt, Mass = M.Rock, Kerb = M.Salt,
+		RiseTop = M.Basalt, RiseFace = M.Rock })
 	lane(layout, M.Salt, M.Cobblestone)
 
 	-- (the lava is the river now, MapLayouts: the old scattered pools were thin fills that came out as rock bumps)
@@ -310,8 +349,11 @@ function TerrainBuilder.Magma(map, camp)
 		end
 	end
 
-	-- cliff walls around the battlefield and volcanoes on the horizon
-	cliffs(rng, M.Basalt, M.Rock)
+	-- cliff walls around the battlefield (the crater's own wall when the map has an outline: these lumps stood
+	-- up to 20 studs high right at the field's edge, where they pushed the camera in) and volcanoes on the horizon
+	if not layout.Border then
+		cliffs(rng, M.Basalt, M.Rock)
+	end
 	mountain(Vector3.new(-230, 0, -260), 140, 150, M.Basalt, M.CrackedLava)
 	mountain(Vector3.new(200, 0, -300), 170, 190, M.Basalt, M.CrackedLava)
 	mountain(Vector3.new(320, 0, 120), 130, 120, M.Rock, nil)
@@ -352,8 +394,9 @@ function TerrainBuilder.Forest(map, camp)
 	-- the path: packed sandy dirt inside a cobbled kerb (leafy soil read as a red carpet in the violet light)
 	-- a cobbled road with a packed-earth verge (the old orange dirt road read as a red carpet on the phone)
 	local layout = MapLayouts.Forest
+	-- (the valley side: grass terraces with mossy rock faces)
 	shapeLayout(layout, { Top = M.Grass, Skirt = M.Rock, Bed = M.Mud, BedY = -3, Rim = M.Cobblestone, Liquid = M.Water, LiquidY = -1.1, Mass = M.Rock,
-		Kerb = M.Mud })
+		Kerb = M.Mud, RiseTop = M.Grass, RiseFace = M.Rock })
 	lane(layout, M.Mud, M.Cobblestone)
 
 	local tries
@@ -372,7 +415,10 @@ function TerrainBuilder.Forest(map, camp)
 	end
 
 	-- grassy, rocky hills around the battlefield and rolling hills on the horizon
-	cliffs(rng, M.Grass, M.Rock)
+	-- (the valley side itself when the map has an outline, MapLayouts.Border)
+	if not layout.Border then
+		cliffs(rng, M.Grass, M.Rock)
+	end
 	mountain(Vector3.new(-240, 0, -270), 160, 90, M.Grass, nil)
 	mountain(Vector3.new(220, 0, -290), 180, 110, M.Grass, nil)
 	mountain(Vector3.new(330, 0, 130), 140, 80, M.Rock, nil)
@@ -403,8 +449,9 @@ function TerrainBuilder.Crystal(map, camp)
 	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Asphalt) -- smooth, painted as cave floor
 	-- the path: smooth cobbles inside a dark rock kerb
 	local layout = MapLayouts.Crystal
+	-- (the cave wall: rough cave-floor treads, cave-wall faces)
 	shapeLayout(layout, { Top = M.Concrete, Skirt = M.Basalt, Bed = M.Slate, BedY = -3, Rim = M.Basalt, Liquid = M.Water,
-		LiquidY = -1.1, Mass = M.Basalt, Kerb = M.Concrete })
+		LiquidY = -1.1, Mass = M.Basalt, Kerb = M.Concrete, RiseTop = M.Slate, RiseFace = M.Basalt })
 	lane(layout, M.Concrete, M.Cobblestone) -- kerb: smooth, painted as cave wall
 
 	local tries
@@ -426,18 +473,24 @@ function TerrainBuilder.Crystal(map, camp)
 	end
 
 	-- tall cave walls all around, and far cliffs beyond them
+	-- (with an outline the stepped cave wall of MapLayouts stands where these stood, and they loom behind it:
+	-- further out and taller. At the field's edge they pushed the camera in.)
+	local out, low, high = 22, 30, 55
+	if layout.Border then
+		out, low, high = 54, 60, 90
+	end
 	local function wall(x, z)
-		local h = rng:NextNumber(30, 55)
+		local h = rng:NextNumber(low, high)
 		t:FillCylinder(CFrame.new(x, h / 2, z), h, rng:NextNumber(10, 16), M.Basalt)
 		t:FillBall(Vector3.new(x + rng:NextNumber(-5, 5), h, z + rng:NextNumber(-5, 5)), rng:NextNumber(7, 11), M.Basalt)
 	end
-	for x = -half.X - 10, half.X + 10, 14 do
-		wall(x, -half.Y - 22 - rng:NextNumber(0, 8))
-		wall(x, half.Y + 22 + rng:NextNumber(0, 8))
+	for x = -half.X - out + 12, half.X + out - 12, 14 do
+		wall(x, -half.Y - out - rng:NextNumber(0, 8))
+		wall(x, half.Y + out + rng:NextNumber(0, 8))
 	end
-	for z = -half.Y - 10, half.Y + 10, 14 do
-		wall(-half.X - 22 - rng:NextNumber(0, 8), z)
-		wall(half.X + 22 + rng:NextNumber(0, 8), z)
+	for z = -half.Y - out + 12, half.Y + out - 12, 14 do
+		wall(-half.X - out - rng:NextNumber(0, 8), z)
+		wall(half.X + out + rng:NextNumber(0, 8), z)
 	end
 	mountain(Vector3.new(-240, 0, -270), 150, 160, M.Basalt, nil)
 	mountain(Vector3.new(230, 0, -280), 170, 190, M.Basalt, nil)

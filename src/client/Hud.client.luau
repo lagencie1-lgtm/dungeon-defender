@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Ground = require(ReplicatedStorage.Shared.Ground)
+local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
 local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -1293,6 +1294,11 @@ end
 local function canPlaceHere(position)
 	local half = Config.MapSize / 2
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
+		return false, "Too close to the edge"
+	end
+	-- the map's real outline (same rule as the server)
+	local map = Config.Maps[Config.CurrentMap]
+	if map and MapOutline.OutsideOf(map.Theme, position.X, position.Z) > -MapOutline.BuildStop then
 		return false, "Too close to the edge"
 	end
 	if Config.DistanceToPath(position) < Config.PathWidth / 2 + 3 then

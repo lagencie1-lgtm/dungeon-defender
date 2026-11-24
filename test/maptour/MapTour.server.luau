@@ -162,6 +162,69 @@ for _, mapId in Config.MapOrder do
 		end
 	end
 
+	-- 1d. the outline (MapOutline): the lane and the hero's spawn lie well inside it, nothing beyond it takes a
+	-- defender, and the rise stays under the camera's line: a hero stopped at the invisible wall who looks back into
+	-- the field keeps the camera free
+	if MapLayouts and layout.Border then
+		local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
+		local problems = {}
+		local nearest = math.huge
+		for i = 1, #Config.Path - 1 do
+			local a, b = Config.Path[i], Config.Path[i + 1]
+			for d = 0, (b - a).Magnitude, 4 do
+				local pos = a + (b - a).Unit * d
+				nearest = math.min(nearest, -MapLayouts.Outside(layout, pos.X, pos.Z))
+			end
+		end
+		if nearest < 10 then
+			table.insert(problems, string.format("the lane comes within %.1f studs of the outline", nearest))
+		end
+		if MapLayouts.Outside(layout, Config.SpawnPoint.X, Config.SpawnPoint.Z) > -6 then
+			table.insert(problems, "the hero's spawn is not inside")
+		end
+		local line = MapLayouts.CameraLine
+		local seen, buildable, where = 0, 0, ""
+		local tight = {} -- spots where the rise comes closest to the camera's line
+		for x = -half.X - 30, half.X + 30, 4 do
+			for z = -half.Y - 30, half.Y + 30, 4 do
+				local rise, out = MapLayouts.RiseAt(layout, x, z)
+				local pos = Vector3.new(x, 0, z)
+				if out > -MapOutline.BuildStop and TowerService.CanPlace(pos) then
+					buildable += 1
+					where = string.format("%d, %d", x, z)
+				end
+				if rise > 0 and out <= line.Reach then
+					seen += 1
+					local y = (Ground.At(x, z))
+					local room = line.Focus + math.tan(math.rad(line.Degrees)) * (out + MapOutline.HeroStop) - y
+					table.insert(tight, { room = room, text = string.format("%.1f at %d, %d (%.0f out, ground %.1f)", room, x, z, out, y) })
+				end
+			end
+		end
+		table.sort(tight, function(a, b)
+			return a.room < b.room
+		end)
+		if buildable > 0 then
+			table.insert(problems, string.format("%d spots by or beyond the outline take a defender (one at %s)", buildable, where))
+		end
+		local tooHigh = {}
+		for i = 1, math.min(4, #tight) do
+			if tight[i].room < line.Clear then
+				table.insert(tooHigh, tight[i].text)
+			end
+		end
+		if #tooHigh > 0 then
+			table.insert(problems, "the rise stands in the camera's line: " .. table.concat(tooHigh, "; "))
+		end
+		local note = string.format("%s outline: the lane keeps %.0f studs from it, %d spots of rise checked, least room under the camera's line %s",
+			mapId, nearest, seen, tight[1] and tight[1].text or "-")
+		if #problems > 0 then
+			fail(note, "BUT", table.concat(problems, "; "))
+		else
+			log("ok", note)
+		end
+	end
+
 	-- 2. the lane: continuous ground
 	local length = 0
 	for i = 2, #Config.Path do

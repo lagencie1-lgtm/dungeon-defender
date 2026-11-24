@@ -30,7 +30,8 @@ Lessons kept from rounds 1-3 (2026-11-24):
   picket fence (round 3), hence the centre section and wings
 - the hidden-face cull judges a face by its centre: a long log face whose centre sat behind a post or the shield went
   whole and left a dark hole beside it (round 4), so logs get a ring at every post and shield edge, and the shield
-  disc and plate are kept (htd_keep)
+  disc and plate are kept (htd_keep); posts are tubes with a ring every ~0.55 for the same reason (round 5: a rope
+  coil round the middle of a one-face-high post hid that face's centre and the l1 wing posts went)
 Run: blender -b -P tower_barricade_detail.py -- out.fbx <l1|l2|thorn|root> [params.json]"""
 import json
 import math
@@ -59,6 +60,7 @@ STAKE = (0.38, 0.32, 0.5)       # wood.png -> dark red-brown fire-hardened shaft
 POST = (0.95, 1.08, 1.9)        # a touch lighter than the logs
 SHIELD = (0.55, 0.62, 1.4)      # darker planks than the logs, so the brass reads (round 4's 0.42 read nearly black)
 RAIL = (1.0, 1.0, 1.0)          # wood_dark.png as it is: darker than the logs, so the rack reads in front of them
+RAIL_LIGHT = (1.6, 1.6, 1.6)    # the rack's rail: a beam a little lighter than the dark stakes, so it shows between them
 IRON_T = (0.62, 0.62, 0.68)
 BRASS_T = (1.3, 1.4, 1.6)       # brass.png -> the sheet's warm brass, not orange
 ROOT_T = (1.6, 2.6, 3.0)        # bark.png -> living root brown (about 0.5, 0.33, 0.18)
@@ -71,10 +73,13 @@ HEART = (0.78, 0.53, 0.3)       # the darker heart rings of a sawn end
 KNOT = (0.42, 0.25, 0.13)
 ROPE = (0.9, 0.8, 0.6)
 STUD = (0.93, 0.68, 0.27)
+BOSS = (0.97, 0.74, 0.32)       # the shield boss: plain smooth brass
 RED = (0.72, 0.25, 0.13)        # fire-hardened stake (the Thornwall's colour)
 CHAR = (0.26, 0.1, 0.07)        # the charred point
 DIRT = (0.5, 0.36, 0.23)
 LEAF = (0.45, 0.74, 0.3)
+LEAF_LIGHT = (0.62, 0.84, 0.34)
+CROWN_DARK = (1.4, 1.5, 1.2)    # leaves.png -> the shaded inside of a tuft
 
 BASE = dict(length=10.4, log_r=0.62, logs=4, wing_logs=3, big_r=0.7, big_x=2.05, wing_r=0.5, wing_x=4.35, shield=1.3)
 DEFAULTS = {
@@ -239,8 +244,12 @@ def log(name, z, x0, x1, r, seed):
 
 
 def post(name, x, y, h, r):
-    """an upright post with the grain running up it and a chunky faceted pale pencil point"""
-    K.limb(name, (x, y, 0.0), (x, y, h - r * 1.9), r, r * 0.97, POST, verts=12, end=False, key="wood", tile=2.4)
+    """an upright post with the grain running up it and a chunky faceted pale pencil point; the shaft has a ring every
+    ~0.55, so a rope coil or a band hides only the faces it covers (see the notes above)"""
+    shaft = h - r * 1.9
+    n = max(2, int(math.ceil(shaft / 0.55)))
+    tube(name, [(x, y, shaft * k / n) for k in range(n + 1)], [r * (1 - 0.03 * k / n) for k in range(n + 1)], POST, "wood", 2.4,
+         verts=12)
     cone_to(name + "Tip", (x, y, h - r * 1.92), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
 
 
@@ -275,7 +284,10 @@ def shield(name, z, facing, rr):
         a = 2 * math.pi * (k + 0.5) / 14
         K.ball(f"{name}Stud{k}", (math.cos(a) * (rr - 0.03), facing * (y1 + 0.12), z + math.sin(a) * (rr - 0.03)), 0.085, STUD, seg=6)
     disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, BRASS_T, key="brass", tile=1.0, verts=20)["htd_keep"] = True
-    K.ball(name + "Boss", (0, facing * (y1 + 0.07), z), 0.38, BRASS_T, (1, 0.75, 1), seg=16, key="brass", tile=1.0)
+    # the boss: a smooth lathed dome in plain polished brass (round 5's textured ball read as crumpled)
+    dome = [(0.4, 0.0), (0.39, 0.06), (0.35, 0.14), (0.28, 0.21), (0.18, 0.26), (0.08, 0.285), (0.004, 0.29)]
+    boss = K.lathe(name + "Boss", [(r, y1 + 0.04 + dz) for r, dz in dome], BOSS, verts=24, cap=False)
+    moved(boss, (0, 0, z), FACE_Y[facing])
 
 
 # --- the wall: centre section and wings ----------------------------------------------------------------------------
@@ -330,7 +342,7 @@ if stage == "thorn":
     base_y = R + 0.6
     rail_y = R + 1.25
     rail_z = 0.02 + (rail_y - base_y) * math.tan(tilt)
-    K.block("Rail", (0, rail_y, rail_z), (P["length"] * 0.84, 0.34, 0.38), RAIL, key="wood_dark", tile=2.0, bevel=0.06)
+    K.block("Rail", (0, rail_y, rail_z), (P["length"] * 0.86, 0.44, 0.48), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.08)
     front_y = 0.0
 
     def stake(name, base, d, ln, r0, verts=10):
@@ -349,7 +361,10 @@ if stage == "thorn":
             tip = stake(f"Stake{k}{j}", base, d, ln, 0.27)
             K.ball(f"Stake{k}{j}Mound", (base.x, base.y, 0.0), 0.45, DIRT, (1.2, 1.0, 0.4), seg=10)
             front_y = max(front_y, tip.y)
-        K.ball(f"Rivet{k}", (xp, rail_y + 0.19, rail_z), 0.1, STUD, seg=8)
+        # an iron strap round the rail where each pair crosses, two brass studs on its face
+        K.block(f"Strap{k}", (xp, rail_y, rail_z), (0.24, 0.5, 0.56), IRON_T, key="iron", tile=1.0, bevel=0.04)
+        for dz in (-0.12, 0.12):
+            K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.26, rail_z + dz), 0.075, STUD, seg=6)
     ft = rad(34)
     for k in range(P["front"]):
         x = ((k + 0.5) / P["front"] - 0.5) * P["length"] * 0.74 + rnd.uniform(-0.12, 0.12)
@@ -447,13 +462,18 @@ if stage == "root":
         end = fork + Vector((dx, dy, dz))
         bend = fork.lerp(end, 0.5) + Vector((0, 0, 0.14))
         tube(f"Branch{k}", [fork, bend, end], [0.12, 0.09, 0.06], ROOT_T, "bark", 1.2, verts=6)
-        K.ball(f"Tuft{k}", end + Vector((0, 0, 0.14)), 0.55, CROWN_T, (1.15, 1.15, 0.8), seg=18, key="leaves", tile=1.0)
-        K.ball(f"Tuft{k}b", end + Vector((dx * 0.3, dy * 0.3, 0.4)), 0.38, CROWN_T, (1, 1, 0.85), seg=16, key="leaves", tile=1.0)
-        for j in range(11):
-            a = 2 * math.pi * j / 11 + k
-            n = Vector((math.cos(a), math.sin(a), rnd.uniform(0.0, 0.8))).normalized()
-            K.leaf(f"Leaf{k}_{j}", end + Vector((n.x * 0.55, n.y * 0.55, 0.15 + n.z * 0.35)), n, rnd.uniform(0.5, 0.62), LEAF,
-                   turn=rnd.uniform(-0.6, 0.6))
+        # each tuft: a darker leafy core and a shell of single bright leaves all over its upper part (round 5's tufts
+        # were textured balls with a few leaves and read as faceted blobs)
+        centre = end + Vector((0, 0, 0.2))
+        K.ball(f"Tuft{k}", centre, 0.48, CROWN_DARK, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
+        golden = math.pi * (3 - math.sqrt(5))
+        for j in range(18):
+            zz = 0.95 - 1.2 * (j + 0.5) / 18          # from the top down to a little below the middle
+            ring = math.sqrt(max(0.0, 1 - zz * zz))
+            a = golden * j + k
+            n = Vector((math.cos(a) * ring, math.sin(a) * ring, zz)).normalized()
+            K.leaf(f"Leaf{k}_{j}", centre + Vector((n.x * 0.55, n.y * 0.55, n.z * 0.4)), n, rnd.uniform(0.42, 0.52),
+                   LEAF if j % 3 else LEAF_LIGHT, turn=rnd.uniform(-0.8, 0.8))
 
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()

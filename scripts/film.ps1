@@ -10,6 +10,12 @@ while ((Test-Path $lockFile) -and ((Get-Date) - (Get-Item $lockFile).LastWriteTi
     Write-Output "waiting for the Studio lock: $(Get-Content $lockFile -Raw)"
     Start-Sleep 60
 }
+# (2026-11-24: films 7 and 8 recorded another thread's Studio playtest, which sat over this window: gdigrab
+# records the screen area of the window by title. Refuse to film while any other Studio window is open.)
+$others = @(Get-Process RobloxStudioBeta -ErrorAction SilentlyContinue)
+if ($others.Count -gt 0) {
+    throw "another Roblox Studio is open (process $($others.Id -join ', ')): a film would record it; wait until it closes"
+}
 Set-Content $lockFile "hub thread (film/test) $(Get-Date -Format s)"
 try {
 $root = Split-Path $PSScriptRoot -Parent

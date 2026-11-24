@@ -89,6 +89,23 @@ stay the Tripo models they are; every tower is built in Blender from code.
 
 Pilot: the Ranger, all three levels, end to end, before the other four.
 
+### Pose against the object's layout (coordinator 2026-11-24, Ballista round 4)
+
+A pose fitted to one painting angle must also satisfy the object's physical layout, named per weapon type and checked
+by a gate in the builder; the outline search may change only what the layout leaves free (yaw, size, pitch within
+the weapon's range), never the layout itself. Round 3 rolled the Ballista's bow upright to match the painting's C
+shape: from that one angle it fitted, from every other side it read as a hoop.
+
+| Weapon | Layout the gate checks |
+|---|---|
+| Ballista | bow arms within 15 degrees of the stock's top plane, left and right mirror images (tips' offset < 0.02), span 0.8-1.0 of the stock, string from both tips to the notch, bolt on the stock (`LAYOUT` in `tower_ballista_detail.py`, the build stops on a fail) |
+| Flame Cannon | barrel bore along the barrel's axis, twin barrels mirror images |
+| Storm Obelisk | obelisk upright (axis within 5 degrees of vertical), rings level |
+| Frost Crystal | crystals grow upward from the base, none below the plinth's top |
+
+The weapon's own colours come from the painting's weapon region (gate: `scripts/weapon_colour.py`, median dE <= 10);
+the painter repaints only what the painting doesn't show, so the weapon atlas keeps its painting-measured colours.
+
 ## Tools
 
 Everything above runs on what is on this PC: Blender 5.2 (bevel, lathe, bmesh, Cycles bake), Python with Pillow and

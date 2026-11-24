@@ -25,9 +25,11 @@ BANDS = {
 # rules a tower must keep (a wall never grows toward the top, the roof stays wider than the lookout)
 # (ballista, 2026-11-24 rebuild: the bow's bend and the stock's thickness are drawn from the paintings and kept; the
 # loop once grew the stock to 2.3 times its thickness for outline, which hid the bow behind a beam)
-SEARCH = {"ballista1": ["aim", "pitch", "roll", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "thick"],
-          "ballista2": ["aim", "pitch", "roll", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "thick"],
-          "ballista3": ["aim", "roll", "foot_r", "wall_r", "wall_h", "bow_w", "stock", "gap"],
+# (round 4: the bow's plane, its span and the stock's length and pitch follow the paintings and the weapon's layout;
+# only the yaw and the base are searched)
+SEARCH = {"ballista1": ["aim", "foot_r", "leg_h", "leg_spread", "thick"],
+          "ballista2": ["aim", "foot_r", "leg_h", "leg_spread", "thick"],
+          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "stock", "gap"],
           "storm1": ["foot_r", "foot_h", "stone_w", "stone_h", "stone_d"],
           # (storm, 2026-11-24 rebuild: the obelisk's taper is drawn from the paintings and kept; the loop once
           # straightened it for outline)

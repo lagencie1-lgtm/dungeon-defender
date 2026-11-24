@@ -69,8 +69,21 @@ def main():
                 os.replace(t16, os.path.join(out, f"{kind}_l{level}_turntable16.png"))
             m = f"{KINDS[kind]} level {level}"
             if m in marks:
-                subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{marks[m] + 1.2:.2f}", "-i", film + ".mp4", "-frames:v", "1",
-                                "-vf", "crop=604:280:714:604", os.path.join(out, f"{kind}_l{level}_in_game_phone.png")])
+                dst = os.path.join(out, f"{kind}_l{level}_in_game_phone.png")
+                tmp = os.path.join(out, "_frame.png")
+                subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{marks[m] + 1.2:.2f}", "-i", film + ".mp4", "-frames:v", "1", tmp])
+                # (the phone screen wherever Studio's window put it, not a fixed crop)
+                from film_screen import screen_box
+                import numpy as np
+                with Image.open(tmp) as f:
+                    im = f.convert("RGB")
+                for tries in range(5):   # (Windows sometimes holds a file just written for a moment: Errno 22)
+                    try:
+                        im.crop(screen_box(np.asarray(im))).save(dst)
+                        break
+                    except OSError:
+                        import time
+                        time.sleep(1)
     open(os.path.join(out, "scores.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
     print("\n".join(lines))
 

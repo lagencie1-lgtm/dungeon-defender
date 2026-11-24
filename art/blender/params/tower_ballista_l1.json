@@ -2,13 +2,13 @@
  "foot_r": 2.706,
  "foot_h": 0.8,
  "foot_n": 10,
- "leg_h": 2.316,
+ "leg_h": 2.455,
  "leg_spread": 1.119,
  "bow_w": 3.874,
  "stock": 2.804,
- "aim": 50.317,
+ "aim": 116.4,
  "pitch": 12.0,
  "bend": 1.0,
- "thick": 1.461,
+ "thick": 1.595,
  "roll": 40.0
 }

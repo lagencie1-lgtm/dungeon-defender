@@ -67,6 +67,11 @@ cam.data.lens = 50
 d = radius * 3.0
 cam.location = center + Vector((math.cos(az) * math.cos(el) * d, math.sin(az) * math.cos(el) * d, math.sin(el) * d))
 cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
+# (HTD_ONLY_PART=Skin_barrel: the same camera, only that part drawn: its outline inside the whole model's picture)
+only = os.environ.get("HTD_ONLY_PART")
+if only:
+    for o in meshes:
+        o.hide_render = o.name.split(".")[0] != only
 scene.render.filepath = out
 bpy.ops.render.render(write_still=True)
 print("RENDERED", out)

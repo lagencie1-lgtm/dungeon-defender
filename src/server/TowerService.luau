@@ -190,7 +190,7 @@ TowerService.LevelLooks = LEVEL_LOOKS
 local BRANCH_LOOKS = {
 	Barricade = {
 		Thornwall = { Name = "tower_barricade_thorn", Height = 5.2, Muzzle = Vector3.new(0, 4, 0) },
-		Rootwall = { Name = "tower_barricade_root", Height = 4.8, Muzzle = Vector3.new(0, 4, 0) },
+		Rootwall = { Name = "tower_barricade_root", Height = 4.72, Muzzle = Vector3.new(0, 4, 0) },
 	},
 }
 TowerService.BranchLooks = BRANCH_LOOKS

@@ -1,7 +1,7 @@
 """The research brief's tower rules as numbers (coordinator 2026-11-24), read from a film (test/film: "view <Kind> <n>",
 "mask <Kind> <n>", "low <Kind> ..." marks, the run camera's start pointed at the tower, HUD hidden):
   levels tell apart   the outlines of levels 1, 2 and 3 of one tower overlap each other by 80 % or less (IoU)
-  towers tell apart   two different towers at the same level overlap by 65 % or less
+  towers tell apart   two different towers at the same level overlap by 65 % or less, on the top 40 % of the outline
   stands out          mean colour difference (CIE Lab dE) between the tower and the ground and props right round it
                       (a band 4 to 16 px outside its outline) is 20 or more
 Also saves the phone pictures (view, and level 3 at the lowest graphics level when the film could set it).
@@ -67,10 +67,20 @@ def main():
                 res["levels"][f"{k} {a}-{b}"] = v
                 if v > 80:
                     res["fails"].append(f"{k} levels {a} and {b} overlap {v}% (needs 80% or less)")
+    def top40(m):
+        """(coordinator 2026-11-24: every tower stands on the same round plinth, so the whole outlines of two towers
+        overlap mostly at the base: two towers are compared on the top 40 % of the outline, the weapon and crown)"""
+        rows = np.where(m.any(1))[0]
+        if not len(rows):
+            return m
+        cut = rows.min() + int(0.4 * (rows.max() - rows.min() + 1))
+        out = m.copy()
+        out[cut:] = False
+        return out
     for lv in (1, 2, 3):
         for a, b in itertools.combinations(kinds, 2):
             if (a, lv) in masks and (b, lv) in masks:
-                v = round(100 * iou(masks[(a, lv)], masks[(b, lv)]), 1)
+                v = round(100 * iou(top40(masks[(a, lv)]), top40(masks[(b, lv)])), 1)
                 res["towers"][f"{a}/{b} level {lv}"] = v
                 if v > 65:
                     res["fails"].append(f"{a} and {b} at level {lv} overlap {v}% (needs 65% or less)")

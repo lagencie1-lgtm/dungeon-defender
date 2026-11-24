@@ -116,11 +116,12 @@ elif level == 2:
     for k in range(3):
         a = FRONT + (k - 1) * 70
         gem(f"Gem{k}", K.at(rad(a), P["ring_r"] + 0.1, top + 0.3), 0.42, a)
-    shard("Shard", (0, 0, top), P["shard_h"], P["shard_r"] * 1.2, (-4, 3))
+    # (coordinator 2026-11-24: level 2's crystal cluster stands clearly taller above the rim than level 1's one shard)
+    shard("Shard", (0, 0, top), P["shard_h"] * 1.3, P["shard_r"] * 1.3, (-4, 3))
     for k in range(7):
         a = rad(k * 51 + 10)
         rr = P["ring_r"] * 0.55
-        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.45, 0.7), P["shard_r"] * 0.8,
+        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.6, 0.9), P["shard_r"] * 0.9,
               (math.degrees(math.sin(a)) * -0.35, math.degrees(math.cos(a)) * 0.35))
 else:
     K.lathe("Ring", [(P["crown_r"] - 0.25, top - 0.05), (P["crown_r"], top), (P["crown_r"], top + 0.45), (P["crown_r"] - 0.25, top + 0.5)], SILVER, key=None, verts=32)

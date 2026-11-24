@@ -140,17 +140,24 @@ K.grass(P["foot_r"] - 0.05, 22, h=0.75)
 fz = P["foot_h"]
 muzzles = []
 if level in (1, 2):
+    if level == 2:   # (coordinator 2026-11-24: level 2 stands on a raised timber platform, so it reads apart from level 1)
+        K.block("Platform", (0, 0, fz + 0.3), (3.6, 3.6, 0.6), K.WOOD_DARK, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
+        for k in range(4):
+            q = FWD * (1.55 * (1 if k % 2 else -1)) + SIDE * (1.55 * (1 if k < 2 else -1))
+            K.block(f"PlatformCap{k}", (q.x, q.y, fz + 0.62), (0.5, 0.5, 0.14), K.BRASS, (0, 0, A), key=None, bevel=0.03)
+        fz += 0.6
     top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))
     muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2)))
     if level == 2:   # the crank wheel on the side
-        c = SIDE * 0.75 + Vector((0, 0, top - 0.2))
-        w = K.lathe("Crank", [(0.0, -0.1), (0.55, -0.1), (0.6, 0.0), (0.55, 0.1), (0.0, 0.1)], K.BRASS, key="brass", verts=12)
+        c = SIDE * 1.25 + Vector((0, 0, top - 0.5))   # (the winch wheel stands well out to one side)
+        w = K.lathe("Crank", [(0.0, -0.14), (0.85, -0.14), (0.92, 0.0), (0.85, 0.14), (0.0, 0.14)], K.BRASS, key="brass", verts=16)
         w.matrix_world = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
         for k in range(4):
             ang = k * math.pi / 2
-            K.block(f"Spoke{k}", tuple(c + SIDE * 0.12 + Vector((0, 0, 0)) + FWD * (math.cos(ang) * 0.7) + Vector((0, 0, math.sin(ang) * 0.7))),
-                    (0.14, 0.14, 0.14), K.BRASS, key="brass", tile=0.6)
-        K.limb("Handle", tuple(c + SIDE * 0.15 + FWD * 0.75), tuple(c + SIDE * 0.55 + FWD * 0.75), 0.07, 0.07, K.WOOD_DARK, verts=6)
+            K.block(f"Spoke{k}", tuple(c + SIDE * 0.16 + Vector((0, 0, 0)) + FWD * (math.cos(ang) * 0.95) + Vector((0, 0, math.sin(ang) * 0.95))),
+                    (0.2, 0.2, 0.2), K.BRASS, key="brass", tile=0.6)
+        K.limb("Handle", tuple(c + SIDE * 0.2 + FWD * 1.0), tuple(c + SIDE * 0.75 + FWD * 1.0), 0.09, 0.09, K.WOOD_DARK, verts=6)
+        K.limb("Axle", tuple(c - SIDE * 0.9), tuple(c + SIDE * 0.1), 0.14, 0.14, IRON, verts=8)
 else:
     # the bastion: cut stone wall, crenellations, a wooden deck, three red banners
     K.stone_wall("Wall", fz, fz + P["wall_h"], P["wall_r"] * 1.18, P["wall_r"], 4, 13, depth=0.5)   # (wide at the foot, as painted)

@@ -33,10 +33,10 @@ K.WOOD = (0.55, 0.32, 0.17)
 K.WOOD_DARK = (0.38, 0.21, 0.11)
 
 DEFAULTS = {
-    1: dict(foot_r=2.9, foot_h=0.8, foot_n=10, leg_h=2.2, leg_spread=1.2, bow_w=4.4, stock=4.6, aim=40, pitch=14, bend=1.0, thick=1.0),
-    2: dict(foot_r=3.0, foot_h=0.8, foot_n=10, leg_h=2.4, leg_spread=1.3, bow_w=4.8, stock=5.0, aim=40, pitch=14, bend=1.0, thick=1.0),
+    1: dict(foot_r=2.9, foot_h=0.8, foot_n=10, leg_h=2.2, leg_spread=1.2, bow_w=4.4, stock=4.6, aim=40, pitch=14, bend=1.0, thick=1.3, roll=65),
+    2: dict(foot_r=3.0, foot_h=0.8, foot_n=10, leg_h=2.4, leg_spread=1.3, bow_w=4.8, stock=5.0, aim=40, pitch=14, bend=1.0, thick=1.3, roll=65),
     # level 3: a wide squat crenellated bastion, two big ballistae side by side on it (coordinator 2026-11-24)
-    3: dict(foot_r=4.4, foot_h=0.8, foot_n=12, wall_r=3.6, wall_h=2.5, bow_w=4.0, stock=4.2, aim=40, pitch=10, gap=1.9, bend=1.0, thick=1.0),
+    3: dict(foot_r=4.4, foot_h=0.8, foot_n=12, wall_r=3.6, wall_h=2.5, bow_w=4.0, stock=4.2, aim=40, pitch=10, gap=1.9, bend=1.0, thick=1.2, roll=65),
 }
 P = dict(DEFAULTS[level])
 saved = os.path.join(HERE, "params", f"tower_ballista_l{level}.json")
@@ -82,6 +82,10 @@ def weapon(name, base, iron=False, scale=1.0):
             # flat ring seen edge-on from the run camera)
             fwd = R * 0.62 * math.cos(th_)
             pts.append((R * math.sin(th_), yc + fwd * math.cos(rad(12)), 0.08 * scale + (fwd + R * 0.62 * 0.37) * math.sin(rad(12))))
+        # (round 3: the paintings stand the bow nearly upright: rolled about the stock by `roll` degrees, its arms
+        # reach up and down, so from the run camera's height it reads as a big C, not a flat ring seen edge-on)
+        roll = rad(P.get("roll", 65))
+        pts = [(x * math.cos(roll) - (z - 0.08 * scale) * math.sin(roll), y, 0.08 * scale + x * math.sin(roll) + (z - 0.08 * scale) * math.cos(roll)) for x, y, z in pts]
         rr = [0.13, 0.16, 0.19, 0.21, 0.22, 0.23, 0.24, 0.23, 0.22, 0.21, 0.19, 0.16, 0.13]
         K.chain(name + "Bow", pts, [v * scale * 1.25 for v in rr], IRON if iron else K.WOOD_DARK, seg=10)
         notch = (0, -st * 0.36, 0.34 * scale)

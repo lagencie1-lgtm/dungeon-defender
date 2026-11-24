@@ -440,6 +440,15 @@ function TowerService.Upgrade(_player, model)
 		if muzzle then
 			t.muzzle = t.position + muzzle
 		end
+		-- a level with two visible weapons shoots from both (2026-11-24): their muzzles, in turn
+		local entry = levelEntry(t.type, t.level)
+		t.muzzles = nil
+		if entry and entry.Muzzles then
+			t.muzzles = {}
+			for _, m in entry.Muzzles do
+				table.insert(t.muzzles, t.position + m)
+			end
+		end
 		t.kicker = look and look:FindFirstChild("Skin_barrel") or t.kicker
 		local label = model:FindFirstChild("LevelLabel")
 		if label then
@@ -676,36 +685,58 @@ local function shoot(t, now, model)
 	if t.type == "Ranger" then
 		faceTarget(t, first.position)
 		-- the archers turn to the target, draw and release (client: ArcherLife); the arrow leaves the first one's bow
+		-- (2026-11-24: every archer the player sees looses his own arrow; the damage is split between them, so the
+		-- tower's damage per second stays exactly what it was)
 		local look = model and model:FindFirstChild("Look")
-		local from = t.muzzle
+		local froms = {}
 		for _, archer in look and look:GetChildren() or {} do
 			if archer.Name == "Archer" then
 				archer:SetAttribute("AimX", hitAt.X)
 				archer:SetAttribute("AimZ", hitAt.Z)
 				archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
-				if from == t.muzzle then
-					local box, size = archer:GetBoundingBox()
-					local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
-					from = box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero)
-				end
+				local box, size = archer:GetBoundingBox()
+				local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
+				table.insert(froms, box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero))
 			end
 		end
-		Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-		EnemyService.Damage(first, stats.Damage)
+		if #froms == 0 then
+			froms = { t.muzzle }
+		end
+		local share = stats.Damage / #froms
+		for i, from in froms do
+			task.delay((i - 1) * 0.12, function()
+				Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
+				if first.health and first.health > 0 then
+					EnemyService.Damage(first, share)
+				end
+			end)
+		end
 	elseif t.type == "FlameCannon" then
-		Effects.Kick(t.kicker, 0.5)
-		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(255, 140, 40), 1, 0.2)
-		task.delay(0.2, function()
-			-- fire and sparks instead of a solid ball
-			Effects.Ring(hitAt - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
-			Effects.Particles(hitAt, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
-				Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
-			Sound.Play("Explosion", hitAt)
-			for _, e in EnemyService.InRange(hitAt, stats.Radius) do
-				EnemyService.Damage(e, stats.Damage)
-				EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
-			end
-		end)
+		-- (2026-11-24: level 3's two barrels fire in turn, half the damage each, the second half a cooldown later:
+		-- the same damage per second, and the burn is put on by each as before)
+		local muzzles = t.muzzles or { t.muzzle }
+		local share = stats.Damage / #muzzles
+		for i, from in muzzles do
+			task.delay((i - 1) * stats.Cooldown / #muzzles, function()
+				local aim = hitAt
+				if i > 1 and first.position then
+					aim = first.position + Vector3.new(0, first.stats.Size * 0.6, 0)
+				end
+				Effects.Kick(t.kicker, 0.5)
+				Effects.Bolt(from, aim, Color3.fromRGB(255, 140, 40), 1, 0.2)
+				task.delay(0.2, function()
+					-- fire and sparks instead of a solid ball
+					Effects.Ring(aim - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
+					Effects.Particles(aim, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
+						Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
+					Sound.Play("Explosion", aim)
+					for _, e in EnemyService.InRange(aim, stats.Radius) do
+						EnemyService.Damage(e, share)
+						EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
+					end
+				end)
+			end)
+		end
 	elseif t.type == "FrostCrystal" then
 		Effects.Kick(t.kicker, -0.4)
 		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
@@ -751,14 +782,22 @@ local function shoot(t, now, model)
 			end
 		end
 		faceTarget(t, target.position)
-		Effects.Kick(t.kicker, -0.6)
-		local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-		Effects.Bolt(t.muzzle, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
-		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1)
-		task.delay(0.15, function()
-			EnemyService.Damage(target, damage, nil, true)
-			Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
-		end)
+		-- (2026-11-24: level 3's two ballistae each loose a bolt, a quarter second apart, half the damage each)
+		local muzzles = t.muzzles or { t.muzzle }
+		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1) / #muzzles
+		for i, from in muzzles do
+			task.delay((i - 1) * 0.25, function()
+				Effects.Kick(t.kicker, -0.6)
+				local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
+				Effects.Bolt(from, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
+				task.delay(0.15, function()
+					if target.health and target.health > 0 then
+						EnemyService.Damage(target, damage, nil, true)
+					end
+					Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
+				end)
+			end)
+		end
 	end
 end
 

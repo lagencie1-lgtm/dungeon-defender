@@ -19,6 +19,21 @@ kid sees the level from across the lane on a phone. Glow only at the top level.
 Rules: same footprint at every level (it stands on the same plinth and keeps its spot), height grows about 15% per
 level, the turning head and the muzzle stay separate nodes on the game's pivots, feet on the ground (test/ground).
 
+### What the player sees change in the shot (2026-11-24, research brief: "each level looks different and fights visibly differently")
+
+Where a level adds a visible weapon, the shot comes from it. Damage per second stays exactly as it was: the damage of
+one shot is split across the visible weapons (src/server/TowerService.luau `shoot`). Nothing is rebalanced.
+
+| Tower | Level 1 | Level 2 | Level 3 |
+|---|---|---|---|
+| Ranger | one archer draws and looses an arrow | one archer, the same | both archers draw and loose, an arrow each, 0.12 s apart, half the damage each |
+| Flame Cannon | the mortar kicks and lobs a fire shell | the bronze cannon, the same shot | the two barrels fire in turn, half a cooldown apart, half the damage each; each blast still sets goblins burning |
+| Frost Crystal | a frost ring spreads from the tower and slows | the same ring, more slow | the same ring; the orb glows (no separate shot) |
+| Storm Obelisk | lightning leaps from the rune | from the rod's tip | from the orb between the horns, then goblin to goblin |
+| Ballista | one bolt | one heavier bolt | the two ballistae loose a bolt each, a quarter second apart, half the damage each |
+
+Each level's muzzles come from the builders' MUZZLE lines (`LEVEL_LOOKS[...].Muzzles` for the two-weapon levels).
+
 ## The pipeline, per tower (Blender from code, no Tripo; Lemp 2026-11-23)
 
 Lemp 2026-11-23: "you make a better workflow to make something amazing ... without the need of Tripo". Hub buildings

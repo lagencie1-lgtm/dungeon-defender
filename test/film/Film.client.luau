@@ -371,13 +371,119 @@ if ranger then
 	Remotes.SellTower:InvokeServer(ranger)
 	task.wait(2)
 end
+-- (2026-11-24, research brief as numbers): each level from the run camera's start, as a player sees it on the phone:
+-- a picture, then the tower alone in a flat colour (Highlight, AlwaysOnTop) for its outline, with the HUD hidden;
+-- at level 3 also at Roblox's lowest graphics level ("low effects"), when a LocalScript may set it
+local function runViewShots(kind, level, tower, base)
+	local rc = Config.RunCamera
+	local look = Vector3.new(0.6, 0, 0.8).Unit
+	local aim = base + Vector3.new(0, rc.AimHeight, 0)
+	local eye = aim - look * rc.Distance * math.cos(math.rad(rc.Pitch)) + Vector3.new(0, rc.Distance * math.sin(math.rad(rc.Pitch)), 0)
+	local cf = CFrame.lookAt(eye, aim)
+	local hidden = {}
+	for _, g in player.PlayerGui:GetChildren() do
+		if g:IsA("ScreenGui") and g.Enabled then
+			g.Enabled = false
+			table.insert(hidden, g)
+		end
+	end
+	game:GetService("RunService"):BindToRenderStep("FilmTowerView", Enum.RenderPriority.Last.Value + 5, function()
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		workspace.CurrentCamera.CFrame = cf
+	end)
+	task.wait(0.6)
+	mark(string.format("view %s %d", kind, level))
+	task.wait(0.5)
+	local hl = Instance.new("Highlight")
+	hl.Adornee = tower:FindFirstChild("Look") or tower
+	hl.FillColor = Color3.fromRGB(255, 0, 255)
+	hl.FillTransparency = 0
+	hl.OutlineTransparency = 1
+	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	hl.Parent = tower
+	task.wait(0.6)
+	mark(string.format("mask %s %d", kind, level))
+	task.wait(0.5)
+	hl:Destroy()
+	if level == 3 then
+		local ok, err = pcall(function()
+			UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
+		end)
+		-- (a LocalScript may not set the graphics level, Roblox says "lacking capability RobloxScript": what level 1
+		-- turns off is turned off here by hand, on this client only: shadows, bloom, sun rays, colour grading,
+		-- depth of field and the atmosphere's haze; materials and the draw distance cannot be changed)
+		local Lighting = game:GetService("Lighting")
+		local undo = { shadows = Lighting.GlobalShadows }
+		Lighting.GlobalShadows = false
+		for _, e in Lighting:GetChildren() do
+			if e:IsA("PostEffect") and e.Enabled then
+				e.Enabled = false
+				table.insert(undo, e)
+			end
+		end
+		task.wait(1.2)
+		mark(string.format("low %s %s", kind, ok and "set" or "approximated (shadows and post effects off)"))
+		task.wait(0.5)
+		Lighting.GlobalShadows = undo.shadows
+		for _, e in ipairs(undo) do
+			e.Enabled = true
+		end
+		pcall(function()
+			UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualitySetting.Automatic
+		end)
+	end
+	game:GetService("RunService"):UnbindFromRenderStep("FilmTowerView")
+	for _, g in hidden do
+		g.Enabled = true
+	end
+end
 -- every other defender at its three levels (2026-11-23: the kit-built level looks), a close camera on each
 ask("Own")
 for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
 	ask("Mana")
 	task.wait(0.4)
+	-- (2026-11-24, research brief: "towers must be visible while art loads"): from the tap to something tower-shaped
+	-- and tower-coloured on screen. Measured every frame on this client: when the tower's model arrives, when its
+	-- first part is drawn (a part with a size), and when every mesh and texture of its look has been fetched
+	local tTap = os.clock()
+	local tModel, tPart, tMeshes = nil, nil, nil
+	local ContentProvider = game:GetService("ContentProvider")
+	local watch = game:GetService("RunService").RenderStepped:Connect(function()
+		local now = os.clock() - tTap
+		local t
+		for _, m in workspace.Towers:GetChildren() do
+			if m:GetAttribute("TowerType") == kind or m.Name == kind then
+				t = m
+			end
+		end
+		if not t then
+			return
+		end
+		tModel = tModel or now
+		local look = t:FindFirstChild("Look")
+		local any, all = false, look ~= nil
+		for _, d in (look or t):GetDescendants() do
+			if d:IsA("BasePart") and d.Transparency < 1 then
+				any = true
+			end
+			if d:IsA("MeshPart") then
+				local ok1 = ContentProvider:GetAssetFetchStatus(d.MeshId) == Enum.AssetFetchStatus.Success
+				local ok2 = d.TextureID == "" or ContentProvider:GetAssetFetchStatus(d.TextureID) == Enum.AssetFetchStatus.Success
+				all = all and ok1 and ok2
+			end
+		end
+		if any then
+			tPart = tPart or now
+		end
+		if all and any then
+			tMeshes = tMeshes or now
+		end
+	end)
 	local okPlace = Remotes.PlaceTower:InvokeServer(kind, spot)
 	task.wait(2.2)
+	watch:Disconnect()
+	mark(string.format("load %s: model %.2f s, first part drawn %.2f s, every mesh and texture %s after the tap", kind,
+		tModel or -1, tPart or -1, tMeshes and string.format("%.2f s", tMeshes) or "not within 2.2 s"))
 	local tower
 	for _, t in workspace.Towers:GetChildren() do
 		if t:GetAttribute("TowerType") == kind or t.Name == kind then
@@ -392,6 +498,7 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
 			workspace.CurrentCamera.CFrame = CFrame.lookAt(base + Vector3.new(-8, 6.5, -11), base + Vector3.new(0, 3.5, 0))
 			mark(kind .. " level " .. level)
 			task.wait(1.6)
+			runViewShots(kind, level, tower, base)
 			if level < 3 then
 				Remotes.UpgradeTower:InvokeServer(tower)
 				task.wait(1.0)

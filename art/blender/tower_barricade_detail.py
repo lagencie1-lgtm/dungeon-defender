@@ -28,6 +28,9 @@ Lessons kept from rounds 1-3 (2026-11-24):
 - the bake only has light from above, so a cone's facets all bake alike: pencil tips get a side light (facet_light)
 - stakes need dark shafts and red ends, or they vanish against the warm logs; the long wall with eight posts read as a
   picket fence (round 3), hence the centre section and wings
+- the hidden-face cull judges a face by its centre: a long log face whose centre sat behind a post or the shield went
+  whole and left a dark hole beside it (round 4), so logs get a ring at every post and shield edge, and the shield
+  disc and plate are kept (htd_keep)
 Run: blender -b -P tower_barricade_detail.py -- out.fbx <l1|l2|thorn|root> [params.json]"""
 import json
 import math
@@ -54,7 +57,7 @@ rnd = random.Random(11)
 LOG = (0.8, 1.0, 1.9)           # wood.png -> warm mid oak like the sheet's logs (about 0.62, 0.37, 0.16 on screen)
 STAKE = (0.38, 0.32, 0.5)       # wood.png -> dark red-brown fire-hardened shafts (about 0.46, 0.23, 0.09)
 POST = (0.95, 1.08, 1.9)        # a touch lighter than the logs
-SHIELD = (0.42, 0.52, 1.3)      # darker planks, so the brass reads
+SHIELD = (0.55, 0.62, 1.4)      # darker planks than the logs, so the brass reads (round 4's 0.42 read nearly black)
 RAIL = (1.0, 1.0, 1.0)          # wood_dark.png as it is: darker than the logs, so the rack reads in front of them
 IRON_T = (0.62, 0.62, 0.68)
 BRASS_T = (1.3, 1.4, 1.6)       # brass.png -> the sheet's warm brass, not orange
@@ -80,7 +83,7 @@ DEFAULTS = {
     # pairs; shield: its radius (0 = none)
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
-    "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.62),
+    "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
     "root": dict(BASE, reach=3.0, sapling=1.0),
 }
 P = dict(DEFAULTS[stage])
@@ -201,16 +204,27 @@ def cone_to(name, a, b, r0, color, key=None, tile=1.0, verts=8, facets=False):
         facet_light(o)
 
 
+BREAKS = []   # x where something stands against the logs (post and shield edges): logs get a ring there
+
+
 def log(name, z, x0, x1, r, seed):
     """an oak log from x0 to x1: a slightly crooked swept trunk with the grain along it, sawn ends with a pale face and
-    a darker heart (a size larger than the trunk, so no gap shows at its rim), a knot or two on the faces"""
+    a darker heart (a size larger than the trunk, so no gap shows at its rim), a knot or two on the faces. It has a
+    ring at every x in BREAKS, so the cull can drop the faces behind a post without the ones beside it."""
     g = random.Random(seed)
     length = x1 - x0
+    xs = sorted([x0 + length * k / 6 for k in range(7)] + [b for b in BREAKS if x0 + 0.15 < b < x1 - 0.15])
+    kept = [xs[0]]
+    for x in xs[1:]:
+        if x - kept[-1] > 0.12:
+            kept.append(x)
+    kept[-1] = x1
+    ph = [g.uniform(0, 6.28) for _ in range(3)]
     pts, radii = [], []
-    for k in range(7):
-        t = k / 6
-        pts.append(Vector((x0 + t * length, g.uniform(-0.04, 0.04), z + g.uniform(-0.025, 0.025))))
-        radii.append(r * (1.0 - 0.05 * abs(t - 0.5) * 2) * g.uniform(0.97, 1.03))
+    for x in kept:
+        t = (x - x0) / length
+        pts.append(Vector((x, 0.035 * math.sin(x * 0.9 + ph[0]), z + 0.022 * math.sin(x * 1.3 + ph[1]))))
+        radii.append(r * (1.0 - 0.05 * abs(t - 0.5) * 2) * (1 + 0.025 * math.sin(x * 2.1 + ph[2])))
     grain_x(tube(name, pts, radii, LOG, "wood", 3.2, verts=16))
     for p, q, rr, s in ((pts[0], pts[1], radii[0], 0), (pts[-1], pts[-2], radii[-1], 1)):
         d = (p - q).normalized()
@@ -253,14 +267,14 @@ def shield(name, z, facing, rr):
     """the centrepiece: a big solid round shield filling the centre bay, a thick disc of planks, a raised brass rim with
     studs and a brass boss on a brass plate"""
     y0, y1 = R * 0.78, R * 0.78 + 0.26
-    disc_y(name, y0, y1, z, rr, rr, facing, SHIELD, key="wood", tile=2.8, verts=32)
+    disc_y(name, y0, y1, z, rr, rr, facing, SHIELD, key="wood", tile=2.8, verts=32)["htd_keep"] = True
     rim = K.lathe(name + "Rim", [(rr - 0.12, y0 + 0.02), (rr + 0.08, y0 + 0.02), (rr + 0.1, y1 + 0.07), (rr - 0.02, y1 + 0.12),
                                  (rr - 0.15, y1 + 0.03)], BRASS_T, key="brass", verts=32, cap=False)
     moved(rim, (0, 0, z), FACE_Y[facing])
     for k in range(14):
         a = 2 * math.pi * (k + 0.5) / 14
         K.ball(f"{name}Stud{k}", (math.cos(a) * (rr - 0.03), facing * (y1 + 0.12), z + math.sin(a) * (rr - 0.03)), 0.085, STUD, seg=6)
-    disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, BRASS_T, key="brass", tile=1.0, verts=20)
+    disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, BRASS_T, key="brass", tile=1.0, verts=20)["htd_keep"] = True
     K.ball(name + "Boss", (0, facing * (y1 + 0.07), z), 0.38, BRASS_T, (1, 0.75, 1), seg=16, key="brass", tile=1.0)
 
 
@@ -268,6 +282,10 @@ def shield(name, z, facing, rr):
 HALF = P["length"] / 2
 BX, BR, WX, WR = P["big_x"], P["big_r"], P["wing_x"], P["wing_r"]
 zs = [R * 0.95 + i * STEP for i in range(P["logs"])]
+for c, r in ((BX, BR), (WX, WR)):
+    BREAKS += [sgn * c + d * (r + 0.08) for sgn in (-1, 1) for d in (-1, 1)]
+if P["shield"] > 0:
+    BREAKS += [-(P["shield"] + 0.18), P["shield"] + 0.18]
 top_c = zs[-1] + R                       # the centre section's top
 top_w = zs[P["wing_logs"] - 1] + R       # the wings' top
 wing_h = top_w + 0.35 + WR * 1.92
@@ -291,9 +309,11 @@ for s in (-1, 1):
         POSTS.append((s * WX + side * 0.06, side * post_y(WR), WR, wing_h, "wing"))
 for k, (x, y, r, h, kind) in enumerate(POSTS):
     post(f"Post{k}", x, y, h, r)
-    if stage == "l1":
-        coil(f"Rope{k}Low", x, y, zs[0] - 0.05, r)
-        coil(f"Rope{k}High", x, y, (top_c if kind == "big" else top_w) - R * 1.15, r)
+    if stage == "l1" and kind == "big":
+        coil(f"Rope{k}Low", x, y, zs[0] - 0.05, r, turns=2)
+        coil(f"Rope{k}High", x, y, top_c - R * 1.15, r, turns=2)
+    elif stage == "l1":   # the small wing posts: one coil (round 4 had four or five turns on them: too busy)
+        coil(f"Rope{k}", x, y, (zs[0] + top_w) / 2 - 0.25, r, turns=2)
     else:
         for z in (0.9, (h - r * 1.92) - 0.55):
             iron_band(f"Band{k}_{z:.1f}", x, y, z, r)
@@ -314,9 +334,9 @@ if stage == "thorn":
     front_y = 0.0
 
     def stake(name, base, d, ln, r0, verts=10):
-        K.limb(name, base, base + d * (ln * 0.42), r0, r0 * 0.96, STAKE, verts=verts, end=False, key="wood", tile=2.4)
-        K.limb(name + "Red", base + d * (ln * 0.415), base + d * (ln * 0.84), r0 * 0.97, r0 * 0.5, RED, verts=verts, end=False)
-        cone_to(name + "Point", base + d * (ln * 0.835), base + d * ln, r0 * 0.51, CHAR, verts=verts)
+        K.limb(name, base, base + d * (ln * 0.52), r0, r0 * 0.95, STAKE, verts=verts, end=False, key="wood", tile=2.4)
+        K.limb(name + "Red", base + d * (ln * 0.515), base + d * (ln * 0.8), r0 * 0.96, r0 * 0.58, RED, verts=verts, end=False)
+        cone_to(name + "Point", base + d * (ln * 0.795), base + d * ln, r0 * 0.59, CHAR, verts=verts)
         return base + d * ln
 
     for k in range(P["pairs"]):
@@ -344,9 +364,9 @@ if stage == "thorn":
         n = max(1, int(round((x_to - x_from) / P["crest"])) + 1)
         for k in range(n):
             x = x_from + (x_to - x_from) * (k / (n - 1) if n > 1 else 0.5)
-            lean = rad(28 + rnd.uniform(-6, 6))
+            lean = rad(18 + rnd.uniform(-5, 5))
             d = Vector((rnd.uniform(-0.1, 0.1), math.sin(lean), math.cos(lean))).normalized()
-            stake(f"Crest{tag}{k}", Vector((x, -0.05, top - 0.35)), d, 1.45 * (0.9 + 0.1 * rnd.random()), 0.15, verts=8)
+            stake(f"Crest{tag}{k}", Vector((x, -0.08, top - 0.4)), d, P["crest_len"] * (0.9 + 0.1 * rnd.random()), 0.23, verts=8)
     # braces behind, so the wall leans into the hits (and the model's box stays centred on the wall line)
     for k, x in enumerate((-(BX + WX) / 2, (BX + WX) / 2)):
         top_b = Vector((x, -R * 0.55, top_w * 0.72))
@@ -410,13 +430,13 @@ if stage == "root":
     for top, xa, xb, n, tag in ((top_c, -(BX + BR), BX + BR, 7, "C"), (top_w, BX + BR, HALF * 0.92, 3, "R"), (top_w, -HALF * 0.92, -(BX + BR), 3, "L")):
         for k in range(n):
             x = xa + (xb - xa) * (k + 0.5) / n + rnd.uniform(-0.15, 0.15)
-            K.ball(f"Moss{tag}{k}", (x, rnd.uniform(-0.15, 0.15), top - 0.04), rnd.uniform(0.55, 0.72), MOSS_T, (1.5, 1.15, 0.36), seg=12,
+            K.ball(f"Moss{tag}{k}", (x, rnd.uniform(-0.12, 0.12), top + 0.02), rnd.uniform(0.62, 0.78), MOSS_T, (1.45, 1.2, 0.55), seg=12,
                    key="leaves", tile=1.2)
         for k in range(n + 1):
             x = xa + (xb - xa) * k / n + rnd.uniform(-0.2, 0.2)
-            s = 1 if k % 2 == 0 else -1
-            K.ball(f"Drape{tag}{k}", (x, s * R * 0.84, top - 0.42), rnd.uniform(0.34, 0.46), MOSS_T, (1.3, 0.42, 1.15), seg=10,
-                   key="leaves", tile=1.2)
+            for s in (1, -1):   # moss hangs down both faces under the mat
+                K.ball(f"Drape{tag}{k}{s}", (x + s * 0.2, s * R * 0.86, top - 0.45), rnd.uniform(0.4, 0.52), MOSS_T, (1.35, 0.45, 1.25),
+                       seg=10, key="leaves", tile=1.2)
     # the sapling on top of the centre, right of the middle (like the picture): a crooked trunk that splits into four
     # branches, each with a big leafy tuft, about half the wall's height
     sx = BX * 0.45
@@ -427,10 +447,10 @@ if stage == "root":
         end = fork + Vector((dx, dy, dz))
         bend = fork.lerp(end, 0.5) + Vector((0, 0, 0.14))
         tube(f"Branch{k}", [fork, bend, end], [0.12, 0.09, 0.06], ROOT_T, "bark", 1.2, verts=6)
-        K.ball(f"Tuft{k}", end + Vector((0, 0, 0.14)), 0.55, CROWN_T, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
-        K.ball(f"Tuft{k}b", end + Vector((dx * 0.3, dy * 0.3, 0.4)), 0.38, CROWN_T, (1, 1, 0.85), seg=12, key="leaves", tile=1.0)
-        for j in range(8):
-            a = 2 * math.pi * j / 8 + k
+        K.ball(f"Tuft{k}", end + Vector((0, 0, 0.14)), 0.55, CROWN_T, (1.15, 1.15, 0.8), seg=18, key="leaves", tile=1.0)
+        K.ball(f"Tuft{k}b", end + Vector((dx * 0.3, dy * 0.3, 0.4)), 0.38, CROWN_T, (1, 1, 0.85), seg=16, key="leaves", tile=1.0)
+        for j in range(11):
+            a = 2 * math.pi * j / 11 + k
             n = Vector((math.cos(a), math.sin(a), rnd.uniform(0.0, 0.8))).normalized()
             K.leaf(f"Leaf{k}_{j}", end + Vector((n.x * 0.55, n.y * 0.55, 0.15 + n.z * 0.35)), n, rnd.uniform(0.5, 0.62), LEAF,
                    turn=rnd.uniform(-0.6, 0.6))
@@ -443,4 +463,4 @@ if os.environ.get("HTD_FAST"):
     lib.export_fbx(os.path.abspath(out))
     print("EXPORTED", out)
 else:
-    K.bake_atlases(f"tower_barricade_{stage}", out, budget=11000)
+    K.bake_atlases(f"tower_barricade_{stage}", out, budget=12500)

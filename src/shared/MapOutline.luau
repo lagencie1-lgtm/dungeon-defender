@@ -50,8 +50,10 @@ MapOutline.BuildStop = 4
 MapOutline.Start = {
 	-- the keep tower at the left edge of the view, the first ford a little left of the middle, the chapel and the
 	-- second ford on the right (at 60 degrees the tower filled the middle: the first film); the spot is on the keep
-	-- hill between the hero and the tower, where a Ranger covers the road on all four sides of the hill
-	Forest = { Look = v(0.766, 0, -0.643), FirstSpot = v(-6, 0, -16.5) },
+	-- hill just south of where the heroes arrive: a Ranger there covers the road on three sides of the hill, and
+	-- path corner 5 (12, -34), where wave 1's Goblin Sneaks start their run for the portal, lies 31 studs away,
+	-- just past a first Ranger's reach (28): the hero has to catch them (the research's first-wave rescue)
+	Forest = { Look = v(0.766, 0, -0.643), FirstSpot = v(-6, 0, -8.5) },
 	-- on the heart bastion, looking west at the lava bridge it watches
 	Magma = { Look = v(-0.92, 0, -0.4), FirstSpot = v(9, 0, 2) },
 	-- in the great hall, looking west at the last tunnel

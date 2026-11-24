@@ -61,13 +61,13 @@ MapLayouts.Forest = {
 	},
 	Sets = {
 		-- Lemp's map audit (2026-11-24), "Keep lookout": the landmark that frames the first view, and one clear build
-		-- spot. The heroes arrive facing north-east (MapOutline.Start): the tower 30 degrees to the left, the first
-		-- ford 30 degrees to the right, the build spot just ahead. A Ranger on it covers the road on all four sides of
+		-- spot. The heroes arrive facing north-east (MapOutline.Start): the tower at the left of the view, the first
+		-- ford ahead, the build spot just behind them on the right. A Ranger on it covers the road on three sides of
 		-- the hill (the hill is narrow: its middle strip is all that is free of the walls' flagstone rims)
-		{ Name = "The keep", Why = "the hill you start on is the old keep: its tower (an old tree grown up through it) at the north end, the first build spot between it and you, parapet and stairs at the south end",
+		{ Name = "The keep", Why = "the hill you start on is the old keep: its tower (an old tree grown up through it) at the north end, the first build spot where you arrive, parapet and stairs at the south end",
 			Kit = {
 				{ Piece = "tower", At = v(-6, 0, -25), Look = v(0, 0, 1) },
-				{ Piece = "pad", At = v(-6, 0, -16.5), Look = v(0, 0, 1), Sink = -0.02 },
+				{ Piece = "pad", At = v(-6, 0, -8.5), Look = v(0, 0, 1), Sink = -0.02 },
 			} },
 		{ Name = "The Hollow Gate", Why = "a gate IN the canyon wall: its two piers are the ends of the banks' retaining walls",
 			Kit = { { Piece = "arch", At = v(-49, 0, -44), Look = v(1, 0, 0), Sink = 0.3 } } },

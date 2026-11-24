@@ -35,7 +35,7 @@ COAL = (0.16, 0.15, 0.16)
 DEFAULTS = {
     1: dict(foot_r=3.2, foot_h=0.9, foot_n=10, cradle=2.2, barrel_r=1.15, barrel_len=3.0, tilt=38, barrel_z=2.4, aim=55),
     2: dict(foot_r=3.2, foot_h=0.9, foot_n=10, drum_r=2.3, drum_h=1.7, barrel_r=1.05, barrel_len=3.6, tilt=30, barrel_z=3.6, aim=55),
-    3: dict(foot_r=3.2, foot_h=0.9, foot_n=10, drum_r=2.5, drum_h=3.0, barrel_r=0.85, barrel_len=3.4, tilt=22, barrel_z=5.0, aim=55),
+    3: dict(foot_r=3.4, foot_h=0.9, foot_n=10, drum_r=2.8, drum_h=3.4, barrel_r=0.8, barrel_len=3.6, tilt=22, barrel_z=5.6, aim=55),
 }
 P = dict(DEFAULTS[level])
 saved = os.path.join(HERE, "params", f"tower_flame_l{level}.json")
@@ -66,7 +66,8 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True):
     with K.atlas("barrel"):
         prof = [(r * 0.85, -length * 0.35), (r * 1.0, -length * 0.25), (r * 0.92, length * 0.45), (r * 0.95, length * 0.6)]
         # (open at the mouth: a closed cap hid the fire and read as the back of the barrel)
-        o = K.lathe(name, prof, color, key="iron" if color == IRON else "brass", verts=24, tile=1.0, cap=False)
+        # (round 2, 2026-11-24: smooth metal, no texture pattern: the brass pattern read as wicker on the barrels)
+        o = K.lathe(name, prof, color, key=None, verts=24, tile=1.0, cap=False)
         o.matrix_world = frame
         mouth = K.lathe(name + "Mouth", [(r * 0.75, length * 0.6), (r * 1.18, length * 0.6), (r * 1.22, length * 0.82), (r * 1.08, length * 0.9), (r * 0.8, length * 0.88)],
                         IRON_DARK if color == IRON else K.BRASS, key=None, verts=24, cap=False)
@@ -74,9 +75,9 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True):
         back = K.lathe(name + "Breech", [(0.01, -length * 0.42), (r * 0.6, -length * 0.4), (r * 0.85, -length * 0.35)], color, key=None, verts=24, cap=False)
         back.matrix_world = frame
         mouth.matrix_world = frame
-        for k in range(bands):
-            zb = -length * 0.15 + k * length * 0.25
-            b = K.lathe(f"{name}Band{k}", [(r * 1.02, zb), (r * 1.1, zb + 0.04), (r * 1.1, zb + 0.22), (r * 1.02, zb + 0.26)], K.BRASS, key="brass", verts=24)
+        for k in range(bands):   # a few broad gold bands
+            zb = -length * 0.2 + k * length * 0.32
+            b = K.lathe(f"{name}Band{k}", [(r * 1.02, zb), (r * 1.1, zb + 0.05), (r * 1.1, zb + 0.32), (r * 1.02, zb + 0.37)], K.BRASS, key=None, verts=24)
             b.matrix_world = frame
         if rivets:
             for k in range(10):
@@ -95,6 +96,10 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True):
         bpy.context.scene.collection.objects.link(g)
         g.matrix_world = frame
         S.glow(g, FIRE)
+        # (round 2: a small flame glowing inside the bore, not a flat disc: a short cone just inside the mouth)
+        tongue = K.cone(name + "Flame", (0, 0, length * 0.72), r * 0.6, length * 0.22, (1.0, 0.75, 0.2), verts=10)
+        tongue.matrix_world = frame @ tongue.matrix_world
+        S.glow(tongue, (1.0, 0.72, 0.2))
 
 
 def footing():
@@ -103,30 +108,38 @@ def footing():
     K.grass(P["foot_r"] - 0.05, 22, h=0.75)
 
 
-def drum(z0, r, h, vents=False, bands=1):
-    """a round wooden drum of upright planks with brass bands and rivets"""
+def drum(z0, r, h, vents=False, bands=1, taper=1.0):
+    """a round wooden drum of upright planks with brass bands and rivets; taper < 1 narrows it to the top (level 3's
+    tall cone-shaped boiler, round 2)"""
     n = 16
     for i in range(n):
         a = rad(i * 360 / n)
-        K.block(f"Stave{z0:.1f}_{i}", K.at(a, r - 0.15, z0 + h / 2), (2 * math.pi * r / n * 1.02, 0.34, h),
-                K.WOOD if i % 2 else K.WOOD_DARK, (0, 0, a + rad(90)), key="wood", tile=1.2, bevel=0.08)
-    K.lathe(f"DrumCore{z0:.1f}", [(r - 0.3, z0), (r - 0.3, z0 + h)], K.WOOD_DARK, key="wood_dark")
+        rm = r * (1 + taper) / 2
+        lean = math.atan2(r - r * taper, h)
+        K.block(f"Stave{z0:.1f}_{i}", K.at(a, rm - 0.15, z0 + h / 2), (2 * math.pi * rm / n * 1.04, 0.34, h / math.cos(lean)),
+                K.WOOD if i % 2 else K.WOOD_DARK, (-lean, 0, a + rad(90)), key="wood", tile=1.2, bevel=0.08)
+    K.lathe(f"DrumCore{z0:.1f}", [(r - 0.3, z0), (r * taper - 0.3, z0 + h)], K.WOOD_DARK, key="wood_dark")
     for k in range(bands):
         zb = z0 + h * (0.25 + 0.5 * k / max(1, bands - 1)) if bands > 1 else z0 + h * 0.55
-        K.brass_band(f"DrumBand{z0:.1f}_{k}", zb, r + 0.02, 0.42, 14)
-    if vents:
-        for s in (-1, 1):
-            a = rad(FRONT + s * 38)
-            p = Vector(K.at(a, r + 0.05, z0 + h * 0.3))
-            for j in range(3):
-                q = p + Vector((-math.sin(a), math.cos(a), 0)) * ((j - 1) * 0.32)
+        rb = r + (r * taper - r) * (zb - z0) / h
+        K.brass_band(f"DrumBand{z0:.1f}_{k}", zb, rb + 0.02, 0.42, 14)
+    if vents:   # glowing arched windows round the front (round 2: three tall arches, as painted)
+        for s in (-1, 0, 1):
+            a = rad(FRONT + s * 34)
+            zc = z0 + h * 0.32
+            rr = r + (r * taper - r) * 0.32 + 0.04
+            p = Vector(K.at(a, rr, zc))
+            t = Vector((-math.sin(a), math.cos(a), 0))
+            for j in range(2):
+                q = p + t * ((j - 0.5) * 0.36)
+                K.ball(f"Arch{s}{j}", tuple(q + Vector((0, 0, 0.35))), 0.15, FIRE, (1, 0.6, 1), seg=8)
                 bpy.ops.mesh.primitive_cube_add(size=1, location=q)
                 g = bpy.context.active_object
-                g.scale = (0.12, 0.2, 0.6)
-                g.rotation_euler = (0, 0, a)
+                g.scale = (0.3, 0.16, 0.7)
+                g.rotation_euler = (0, 0, a + rad(90))
                 bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
                 S.glow(g, FIRE)
-            K.block(f"VentFrame{s}", tuple(p + Vector((0, 0, 0.42))), (1.25, 0.25, 0.22), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6)
+            K.block(f"ArchFrame{s}", tuple(p + Vector((0, 0, 0.62))), (1.0, 0.25, 0.2), K.BRASS, (0, 0, a + rad(90)), key=None, tile=0.6)
 
 
 fz = P["foot_h"]
@@ -166,14 +179,17 @@ elif level == 2:
     K.block("Hopper", (back.x, back.y, top + 1.4), (1.5, 1.3, 1.1), K.WOOD_DARK, (0, 0, a), key="wood_dark", tile=1.0, bevel=0.08)
     K.block("HopperRim", (back.x, back.y, top + 1.95), (1.7, 1.5, 0.18), K.BRASS, (0, 0, a), key="brass", tile=0.6)
     for k in range(6):
-        K.ball(f"Coal{k}", (back.x + ((k % 3) - 1) * 0.42, back.y + (k // 3 - 0.5) * 0.45, top + 2.1), 0.26, COAL, (1, 1, 0.8), seg=7)
+        c_ = K.ball(f"Coal{k}", (back.x + ((k % 3) - 1) * 0.42, back.y + (k // 3 - 0.5) * 0.45, top + 2.1), 0.26, COAL, (1, 1, 0.8), seg=7)
+        if k % 2:
+            S.glow(c_, FIRE)   # (glowing coals among the dark ones)
     barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"], BRONZE)
     muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 0.85))]
 else:
-    drum(fz, P["drum_r"], P["drum_h"], vents=True, bands=2)
+    drum(fz, P["drum_r"], P["drum_h"], vents=True, bands=2, taper=0.72)
     top = fz + P["drum_h"]
-    K.brass_band("Collar", top + 0.15, P["drum_r"] - 0.25, 0.55, 16)
-    K.lathe("TurretBase", [(P["drum_r"] - 0.4, top + 0.4), (P["drum_r"] - 0.7, top + 1.4), (1.0, top + 1.6)], K.WOOD_DARK, key="wood_dark", verts=24)
+    rt = P["drum_r"] * 0.72
+    K.brass_band("Collar", top + 0.15, rt - 0.1, 0.55, 16)
+    K.lathe("TurretBase", [(rt - 0.1, top + 0.4), (rt - 0.35, top + 1.4), (1.0, top + 1.6)], K.WOOD_DARK, key="wood_dark", verts=8)   # (an eight-sided housing)
     a = rad(FRONT + P["aim"])
     side = Vector((-math.sin(a), math.cos(a), 0))
     for s in (-1, 1):
@@ -187,7 +203,7 @@ else:
             K.ball(f"Smoke{k}", (chim.x + dx, chim.y, top + dz), r, (0.92, 0.9, 0.86), seg=10)
     muzzles = []
     for s in (-1, 1):
-        fr = aim_frame(P["barrel_z"], P["tilt"], side=s * 0.75)
+        fr = aim_frame(P["barrel_z"], P["tilt"], side=s * P["barrel_r"] * 1.3)   # (two barrels side by side with a gap, not one)
         barrel(f"Barrel{s}", fr, P["barrel_r"], P["barrel_len"], BRONZE, bands=2, rivets=False)
         muzzles.append(fr @ Vector((0, 0, P["barrel_len"] * 0.85)))
 

@@ -73,7 +73,11 @@ HEART = (0.78, 0.53, 0.3)       # the darker heart rings of a sawn end
 KNOT = (0.42, 0.25, 0.13)
 ROPE = (0.9, 0.8, 0.6)
 STUD = (0.93, 0.68, 0.27)
-BOSS = (0.97, 0.74, 0.32)       # the shield boss: plain smooth brass
+BOSS = (0.88, 0.62, 0.22)       # the shield boss: smooth brass, side lit (facet_light) so it reads as a dome
+RIM = (0.86, 0.62, 0.24)        # the shield rim: smooth brass (brass.png read knobbly at this size)
+PLATE = (0.7, 0.48, 0.18)
+GLINT = (1.0, 0.95, 0.74)       # one painted highlight on the boss
+ROPE_DARK = (0.76, 0.63, 0.42)  # the second strand of the twisted rope
 RED = (0.72, 0.25, 0.13)        # fire-hardened stake (the Thornwall's colour)
 CHAR = (0.26, 0.1, 0.07)        # the charred point
 DIRT = (0.5, 0.36, 0.23)
@@ -253,14 +257,20 @@ def post(name, x, y, h, r):
     cone_to(name + "Tip", (x, y, h - r * 1.92), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
 
 
-def coil(name, x, y, z, r, thick=0.12, turns=2.5):
-    """thick rope wound round a post (its inner side sinks into the log behind: it binds the two)"""
-    n = int(turns * 8) + 1
-    pts = []
-    for k in range(n):
-        a = 2 * math.pi * k / 8 + rad(30)
-        pts.append((x + math.cos(a) * (r + thick * 0.75), y + math.sin(a) * (r + thick * 0.75), z + k / 8 * thick * 2.1))
-    tube(name, pts, [thick] * n, ROPE, verts=6)
+def rope(name, x, y, z, r, thick=0.13, turns=2):
+    """a twisted rope wound round a post: two strands, a light and a darker one, twisting round each other along a
+    helix (round 6's single pale tube had no twist)"""
+    per_turn = 12
+    n = turns * per_turn + 1
+    rc, o = r + thick * 0.75, thick * 0.42
+    for strand, color in ((0, ROPE), (1, ROPE_DARK)):
+        pts = []
+        for k in range(n):
+            a = 2 * math.pi * k / per_turn + rad(30)
+            ph = k * 1.6 + strand * math.pi
+            rr = rc + math.cos(ph) * o
+            pts.append((x + math.cos(a) * rr, y + math.sin(a) * rr, z + k / per_turn * thick * 2.2 + math.sin(ph) * o))
+        tube(f"{name}S{strand}", pts, [thick * 0.62] * n, color, verts=5)
 
 
 def iron_band(name, x, y, z, r):
@@ -278,16 +288,18 @@ def shield(name, z, facing, rr):
     y0, y1 = R * 0.78, R * 0.78 + 0.26
     disc_y(name, y0, y1, z, rr, rr, facing, SHIELD, key="wood", tile=2.8, verts=32)["htd_keep"] = True
     rim = K.lathe(name + "Rim", [(rr - 0.12, y0 + 0.02), (rr + 0.08, y0 + 0.02), (rr + 0.1, y1 + 0.07), (rr - 0.02, y1 + 0.12),
-                                 (rr - 0.15, y1 + 0.03)], BRASS_T, key="brass", verts=32, cap=False)
+                                 (rr - 0.15, y1 + 0.03)], RIM, verts=32, cap=False)
     moved(rim, (0, 0, z), FACE_Y[facing])
     for k in range(14):
         a = 2 * math.pi * (k + 0.5) / 14
         K.ball(f"{name}Stud{k}", (math.cos(a) * (rr - 0.03), facing * (y1 + 0.12), z + math.sin(a) * (rr - 0.03)), 0.085, STUD, seg=6)
-    disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, BRASS_T, key="brass", tile=1.0, verts=20)["htd_keep"] = True
+    disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, PLATE, verts=20)["htd_keep"] = True
     # the boss: a smooth lathed dome in plain polished brass (round 5's textured ball read as crumpled)
     dome = [(0.4, 0.0), (0.39, 0.06), (0.35, 0.14), (0.28, 0.21), (0.18, 0.26), (0.08, 0.285), (0.004, 0.29)]
     boss = K.lathe(name + "Boss", [(r, y1 + 0.04 + dz) for r, dz in dome], BOSS, verts=24, cap=False)
     moved(boss, (0, 0, z), FACE_Y[facing])
+    facet_light(boss)
+    K.ball(name + "Glint", (-0.1, facing * (y1 + 0.04 + 0.255), z + 0.15), 0.075, GLINT, (1, 0.4, 0.75), seg=8)
 
 
 # --- the wall: centre section and wings ----------------------------------------------------------------------------
@@ -322,10 +334,10 @@ for s in (-1, 1):
 for k, (x, y, r, h, kind) in enumerate(POSTS):
     post(f"Post{k}", x, y, h, r)
     if stage == "l1" and kind == "big":
-        coil(f"Rope{k}Low", x, y, zs[0] - 0.05, r, turns=2)
-        coil(f"Rope{k}High", x, y, top_c - R * 1.15, r, turns=2)
+        rope(f"Rope{k}Low", x, y, zs[0] - 0.05, r)
+        rope(f"Rope{k}High", x, y, top_c - R * 1.15, r)
     elif stage == "l1":   # the small wing posts: one coil (round 4 had four or five turns on them: too busy)
-        coil(f"Rope{k}", x, y, (zs[0] + top_w) / 2 - 0.25, r, turns=2)
+        rope(f"Rope{k}", x, y, (zs[0] + top_w) / 2 - 0.25, r)
     else:
         for z in (0.9, (h - r * 1.92) - 0.55):
             iron_band(f"Band{k}_{z:.1f}", x, y, z, r)
@@ -342,7 +354,7 @@ if stage == "thorn":
     base_y = R + 0.6
     rail_y = R + 1.25
     rail_z = 0.02 + (rail_y - base_y) * math.tan(tilt)
-    K.block("Rail", (0, rail_y, rail_z), (P["length"] * 0.86, 0.44, 0.48), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.08)
+    K.block("Rail", (0, rail_y, rail_z), (P["length"] * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
     front_y = 0.0
 
     def stake(name, base, d, ln, r0, verts=10):
@@ -362,9 +374,9 @@ if stage == "thorn":
             K.ball(f"Stake{k}{j}Mound", (base.x, base.y, 0.0), 0.45, DIRT, (1.2, 1.0, 0.4), seg=10)
             front_y = max(front_y, tip.y)
         # an iron strap round the rail where each pair crosses, two brass studs on its face
-        K.block(f"Strap{k}", (xp, rail_y, rail_z), (0.24, 0.5, 0.56), IRON_T, key="iron", tile=1.0, bevel=0.04)
-        for dz in (-0.12, 0.12):
-            K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.26, rail_z + dz), 0.075, STUD, seg=6)
+        K.block(f"Strap{k}", (xp, rail_y, rail_z), (0.3, 0.62, 0.7), IRON_T, key="iron", tile=1.0, bevel=0.04)
+        for dz in (-0.16, 0.16):
+            K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.32, rail_z + dz), 0.09, STUD, seg=6)
     ft = rad(34)
     for k in range(P["front"]):
         x = ((k + 0.5) / P["front"] - 0.5) * P["length"] * 0.74 + rnd.uniform(-0.12, 0.12)
@@ -465,14 +477,14 @@ if stage == "root":
         # each tuft: a darker leafy core and a shell of single bright leaves all over its upper part (round 5's tufts
         # were textured balls with a few leaves and read as faceted blobs)
         centre = end + Vector((0, 0, 0.2))
-        K.ball(f"Tuft{k}", centre, 0.48, CROWN_DARK, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
+        K.ball(f"Tuft{k}", centre, 0.42, CROWN_DARK, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
         golden = math.pi * (3 - math.sqrt(5))
-        for j in range(18):
-            zz = 0.95 - 1.2 * (j + 0.5) / 18          # from the top down to a little below the middle
+        for j in range(14):     # fewer, bigger leaves: single leaf shapes must read at game distance
+            zz = 0.95 - 1.2 * (j + 0.5) / 14          # from the top down to a little below the middle
             ring = math.sqrt(max(0.0, 1 - zz * zz))
             a = golden * j + k
             n = Vector((math.cos(a) * ring, math.sin(a) * ring, zz)).normalized()
-            K.leaf(f"Leaf{k}_{j}", centre + Vector((n.x * 0.55, n.y * 0.55, n.z * 0.4)), n, rnd.uniform(0.42, 0.52),
+            K.leaf(f"Leaf{k}_{j}", centre + Vector((n.x * 0.6, n.y * 0.6, n.z * 0.42)), n, rnd.uniform(0.62, 0.74),
                    LEAF if j % 3 else LEAF_LIGHT, turn=rnd.uniform(-0.8, 0.8))
 
 if not os.environ.get("HTD_FAST"):

@@ -2,6 +2,9 @@
 -- 6A: springs solved exactly so 30 fps looks like 120 fps, no linear tweens, nothing floats without a reason.
 -- Walking pets hop after their hero and land with a little nod; winged pets hover with a slow wing-beat bob.
 -- Standing still, a pet breathes and turns to look where its hero looks.
+-- Every kind has its own GAIT (research report 2026-11-24: "give each pet species a job and a movement signature you
+-- can recognize before adding more species"): Slimey wobbles in low quick bounces, the Golem stomps, the Fox trots,
+-- the Unicorn prances, the Owl glides and banks, the Glowbug buzzes. Motion only: no new effects.
 -- In a fight the server picks a move (PetMoves.luau) and sets "PetAct" on the model: the pet lunges at the
 -- target on a spring and springs back, with one small shot or glow (6A: small, rare, readable on a phone).
 -- Fetching loot ("FetchPhase" go/back): the spot the pet springs after trots to the loot at the pet's speed and
@@ -14,12 +17,30 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local CombatLooks = require(script.Parent.CombatLooks)
 
 local FLYERS = { Glowbug = true, CrystalOwl = true, Phoenix = true }
+-- walkers: hop = seconds per hop, height = studs, sway = side-to-side roll while moving (degrees), lean = forward tilt
+-- at full speed (degrees), land = landing nod kick, breathe = idle rise (studs)
+-- flyers: lift = hover height, bob / bobHz = up-down, buzz = quick sideways jitter (studs), bank = roll into turns
+local GAITS = {
+	Slimey = { hop = 0.26, height = 0.35, sway = 7, lean = 4, land = 3.2, breathe = 0.07 }, -- jelly wobble
+	Leafling = { hop = 0.22, height = 0.18, sway = 11, lean = 5, land = 1.4, breathe = 0.04 }, -- waddle
+	Stonepup = { hop = 0.34, height = 0.9, sway = 3, lean = 10, land = 2.6, breathe = 0.03 }, -- bouncy puppy
+	MossKitten = { hop = 0.3, height = 0.6, sway = 2, lean = 8, land = 1.8, breathe = 0.03 }, -- light prance
+	EmberFox = { hop = 0.22, height = 0.42, sway = 1, lean = 14, land = 1.6, breathe = 0.03 }, -- low quick trot
+	MiniGolem = { hop = 0.5, height = 0.14, sway = 6, lean = 3, land = 4.5, breathe = 0.015 }, -- heavy stomp
+	BabyDragon = { hop = 0.38, height = 0.65, sway = 5, lean = 8, land = 2.4, breathe = 0.04 }, -- waddle-hop
+	StarUnicorn = { hop = 0.42, height = 1.15, sway = 2, lean = 6, land = 2, breathe = 0.03 }, -- high prance
+	VoidDrake = { hop = 0.5, height = 0.8, sway = 3, lean = 12, land = 3, breathe = 0.03 }, -- long low leaps
+	Glowbug = { lift = 2.0, bob = 0.12, bobHz = 1.2, buzz = 0.07, bank = 6 }, -- quick little buzz
+	CrystalOwl = { lift = 2.3, bob = 0.3, bobHz = 0.32, buzz = 0, bank = 22 }, -- slow glide, banks into turns
+	Phoenix = { lift = 2.6, bob = 0.26, bobHz = 0.45, buzz = 0, bank = 16 }, -- soaring swoop
+}
+local WALK = { hop = 0.36, height = 0.85, sway = 0, lean = 9, land = 2.4, breathe = 0.03 }
+local FLY = { lift = 2.1, bob = 0.22, bobHz = 0.38, buzz = 0, bank = 8 }
 local SIDE, BACK = 3.2, 2.4 -- where the lead pet stands: to the hero's right and a little behind
 -- the team (PetSlot 1 to 3): the lead on the right, the second on the left, the third behind the hero
 local SLOTS = { { SIDE, BACK }, { -SIDE, BACK }, { 0, BACK + 2.6 } }
 local FOLLOW_HZ = 1.9 -- how eagerly it catches up (critically damped)
 local TURN_HZ = 2.6
-local HOP_TIME, HOP_HEIGHT = 0.36, 0.85
 local FAR = 220 -- beyond this the pet is only placed, not animated
 local LUNGE_HZ = 1.7 -- the lunge: a kick of speed on a spring that brings it back (peaks after about 0.09 s)
 local LUNGE_MAX = 5 -- studs at most
@@ -55,6 +76,7 @@ local function add(model)
 		body = body,
 		half = 1.15 * scale, -- the pet is 2.3 studs tall, its body part sits at its middle
 		flyer = FLYERS[model:GetAttribute("PetKind")] == true,
+		gait = GAITS[model:GetAttribute("PetKind") or ""] or (FLYERS[model:GetAttribute("PetKind")] and FLY or WALK),
 		pos = nil, vel = Vector3.zero,
 		yaw = 0, yawVel = 0,
 		hop = 0, hopping = false,
@@ -210,28 +232,39 @@ RunService.RenderStepped:Connect(function(dt)
 			s.groundClock = 0.15
 			s.ground = groundUnder(Vector3.new(x, root.Position.Y, z), { model, character }) or (root.Position.Y - 3)
 		end
-		local lift, tilt
+		local lift, tilt, roll
+		local g = s.gait
+		local side = Vector3.zero
 		if s.flyer then
-			-- hovering: a slow double bob like wing beats, leaning into the flight
-			lift = 2.1 + math.sin(s.clock * 2.4) * 0.22 + math.sin(s.clock * 4.8) * 0.05
+			-- hovering: a double bob like wing beats, leaning into the flight and banking into turns
+			local w = 2 * math.pi * g.bobHz
+			lift = g.lift + math.sin(s.clock * w) * g.bob + math.sin(s.clock * w * 2) * g.bob * 0.25
 			tilt = -math.clamp(speed / 16, 0, 1) * math.rad(14)
+			roll = math.clamp(-s.yawVel * 0.12, -1, 1) * math.rad(g.bank)
+			if g.buzz > 0 then -- a bug's quick little sideways jitter
+				side = right * (math.sin(s.clock * 17) * 0.6 + math.sin(s.clock * 29) * 0.4) * g.buzz
+			end
 		else
 			if not s.hopping and speed > 1.6 then
 				s.hopping, s.hop = true, 0
 			end
 			lift = 0
+			roll = 0
 			if s.hopping then
-				s.hop += dt / HOP_TIME
+				s.hop += dt / g.hop
 				if s.hop >= 1 then
 					s.hopping = speed > 1.6
 					s.hop = 0
-					s.nodVel -= 2.4 -- landing: a quick nod that springs back
+					s.nodVel -= g.land -- landing: a quick nod that springs back
+					s.step = -(s.step or 1) -- the sway swings to the other side with every hop
 				else
-					lift = 4 * HOP_HEIGHT * s.hop * (1 - s.hop) * math.clamp(speed / 8, 0.45, 1)
+					local pace = math.clamp(speed / 8, 0.45, 1)
+					lift = 4 * g.height * s.hop * (1 - s.hop) * pace
+					roll = math.sin(s.hop * math.pi) * (s.step or 1) * math.rad(g.sway) * pace
 				end
 			end
-			lift += (1 + math.sin(s.clock * 1.7)) * 0.03 -- breathing
-			tilt = -math.clamp(speed / 16, 0, 1) * math.rad(9)
+			lift += (1 + math.sin(s.clock * 1.7)) * g.breathe -- breathing
+			tilt = -math.clamp(speed / 16, 0, 1) * math.rad(g.lean)
 		end
 		s.nod, s.nodVel = spring(s.nod, s.nodVel, 0, 3.2, dt)
 		if s.act then
@@ -247,6 +280,6 @@ RunService.RenderStepped:Connect(function(dt)
 		s.yaw, s.yawVel = spring(s.yaw, s.yawVel, goal, TURN_HZ, dt)
 		s.pos = Vector3.new(x, s.ground + s.half + lift, z)
 		carryBead(s, phase == "back" and model:GetAttribute("CarryColor") or nil, dt)
-		s.body.CFrame = CFrame.new(s.pos + s.lunge) * CFrame.Angles(0, s.yaw, 0) * CFrame.Angles(tilt + s.nod * 0.12, 0, 0)
+		s.body.CFrame = CFrame.new(s.pos + s.lunge + side) * CFrame.Angles(0, s.yaw, 0) * CFrame.Angles(tilt + s.nod * 0.12, 0, roll)
 	end
 end)

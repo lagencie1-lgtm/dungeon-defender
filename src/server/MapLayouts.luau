@@ -10,6 +10,7 @@
 --   Channels  a river, a lava stream or a glowing canal: nothing builds there, the lane crosses on a bridge
 --   Masses    solid rock or wood that fills the corners no lane uses, so the field is not a rectangle
 --   Bridges   where a channel is crossed: a stone abutment with a plank deck and parapets (the lane's, or a hero's)
+--   Paths     footpaths painted on the ground from a set piece to the road (flat: they block nothing)
 --   Sets      everything else that stands on the field, as a few named compositions (reviews/maps/placement-rules.md:
 --             the floor stays clean, pieces connect, few big set pieces, soft things are massed). A set has Kit
 --             pieces (art/blender/map_kit.py; `Look` is where a piece's front faces, a wall runs across it and is
@@ -106,6 +107,21 @@ MapLayouts.Forest = {
 			Grove = { { At = v(46, 0, -58), H = 18 }, { At = v(52, 0, -64), H = 15 }, { At = v(42, 0, -65.5), H = 13 } } },
 		{ Name = "The camp wood", Why = "behind the goblin camp",
 			Grove = { { At = v(-103, 0, -22), H = 17 }, { At = v(-108, 0, -14.5), H = 14 }, { At = v(-99, 0, -12), H = 19 } } },
+		-- two lane sides had no edge at all (the judge on cycle 4: "lane edges remain bare"): a wood closes each,
+		-- 20 studs back from the road so the building ground beside the lane stays clear
+		{ Name = "The east wood", Why = "closes the east side of the last turn, between the river and the shrine",
+			Grove = { { At = v(70, 0, 14), H = 18 }, { At = v(76.5, 0, 19.5), H = 15 }, { At = v(69, 0, 23), H = 13 },
+				{ At = v(79, 0, 12.5), H = 16 } } },
+		{ Name = "The south wood", Why = "closes the south side of the road below the keep",
+			Grove = { { At = v(-16, 0, 31), H = 17 }, { At = v(-8, 0, 34.5), H = 19 }, { At = v(0, 0, 30.5), H = 14 },
+				{ At = v(6.5, 0, 35), H = 16 } } },
+	},
+	-- footpaths of trodden earth: flat (they block nothing), they tie a set piece to the road so it does not sit
+	-- on the lawn like a dropped object. Width is what TerrainBuilder writes, and 4 is the least that shows (as a
+	-- track about 7 studs wide); a line must lie on 4k + 2 and run along X or Z (the terrain's 4-stud cells).
+	Paths = {
+		{ Name = "from the chapel's well to the road", Width = 4, Points = { v(32, 0, 38), v(44, 0, 38) } },
+		{ Name = "from the standing stones to the road", Width = 4, Points = { v(-44, 0, 14), v(-32, 0, 14) } },
 	},
 }
 

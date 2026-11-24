@@ -55,6 +55,11 @@ defender for a ramp), so its numbers order the work and its claims were checked 
   walls carry a flagstone rim that covers the terrain's bevel, with parapets on top where the layout asks;
   stairs are flights that run along a wall (the old ones came down onto the road).
 
+- Cycle 5 (Forest only): the two lane sides that had no edge at all get a wood each, 20 studs back from the road
+  (the building ground beside the lane stays clear), and two footpaths tie the chapel's well and the standing
+  stones to the road. A footpath is terrain paint: it must be written 4 wide and 0.1 proud of the ground to show
+  (measured: level with the ground it does not show at all, 2 wide it does not show either).
+
 ## Checks (they run in `python scripts/map_tour.py <take>`, and the ground test)
 - every raised floor is flat at its height and takes a defender; every channel holds liquid; the lane's ground
   never steps more than 1.2 studs per 2 walked; nothing built stands alone (`MapLayouts.Loose`: 0 on all maps);

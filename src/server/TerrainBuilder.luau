@@ -254,6 +254,20 @@ local function shapeLayout(layout, look)
 	for _, b in layout.Bridges or {} do
 		abutment(b, look.Kerb)
 	end
+	-- footpaths: a strip of the kerb's packed earth, laid the way the lane is (dug from above the ground, filled a
+	-- tenth of a stud proud of it). Measured in the terrain lab: a strip filled exactly level with the ground does
+	-- not show at all (4 wide) or only its middle (8 wide); filled 0.1 proud, a strip written 4 wide shows about 7
+	-- wide, and one written 2 wide does not show. Flat and smooth, so defenders can stand on it.
+	for _, path in layout.Paths or {} do
+		for i = 1, #path.Points - 1 do
+			local a, b = path.Points[i], path.Points[i + 1]
+			local mid = (a + b) / 2
+			local strip = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z))
+			local length = (b - a).Magnitude
+			t:FillBlock(strip + Vector3.new(0, 3.5, 0), Vector3.new(path.Width, 13, length), M.Air)
+			t:FillBlock(strip + Vector3.new(0, -3, 0), Vector3.new(path.Width, 6.2, length), look.Kerb)
+		end
+	end
 end
 
 -------------------------------------------------------------------------------

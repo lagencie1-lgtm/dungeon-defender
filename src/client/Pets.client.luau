@@ -33,6 +33,14 @@ local function eggImage(egg)
 	return Art.Image("egg_" .. string.lower((string.gsub(egg.Id, "Egg$", ""))))
 end
 
+-- 15000 -> "15k": a reward under a 62-unit tile stays one readable size
+local function shortNumber(n)
+	if n >= 1000 then
+		return (string.gsub(string.format("%.1fk", n / 1000), "%.0k$", "k"))
+	end
+	return tostring(n)
+end
+
 local function rainbowGradient(parent)
 	local keys = {}
 	for i, hue in Config.RainbowHues do
@@ -53,7 +61,7 @@ local function tierMark(tile, tier, size, zIndex)
 	if tier == 2 then
 		rainbowGradient(rim)
 	end
-	local strip = make("Frame", { Size = UDim2.new(1, 0, 0, math.max(14, math.floor(size * 0.24))), Position = UDim2.fromScale(0, 1),
+	local strip = make("Frame", { Size = UDim2.new(1, 0, 0, math.max(16, math.floor(size * 0.32))), Position = UDim2.fromScale(0, 1),
 		AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = Color3.fromRGB(30, 22, 16), BackgroundTransparency = 0.25,
 		ZIndex = zIndex + 2, Parent = tile }, { corner(math.floor(size / 6)) })
 	local text = label({ Size = UDim2.new(1, -4, 1, -2), Position = UDim2.fromOffset(2, 1), Text = info.Name,
@@ -409,7 +417,7 @@ local function buildIndex()
 			label({ Size = UDim2.new(1, -4, 0, 30), Position = UDim2.fromOffset(2, 6), Text = "?", TextColor3 = rarityColor(kind),
 				ZIndex = 37, Parent = shade })
 			label({ Size = UDim2.new(1, -4, 0, 24), Position = UDim2.new(0, 2, 1, -25),
-				Text = "+" .. (Config.PetIndexGold[rarity] or 0), TextColor3 = Ui.GOLD, ZIndex = 37, Parent = shade })
+				Text = "+" .. shortNumber(Config.PetIndexGold[rarity] or 0), TextColor3 = Ui.GOLD, ZIndex = 37, Parent = shade })
 		end
 	end
 	showShop()
@@ -568,7 +576,7 @@ function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 132), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 158), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
 		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
 		local tierInfo, tier = Config.PetTierOf(pet)
@@ -581,14 +589,17 @@ function refresh()
 		if tier == 2 then
 			rainbowGradient(name)
 		end
+		-- (only the level beside the buttons: the bonus there was squeezed to 9 pt on a phone, it has its own line below)
 		label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 38),
-			Text = "Lv " .. (pet.level or 1) .. (pet.evolved and "+" or "") .. " · " .. bonusText(pet, place ~= nil and place > 1),
+			Text = "Lv " .. (pet.level or 1) .. (pet.evolved and " · evolved" or ""),
 			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
+		label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 70), Text = bonusText(pet, place ~= nil and place > 1),
+			TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
-			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 72),
+			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 98),
 				Text = move.Name .. ": " .. move.Text,
 				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
@@ -597,7 +608,7 @@ function refresh()
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
-			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 100),
+			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 126),
 				Text = string.format("Fetches %s, %d a trip%s", best, carry.Carry, carry.Pass and ", 2x" or ""),
 				TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end

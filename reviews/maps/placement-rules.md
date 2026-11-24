@@ -50,7 +50,10 @@ Element TD 2, Sanctum 2. What their maps have in common:
 `MapLayouts.Loose(layout)` lists every piece that stands alone: nothing of its own set within 22 studs, not
 touching a plateau, not at a bridge. `python scripts/map_tour.py <take>` prints it per map and fails on any.
 It reads 0 on all three maps. Loose boulders are only generated in the 16-stud band at the field's edge; the
-forest's random soil patches, ponds, single trees, barrels and crates are gone.
+forest's random soil patches, ponds, single trees, barrels and crates are gone. So is the "trail marker" an older
+version stood on every map's open floor (five plain blocks, `MapProps`): the phone test and the full game test
+that looked for it now check that the designed layout is on the ground instead, and the game test also fails on
+any loose piece.
 
 ## Two things about walls and stairs (measured, `scripts/terrain_lab.py`)
 

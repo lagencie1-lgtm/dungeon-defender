@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local TerrainBuilder = require(script.Parent.TerrainBuilder)
 local ArtService = require(script.Parent.ArtService)
-local MapProps = require(script.Parent.MapProps)
 local MapLayouts = require(script.Parent.MapLayouts)
 local MapKit = require(script.Parent.MapKit)
 local Ground = require(ReplicatedStorage.Shared.Ground)
@@ -489,7 +488,8 @@ function MapBuilder.BuildBattlefield(mapId)
 			first and first:GetFullName(), first and tostring(first:GetPivot().Position))
 	end
 
-	MapProps.Place(decor, mapInfo, Config.PathWidth, Config.DistanceToPath)
+	-- (no "trail marker" any more: it was five plain blocks standing alone on the floor, against the no-primitives
+	-- rule and the clean-floor rule. The tests that looked for it now check the designed layout instead.)
 
 	-- the enclosure: a wall of tall trees just outside the build area (dead trees on Magma), so the battlefield is a
 	-- clearing with no empty horizon (the same rule as the hub's tree ring)

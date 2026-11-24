@@ -100,7 +100,6 @@ local RUNS = {
 	{ "CursedForest", "Endless", 40 },
 }
 local fetchTested = false
-local mapPropNames = { CursedForest = "Bramble Waystone", MagmaFortress = "Forge Vent", CrystalCaves = "Crystal Survey Cairn" }
 -- the Baby Dragon follows the test player, for the pet look check
 step("equip baby dragon", function()
 	local ArtService = require(Server.ArtService)
@@ -227,13 +226,16 @@ for _, run in RUNS do
 		State.Set("Difficulty", "Easy")
 		GameService.StartRun()
 		task.wait(1)
-		step("map prop " .. mapId, function()
-			local prop = workspace.Map.Decor:FindFirstChild(mapPropNames[mapId])
-			assert(prop, "missing trail marker")
-			for _, part in prop:GetChildren() do
-				assert(part.Anchored and not part.CanCollide and not part.CanTouch and not part.CanQuery)
-				assert(Config.DistanceToPath(part.Position) > Config.PathWidth / 2 + 2)
-			end
+		step("map layout " .. mapId, function()
+			-- the designed layout is on the ground (its first raised floor stands at its height) and nothing in it
+			-- stands alone (this used to look for a "trail marker" of plain blocks, which is gone)
+			local MapLayouts = require(Server.MapLayouts)
+			local Ground = require(game:GetService("ReplicatedStorage").Shared.Ground)
+			local layout = MapLayouts.For(Config.Maps[mapId].Theme)
+			local floor = layout.Plateaus[1]
+			local y = (Ground.At((floor.X0 + floor.X1) / 2, (floor.Z0 + floor.Z1) / 2))
+			assert(math.abs(y - floor.H) < 0.5, "missing " .. floor.Name)
+			assert(#MapLayouts.Loose(layout) == 0, "a map piece stands alone")
 		end)
 		State.Set("Gold", 100000)
 		placeTowers()

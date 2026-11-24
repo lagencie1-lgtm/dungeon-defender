@@ -2,6 +2,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Server = game:GetService("ServerScriptService").Server
 local GameService = require(Server.GameService)
+local MapLayouts = require(Server.MapLayouts)
+local Config = require(ReplicatedStorage.Shared.Config)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local State = require(Server.State)
 local Effects = require(Server.Effects)
 local probe = ReplicatedStorage.MobileTest
@@ -36,16 +39,14 @@ end
 
 waitFor(function() return State.Get("State") == "Lobby" and player.Character ~= nil end, 45)
 check("Outpost")
-local markers = {
-	{ "MagmaFortress", "Forge Vent" },
-	{ "CursedForest", "Bramble Waystone" },
-	{ "CrystalCaves", "Crystal Survey Cairn" },
-}
-for _, map in markers do
-	local mapId, marker = table.unpack(map)
+for _, mapId in { "MagmaFortress", "CursedForest", "CrystalCaves" } do
 	State.Set("Map", mapId)
 	GameService.StartRun()
-	assert(workspace.Map.Decor:FindFirstChild(marker), "missing " .. marker .. " after terrain generation")
+	-- the map's designed layout is on the ground after terrain generation: its first raised floor stands at its
+	-- height (this used to look for a "trail marker" of plain blocks, which is gone)
+	local floor = MapLayouts.For(Config.Maps[mapId].Theme).Plateaus[1]
+	local y = (Ground.At((floor.X0 + floor.X1) / 2, (floor.Z0 + floor.Z1) / 2))
+	assert(math.abs(y - floor.H) < 0.5, "missing " .. floor.Name .. " after terrain generation")
 	check(mapId)
 	GameService.EndGame(false)
 	GameService.ToOutpost()

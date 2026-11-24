@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MaterialService = game:GetService("MaterialService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local GroundLooks = require(ReplicatedStorage.Shared.GroundLooks)
+local MapLayouts = require(script.Parent.MapLayouts)
 
 local TerrainBuilder = {}
 local M = Enum.Material
@@ -49,17 +50,6 @@ end
 -- deterministic random so every server builds the same map
 local function rngFor(seed)
 	return Random.new(seed)
-end
-
--- a strip along each path segment
-local function pathStrip(width, material, y, height)
-	local t = terrain()
-	local points = Config.Path
-	for i = 1, #points - 1 do
-		local a, b = points[i], points[i + 1]
-		local length = (b - a).Magnitude + width
-		t:FillBlock(CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, y, 0), Vector3.new(width, height, length), material)
-	end
 end
 
 -- a cliff wall around the play area: overlapping rock balls, higher towards the outside
@@ -131,6 +121,132 @@ local function farFromPath(pos, margin)
 end
 
 -------------------------------------------------------------------------------
+-- The designed layout (MapLayouts): raised ground, channels, rock masses and a lane that climbs.
+-- Everything stays solid terrain (no caves, no overhangs): Ground.At sees one surface everywhere, so defenders and
+-- enemies always stand on what you see.
+-------------------------------------------------------------------------------
+-- a flat-topped plateau: `top` on the floor you build on, a `skirt` of rough rock showing on its slopes.
+-- `p.Round` rounds its corners (hills; a fortress floor stays square).
+local function plateau(p, top, skirt)
+	local t = terrain()
+	local w, d = p.X1 - p.X0, p.Z1 - p.Z0
+	local cx, cz = (p.X0 + p.X1) / 2, (p.Z0 + p.Z1) / 2
+	local r = math.min(p.Round or 0, w / 2 - 1, d / 2 - 1)
+	-- the shape: BLOCKS only (a filled disc stands up to 1.5 studs higher than a block filled to the same height,
+	-- and shaving the top with an Air block halves it: both measured). Rounded corners are three crossing blocks,
+	-- an eight-sided outline that the terrain's own smoothing rounds off.
+	local function shape(grow, topY, bottomY, material)
+		local mid, height = (topY + bottomY) / 2, topY - bottomY
+		if r <= 0 then
+			t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w + grow * 2, height, d + grow * 2), material)
+			return
+		end
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w + grow * 2, height, d - r * 2 + grow * 2), material)
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 2 + grow * 2, height, d + grow * 2), material)
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 0.6 + grow * 2, height, d - r * 0.6 + grow * 2), material)
+	end
+	shape(3, p.H - 1.5, 0, skirt)
+	-- (a new material only replaces empty voxels: dig the body out of the skirt and the ground, then fill it)
+	shape(0, p.H, -2, M.Air)
+	shape(0, p.H, -2, top)
+end
+
+-- A river, lava stream or canal along a line of points. Built from WHOLE blocks only: thin fills (a 1.6-stud rim,
+-- a 2-stud layer of water) do not do what they say on a 4-stud voxel grid. Measured in the terrain lab
+-- (scripts/terrain_lab.py): the old recipe of thin discs left a cobble ridge 1.8 studs HIGH and no water at all.
+--   banks   the top layer either side of the channel becomes `rim`
+--   trench  dug `c.Width` wide, with a `bed` whose surface lies at bedY
+--   liquid  filled up to liquidY (water shows exactly where it is filled to; nil = the bed itself is the lava)
+local function channel(c, bed, rim, bedY, liquid, liquidY)
+	local t = terrain()
+	local points = c.Points
+	local function all(width, top, bottom, material)
+		local mid, height = (top + bottom) / 2, top - bottom
+		for i = 1, #points - 1 do
+			local a, b = points[i], points[i + 1]
+			local centre = (a + b) / 2
+			-- each stretch reaches a third of its width past its ends, which closes the bends (the line only turns
+			-- gently). No discs at the joints: a filled disc stands higher than a block filled to the same height.
+			t:FillBlock(CFrame.lookAt(Vector3.new(centre.X, mid, centre.Z), Vector3.new(b.X, mid, b.Z)),
+				Vector3.new(width, height, (b - a).Magnitude + width * 0.66), material)
+		end
+	end
+	all(c.Width + 6, 2, -4, M.Air)
+	all(c.Width + 6, 0, -4, rim)
+	all(c.Width, 12, -9, M.Air)
+	all(c.Width + 4, bedY, -16, bed)
+	if liquid then
+		all(c.Width, liquidY + 2, bedY, liquid) -- (+2: a liquid is not lifted like solid ground is)
+	end
+end
+
+-- the lane: a kerb with the road inside, following the layout's height profile (ramps onto plateaus, dams across
+-- channels). One block per run of equal height, so flat stretches are single fills like before.
+local function lane(layout, kerb, road)
+	local t = terrain()
+	local points = Config.Path
+	local samples = MapLayouts.LaneProfile(layout, points)
+	for _, pass in { { Config.PathWidth + 5, kerb, 0.1 }, { Config.PathWidth, road, 0.2 } } do
+		local width, material, lift = pass[1], pass[2], pass[3]
+		local i = 1
+		while i <= #samples do
+			local first = samples[i]
+			local j = i
+			while samples[j + 1] and samples[j + 1].Segment == first.Segment and samples[j + 1].Y == first.Y do
+				j += 1
+			end
+			local last = samples[j]
+			local a, b = points[first.Segment], points[first.Segment + 1]
+			local dir = first.Direction
+			-- the first and last run of a segment reach half a road past its ends, so corners are whole
+			local from = first.Position - dir * ((first.Position - a).Magnitude < 0.01 and width / 2 or 0)
+			local to = last.Position + dir * 2
+			if (to - a).Magnitude >= (b - a).Magnitude - 0.01 then
+				to = b + dir * width / 2
+			end
+			local mid = (from + to) / 2 + Vector3.new(0, first.Y, 0)
+			local length = (to - from).Magnitude
+			local along = CFrame.lookAt(mid, mid + dir)
+			t:FillBlock(along + Vector3.new(0, 3.5, 0), Vector3.new(width, 13, length), M.Air) -- room over the road
+			t:FillBlock(along + Vector3.new(0, lift - 3.1, 0), Vector3.new(width, 6.2, length), material)
+			i = j + 1
+		end
+	end
+end
+
+-- a bridge's abutment: solid ground from bank to bank, 18.6 wide (the deck and both parapets stand on it).
+-- Where the lane crosses, the lane is laid over it afterwards.
+local function abutment(b, material)
+	local t = terrain()
+	local along = CFrame.lookAt(b.At, b.At + b.Along)
+	t:FillBlock(along + Vector3.new(0, 3.5, 0), Vector3.new(18.6, 13, 17), M.Air)
+	t:FillBlock(along + Vector3.new(0, -3, 0), Vector3.new(18.6, 6.2, 17), material)
+end
+
+-- everything in the layout except the lane (call before the lane and before anything scattered)
+local function shapeLayout(layout, look)
+	local t = terrain()
+	for _, m in layout.Masses do
+		-- a solid mound of stacked discs: a wide foot, a blunt top
+		local steps = math.max(4, math.floor(m.H / 2.5))
+		for i = 0, steps - 1 do
+			local f = i / steps
+			t:FillCylinder(CFrame.new(m.At + Vector3.new(0, f * m.H + m.H / steps / 2, 0)), m.H / steps + 1,
+				m.Radius * (1 - f) ^ 0.8 + 3, look.Mass)
+		end
+	end
+	for _, p in layout.Plateaus do
+		plateau(p, look.Top, look.Skirt)
+	end
+	for _, c in layout.Channels do
+		channel(c, look.Bed, look.Rim, look.BedY, look.Liquid, look.LiquidY)
+	end
+	for _, b in layout.Bridges or {} do
+		abutment(b, look.Kerb)
+	end
+end
+
+-------------------------------------------------------------------------------
 -- Magma Fortress
 -------------------------------------------------------------------------------
 function TerrainBuilder.Magma(map, camp)
@@ -150,58 +266,20 @@ function TerrainBuilder.Magma(map, camp)
 
 	-- the path: a cobbled border with packed ground inside, so it reads at a glance
 	-- (grey cobbles inside a dark basalt kerb: the path never looks like lava on this red map)
-	pathStrip(Config.PathWidth + 5, M.Salt, -1.2, 2.6)
-	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
+	local layout = MapLayouts.Magma
+	shapeLayout(layout, { Top = M.Salt, Skirt = M.Slate, Bed = M.CrackedLava, BedY = -1.6, Rim = M.Basalt, Mass = M.Rock, Kerb = M.Salt })
+	lane(layout, M.Salt, M.Cobblestone)
 
-	-- lava pools sunk into the ground, kept away from the path and from building spots near it
-	local pools = 0
-	local tries = 0
-	while pools < 7 and tries < 400 do
-		tries += 1
-		local pos = Vector3.new(rng:NextNumber(-half.X + 14, half.X - 14), 0, rng:NextNumber(-half.Y + 14, half.Y - 14))
-		if farFromPath(pos, 22) and (pos - Config.SpawnPoint).Magnitude > 24 and (pos - camp).Magnitude > 24 then
-			local r = rng:NextNumber(7, 11)
-			t:FillBall(pos + Vector3.new(0, 1, 0), r, M.Air) -- dig the hollow
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -3.5, 0)), 3, r * 0.85, M.CrackedLava)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.2, 0)), 1.6, r + 1.5, M.Basalt) -- dark rim
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.4, 0)), 2.2, r * 0.8, M.Air)
-			-- warm light and a few rising embers
-			local glow = Instance.new("Part")
-			glow.Name = "LavaGlow"
-			glow.Anchored = true
-			glow.CanCollide = false
-			glow.CanQuery = false
-			glow.Transparency = 1
-			glow.Size = Vector3.one
-			glow.Position = pos + Vector3.new(0, 1, 0)
-			glow.Parent = map
-			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(255, 120, 40)
-			light.Range = r * 2.2
-			light.Brightness = 1.6
-			light.Parent = glow
-			local embers = Instance.new("ParticleEmitter")
-			embers.Texture = "rbxasset://textures/particles/fire_sparks_main.dds"
-			embers.Color = ColorSequence.new(Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 80, 20))
-			embers.LightEmission = 1
-			embers.Rate = 4
-			embers.Lifetime = NumberRange.new(2, 3.5)
-			embers.Speed = NumberRange.new(2, 5)
-			embers.SpreadAngle = Vector2.new(25, 25)
-			embers.Size = NumberSequence.new(0.35, 0)
-			embers.Acceleration = Vector3.new(0, 1.5, 0)
-			embers.Parent = glow
-			pools += 1
-		end
-	end
+	-- (the lava is the river now, MapLayouts: the old scattered pools were thin fills that came out as rock bumps)
+	local tries
 
 	-- basalt boulders that give the floor shape (never on the path or the spawn)
 	local rocks = 0
 	tries = 0
-	while rocks < 26 and tries < 600 do
+	while rocks < 12 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2.5, 5.5)
 			t:FillBall(pos + Vector3.new(0, r * 0.25, 0), r, rng:NextNumber() < 0.7 and M.Basalt or M.Rock)
 			rocks += 1
@@ -254,31 +332,20 @@ function TerrainBuilder.Forest(map, camp)
 
 	-- the path: packed sandy dirt inside a cobbled kerb (leafy soil read as a red carpet in the violet light)
 	-- a cobbled road with a packed-earth verge (the old orange dirt road read as a red carpet on the phone)
-	pathStrip(Config.PathWidth + 5, M.Mud, -1.2, 2.6)
-	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
+	local layout = MapLayouts.Forest
+	shapeLayout(layout, { Top = M.Grass, Skirt = M.Rock, Bed = M.Mud, BedY = -3, Rim = M.Cobblestone, Liquid = M.Water, LiquidY = -1.1, Mass = M.Rock,
+		Kerb = M.Mud })
+	lane(layout, M.Mud, M.Cobblestone)
 
-	-- a few still ponds away from the path
-	local ponds, tries = 0, 0
-	while ponds < 3 and tries < 400 do
-		tries += 1
-		local pos = Vector3.new(rng:NextNumber(-half.X + 16, half.X - 16), 0, rng:NextNumber(-half.Y + 16, half.Y - 16))
-		if farFromPath(pos, 22) and (pos - Config.SpawnPoint).Magnitude > 24 and (pos - camp).Magnitude > 24 then
-			local r = rng:NextNumber(7, 10)
-			t:FillBall(pos + Vector3.new(0, 1, 0), r, M.Air)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -3, 0)), 2, r * 0.9, M.Mud)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.2, 0)), 1.6, r + 1.5, M.Cobblestone) -- stony rim
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.3, 0)), 1.8, r * 0.85, M.Water)
-			ponds += 1
-		end
-	end
+	local tries
 
 	-- mossy boulders
 	local rocks = 0
 	tries = 0
-	while rocks < 22 and tries < 600 do
+	while rocks < 8 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2, 4.5)
 			t:FillBall(pos + Vector3.new(0, r * 0.2, 0), r, M.Rock)
 			rocks += 1
@@ -316,45 +383,20 @@ function TerrainBuilder.Crystal(map, camp)
 
 	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Asphalt) -- smooth, painted as cave floor
 	-- the path: smooth cobbles inside a dark rock kerb
-	pathStrip(Config.PathWidth + 5, M.Concrete, -1.2, 2.6) -- smooth, painted as cave wall
-	pathStrip(Config.PathWidth, M.Cobblestone, -1.0, 2.4)
+	local layout = MapLayouts.Crystal
+	shapeLayout(layout, { Top = M.Concrete, Skirt = M.Basalt, Bed = M.Slate, BedY = -3, Rim = M.Basalt, Liquid = M.Water,
+		LiquidY = -1.1, Mass = M.Basalt, Kerb = M.Concrete })
+	lane(layout, M.Concrete, M.Cobblestone) -- kerb: smooth, painted as cave wall
 
-	-- glowing pools
-	local pools, tries = 0, 0
-	while pools < 5 and tries < 400 do
-		tries += 1
-		local pos = Vector3.new(rng:NextNumber(-half.X + 14, half.X - 14), 0, rng:NextNumber(-half.Y + 14, half.Y - 14))
-		if farFromPath(pos, 20) and (pos - Config.SpawnPoint).Magnitude > 24 and (pos - camp).Magnitude > 24 then
-			local r = rng:NextNumber(6, 9)
-			t:FillBall(pos + Vector3.new(0, 1, 0), r, M.Air)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -3, 0)), 2, r * 0.9, M.Slate)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.2, 0)), 1.6, r + 1.5, M.Basalt)
-			t:FillCylinder(CFrame.new(pos + Vector3.new(0, -1.3, 0)), 1.8, r * 0.85, M.Water)
-			local glow = Instance.new("Part")
-			glow.Name = "PoolGlow"
-			glow.Anchored = true
-			glow.CanCollide = false
-			glow.CanQuery = false
-			glow.Transparency = 1
-			glow.Size = Vector3.one
-			glow.Position = pos
-			glow.Parent = map
-			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(90, 220, 255)
-			light.Range = r * 2.4
-			light.Brightness = 1.5
-			light.Parent = glow
-			pools += 1
-		end
-	end
+	local tries
 
 	-- rock spires on the floor
 	local rocks = 0
 	tries = 0
-	while rocks < 18 and tries < 600 do
+	while rocks < 9 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2, 4)
 			t:FillBall(pos + Vector3.new(0, r * 0.3, 0), r, M.Basalt)
 			if rng:NextNumber() < 0.5 then

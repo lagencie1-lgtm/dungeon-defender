@@ -8,3 +8,11 @@ art/models/*.fbx
 __pycache__/
 
 reviews/hub/bench/img/
+
+# map tour: single stills are cut again from each take (the sheets, kit sheets and before/after pictures are kept)
+reviews/maps/img/*
+!reviews/maps/img/*-sheet.jpg
+!reviews/maps/img/kit-*.jpg
+!reviews/maps/img/compare-*.jpg
+test/maptour-only.project.json
+test/maptour-pc.project.json

@@ -1360,7 +1360,8 @@ local function groundUnder(screenPos)
 		return nil
 	end
 	local path = map:FindFirstChild("Path")
-	local hit = screenRay(screenPos, { ground, path })
+	-- the real ground first (raised floors: the flat click plane lies behind them from the camera), then the plane
+	local hit = screenRay(screenPos, { workspace.Terrain }) or screenRay(screenPos, { ground, path })
 	if hit then
 		return Vector3.new(hit.Position.X, 0, hit.Position.Z)
 	end

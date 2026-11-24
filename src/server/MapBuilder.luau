@@ -6,6 +6,9 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local TerrainBuilder = require(script.Parent.TerrainBuilder)
 local ArtService = require(script.Parent.ArtService)
 local MapProps = require(script.Parent.MapProps)
+local MapLayouts = require(script.Parent.MapLayouts)
+local MapKit = require(script.Parent.MapKit)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 
 -- puts a Blender model (from ArtService) into the map, scaled to `height`, standing on `cframe`
 -- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
@@ -25,6 +28,34 @@ local function placeModel(parent, name, cframe, height)
 	for _, p in look:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.Anchored = true
+		end
+	end
+	look.Parent = parent
+	return look
+end
+
+-- puts a map kit piece (MapKit) with its own origin on `origin` (front along its look direction), at its true
+-- size. Returns the model, or nil when it isn't loaded.
+local function placeKit(parent, name, origin)
+	local template = ArtService.Model(name)
+	local box = MapKit.Boxes[name]
+	if not template or not box then
+		return nil
+	end
+	local look = template:Clone()
+	local _, size = look:GetBoundingBox()
+	look:ScaleTo(look:GetScale() * (box.Max.Y - box.Min.Y) / size.Y)
+	-- the model's box centre goes where the measured box centre lies in the piece's own space
+	local now = look:GetBoundingBox()
+	local pivot = look:GetPivot()
+	look:PivotTo(origin * CFrame.new((box.Min + box.Max) / 2) * CFrame.new(pivot.Position - now.Position))
+	for _, p in look:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Anchored = true
+			-- the picture never collides or stops a tap; MapKit.Solid says what is solid
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
 		end
 	end
 	look.Parent = parent
@@ -346,6 +377,8 @@ function MapBuilder.BuildBattlefield(mapId)
 	-- the magic portal at the end (a glowing purple ring standing up)
 	local last, before = points[#points], points[#points - 1]
 	local dir = (last - before).Unit
+	-- the portal stands on the real ground: the last stretch climbs a rise on every map (MapLayouts)
+	last += Vector3.new(0, (Ground.At(last.X + dir.X * 4, last.Z + dir.Z * 4)), 0)
 	local portalPos = last + dir * 4 + Vector3.new(0, 9, 0)
 	local portal = part({
 		Name = "Portal",
@@ -381,7 +414,7 @@ function MapBuilder.BuildBattlefield(mapId)
 		ClassName = "SpawnLocation",
 		Name = "HeroSpawn",
 		Size = Vector3.new(8, 1, 8),
-		Position = Config.SpawnPoint + Vector3.new(0, 0.5, 0),
+		Position = Config.SpawnPoint + Vector3.new(0, (Ground.At(Config.SpawnPoint.X, Config.SpawnPoint.Z)) + 0.5, 0),
 		Color = Color3.fromRGB(200, 170, 80),
 		Material = Enum.Material.Marble,
 		-- invisible: a gold marble square under the hero read as a placeholder in the top-down view (cycle 2)
@@ -435,12 +468,14 @@ function MapBuilder.BuildBattlefield(mapId)
 			placeModel(trees, kind, CFrame.new(pos) * CFrame.Angles(0, treeRng:NextNumber(0, math.pi * 2), 0), h)
 		end
 		local inside, outside, n = 0, 0, 0
-		local wantInside, wantOutside = crystal and 18 or 14, crystal and 45 or 70
+		local layout = MapLayouts.For(mapInfo.Theme)
+		local wantInside, wantOutside = crystal and 14 or 0, crystal and 45 or 70
 		while (inside < wantInside or outside < wantOutside) and n < 3000 do
 			n += 1
 			local pos = Vector3.new(treeRng:NextNumber(-half.X - 40, half.X + 40), 0, treeRng:NextNumber(-half.Y - 40, half.Y + 40))
 			local inPlay = math.abs(pos.X) < half.X and math.abs(pos.Z) < half.Y
 			if inPlay and inside < wantInside and Config.DistanceToPath(pos) > Config.PathWidth + 10
+				and MapLayouts.Open(layout, pos, 2)
 				and (pos - Config.SpawnPoint).Magnitude > 18 and (pos - camp).Magnitude > 18 then
 				plant(pos, false)
 				inside += 1
@@ -494,61 +529,196 @@ function MapBuilder.BuildBattlefield(mapId)
 		end
 	end)
 
-	-- things on the field between the lanes (Cursed Forest): a ruined watchtower, rocks, bushes, stumps, mushrooms.
-	-- Each says honestly that nothing can be built there: BlockRadius (TowerService.CanPlace and the build preview).
-	if not magma and not crystal then
-		task.spawn(function()
-			local Ground = require(ReplicatedStorage.Shared.Ground)
-			local rng = Random.new(19)
-			local half = Config.MapSize / 2
-			local kinds = { { "keep_field_rock", 3.2, 3.6 }, { "keep_field_bush", 3.4, 3.2 }, { "keep_field_stump", 1.9, 2.6 },
-				{ "keep_field_mushrooms", 1.1, 2.2 } }
-			local placed = {}
-			local function free(pos, r)
-				if Config.DistanceToPath(pos) < Config.PathWidth / 2 + 3 + r then
-					return false
+	-- what stands on the field (MapLayouts): each piece is placed by hand for a reason and says honestly how much
+	-- room it takes, so nothing can be built inside it (BlockRadius: TowerService.CanPlace and the build preview)
+	task.spawn(function()
+		local layout = MapLayouts.For(mapInfo.Theme)
+		local function blocker(pos, r)
+			local mark = part({ Name = "Blocked", Size = Vector3.one, Position = pos, Transparency = 1, CanCollide = false,
+				CanQuery = false, CanTouch = false, Parent = decor })
+			mark:SetAttribute("BlockRadius", r)
+		end
+		local function stand(name, at, height, turn, block)
+			if not ArtService.WaitModel(name, 30) then
+				return nil
+			end
+			local y = (Ground.At(at.X, at.Z))
+			local look = placeModel(decor, name, CFrame.new(at.X, y - 0.15, at.Z) * CFrame.Angles(0, turn or 0, 0), height)
+			if look and block then
+				look:SetAttribute("BlockRadius", block)
+			end
+			return look
+		end
+		for _, piece in layout.Pieces do
+			stand(piece.Model, piece.At, piece.Height, piece.Turn, piece.Block)
+		end
+		-- the building kit: the picture at its true size, invisible boxes for what is solid in it, and build
+		-- blockers along those boxes
+		local themeKey = magma and "magma" or crystal and "crystal" or "forest"
+		local function kit(piece, at, look, sink, height)
+			local name = "mapkit_" .. piece .. "_" .. themeKey
+			if not ArtService.WaitModel(name, 30) then
+				return
+			end
+			-- on the ground where it stands, or at a given height (pieces built into the edge of raised ground)
+			local y = height or ((Ground.At(at.X, at.Z)) - (sink or 0.05))
+			local flat = Vector3.new(look.X, 0, look.Z).Unit
+			local origin = CFrame.lookAt(Vector3.new(at.X, y, at.Z), Vector3.new(at.X, y, at.Z) + flat)
+			local model = placeKit(decor, name, origin)
+			if not model then
+				return nil
+			end
+			-- tall pieces fade for a player while they hide that player's hero (client/MapFade)
+			if MapKit.Boxes[name].Max.Y > 5 then
+				model:SetAttribute("Tall", true)
+			end
+			for _, solid in MapKit.Solid[piece] or MapKit.Solid[piece .. "_" .. themeKey] or {} do
+				part({ Name = "Solid", Size = solid.Size, CFrame = origin * CFrame.new(solid.Centre), Transparency = 1,
+					CanQuery = false, CanTouch = false, Parent = model })
+				-- blockers every 3 studs along the box's long side
+				local long = math.max(solid.Size.X, solid.Size.Z)
+				local short = math.min(solid.Size.X, solid.Size.Z)
+				local axis = solid.Size.X >= solid.Size.Z and Vector3.new(1, 0, 0) or Vector3.new(0, 0, 1)
+				local count = math.max(1, math.ceil(long / 3))
+				for i = 1, count do
+					local along = (i - 0.5) / count * long - long / 2
+					blocker((origin * CFrame.new(solid.Centre + axis * along)).Position, short / 2)
 				end
-				if (Vector3.new(pos.X, 0, pos.Z) - Config.SpawnPoint).Magnitude < 12 + r then
-					return false
-				end
-				for _, p in placed do
-					if (p.pos - pos).Magnitude < p.r + r + 8 then
-						return false
+			end
+			return model, origin
+		end
+		-- raised ground: a retaining wall on each straight edge (so the height reads, also from straight above) and
+		-- stairs where the layout says. Their pieces are built for ground raised 5: they sink a stud for 4.
+		for _, p in layout.Plateaus do
+			for _, side in { "N", "S", "W", "E" } do
+				local start, along, length, out = MapLayouts.Edge(p, side)
+				local stairs = {}
+				for _, st in p.Stairs or {} do
+					if st.Side == side then
+						table.insert(stairs, start + along * (length * st.At))
 					end
 				end
-				return true
-			end
-			local function put(name, pos, height, r, turn)
-				if not ArtService.WaitModel(name, 30) then
-					return
+				for _, at in stairs do
+					local _, origin = kit("stairs", at, out, nil, p.H - 5)
+					if origin then
+						-- what feet walk on: one smooth invisible ramp over the drawn steps (6A: stairs that walk smoothly)
+						local top = Vector3.new(at.X, p.H, at.Z)
+						local foot = Vector3.new(at.X, 0, at.Z) + out * 6.5
+						part({ Name = "StairRamp", Size = Vector3.new(6, 0.4, (top - foot).Magnitude),
+							CFrame = CFrame.lookAt((top + foot) / 2 - Vector3.new(0, 0.2, 0), top - Vector3.new(0, 0.2, 0)),
+							Transparency = 1, CanQuery = false, CanTouch = false, Parent = decor })
+						blocker(at + out * 2, 3.4)
+						blocker(at + out * 5.5, 3.4)
+					end
 				end
-				local y = (Ground.At(pos.X, pos.Z))
-				local look = placeModel(decor, name, CFrame.new(pos.X, y, pos.Z) * CFrame.Angles(0, turn, 0), height)
-				if look then
-					look:SetAttribute("BlockRadius", r)
-					table.insert(placed, { pos = Vector3.new(pos.X, 0, pos.Z), r = r })
+				if string.find(p.Walls or "NSEW", side, 1, true) then
+					-- the wall fills the stretches between the stairs (each stair takes 8.4 studs of the edge):
+					-- 12-stud pieces from end to end of a stretch, overlapping where it is not a whole number of them
+					local cuts = { 0 }
+					table.sort(stairs, function(a, b)
+						return (a - start).Magnitude < (b - start).Magnitude
+					end)
+					for _, st in stairs do
+						local d = (st - start).Magnitude
+						table.insert(cuts, d - 4.2)
+						table.insert(cuts, d + 4.2)
+					end
+					table.insert(cuts, length)
+					local n = 0
+					for c = 1, #cuts, 2 do
+						local from, to = math.max(0, cuts[c]), math.min(length, cuts[c + 1])
+						local span = to - from
+						if span >= 8 then
+							local count = span <= 12 and 1 or math.ceil(span / 12)
+							for i = 1, count do
+								local d = count == 1 and (from + to) / 2 or from + 6 + (span - 12) * (i - 1) / (count - 1)
+								local at = start + along * d
+								-- not where the lane climbs through this edge (a wall ALONG a lane, 10 studs off, stays)
+								local clear = true
+								for _, reach in { -5, 0, 5 } do
+									clear = clear and Config.DistanceToPath(at + along * reach) > Config.PathWidth / 2 + 1
+								end
+								if clear then
+									n += 1
+									-- (every other piece stands a hair further out: two overlapping pieces never share a face)
+									kit("face", at + out * (n % 2 * 0.06), out, nil, p.H - 5)
+								end
+							end
+						end
+					end
 				end
 			end
-			-- the ruin first, in the largest open corner it fits
-			for _ = 1, 200 do
-				local pos = Vector3.new(rng:NextNumber(-half.X + 12, half.X - 12), 0, rng:NextNumber(-half.Y + 12, half.Y - 12))
-				if free(pos, 6) then
-					put("keep_field_ruin", pos, 7.5, 6, rng:NextNumber(0, math.pi * 2))
-					break
+			task.wait()
+		end
+		for _, k in layout.Kit or {} do
+			kit(k.Piece, k.At, k.Look, k.Sink)
+		end
+		for _, b in layout.Bridges or {} do
+			-- the bridge model runs along its X: its front looks across the crossing
+			kit("bridge", b.At, Vector3.new(b.Along.Z, 0, -b.Along.X), -0.02)
+		end
+		-- single trees inside the field
+		local rng = Random.new(31)
+		local treeModel = magma and "tree_dead" or "tree_oak"
+		for _, at in layout.Trees do
+			local kind = (not magma and rng:NextNumber() < 0.3) and "tree_dead" or treeModel
+			local tree = stand(kind, at, rng:NextNumber(14, 19), rng:NextNumber(0, math.pi * 2), 2.2)
+			if tree then
+				tree:SetAttribute("Tall", true)
+			end
+		end
+		-- the rock masses in the corners carry wood (dead trees on Magma, crystals in the caves)
+		local onMass = crystal and "crystal_cluster" or treeModel
+		for _, mass in layout.Masses do
+			blocker(mass.At, mass.Radius + 1)
+			for _ = 1, math.max(2, math.floor(mass.Radius / (crystal and 5 or 3.5))) do
+				local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, mass.Radius * 0.85)
+				local at = mass.At + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+				stand(onMass, at, crystal and rng:NextNumber(9, 18) or rng:NextNumber(18, 28), rng:NextNumber(0, math.pi * 2), nil)
+			end
+			task.wait()
+		end
+		-- the lava river glows: a thin sheet of light just over its bed, the dark crust shows through it
+		if magma then
+			for _, channel in layout.Channels do
+				for i = 1, #channel.Points - 1 do
+					local a, b = channel.Points[i], channel.Points[i + 1]
+					-- (the bed is rough, its surface runs from -1.9 to -1.2: at -1.62 the glow fills the low half and the
+					-- crust stands out of it, instead of one flat orange sheet)
+					local mid = (a + b) / 2 + Vector3.new(0, -1.62, 0)
+					part({ Name = "LavaGlow", Size = Vector3.new(channel.Width - 2.5, 0.1, (b - a).Magnitude + 2),
+						CFrame = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z)), Color = Color3.fromRGB(255, 104, 26),
+						Material = Enum.Material.Neon, Transparency = 0.3, CanCollide = false, CanQuery = false, CanTouch = false,
+						CastShadow = false, Parent = map })
 				end
 			end
-			local count, tries = 0, 0
-			while count < 14 and tries < 800 do
-				tries += 1
-				local kind = kinds[count % #kinds + 1]
-				local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-				if free(pos, kind[2]) then
-					put(kind[1], pos, kind[3], kind[2], rng:NextNumber(0, math.pi * 2))
-					count += 1
+		end
+		-- a little light from the lava river and the glowing canals, every 36 studs (few lights: phones)
+		if magma or crystal then
+			for _, channel in layout.Channels do
+				local travelled, nextAt = 0, 18
+				for i = 1, #channel.Points - 1 do
+					local a, b = channel.Points[i], channel.Points[i + 1]
+					local length = (b - a).Magnitude
+					while nextAt <= travelled + length do
+						local pos = a + (b - a).Unit * (nextAt - travelled)
+						if math.abs(pos.X) < half.X and math.abs(pos.Z) < half.Y then
+							local glowPart = part({ Name = "ChannelGlow", Size = Vector3.one, Position = pos + Vector3.new(0, 1.5, 0),
+								Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, Parent = map })
+							local light = Instance.new("PointLight")
+							light.Color = magma and Color3.fromRGB(255, 120, 40) or Color3.fromRGB(90, 220, 255)
+							light.Range = 16
+							light.Brightness = magma and 1.2 or 1
+							light.Shadows = false
+							light.Parent = glowPart
+						end
+						nextAt += 36
+					end
+					travelled += length
 				end
 			end
-		end)
-	end
+		end
+	end)
 
 	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides) with a barrel or crate now and
 	-- then, all inside the no-build band beside the road so they never stand where a defender goes
@@ -849,6 +1019,10 @@ function MapBuilder.Teleport(player, where)
 	end
 	local target = where == "Outpost" and (Config.OutpostCenter + Vector3.new(math.random(-2, 2), 4, 36))
 		or (Config.SpawnPoint + Vector3.new(math.random(-3, 3), 4, math.random(-3, 3)))
+	if where ~= "Outpost" then
+		-- the battle spawn can be on raised ground: 4 studs above whatever is there
+		target += Vector3.new(0, (Ground.At(target.X, target.Z)), 0)
+	end
 	character:PivotTo(CFrame.new(target))
 end
 

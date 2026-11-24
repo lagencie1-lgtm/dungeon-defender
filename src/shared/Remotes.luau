@@ -8,6 +8,7 @@ local EVENTS = {
 	"SetSpeed", "PickDifficulty",
 	"LootDrop", "LootPicked", "PickupLoot", "VictoryChest", "Inventory", "SeenGear",
 	"OpenPanel", "PickMap", "StartRun", "Quests", "PickMode", "Pets", "FinishTutorial", "Season", "Ping",
+	"SoundReport",
 }
 local FUNCTIONS = { "GearSet", "AutoSalvage", "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints",

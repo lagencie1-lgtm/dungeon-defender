@@ -2026,7 +2026,7 @@ Gamepad.Bind("Down", { Enum.KeyCode.DPadDown }, function()
 	end
 	return false
 end)
-lobbyBar.SelectionGroup = true
+Gamepad.Area(lobbyBar, Enum.KeyCode.DPadDown)
 Gamepad.OnBack(function()
 	if placing then
 		stopPlacing()

@@ -9,6 +9,7 @@ local Telemetry = {}
 
 local joined = {} -- [player] = os.clock() when they joined
 local sent = {} -- [player] = { [name] = true }
+local reported = {} -- [player] = true once their sound check came in
 
 local function log(player, name, value, fields)
 	pcall(function()
@@ -55,6 +56,22 @@ function Telemetry.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		joined[player] = nil
 		sent[player] = nil
+		reported[player] = nil
+	end)
+	-- the sound check of each player's device (client/SoundBank): once per visit. A device that could not load
+	-- every sound shows as "SoundsFailed" in Creator Hub > Analytics > Custom events, which can be split by platform.
+	local Remotes = require(game:GetService("ReplicatedStorage").Shared.Remotes)
+	Remotes.SoundReport.OnServerEvent:Connect(function(player, files, loaded, failedNames)
+		if reported[player] or type(files) ~= "number" or type(loaded) ~= "number" then
+			return
+		end
+		reported[player] = true
+		local missing = math.clamp(math.floor(files - loaded), 0, 200)
+		local names = type(failedNames) == "string" and failedNames:sub(1, 90) or ""
+		if missing > 0 then
+			warn(string.format("[SOUNDCHECK] %s could not load %d sound files: %s", player.Name, missing, names))
+			Telemetry.Value(player, "SoundsFailed", missing, names)
+		end
 	end)
 end
 

@@ -50,6 +50,27 @@ end
 
 local hud = gui:WaitForChild("RealmGuardiansHud")
 
+-- Reach rule: every button a player can see must be reachable with a controller (0 mouse-or-touch-only buttons).
+-- Gamepad.Reach says how: its own controller button, inside a panel, or inside an area a button jumps into.
+local NOT_OURS = { TouchGui = true, ProximityPrompts = true, BubbleChat = true, Chat = true, Freecam = true }
+local function audit(where)
+	local bad, count = {}, 0
+	for _, screen in gui:GetChildren() do
+		if screen:IsA("ScreenGui") and screen.Enabled and not NOT_OURS[screen.Name] then
+			for _, obj in screen:GetDescendants() do
+				if obj:IsA("GuiButton") and obj.Interactable and obj.AbsoluteSize.X > 4 and obj.AbsoluteSize.Y > 4 and shown(obj) then
+					count += 1
+					if not Gamepad.Reach(obj) then
+						table.insert(bad, obj:GetFullName():gsub("^Players%.[^%.]+%.PlayerGui%.", ""))
+					end
+				end
+			end
+		end
+	end
+	print("[GAMEPAD] Reach", where, count, "visible buttons,", #bad, "without a controller route")
+	assert(#bad == 0, "no controller route to: " .. table.concat(bad, ", "))
+end
+
 local function check(name)
 	assert(Gamepad.active, "the test build did not switch the game to controller mode")
 	if name:sub(1, 6) == "Panel " then
@@ -60,6 +81,7 @@ local function check(name)
 		local picked = GuiService.SelectedObject
 		assert(picked:IsA("GuiButton") and picked.Selectable and shown(picked), "highlighted something that can't be pressed")
 		print("[GAMEPAD]", name, "opened, highlight on", picked:GetFullName():match("[^%.]+%.[^%.]+$"))
+		audit(name)
 		assert(Gamepad.Press(Key.ButtonB), "B did nothing")
 		waitFor(function() return not frame.Visible end, "B to close " .. name, 3)
 		assert(not inside(GuiService.SelectedObject, frame), "the highlight stayed in a closed panel")
@@ -124,6 +146,63 @@ local function check(name)
 		assert(sell.Selectable and sell.AbsolutePosition.Y > picked.AbsolutePosition.Y, "Sell is not below Upgrade")
 		assert(Gamepad.Press(Key.ButtonB), "B did nothing on the info panel")
 		assert(not info.Visible and GuiService.SelectedObject == nil, "B did not close the info panel")
+	elseif name == "Dock" then
+		-- every side-menu button opens a screen the highlight jumps into, and B closes it again
+		local dock = gui:WaitForChild("SideMenu").Root.Dock
+		local buttons = {}
+		for _, b in dock:GetChildren() do
+			if b:IsA("GuiButton") and b.Visible then
+				table.insert(buttons, b)
+			end
+		end
+		table.sort(buttons, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
+		assert(#buttons >= 4, "only " .. #buttons .. " side-menu buttons")
+		for _, b in buttons do
+			assert(b:FindFirstChild("Press"), b.Name .. " has no Press event for the test")
+			b.Press:Fire()
+			local frame = waitFor(function()
+				local top = Gamepad.TopPanel()
+				return top and top.Visible and inside(GuiService.SelectedObject, top) and top
+			end, "the " .. b.Name .. " screen with a highlighted button", 6)
+			audit("menu " .. b.Name)
+			assert(Gamepad.Press(Key.ButtonB), "B did nothing in " .. b.Name)
+			waitFor(function() return not frame.Visible end, "B to close " .. b.Name, 3)
+			print("[GAMEPAD] Dock", b.Name, "opens", frame.Name, "and B closes it")
+		end
+		assert(Gamepad.TopPanel() == nil, "a screen stayed open after the menu round")
+	elseif name == "Reach" then
+		audit(probe:GetAttribute("Where") or "screen")
+	elseif name == "Run buttons" then
+		-- the run's own controls: LT starts the wave, d-pad down changes the speed, RT/RB/LB are the hero
+		local root = hud.Root
+		local start = root:FindFirstChild("StartWave", true)
+		if start and shown(start) then
+			local wave = ReplicatedStorage.GameState:GetAttribute("Wave")
+			assert(Gamepad.Press(Key.ButtonL2), "LT did not start the wave")
+			waitFor(function() return ReplicatedStorage.GameState:GetAttribute("Wave") ~= wave end, "LT to start the wave", 5)
+			print("[GAMEPAD] Run buttons LT started wave", ReplicatedStorage.GameState:GetAttribute("Wave"))
+		end
+		local speed = ReplicatedStorage.GameState:GetAttribute("Speed")
+		assert(Gamepad.Press(Key.DPadDown), "d-pad down did not change the speed")
+		task.wait(0.5)
+		print("[GAMEPAD] Run buttons speed", speed, "->", ReplicatedStorage.GameState:GetAttribute("Speed"))
+		for _, key in { Key.ButtonR2, Key.ButtonR1, Key.ButtonL1 } do
+			assert(Gamepad.Press(key), Gamepad.Name(key) .. " did nothing")
+		end
+		print("[GAMEPAD] Run buttons RT, RB, LB used")
+	elseif name == "Sell" then
+		local tower = myTowers()[1]
+		assert(tower, "no defender to sell")
+		local count = #myTowers()
+		assert(Gamepad.Press(Key.ButtonY), "Y did nothing")
+		local info = hud.Root.TowerInfo
+		waitFor(function() return info.Visible and GuiService.SelectedObject ~= nil end, "the info panel with a highlight")
+		local sell = info.Sell
+		assert(sell.Selectable and shown(sell) and Gamepad.Reach(sell), "Sell can't be highlighted")
+		GuiService.SelectedObject = sell -- what d-pad down from Upgrade does
+		print("[GAMEPAD] Sell highlighted after d-pad down, count", count)
+		assert(Gamepad.Press(Key.ButtonB), "B did nothing on the info panel")
+		waitFor(function() return not info.Visible end, "B to close the info panel", 3)
 	elseif name == "Readable" then
 		-- 10-foot rule: no visible HUD text under about 18 pixels at 1080p
 		local viewport = workspace.CurrentCamera.ViewportSize

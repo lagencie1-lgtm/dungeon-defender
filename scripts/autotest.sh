@@ -3,6 +3,16 @@
 # then starts a play test), waits for the test to finish and prints what the
 # test scripts said plus every script error. Closes that Studio afterwards.
 cd "$(dirname "$0")/.."
+# controller parity first (no Studio needed): every keyboard key has a controller route
+python scripts/pad_parity.py | grep -E "MISSING|PADPARITY\] (OK|FAILED)" || exit 1
+# one Studio run at a time on this PC: tools/studio.lock, stale after 25 minutes (same rule as studio_test.ps1)
+LOCK=tools/studio.lock
+while [ -f "$LOCK" ] && [ $(( $(date +%s) - $(date -r "$LOCK" +%s) )) -lt 1500 ]; do
+	echo "waiting for the Studio lock: $(cat "$LOCK")"
+	sleep 60
+done
+echo "autotest $(date -Is)" > "$LOCK"
+trap 'rm -f "$LOCK"' EXIT
 STUDIO=$(ls -t "$LOCALAPPDATA"/Roblox/Versions/*/RobloxStudioBeta.exe | head -1)
 tools/rojo.exe build test.project.json -o tools/htd-autotest.rbxl || exit 1
 LOGDIR="$LOCALAPPDATA/Roblox/logs"
@@ -21,6 +31,11 @@ for _ in $(seq 1 1100); do
 	grep -q "AUTOTEST. DONE" "$log" && break
 	sleep 1
 done
-grep -E "AUTOTEST|CreatorError|Info: Script '" "$log" | grep -v "spend point false\|select hero" | sed -E 's/^[^[]*\[FLog::Creator(Output|Error)\] //' | cut -c1-260
+grep -E "AUTOTEST|SOUNDCHECK|CreatorError|Info: Script '" "$log" | grep -v "spend point false\|select hero" | sed -E 's/^[^[]*\[FLog::Creator(Output|Error)\] //' | cut -c1-260
 # close the test Studio (only the one showing the test file)
 powershell -NoProfile -Command "Get-Process RobloxStudioBeta -ErrorAction SilentlyContinue | Where-Object { \$_.MainWindowTitle -like '*htd-autotest*' } | Stop-Process -Force"
+# then the controller test (test/gamepad: every screen and button reachable with a gamepad)
+rm -f "$LOCK"
+powershell -ExecutionPolicy Bypass -File scripts/studio_test.ps1 -Project test/gamepad.project.json -Tag GAMEPAD | tee tools/gamepad-test.log
+# a failed step anywhere makes the whole run fail
+! grep -q "FAILED" "$log" tools/gamepad-test.log

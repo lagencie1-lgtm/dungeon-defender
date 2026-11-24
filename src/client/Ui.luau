@@ -24,9 +24,10 @@ function Ui.fitRoot(gui, root, mobileWidth, mobileHeight)
 			return
 		end
 		local width, height = 1280, 720
-		-- a TV is far away: with a controller the screens may grow up to 1.5x (1080p shows the full
-		-- 1280x720 layout at 1.5x, so the smallest HUD text is about 18 pixels or more)
-		local biggest = Gamepad.active and 1.5 or 1.3
+		-- a TV is far away: with a controller the screens grow to fill the TV (1080p shows the full 1280x720
+		-- layout at 1.5x, so the smallest HUD text is about 18 pixels or more). A bigger TV screen (4K reports
+		-- up to 3840x2160) grows the same way, up to 3x, so text is as big as at 1080p, not half (2026-11-24).
+		local biggest = Gamepad.active and math.clamp(size.Y / 720, 1.5, 3) or 1.3
 		if Ui.isTouch then
 			width, height = mobileWidth, mobileHeight
 			biggest = 1.3
@@ -90,19 +91,9 @@ function Ui.label(props)
 	return Ui.make("TextLabel", defaults)
 end
 
--- local sounds for clicks
-local sounds = {}
-local function sound(name)
-	if not sounds[name] then
-		local info = Config.Sounds[name]
-		local s = Instance.new("Sound")
-		s.SoundId = info.Id
-		s.Volume = info.Volume or 0.5
-		s.Parent = SoundService
-		sounds[name] = s
-	end
-	return sounds[name]
-end
+-- local sounds for clicks (loaded and checked at the start by SoundBank, see SoundCheck.client.luau)
+local SoundBank = require(script.Parent.SoundBank)
+local sound = SoundBank.Get
 
 function Ui.playSound(name)
 	local info = Config.Sounds[name]

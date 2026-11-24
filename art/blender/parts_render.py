@@ -55,6 +55,7 @@ radius = (hi - lo).length / 2
 scene = bpy.context.scene
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "STUDIO" if lit else "FLAT"
+scene.display.shading.show_specular_highlight = False   # matte, like the paintings (no studio gloss)
 scene.display.shading.color_type = "TEXTURE"
 scene.view_settings.view_transform = "Standard"
 scene.render.resolution_x = scene.render.resolution_y = size

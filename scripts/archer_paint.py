@@ -83,6 +83,26 @@ def paint_pass(fbx, work, strength, noarms, reuse):
     return atlas
 
 
+HOOD = (125, 155, 39)   # the painting's hood green (median of all its green pixels, scripts/archer_elf_spec.py)
+
+
+def soften_hood(painted_path, plain_path, strength=0.5):
+    """the hood in the painting is a fresh mid green with soft shading; painted, it came out dark olive with blotchy
+    stains (coordinator 2026-11-23). On the hood's texels (green in the plain bake, not its dark inside) the colour is
+    moved so its middle is the painting's green and the brush strokes keep half their contrast."""
+    import numpy as np
+    p = np.asarray(Image.open(painted_path).convert("RGB"), dtype=float)
+    b = np.asarray(Image.open(plain_path).convert("RGB").resize((p.shape[1], p.shape[0])), dtype=float)
+    lum = b @ np.array([0.3, 0.59, 0.11])
+    hood = (b[..., 1] > b[..., 0] + 8) & (b[..., 1] > b[..., 2] + 30) & (lum > 70)
+    if hood.sum() < 100:
+        return
+    mean = np.median(p[hood], axis=0)
+    p[hood] = np.array(HOOD, dtype=float) + strength * (p[hood] - mean)
+    Image.fromarray(np.clip(p, 0, 255).astype("uint8")).save(painted_path)
+    print("hood softened: %d texels, middle %s -> %s" % (hood.sum(), mean.astype(int).tolist(), list(HOOD)))
+
+
 def main():
     build, out = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
     strength = sys.argv[sys.argv.index("--strength") + 1] if "--strength" in sys.argv else "1.0"
@@ -97,6 +117,8 @@ def main():
         c = a.width // 2
         a.crop((cx * c, cy * c, (cx + 1) * c, (cy + 1) * c)).resize((size, size), Image.LANCZOS).save(
             os.path.join(out, f"{NAME}_{part}_paint.png"))
+    if not os.environ.get("HTD_NO_SOFTEN"):
+        soften_hood(os.path.join(out, f"{NAME}_head_paint.png"), os.path.join(build, f"{NAME}_head_paint.png"))
     for f in (NAME + ".fbx", f"{NAME}_bow_paint.png", f"{NAME}_quiver_paint.png", "gates_build.json"):
         shutil.copy(os.path.join(build, f), os.path.join(out, f))
     print("PAINTED", out)

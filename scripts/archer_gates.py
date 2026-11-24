@@ -216,6 +216,35 @@ def face_features(im, head_w_px):
     return out
 
 
+def hood_side(fbx, d):
+    from PIL import Image as _I
+    m = mask_of(render(fbx, os.path.join(d, "gate_hood_side.png"), 180, grey=True, size=1024))
+    sv = SPEC["side_view"]
+    sheet = np.asarray(_I.open(PAINT).convert("RGB")).min(axis=2) < 235
+    p = sheet[sv[1]:sv[3], sv[0]:sv[2]]
+
+    def fit(a, size=400):
+        ys, xs = np.where(a)
+        c = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1].astype(np.uint8) * 255
+        return np.asarray(_I.fromarray(c).resize((size, size), _I.NEAREST)) > 127
+    a, b = fit(m), fit(p)
+    overlap = 100 * (a & b).sum() / max(1, (a | b).sum())
+    # tips at the back (left in this view, the nose is on the right): local minima of the outline's left edge
+    left = np.array([np.where(r)[0].min() if r.any() else 400 for r in a], dtype=float)
+    k = np.convolve(left, np.ones(9) / 9, mode="same")
+    tips = 0
+    # a tip: a point of the back outline that sticks out further than what is round it by 2 % (a second bump, like
+    # the old knob on the round hood, is a second tip)
+    from scipy.signal import find_peaks
+    tips = len(find_peaks(-k[5:-5], prominence=8)[0])
+    overlay = np.zeros((400, 400, 3), np.uint8) + 255
+    overlay[b] = (120, 170, 255)
+    overlay[a & ~b] = (255, 140, 120)
+    overlay[a & b] = (90, 90, 90)
+    _I.fromarray(overlay).save(os.path.join(d, "gate_hood_side_overlay.png"))
+    return {"overlap": round(float(overlap), 1), "tips": tips}
+
+
 def main():
     fbx = os.path.abspath(sys.argv[1])
     d = os.path.dirname(fbx)
@@ -258,6 +287,14 @@ def main():
     global FACE_DENT
     FACE_DENT = min(0.07, max([c["depth"] for c in dents if c["x"] > 0.75 and 0.3 < c["y"] < 0.75] or [0.03]))   # (capped at 7 %)
     res["face_dent_in_painting"] = round(FACE_DENT * 100, 1)
+    # the hood from the side against the side painting (coordinator 2026-11-23: one teardrop, the tail flowing from the
+    # crown): outline overlap >= 90 % after fitting both outline boxes, and the back of the outline has exactly one tip
+    hs = hood_side(fbx, d)
+    res["hood_side"] = hs
+    if hs["overlap"] < 90:
+        res["fails"].append(f"hood side outline overlap {hs['overlap']}% (needs 90%)")
+    if hs["tips"] != 1:
+        res["fails"].append(f"hood back outline has {hs['tips']} tips (needs exactly 1)")
     res["notch"] = []
     for k in range(16):
         turn = k * 22.5

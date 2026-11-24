@@ -23,3 +23,5 @@
 - 2026-11-23 21:36  painterly (pets' detail measure) 87%  rich 100%  Baby Dragon 71%  band +-20: PASS  tools\archer5\ranger_archer.fbx  geometry pass, plain bake (archer5)
 - 2026-11-23 21:37  painterly (pets' detail measure) 87%  rich 100%  Baby Dragon 71%  band +-20: PASS  |  stroke texture 12.42 (painting 14.05, Baby Dragon 9.74)  tools\archer5\ranger_archer.fbx  geometry pass, plain bake (archer5)
 - 2026-11-23 22:25  painterly (pets' detail measure) 103%  rich 102%  Baby Dragon 71%  band +-20: FAIL  |  stroke texture 13.71 (painting 14.05, Baby Dragon 9.74)  tools\archer6\ranger_archer.fbx  painterly pass (pets' workflow, two runs), archer6
+- 2026-11-24 00:25  painterly (pets' detail measure) 105%  rich 101%  Baby Dragon 71% (logged)  |  stroke texture 14.11 (painting 14.05, Baby Dragon 9.74; band 9.7-15.5): PASS  tools\archer8\ranger_archer.fbx  round A: teardrop hood, softened hood paint (archer8)
+- 2026-11-24 00:47  painterly (pets' detail measure) 105%  rich 98%  Baby Dragon 71% (logged)  |  stroke texture 14.26 (painting 14.05, Baby Dragon 9.74; band 9.7-15.5): PASS  tools\archer8\ranger_archer.fbx  round A, repainted after the chin fix (archer8)

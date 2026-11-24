@@ -79,7 +79,7 @@ function ArtService.Start()
 						if name == "ranger_archer" then
 							-- matte like the paintings (coordinator 2026-11-23: "everything renders like shiny vinyl"): a rough
 							-- material, no reflectance, no sun glints on the cloth
-							part.Material = Enum.Material.SmoothPlastic   -- (Fabric turned his painted face black in the hood's shade)
+							part.Material = Enum.Material.Fabric   -- (matte; his black face was the vertex colours, not this)
 							part.Reflectance = 0
 							-- no shadow from the hood over his own face (it went black in the hood's shade); the face is painted
 							part.CastShadow = false

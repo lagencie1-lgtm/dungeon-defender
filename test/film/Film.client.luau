@@ -108,8 +108,41 @@ task.wait(0.5)
 local spot = Config.SpawnPoint + Vector3.new(-4, 0, 6) -- (an open build spot beside the hero on the new path)
 mark("place ranger")
 local ok, reason = Remotes.PlaceTower:InvokeServer("Ranger", spot)
+-- (something can stand on the first spot, a pet for one: try a few more beside it)
+local tries = {}
+for r = 6, 30, 6 do
+	for k = 0, 7 do
+		local a = math.rad(k * 45)
+		table.insert(tries, Vector3.new(math.cos(a) * r, 0, math.sin(a) * r))
+	end
+end
+for _, off in tries do
+	if ok then
+		break
+	end
+	spot = Config.SpawnPoint + off
+	ok, reason = Remotes.PlaceTower:InvokeServer("Ranger", spot)
+end
 print("[FILM] place", ok, reason)
 task.wait(2.5)
+-- the archer in open daylight, close, from the front: his colours against the painting (no roof, no tower)
+do
+	local at = spot + Vector3.new(14, 0, -10)
+	ask("OpenArcher", at)
+	await("OpenArcherReady", 10)
+	task.wait(1)
+	local m = workspace:FindFirstChild("OpenArcher")
+	if m then
+		local cf, size = m:GetBoundingBox()
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		local front = m:GetPivot().LookVector   -- (his front is the model's -Z)
+		workspace.CurrentCamera.CFrame = CFrame.lookAt(cf.Position + front * size.Y * 1.6 + Vector3.new(0, size.Y * 0.15, 0), cf.Position + Vector3.new(0, size.Y * 0.1, 0))
+		mark("archer open light")
+		task.wait(1.5)
+		m:Destroy()
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+	end
+end
 local ranger
 for _, t in workspace.Towers:GetChildren() do
 	ranger = t
@@ -177,6 +210,66 @@ if ranger then
 		workspace.CurrentCamera.FieldOfView = fov
 	end
 	archerSides()
+	-- a test (coordinator 2026-11-23, the front-right view hid him): from the run camera (20.5 studs, 42 degrees down)
+	-- at 8 directions round the level 3 tower, at least one archer's head is at least half visible in 7 of 8
+	do
+		local heads = {}
+		local here = ranger:GetPivot().Position
+		for _, d in workspace:GetDescendants() do   -- (the level 3 look is a new model: search near the tower)
+			if d:IsA("BasePart") and d.Name == "Head" and d.Parent and d.Parent.Name == "Archer" and (d.Position - here).Magnitude < 15 then
+				table.insert(heads, d)
+			end
+		end
+		mark("archer heads found " .. #heads)
+		local focus = ranger:GetPivot().Position + Vector3.new(0, 4, 0)
+		local passed, detail = 0, {}
+		for k = 0, 7 do
+			local a = math.rad(k * 45)
+			local look = Vector3.new(math.sin(a), 0, math.cos(a))
+			local eye = focus - look * 20.5 * math.cos(math.rad(42)) + Vector3.new(0, 20.5 * math.sin(math.rad(42)), 0)
+			local best = 0
+			for _, h in heads do
+				local seen, total = 0, 0
+				for _, off in { Vector3.new(0, 0, 0), Vector3.new(0.35, 0, 0), Vector3.new(-0.35, 0, 0), Vector3.new(0, 0.35, 0),
+					Vector3.new(0, -0.3, 0), Vector3.new(0.25, 0.25, 0), Vector3.new(-0.25, 0.25, 0), Vector3.new(0.25, -0.2, 0),
+					Vector3.new(-0.25, -0.2, 0) } do
+					-- points on the head's side that faces the camera
+					local toward = (eye - h.Position) * Vector3.new(1, 0, 1)
+					toward = toward.Magnitude > 0 and toward.Unit or Vector3.new(0, 0, 1)
+					local right = Vector3.new(0, 1, 0):Cross(toward).Unit
+					local pt = h.Position + right * off.X * h.Size.X + Vector3.new(0, off.Y * h.Size.Y, 0) + toward * h.Size.Z * 0.3
+					local params = RaycastParams.new()
+					params.FilterType = Enum.RaycastFilterType.Exclude
+					params.FilterDescendantsInstances = { player.Character }
+					local hit = workspace:Raycast(eye, (pt - eye) * 1.02, params)
+					local skip = { player.Character }
+					for _ = 1, 6 do   -- see-through parts (a tower's tap box) do not hide him
+						if not (hit and hit.Instance.Transparency >= 0.9) then
+							break
+						end
+						table.insert(skip, hit.Instance)
+						params.FilterDescendantsInstances = skip
+						hit = workspace:Raycast(eye, (pt - eye) * 1.02, params)
+					end
+					total += 1
+					if k == 0 and total == 1 then
+						print(string.format("[FILM] ray debug: head at %s size %s, point dist %.1f, hit %s at %.1f", tostring(h.Position), tostring(h.Size),
+							(pt - eye).Magnitude, hit and hit.Instance:GetFullName() or "nothing", hit and (hit.Position - eye).Magnitude or -1))
+					end
+					-- (the archer's parts are not hit by rays: seen = nothing in the way before the point)
+					if not hit or hit.Instance == h or (hit.Position - eye).Magnitude >= (pt - eye).Magnitude - 0.2 then
+						seen += 1
+					end
+				end
+				best = math.max(best, seen / total)
+			end
+			if best >= 0.5 then
+				passed += 1
+			end
+			table.insert(detail, string.format("%d:%.0f%%", k * 45, best * 100))
+		end
+		mark(string.format("archer visible %d of 8 (%s) %s", passed, table.concat(detail, " "), passed >= 7 and "PASS" or "FAIL"))
+	end
 	-- the archers at work (2026-11-23): a wave starts while the level 3 Ranger stands, the camera stays on it
 	Remotes.StartWave:FireServer()
 	mark("ranger shooting")

@@ -1,7 +1,8 @@
 """The seam gate as the player sees it: renders the painted archer (flat texture colour, orthographic) from 8 sides
-and, for every mesh edge the camera sees, measures the colour change across it in the picture (2 px either side).
+and, for every mesh edge the camera sees, measures the colour change across it in the picture (2.5 px either side).
 A texture seam that shows is an edge where that change is bigger than across ordinary edges. Passes when the seams'
-95th percentile is at most the ordinary edges' 95th percentile x 1.15 + 3 (in 0..255).
+95th percentile is at most the ordinary edges' 95th percentile x 1.15 + 3 (in 0..255); per-part numbers are printed
+to find where seams show.
 Run: blender -b -P archer_seams_seen.py -- <dir>/ranger_archer.fbx     (writes "seen" into <dir>/gates_build.json)"""
 import json
 import math
@@ -73,8 +74,9 @@ for o in meshes:
         if len(sides) != 2:
             continue
         seam = (sides[0][0] - sides[1][0]).length > 1e-4 or (sides[0][1] - sides[1][1]).length > 1e-4
-        edges.append((mw @ me.vertices[a].co, mw @ me.vertices[b].co, seam))
+        edges.append((mw @ me.vertices[a].co, mw @ me.vertices[b].co, seam, o.name.split(".")[0]))
 seam_d, plain_d = [], []
+per_part = {}
 dg = bpy.context.evaluated_depsgraph_get()
 for k in range(8):
     az = math.radians(-90 + k * 45)
@@ -88,7 +90,7 @@ for k in range(8):
     px = np.empty(SIZE * SIZE * 4, dtype=np.float32)
     im.pixels.foreach_get(px)
     px = px.reshape(SIZE, SIZE, 4)
-    for p0, p1, seam in edges:
+    for p0, p1, seam, part in edges:
         mid = (p0 + p1) / 2
         hit, loc, *_ = sc.ray_cast(dg, cam.location, (mid - cam.location).normalized())
         if not hit or (loc - mid).length > 0.01:
@@ -108,12 +110,19 @@ for k in range(8):
             continue   # one side is the background: an outline, not a seam
         diff = float(np.abs(ca[:3] - cb[:3]).max()) * 255
         (seam_d if seam else plain_d).append(diff)
+        per_part.setdefault(part, ([], []))[0 if seam else 1].append(diff)
     os.remove(path)
 p95s, p95p = float(np.percentile(seam_d, 95)), float(np.percentile(plain_d, 95))
-ok = p95s <= p95p * 1.15 + 3
+# each part against its own ordinary edges (a busy painted head and a plain boot are not alike)
+parts_ok = {}
+for k, (sd, pd) in per_part.items():
+    a_, b_ = float(np.percentile(sd, 95)), float(np.percentile(pd, 95))
+    parts_ok[k] = {"seam_p95": round(a_, 1), "ordinary_p95": round(b_, 1), "ok": a_ <= b_ * 1.15 + 3}
+ok = p95s <= p95p * 1.15 + 3   # (the gate stays the whole model's; the per-part numbers are for finding where)
+print("SEEN per part:", ", ".join("%s %.0f vs %.0f %s" % (k, v["seam_p95"], v["ordinary_p95"], "ok" if v["ok"] else "FAIL") for k, v in parts_ok.items()))
 print("SEEN seams %d edges p95 %.1f | ordinary edges %d p95 %.1f | %s" % (len(seam_d), p95s, len(plain_d), p95p, "ok" if ok else "FAIL"))
 gp = os.path.join(d, "gates_build.json")
 g = json.load(open(gp)) if os.path.exists(gp) else {}
 g["vertex_colours"] = VC
-g["seen"] = {"seam_p95": round(p95s, 1), "ordinary_p95": round(p95p, 1), "seam_edges": len(seam_d), "ok": ok}
+g["seen"] = {"seam_p95": round(p95s, 1), "ordinary_p95": round(p95p, 1), "seam_edges": len(seam_d), "ok": ok, "parts": parts_ok}
 json.dump(g, open(gp, "w"), indent=1)

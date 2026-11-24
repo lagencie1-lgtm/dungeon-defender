@@ -1,7 +1,8 @@
 """The painterly number (coordinator 2026-11-23, gate of the painterly pass): the pets' own "detail" measure from
 scripts/pet_match.py (mean edge strength inside the outline at 256 px, as a percent of the target painting's), for
-the archer seen like his main painting (art/ref3d/archer/ranger_archer_34.png). It must sit within BAND points of
-the Baby Dragon's latest value (reviews/pets/match.csv), the pet Lemp's painterly choice was made on.
+the archer seen like his main painting (art/ref3d/archer/ranger_archer_34.png), logged; and the gate: the
+brush-stroke number (small-scale light change inside the outline, strongest edges left out) must lie between the
+Baby Dragon's and the painting's own value plus 10 % (coordinator 2026-11-23).
 
   python scripts/archer_painterly.py <archer.fbx> [round note]    -> prints the number, appends to reviews/archer/rounds.md
 """
@@ -66,10 +67,13 @@ def main():
     ref = baby_dragon()
     dragon = pet_match.cutout(os.path.join(ROOT, "art", "models", "pets2", "_v_babydragon_0.png"), GREY)
     ds = stroke(dragon)
-    ok = abs(detail - ref) <= BAND
+    # the gate (coordinator 2026-11-23): the brush-stroke number, between the Baby Dragon's and the painting's own
+    # plus 10 %; the pets' detail measure counts shape edges too, so it is logged, not gated
+    lo_, hi_ = ds, STROKE[1] * 1.1
+    ok = lo_ <= STROKE[0] <= hi_
     line = (f"{datetime.datetime.now():%Y-%m-%d %H:%M}  painterly (pets' detail measure) {detail:.0f}%  rich {rich:.0f}%  "
-            f"Baby Dragon {ref:.0f}%  band +-{BAND}: {'PASS' if ok else 'FAIL'}  |  stroke texture {STROKE[0]:.2f} "
-            f"(painting {STROKE[1]:.2f}, Baby Dragon {ds:.2f})  {os.path.relpath(fbx, ROOT)}  {note}")
+            f"Baby Dragon {ref:.0f}% (logged)  |  stroke texture {STROKE[0]:.2f} (painting {STROKE[1]:.2f}, Baby Dragon "
+            f"{ds:.2f}; band {lo_:.1f}-{hi_:.1f}): {'PASS' if ok else 'FAIL'}  {os.path.relpath(fbx, ROOT)}  {note}")
     print(line)
     log = os.path.join(ROOT, "reviews", "archer", "rounds.md")
     with open(log, "a", encoding="utf-8") as f:

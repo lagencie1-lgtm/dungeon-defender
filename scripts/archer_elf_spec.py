@@ -58,15 +58,16 @@ def main():
 
     # ---- the hood: one solid, rows TOP..HOOD_BOTTOM -------------------------------------------------------------
     ys = list(range(33, HOOD_BOTTOM + 1, 5))   # (the side view starts at row 30)
-    hw, front, back, ow = [], [], [], []
+    hw, front, back, ow, full_back = [], [], [], [], []
     for y in ys:
         xs = np.where(fg[y, FRONT[0]:FRONT[1]])[0] + FRONT[0]
         left, right = xs.min(), xs.max()
         hw.append(((CX - left) + (right - CX)) / 2)
         sr = side_runs(y)
-        main_run = max(sr, key=lambda t: t[1])       # the run with the face in it (the hanging tip is the other one)
+        main_run = max(sr, key=lambda t: t[1])       # the run with the face in it (the hanging tail is the other one)
         front.append(main_run[1])
         back.append(main_run[0])
+        full_back.append(min(a for a, b in sr))      # the whole outline, the tail included
         lg = left
         while lg < CX and green[y, lg]:
             lg += 1
@@ -82,7 +83,10 @@ def main():
     for i in range(i0 + 1, len(back)):
         t = (i - i0) / (len(back) - 1 - i0)
         back[i] = min(back[i], back[i0] + (back[-1] - back[i0]) * (1 - math.cos(t * math.pi / 2)))
-    spec["head"] = [{"z": z(y), "hw": round(w * S, 4), "front": Y(f), "back": Y(b)} for y, w, f, b in zip(ys, hw, front, back)]
+    full_back = gauss(np.array(full_back, dtype=float), 1.0)
+    # "back": the whole side outline (the tail is part of the hood's one solid); "body_back": the skull's own back
+    spec["head"] = [{"z": z(y), "hw": round(w * S, 4), "front": Y(f), "back": Y(min(fb, b)), "body_back": Y(b)}
+                    for y, w, f, b, fb in zip(ys, hw, front, back, full_back)]
     # the opening: the green ring's inner edge = the trim band's outer edge
     op = [{"z": z(y), "ow": round(o * S, 4)} for y, w, o in zip(ys, hw, ow) if o is not None and 0 < o < w - 4 and y > 60]
     spec["opening"] = op
@@ -139,9 +143,10 @@ def main():
     def p(x, y):
         return [X(x), Y(ay), z(y)]
     spec["arm"] = {
-        "sleeve": {"path": [p(240, 388), p(214, 408), p(190, 432)], "r": [34 * S, 34 * S, 32 * S]},
+        "sleeve": {"path": [p(240, 388), p(214, 408), p(190, 432)], "r": [36 * S, 33 * S, 30 * S]},
         "cuff": {"at": p(184, 438), "dir": [-0.7, 0, -0.7], "r": 35 * S, "w": 20 * S},
-        "fore": {"path": [p(190, 440), p(160, 466), p(132, 492)], "r": [25 * S, 24 * S, 24 * S]},
+        # the forearm: an elbow just under the cuff (a slight bend back), tapering to the wrist
+        "fore": {"path": [p(190, 440), [X(166), Y(ay) + 0.03, z(462)], p(132, 492)], "r": [27 * S, 24 * S, 20 * S]},
         "bracer": {"path": [p(146, 482), p(122, 510), p(98, 538)], "r": [36 * S, 37 * S, 35 * S]},
         "fist": {"at": p(80, 580), "size": [40 * S, 34 * S, 40 * S]},
     }

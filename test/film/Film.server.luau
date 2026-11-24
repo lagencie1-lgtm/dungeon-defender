@@ -64,6 +64,30 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 			end
 		end
 		cue:FireClient(player, "DefendersReady")
+	elseif step == "OpenArcher" then
+		-- one archer standing on open ground in plain daylight (2026-11-23: his colours are checked against the painting
+		-- in open light, not under a tower roof)
+		local art = game:GetService("ServerStorage"):FindFirstChild("ArtModels")
+		local src = art and art:FindFirstChild("ranger_archer")
+		if src then
+			local m = src:Clone()
+			m.Name = "OpenArcher"
+			local _, size = m:GetBoundingBox()
+			m:ScaleTo(m:GetScale() * 3.2 / size.Y)
+			local hit = workspace:Raycast(arg + Vector3.new(0, 50, 0), Vector3.new(0, -200, 0))
+			local ground = hit and hit.Position.Y or arg.Y
+			local _, s2 = m:GetBoundingBox()
+			m:PivotTo(CFrame.new(arg.X, ground, arg.Z))
+			local cf, s3 = m:GetBoundingBox()
+			m:PivotTo(m:GetPivot() + Vector3.new(0, ground - (cf.Position.Y - s3.Y / 2), 0))
+			for _, d in m:GetDescendants() do
+				if d:IsA("BasePart") then
+					d.Anchored = true
+				end
+			end
+			m.Parent = workspace
+		end
+		cue:FireClient(player, "OpenArcherReady")
 	elseif step == "Done" then
 		pcall(function()
 			game:GetService("StudioTestService"):EndTest("film done")

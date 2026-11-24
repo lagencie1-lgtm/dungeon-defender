@@ -50,11 +50,15 @@ def se(t, n):
 
 
 def section(row, t, n_front=2.4, n_back=2.2, grow=0.0):
+    """one row's ring: a superellipse; the front half spans the skull (front .. body_back), the back half reaches to
+    "back" and may be narrower ("wb") and pointed ("nb"): that is how the hood's tail grows out of the same solid"""
     cx = row.get("cx", 0.0)
-    c = (row["front"] + row["back"]) / 2
-    d = (row["back"] - row["front"]) / 2 + grow
-    w = row["hw"] + grow
-    n = n_front if math.sin(t) < 0 else row.get("nb", n_back)
+    bb = row.get("body_back", row["back"])
+    c = (row["front"] + bb) / 2
+    back = math.sin(t) >= 0
+    d = ((row["back"] - c) if back else (c - row["front"])) + grow
+    w = (row["hw"] * (row.get("wb", 1.0) if back else 1.0)) + grow
+    n = row.get("nb", n_back) if back else n_front
     a, b = se(t, n)
     return Vector((cx + w * a, c + d * b, row["z"]))
 
@@ -185,12 +189,18 @@ def interp(rows, key, zz):
             return a[key] + (b[key] - a[key]) * f
 
 
+def head_c(zz):
+    """the middle of the skull at height z (the front half of the hood's section is centred there)"""
+    rows = SPEC["head"]
+    return (interp(rows, "front", zz) + interp(rows, "body_back" if "body_back" in rows[0] else "back", zz)) / 2
+
+
 def head_surface(x, zz, n_front=2.4):
     """the hood's front surface (y) at (x, z): the superellipse section solved for x"""
     hw = interp(SPEC["head"], "hw", zz)
     fr = interp(SPEC["head"], "front", zz)
-    bk = interp(SPEC["head"], "back", zz)
-    c, d = (fr + bk) / 2, (bk - fr) / 2
+    c = head_c(zz)
+    d = c - fr
     u = min(abs(x) / hw, 0.999)
     cos_t = u ** (n_front / 2)
     sin_t = math.sqrt(max(0.0, 1 - cos_t * cos_t))
@@ -203,23 +213,25 @@ def head_surface(x, zz, n_front=2.4):
 head = Part("Head")
 # the elf hood: one solid; where it reaches far back the plan sections turn to a teardrop (pointed toward the back),
 # so the hood runs back to a ridge and a point instead of a round dome
+# the skull is about as deep as it is wide: what the side outline shows behind that is the hood's cone and tail
+for r in SPEC["head"]:
+    r["body_back"] = min(r["back"], r["front"] + 1.75 * r["hw"])
 head_rows = []
 for r in SPEC["head"]:
-    reach = max(0.0, min(1.0, (r["back"] + r["front"]) / 0.35))    # how much further back than forward it reaches
-    head_rows.append(dict(r, nb=2.3 - 1.0 * reach))
+    # where the side outline reaches further back than the skull, that reach is the tail: the back half of the row
+    # narrows and comes to a point (a teardrop), so the crown's ridge runs on into one tapered tail
+    tail = max(0.0, min(1.0, (r["back"] - r.get("body_back", r["back"])) / 0.3))
+    head_rows.append(dict(r, nb=2.2 - 1.0 * tail, wb=1.0 - 0.5 * tail))   # (nb stays >= 1.2: no folded rows)
 hood_faces = head.add(loft(head.bm, head_rows, dome=0.035, seg=40), "hood")
 hood_verts = list({v for f in hood_faces for v in f.verts})
 for _ in range(3):
     bmesh.ops.smooth_vert(head.bm, verts=hood_verts, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=False)
-# the centre crease: a soft ridge along the top and down the back (as in the painting's back view)
-head.bm.normal_update()
-for v in hood_verts:
-    ctr = (interp(SPEC["head"], "front", v.co.z) + interp(SPEC["head"], "back", v.co.z)) / 2
-    if v.co.z > 1.7 and v.co.y > ctr - 0.05 and abs(v.co.x) < 0.16:
-        k = (1 - abs(v.co.x) / 0.16) ** 2 * min(1.0, (v.co.z - 1.7) / 0.2)
-        v.co += v.normal * 0.022 * k
-
 OPEN = sorted(SPEC["opening"], key=lambda r: r["z"])
+# the trim's line: the measured opening smoothed (an even band, no wobble from single painted pixels)
+_ow = [r["ow"] for r in OPEN]
+for _ in range(6):
+    _ow = [_ow[0]] + [(_ow[i - 1] + 2 * _ow[i] + _ow[i + 1]) / 4 for i in range(1, len(_ow) - 1)] + [_ow[-1]]
+OPEN = [dict(r, ow=w) for r, w in zip(OPEN, _ow)]
 Z_OPEN_TOP, Z_OPEN_BOT = OPEN[-1]["z"], OPEN[0]["z"]
 TW = SPEC["trim_w"]
 
@@ -238,14 +250,14 @@ def edge_distance(x, zz):
 
 RECESS = 0.025
 for v in hood_verts:
-    c = (interp(SPEC["head"], "front", v.co.z) + interp(SPEC["head"], "back", v.co.z)) / 2
+    c = head_c(v.co.z)
     if v.co.y < c:
         e = edge_distance(v.co.x, v.co.z) + TW * 0.5
         if e > 0:
             f = min(1.0, e / 0.07)
             v.co.y += RECESS * (f * f * (3 - 2 * f))
 
-HEAD_C = Vector((0, (interp(SPEC["head"], "front", 1.85) + interp(SPEC["head"], "back", 1.85)) / 2, 1.85))
+HEAD_C = Vector((0, head_c(1.85), 1.85))
 
 
 def band_loop(bm, pts, half_w, half_t, centre, seg=12, lift=None):
@@ -282,10 +294,10 @@ def band_loop(bm, pts, half_w, half_t, centre, seg=12, lift=None):
 
 # the cream trim: a wide flat band round the opening, closed under the chin
 loop = []
-for r in OPEN[::2]:
+for r in OPEN:
     loop.append((-(r["ow"] - TW / 2), r["z"]))
 loop.append((0.0, Z_OPEN_TOP - TW / 2 + 0.005))
-for r in reversed(OPEN[::2]):
+for r in reversed(OPEN):
     loop.append((r["ow"] - TW / 2, r["z"]))
 xb = OPEN[0]["ow"] - TW / 2
 for k in range(1, 8):     # under the chin, right to left, dipping a little
@@ -299,7 +311,7 @@ for x, zz in loop:
 head.add(band_loop(head.bm, pts, TW / 2, 0.016, HEAD_C), "cream")
 
 # the hair: big flat locks across the forehead and down by the cheeks, lying on the face under the trim
-LOCKS = [(-0.2, 0.09, -0.5), (-0.02, 0.12, -0.15), (0.18, 0.09, 0.45)]   # (above the brows: they stay clear)
+LOCKS = [(-0.25, 0.1, -0.55), (-0.085, 0.12, -0.2), (0.085, 0.12, 0.2), (0.25, 0.1, 0.55)]   # (above the brows)
 for x, ln, tilt in LOCKS:
     zt = Z_OPEN_TOP - TW
     while opening_w(zt) - TW < abs(x) + 0.05 and zt > Z_OPEN_BOT:
@@ -307,7 +319,7 @@ for x, ln, tilt in LOCKS:
     y0, _ = head_surface(x, zt)
     a = Vector((x, y0 + RECESS * 0.6, zt - 0.025))    # (its top tucked under the trim)
     b = a + Vector((math.sin(tilt) * ln, -0.025, -math.cos(tilt) * ln))
-    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.07, 0.06, 0.025], seg=12, per=3, flat=0.4, nvec=(0, 1, 0)), "hair")
+    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.085, 0.075, 0.03], seg=12, per=3, flat=0.45, nvec=(0, 1, 0)), "hair")
 for s in (-1, 1):       # side locks by the cheeks
     zt = 1.8
     x = s * (opening_w(zt) - TW - 0.045)     # (by the cheek, clear of the eye)
@@ -316,14 +328,6 @@ for s in (-1, 1):       # side locks by the cheeks
     b = a + Vector((-s * 0.03, 0.0, -0.17))
     head.add(tube(head.bm, [a, (a + b) / 2 + Vector((s * 0.01, -0.012, 0)), b], [0.065, 0.058, 0.025], seg=12, per=3, flat=0.6,
                   nvec=(s * 0.9, 0.45, 0)), "hair")
-
-# the hanging tip at the back (the side view's separate run): a soft cone from inside the hood down to its point
-if SPEC["tip"]:
-    tp = sorted(SPEC["tip"], key=lambda r: -r["z"])
-    bt = interp(SPEC["head"], "back", 1.95)
-    pts = [Vector((0, bt - 0.12, 1.98)), Vector((0, bt + 0.02, 1.86)), Vector((0, tp[0]["y"] + 0.03, tp[0]["z"] - 0.02)),
-           Vector((0, tp[-1]["y"], tp[-1]["z"] - 0.02))]
-    head.add(tube(head.bm, pts, [0.17, 0.12, 0.06, 0.015], seg=16, per=4, flat=1.25), "hood")
 
 # ---------------------------------------------------------------------------------------------------------------
 # Body
@@ -524,24 +528,29 @@ def to_object(part):
     bm.normal_update()
     col = bm.loops.layers.float_color.new("pal")
     facew = bm.loops.layers.float_color.new("facew")
+    keepw = bm.loops.layers.float_color.new("keepw")   # kept from the plain bake by the painterly pass (the trim)
     for f in bm.faces:
         c = lin(PAL[part.tags.get(f, "hood")]) + (1.0,)
         for loop in f.loops:
             w = 0.0
             if part.name == "Head" and part.tags.get(f) == "hood":
                 v = loop.vert.co
-                ctr = (interp(SPEC["head"], "front", v.z) + interp(SPEC["head"], "back", v.z)) / 2
+                ctr = head_c(v.z)
                 if v.y < ctr:
                     e = edge_distance(v.x, v.z)
                     if e > 0:
                         w = max(0.0, min(1.0, (e - 0.01) / 0.04))
                         # only where the surface looks to the front: the painting is never stretched round a side
                         nf = max(0.0, min(1.0, (-loop.vert.normal.y - 0.55) / 0.25))
-                        w *= nf
+                        # and not where it turns down under the chin (a flat skin strip at oblique angles)
+                        nd = max(0.0, min(1.0, (loop.vert.normal.z + 0.75) / 0.2))   # (only faces turned well down)
+                        w *= nf * nd
                         # inside the opening, wherever the painting does not reach: the hood's own dark inside
                         c = lin(PAL["hood_inner"]) + (1.0,)
             loop[col] = c
             loop[facew] = (w, w, w, 1.0)
+            k = 1.0 if (part.name == "Head" and part.tags.get(f) == "cream") else 0.0
+            loop[keepw] = (k, k, k, 1.0)
     bm.to_mesh(mesh)
     o = bpy.data.objects.new(part.name, mesh)
     bpy.context.scene.collection.objects.link(o)
@@ -595,7 +604,15 @@ def material(o, image=None):
     if image is not None:
         nt.links.remove(mix.inputs["A"].links[0])
         mix.inputs["A"].default_value = (0, 0, 0, 1)
-        nt.links.new(mix.outputs["Result"], emit.inputs["Color"])
+        kw = nt.nodes.new("ShaderNodeVertexColor")
+        kw.layer_name = "keepw"
+        light = nt.nodes.new("ShaderNodeMix")
+        light.data_type = "RGBA"
+        light.blend_type = "LIGHTEN"
+        light.inputs["Factor"].default_value = 1.0
+        nt.links.new(mix.outputs["Result"], light.inputs["A"])
+        nt.links.new(kw.outputs["Color"], light.inputs["B"])
+        nt.links.new(light.outputs["Result"], emit.inputs["Color"])
         return mat, nt
     # painted light: ambient + soft key from the top left front + ambient occlusion (the painting has its own light,
     # so the face gets only a little of it)

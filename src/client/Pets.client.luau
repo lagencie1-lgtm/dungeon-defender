@@ -91,8 +91,10 @@ label({ Size = UDim2.fromOffset(120, 36), Position = UDim2.fromOffset(24, 16), T
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
 local goldLabel = label({ Size = UDim2.fromOffset(200, 28), Position = UDim2.fromOffset(130, 20), Text = "",
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
-local message = label({ Size = UDim2.fromOffset(440, 24), Position = UDim2.fromOffset(350, 22), Text = "",
-	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
+-- (phone rule, 2026-11-24: every line on this screen is at least 26 units tall, bold and short; 18-22 unit Gotham
+-- lines measured 6-9 pt on an iPhone 13, the Fuse card's 26-unit bold lines 13 pt)
+local message = label({ Size = UDim2.fromOffset(440, 28), Position = UDim2.fromOffset(350, 20), Text = "",
+	TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
 local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
 
@@ -332,15 +334,14 @@ local function buildIndex()
 		end
 	end
 	local rows = math.ceil(#kinds / 6)
-	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 62 + rows * 68 + 58), BackgroundColor3 = Ui.PANEL,
+	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 70 + rows * 68 + 58), BackgroundColor3 = Ui.PANEL,
 		LayoutOrder = 0, ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(Ui.GOLD, 2) })
 	label({ Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(12, 6), Text = string.format("Pet Index %d/%d", found, #kinds),
 		TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-	label({ Size = UDim2.new(1, -24, 0, 18), Position = UDim2.fromOffset(12, 34),
-		Text = nextAt and string.format("Every new pet pays gold and gems · bonus at %d pets: %d gold", nextAt.At, nextAt.Gold)
-			or "Complete! You found every pet",
-		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-	local grid = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 68), Position = UDim2.fromOffset(10, 58),
+	label({ Size = UDim2.new(1, -24, 0, 26), Position = UDim2.fromOffset(12, 34),
+		Text = nextAt and string.format("New pets pay gold · %d found: +%d", nextAt.At, nextAt.Gold) or "Complete! You found every pet",
+		TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	local grid = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 68), Position = UDim2.fromOffset(10, 66),
 		BackgroundTransparency = 1, ZIndex = 33, Parent = card },
 		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(62, 62), CellPadding = UDim2.fromOffset(6, 6),
 			SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -407,7 +408,7 @@ local function buildIndex()
 				BackgroundTransparency = 0.18, ZIndex = 36, Parent = cell }, { corner(10) })
 			label({ Size = UDim2.new(1, -4, 0, 30), Position = UDim2.fromOffset(2, 6), Text = "?", TextColor3 = rarityColor(kind),
 				ZIndex = 37, Parent = shade })
-			label({ Size = UDim2.new(1, -4, 0, 16), Position = UDim2.new(0, 2, 1, -20),
+			label({ Size = UDim2.new(1, -4, 0, 24), Position = UDim2.new(0, 2, 1, -25),
 				Text = "+" .. (Config.PetIndexGold[rarity] or 0), TextColor3 = Ui.GOLD, ZIndex = 37, Parent = shade })
 		end
 	end
@@ -538,15 +539,14 @@ function refresh()
 	do
 		-- the team line: how many walk with you, and when the next slot opens
 		local nextLevel = Config.PetTeamLevels[slots + 1]
-		local line = make("Frame", { Size = UDim2.new(1, -12, 0, 24), BackgroundTransparency = 1, LayoutOrder = -1, ZIndex = 32, Parent = list })
-		label({ Size = UDim2.fromScale(1, 1), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = line,
-			Text = string.format("Team %d/%d · the lead fights, all fetch loot", #team, slots)
-				.. (nextLevel and (" · next slot: hero level " .. nextLevel) or "") })
+		local line = make("Frame", { Size = UDim2.new(1, -12, 0, 28), BackgroundTransparency = 1, LayoutOrder = -1, ZIndex = 32, Parent = list })
+		label({ Size = UDim2.fromScale(1, 1), TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = line,
+			Text = string.format("Team %d/%d", #team, slots) .. (nextLevel and (" · next slot at hero Lv " .. nextLevel) or "") })
 	end
 	buildFuse()
 	if #pets == 0 then
 		local empty = make("Frame", { Size = UDim2.new(1, -12, 0, 60), BackgroundTransparency = 1, ZIndex = 32, Parent = list })
-		label({ Size = UDim2.fromScale(1, 1), Text = "No pets yet. Hatch an egg with gold!", Font = Enum.Font.Gotham,
+		label({ Size = UDim2.new(1, 0, 0, 28), Text = "No pets yet. Hatch an egg with gold!",
 			TextColor3 = Ui.TEXT_DIM, ZIndex = 33, Parent = empty })
 		return
 	end
@@ -568,27 +568,28 @@ function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 132), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
 		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
 		local tierInfo, tier = Config.PetTierOf(pet)
 		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) }, tier)
-		local name = label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 8),
-			Text = Config.PetNameOf(pet) .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
+		-- (the Lead / Lead it / Equip button already says where it is in the team; "evolved" moved to the line below)
+		local name = label({ Size = UDim2.fromOffset(170, 28), Position = UDim2.fromOffset(76, 6),
+			Text = Config.PetNameOf(pet),
 			TextColor3 = tier == 2 and Color3.new(1, 1, 1) or tierInfo.Color or color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
 		if tier == 2 then
 			rainbowGradient(name)
 		end
-		label({ Size = UDim2.fromOffset(170, 22), Position = UDim2.fromOffset(76, 38),
-			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet, place ~= nil and place > 1), Font = Enum.Font.Gotham,
+		label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 38),
+			Text = "Lv " .. (pet.level or 1) .. (pet.evolved and "+" or "") .. " · " .. bonusText(pet, place ~= nil and place > 1),
 			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 72),
-				Text = (place == 1 and "In a fight · " or "As lead · ") .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham,
+			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 72),
+				Text = move.Name .. ": " .. move.Text,
 				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
@@ -596,10 +597,9 @@ function refresh()
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 94),
-				Text = string.format("Fetches %s%s · %d per trip%s", carry.Gems and "gems and " or "", best, carry.Carry,
-					carry.Pass and " · 2x speed, whole map" or ""),
-				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
+			label({ Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 100),
+				Text = string.format("Fetches %s, %d a trip%s", best, carry.Carry, carry.Pass and ", 2x" or ""),
+				TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
 		local equip = button({ Size = UDim2.fromOffset(70, 44), Position = UDim2.new(1, -164, 0, 36), AnchorPoint = Vector2.new(0, 0.5),
 			Text = place == 1 and "Lead" or place and "Lead it" or "Equip",
@@ -665,7 +665,7 @@ local function toggle()
 	if panel.Visible then
 		buildEggs() -- (before asking the server, so the screen is never empty while it answers)
 		take(Remotes.GetPets:InvokeServer())
-		message.Text = "Eggs cost gold. Five of a kind fuse into a Golden pet"
+		message.Text = "5 of a kind fuse into Golden"
 		message.TextColor3 = Ui.TEXT_DIM
 		Ui.pop(panel, 0.85)
 		refresh()

@@ -3,6 +3,9 @@
 Lemp, 2026-11-23: "Improve the map layouts like make some obstacle courses (look at dungeon defenders how their
 maps are built with much more obstacles and environment)".
 
+See the [Dungeon Defenders map references and asset audit](dungeon-defenders-layout-audit.md) for popular layouts,
+the art inventory for all three maps, and the Cursed Forest and Magma Fortress proposals.
+
 ## What Dungeon Defenders maps do
 Read from eight map plans of the first game (The Deeper Well, Foundries and Forges, Magus Quarters, Alchemical
 Laboratory, The Ramparts, Glitterhelm Caverns, The Throne Room, Endless Spires) and what the Awakened remakes keep.

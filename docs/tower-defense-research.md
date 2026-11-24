@@ -185,6 +185,8 @@ A public player comment is evidence that someone experienced or valued something
 
 ## Dungeon Defenders series
 
+For a closer look at individual layouts and the assets our maps already have, see the [Dungeon Defenders map references and asset audit](../reviews/maps/dungeon-defenders-layout-audit.md).
+
 ### Which one players rate highest
 
 | Game | Steam release | Steam storefront review figure | Steam players in the snapshot |

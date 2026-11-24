@@ -20,6 +20,10 @@ Config.OutpostCenter = Vector3.new(0, 0, 1600) -- the hub, far from the battlefi
 -- which hub: "Keep" (the Watch Keep, 2026-11-22, layout in HubLayout.luau) or "Meadow" (the old open meadow)
 Config.HubVersion = "Keep"
 
+-- the camera at a run's start (src/client/RunCamera.client.luau): degrees down, studs from the hero, and how far above
+-- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Today's: 42, 20.5, 0.
+Config.RunCamera = { Pitch = 42, Distance = 20.5, AimHeight = 0 }
+
 Config.StartGold = 200
 Config.PortalHealth = 100
 Config.BreakTime = 20 -- seconds between waves (press "Start wave" to skip)

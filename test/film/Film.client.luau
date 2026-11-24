@@ -307,19 +307,28 @@ if ranger then
 			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 			workspace.CurrentCamera.CFrame = probeCam
 		end)
-		for k = 0, 7 do
-			local a = math.rad(k * 45)
-			local look = Vector3.new(math.sin(a), 0, math.cos(a))
-			local eye = focus - look * 20.5 * math.cos(math.rad(42)) + Vector3.new(0, 20.5 * math.sin(math.rad(42)), 0)
-			probeCam = CFrame.lookAt(eye, focus)
-			for _, mode in { "Occluded", "AlwaysOnTop" } do
-				for _, hl in lights do
-					hl.DepthMode = Enum.HighlightDepthMode[mode]
-					hl.Enabled = true
+		-- round C decision: as in play. The hero stands 15, 25 or 40 studs from the tower's foot; the run camera
+		-- (RunCamera: 20.5 studs, 42 degrees down, looking at the hero's middle) is behind him, the tower beyond.
+		-- (the hero is not moved: the camera alone is placed, so he does not stand in the way)
+		local foot = ranger:GetPivot().Position
+		for _, dist in { 15, 25, 40 } do
+			for k = 0, 7 do
+				local a = math.rad(k * 45)
+				local look = Vector3.new(math.sin(a), 0, math.cos(a))
+				local hero = foot - look * dist + Vector3.new(0, 3, 0)
+				local rc = Config.RunCamera
+				local aim = hero + Vector3.new(0, rc.AimHeight, 0)
+				local eye = aim - look * rc.Distance * math.cos(math.rad(rc.Pitch)) + Vector3.new(0, rc.Distance * math.sin(math.rad(rc.Pitch)), 0)
+				probeCam = CFrame.lookAt(eye, aim)
+				for _, mode in { "Occluded", "AlwaysOnTop" } do
+					for _, hl in lights do
+						hl.DepthMode = Enum.HighlightDepthMode[mode]
+						hl.Enabled = true
+					end
+					task.wait(0.8)   -- (0.4 s caught frames from before the camera or the highlight changed)
+					mark(string.format("probe %d %d %s", dist, k * 45, mode))
+					task.wait(0.5)
 				end
-				task.wait(0.5)
-				mark(string.format("probe %d %s", k * 45, mode))
-				task.wait(0.5)
 			end
 		end
 		for _, hl in lights do
@@ -395,8 +404,121 @@ end
 workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 ask("Defenders")
 await("DefendersReady", 10)
+-- the starting view (coordinator 2026-11-24: three run-camera starts are filmed, Config.RunCamera): what is on the
+-- phone screen at a wave's start and in the middle of it
+local function cameraReport(tag)
+	local cam = workspace.CurrentCamera
+	local vs = cam.ViewportSize
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local function onScreen(pos)
+		local p, vis = cam:WorldToViewportPoint(pos)
+		return vis and p.Z > 0 and p.X >= 0 and p.X <= vs.X and p.Y >= 0 and p.Y <= vs.Y, p
+	end
+	-- 1. towers within 40 studs: their top (roof tip or highest archer) on screen
+	local near, topsSeen = 0, 0
+	for _, t in workspace.Towers:GetChildren() do
+		local cf, size = t:GetBoundingBox()
+		if ((cf.Position - root.Position) * Vector3.new(1, 0, 1)).Magnitude <= 40 then
+			near += 1
+			if onScreen(cf.Position + Vector3.new(0, size.Y / 2, 0)) then
+				topsSeen += 1
+			end
+		end
+	end
+	-- 2. the wave's centre and the lane ahead (path points within 40 studs) on screen
+	local sum, n = Vector3.zero, 0
+	for _, m in (workspace:FindFirstChild("Enemies") or workspace):GetChildren() do
+		if m:IsA("Model") and m:FindFirstChild("Look") then
+			sum += m:GetPivot().Position
+			n += 1
+		end
+	end
+	local waveOn = n > 0 and onScreen(sum / n) or false
+	local lane, laneSeen = 0, 0
+	for _, pt in Config.Path do
+		local w = Vector3.new(pt.X, root.Position.Y - 3, pt.Z)
+		if (w - root.Position).Magnitude <= 40 then
+			lane += 1
+			laneSeen += onScreen(w) and 1 or 0
+		end
+	end
+	-- 3. the hero's height on screen, and whether a HUD element covers him
+	local hcf, hsize = char:GetBoundingBox()
+	local _, top = onScreen(hcf.Position + Vector3.new(0, hsize.Y / 2, 0))
+	local _, bottom = onScreen(hcf.Position - Vector3.new(0, hsize.Y / 2, 0))
+	local heroShare = math.abs(top.Y - bottom.Y) / vs.Y
+	local covered = 0
+	local gui = player:WaitForChild("PlayerGui")
+	for _, frac in { 0.1, 0.5, 0.9 } do
+		local p = top:Lerp(bottom, frac)
+		for _, g in gui:GetGuiObjectsAtPosition(p.X, p.Y) do
+			if g.Visible and ((g:IsA("ImageLabel") or g:IsA("ImageButton")) and g.ImageTransparency < 0.9 or g.BackgroundTransparency < 0.9) then
+				covered += 1
+				break
+			end
+		end
+	end
+	-- 4. ground, world above ground, sky (a 16 x 9 grid of rays)
+	local ground, world, sky = 0, 0, 0
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+	for i = 0, 15 do
+		for j = 0, 8 do
+			local ray = cam:ViewportPointToRay((i + 0.5) / 16 * vs.X, (j + 0.5) / 9 * vs.Y)
+			local hit = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+			if not hit then
+				sky += 1
+			elseif hit.Normal.Y > 0.7 and hit.Position.Y < root.Position.Y + 1 then
+				ground += 1
+			else
+				world += 1
+			end
+		end
+	end
+	mark(string.format("camera %s: tower tops %d of %d, wave centre %s, lane %d of %d, hero %.1f%% (HUD over him %d of 3), ground %.0f%% world %.0f%% sky %.0f%%",
+		tag, topsSeen, near, n > 0 and (waveOn and "on" or "off") or "none", laneSeen, lane, heroShare * 100, covered,
+		ground / 1.44, world / 1.44, sky / 1.44))
+end
+-- (the film's own close shots leave the camera low and near: for the measure the run camera's start is put back as
+-- RunCamera.client.luau sets it, behind the hero facing the wave, and held while it is measured)
+local function runView(tag)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local sum, n = Vector3.zero, 0
+	for _, m in (workspace:FindFirstChild("Enemies") or workspace):GetChildren() do
+		if m:IsA("Model") then
+			sum += m:GetPivot().Position
+			n += 1
+		end
+	end
+	local toward = n > 0 and sum / n or Vector3.new(Config.Path[1].X, root.Position.Y, Config.Path[1].Z)
+	local look = ((toward - root.Position) * Vector3.new(1, 0, 1))
+	look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
+	local rc = Config.RunCamera
+	local aim = root.Position + Vector3.new(0, rc.AimHeight, 0)
+	local eye = aim - look * rc.Distance * math.cos(math.rad(rc.Pitch)) + Vector3.new(0, rc.Distance * math.sin(math.rad(rc.Pitch)), 0)
+	local cf = CFrame.lookAt(eye, aim)
+	game:GetService("RunService"):BindToRenderStep("FilmRunView", Enum.RenderPriority.Last.Value + 5, function()
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+		workspace.CurrentCamera.CFrame = cf
+	end)
+	task.wait(0.8)
+	cameraReport(tag)
+	task.wait(1.2)
+	game:GetService("RunService"):UnbindFromRenderStep("FilmRunView")
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+end
 mark("wave")
 Remotes.StartWave:FireServer()
+task.delay(2.5, runView, "wave start")
+task.delay(12, runView, "mid wave")
 -- framing measured while the wave runs, with the player's own camera (rule, 2026-11-22: the hero is 12-15% of the
 -- screen height, a monster is on screen for at least 80% of the wave, and a monster is at least 6% tall)
 local samples, withMonster, heroSum, heroN, monsterMax = 0, 0, 0, 0, 0

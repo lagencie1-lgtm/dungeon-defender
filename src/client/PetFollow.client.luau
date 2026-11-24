@@ -94,6 +94,24 @@ local function add(model)
 	end)
 end
 
+-- the move's own short sound, from the pet (3D: only players nearby hear it, louder the closer they are)
+local function moveSound(s, name)
+	local info = Config.Sounds["Pet" .. name]
+	if not info then
+		return
+	end
+	local sound = Instance.new("Sound")
+	sound.SoundId = info.Id
+	sound.Volume = info.Volume or 0.3
+	sound.PlaybackSpeed = info.Pitch and (info.Pitch[1] + math.random() * (info.Pitch[2] - info.Pitch[1])) or 1
+	sound.RollOffMinDistance, sound.RollOffMaxDistance = 12, 70
+	sound.Parent = s.body
+	sound:Play()
+	sound.Ended:Once(function()
+		sound:Destroy()
+	end)
+end
+
 -- one move, seen from this device
 local function playMove(model, s)
 	local move = model:GetAttribute("PetActMove")
@@ -107,6 +125,9 @@ local function playMove(model, s)
 	local offset = Vector3.new(at.X - from.X, 0, at.Z - from.Z)
 	local dir = offset.Magnitude > 0.1 and offset.Unit or Vector3.zero
 	local reach = math.min(offset.Magnitude * 0.35, LUNGE_MAX)
+	if typeof(move) == "string" then
+		moveSound(s, move)
+	end
 	if move == "Dig" then
 		-- a little dig in place: a nod down and a puff of mana
 		s.nodVel += 4

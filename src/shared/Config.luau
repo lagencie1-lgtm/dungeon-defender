@@ -721,6 +721,12 @@ Config.Sounds = {
 	Coin = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.6, Pitch = { 1.8, 2.1 } },
 	Sneak = { Id = "rbxasset://sounds/action_footsteps_plastic.mp3", Volume = 0.9, Pitch = { 1.7, 1.8 } }, -- quick feet
 	Land = { Id = "rbxasset://sounds/action_jump_land.mp3", Volume = 1, Pitch = { 0.6, 0.7 } },
+	-- pet moves (made from code: art/sounds/pet_sounds.py; played by PetFollow at the pet, quiet, a few times a minute)
+	PetPounce = { Id = "rbxassetid://108573592683800", Volume = 0.45, Pitch = { 0.96, 1.04 } },
+	PetRally = { Id = "rbxassetid://138761381729872", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetMark = { Id = "rbxassetid://99606147842320", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetSpark = { Id = "rbxassetid://107579833673360", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetDig = { Id = "rbxassetid://73012526581803", Volume = 0.4, Pitch = { 0.96, 1.04 } },
 }
 
 -- how far a point is from the middle line of the path

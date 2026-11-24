@@ -51,6 +51,56 @@ def filled(img, valid):
     return img[idx[0], idx[1]], dist
 
 
+def simple_hood(res, todo, p, n, k_of, where, fills, lo, ext, BX, N, shape):
+    """round D fix (coordinator 2026-11-24): the hood's outside made simple. The painting's green with the back
+    painting's soft centre ridge and gentle shading, every view blended by how squarely it faces it with no cut-off
+    (facing squared, so a view fades out over 90 degrees, never in a band), all views softened so no painted shape
+    lands on it (the back 4 px, the sides 12 px), and the sides' streaks near the trim at half their contrast."""
+    hood = k_of == "green"
+    if not hood.any():
+        return res
+    P, Nn = p[hood], n[hood]
+    X, Y, Z = P[:, 0], P[:, 1], P[:, 2]
+    py = G - Z / S
+    acc = np.zeros((len(P), 3), np.float32)
+    wsum = np.zeros(len(P), np.float32)
+    wback = np.zeros(len(P), np.float32)
+    for view, toward, px, rcol, sigma in (("back", (0, 1, 0), BX - X / S, N / 2 - X / S, 3),
+                                          ("right", (-1, 0, 0), SX - Y / S, N / 2 - Y / S, 12),
+                                          ("left", (1, 0, 0), SX - Y / S, N / 2 + Y / S, 12),
+                                          ("front", (0, -1, 0), CX + X / S, N / 2 + X / S, 12)):
+        f = np.clip(Nn @ np.array(toward, dtype=float), 0, 1) ** 2
+        ri, ci = np.clip(py.astype(int), 0, N - 1), np.clip(rcol.astype(int), 0, N - 1)
+        wm = where[view][ri, ci]
+        q = wm[:, :3] * ext + lo
+        seen = (wm[:, 3] > 0.5) & (np.linalg.norm(q - P, axis=1) < 0.05)
+        img, dist = fills[(view, "green")]
+        soft = cv2.GaussianBlur(img, (0, 0), sigma)
+        pxi, pyi = np.clip(px.astype(int), 0, soft.shape[1] - 1), np.clip(py.astype(int), 0, soft.shape[0] - 1)
+        w = np.where(seen, f, 0) * np.clip(1 - dist[pyi, pxi] / 12, 0, 1)
+        acc += soft[pyi, pxi] * w[:, None]
+        wsum += w
+        if view == "back":
+            wback = w
+    mean = np.median(fills[("back", "green")][0][fills[("back", "green")][1] == 0], axis=0)
+    col = np.where((wsum > 1e-3)[:, None], acc / np.maximum(wsum, 1e-3)[:, None], mean)
+    a = np.clip(wsum / 0.15, 0, 1)[:, None]
+    col = col * a + mean * (1 - a)
+    # the sides at half contrast round their own mean (where the back view does not lead)
+    side = 1 - np.clip(wback / np.maximum(wsum, 1e-3), 0, 1)
+    col = col - 0.5 * side[:, None] * (col - mean)
+    img = np.zeros(shape + (3,), np.float32)
+    msk = np.zeros(shape, np.float32)
+    idx = np.argwhere(todo)[hood]
+    img[idx[:, 0], idx[:, 1]] = col
+    msk[idx[:, 0], idx[:, 1]] = 1
+    # soften once more in the texture (no hard step where a texel's views change)
+    blur = cv2.GaussianBlur(img, (0, 0), 3) / np.maximum(cv2.GaussianBlur(msk, (0, 0), 3), 1e-3)[..., None]
+    out = res.copy()
+    out[idx[:, 0], idx[:, 1]] = blur[idx[:, 0], idx[:, 1]]
+    return out
+
+
 def main():
     build, painted, out = (os.path.abspath(a) for a in sys.argv[1:4])
     os.makedirs(out, exist_ok=True)
@@ -149,6 +199,8 @@ def main():
         sub = base[todo]
         sub = sub * (1 - alpha[:, None]) + (acc / np.maximum(wsum, 1e-6)[:, None]) * alpha[:, None]
         res[todo] = sub
+        if part == "head":
+            res = simple_hood(res, todo, p, n, k_of, where, fills, lo, ext, BX, N, tg.shape)
         report[part]["painted_share"] = round(float((alpha > 0.5).mean()) if len(alpha) else 0, 3)
         Image.fromarray((np.clip(res, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out, f"{NAME}_{part}_paint.png"))
     for f in (NAME + ".fbx", f"{NAME}_bow_paint.png", f"{NAME}_quiver_paint.png", "gates_build.json"):

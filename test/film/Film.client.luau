@@ -486,7 +486,7 @@ local function cameraReport(tag)
 end
 -- (the film's own close shots leave the camera low and near: for the measure the run camera's start is put back as
 -- RunCamera.client.luau sets it, behind the hero facing the wave, and held while it is measured)
-local function runView(tag)
+local function runView(tag, rc)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return
@@ -501,7 +501,7 @@ local function runView(tag)
 	local toward = n > 0 and sum / n or Vector3.new(Config.Path[1].X, root.Position.Y, Config.Path[1].Z)
 	local look = ((toward - root.Position) * Vector3.new(1, 0, 1))
 	look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
-	local rc = Config.RunCamera
+	rc = rc or Config.RunCamera
 	local aim = root.Position + Vector3.new(0, rc.AimHeight, 0)
 	local eye = aim - look * rc.Distance * math.cos(math.rad(rc.Pitch)) + Vector3.new(0, rc.Distance * math.sin(math.rad(rc.Pitch)), 0)
 	local cf = CFrame.lookAt(eye, aim)
@@ -517,8 +517,26 @@ local function runView(tag)
 end
 mark("wave")
 Remotes.StartWave:FireServer()
-task.delay(2.5, runView, "wave start")
-task.delay(12, runView, "mid wave")
+-- (the three starting views from the camera trial, at the same moment and spot, one after the other)
+local VIEWS = { { "42 deg", { Pitch = 42, Distance = 20.5, AimHeight = 0 } }, { "32 deg", { Pitch = 32, Distance = 20.5, AimHeight = 0 } },
+	{ "32 deg aim 3", { Pitch = 32, Distance = 20.5, AimHeight = 3 } } }
+task.delay(2.5, function()
+	for _, v in VIEWS do
+		runView(v[1] .. " wave start", v[2])
+	end
+end)
+task.delay(12, function()
+	for _, v in VIEWS do
+		runView(v[1] .. " mid wave", v[2])
+	end
+	-- the player's own control after the run camera's start (2026-11-24: the right stick must still tilt and turn
+	-- it): the camera is the follow camera on the hero, with the zoom range open
+	local cam = workspace.CurrentCamera
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	mark(string.format("camera control: type %s, subject %s, zoom %.1f-%.1f, offset %s", tostring(cam.CameraType),
+		cam.CameraSubject and cam.CameraSubject.ClassName or "none", player.CameraMinZoomDistance, player.CameraMaxZoomDistance,
+		hum and tostring(hum.CameraOffset) or "?"))
+end)
 -- framing measured while the wave runs, with the player's own camera (rule, 2026-11-22: the hero is 12-15% of the
 -- screen height, a monster is on screen for at least 80% of the wave, and a monster is at least 6% tall)
 local samples, withMonster, heroSum, heroN, monsterMax = 0, 0, 0, 0, 0

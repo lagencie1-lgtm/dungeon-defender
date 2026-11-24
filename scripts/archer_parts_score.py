@@ -226,6 +226,19 @@ def score(fbx):
         vals = [v[part]["dE"] for v in (out.get(part) or {}, out["side"].get(part) or {}, out["back"].get(part) or {}) if v and "dE" in v]             if False else [x for x in ((out.get(part) or {}).get("dE"), (out["side"].get(part) or {}).get("dE"), (out["back"].get(part) or {}).get("dE")) if x is not None]
         out["three_views"][part] = round(float(np.mean(vals)), 1) if vals else None
     out["hood_back_p99"] = (out["back"].get("hood") or {}).get("p99")
+    # round D fix: no shape on the hood's back stronger than the painting's own (its ridge): edge strength (Sobel on
+    # L*, 99th percentile) on the hood 6 px in from its outline, model against the back painting
+    model, paint = render_view(fbx, "back")[:2]
+    hm = view_parts(paint, "back")["hood"]
+    hm = (cv2.erode(hm.astype(np.uint8), np.ones((13, 13), np.uint8)) > 0) & (model[..., 3] > 0.5)
+
+    def edges(rgb):
+        L = lab(rgb.astype(np.float32))[..., 0]
+        L = cv2.GaussianBlur(L, (0, 0), 1)
+        return np.hypot(cv2.Sobel(L, cv2.CV_32F, 1, 0), cv2.Sobel(L, cv2.CV_32F, 0, 1))
+    em, ep = edges(model[..., :3]), edges(paint)
+    out["hood_back_edges"] = {"model_p99": round(float(np.percentile(em[hm], 99)), 1), "painting_p99": round(float(np.percentile(ep[hm], 99)), 1)}
+    out["hood_back_edges"]["ok"] = out["hood_back_edges"]["model_p99"] <= out["hood_back_edges"]["painting_p99"]
     out["doubled"] = doubled(fbx)
     # a picture: painting | model | difference on the face, for the review
     y0, y1, x0, x1 = 90, 340, 170, 470

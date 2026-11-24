@@ -26,8 +26,9 @@ Config.OutpostCenter = Vector3.new(0, 0, 1600) -- the hub, far from the battlefi
 Config.HubVersion = "Keep"
 
 -- the camera at a run's start (src/client/RunCamera.client.luau): degrees down, studs from the hero, and how far above
--- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Today's: 42, 20.5, 0.
-Config.RunCamera = { Pitch = 42, Distance = 20.5, AimHeight = 0 }
+-- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Was 42, 20.5, 0;
+-- 2026-11-24 the camera trial (reviews/camera/starting_views.png): 32 degrees aimed 3 studs up, in the test build.
+Config.RunCamera = { Pitch = 32, Distance = 20.5, AimHeight = 3 }
 
 Config.StartGold = 200
 Config.PortalHealth = 100

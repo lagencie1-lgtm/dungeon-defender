@@ -2,6 +2,8 @@
 
 A co-op tower defense game for Roblox (first called Realm Guardians). The game idea is in `Game_Idea`.
 
+[Tower defense research](docs/tower-defense-research.md) covers Roblox competitors, the Dungeon Defenders series, player feedback, and design opportunities for this game.
+
 The scripts live in `src/` as normal files. Rojo copies them into Roblox Studio live while you work.
 
 ## How to play (first version)

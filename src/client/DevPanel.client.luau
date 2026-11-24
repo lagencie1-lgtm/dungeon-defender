@@ -39,6 +39,8 @@ local GRANTS = {
 	{ Id = "Mana", Text = "+1000 Mana", Color = Ui.MANA },
 	{ Id = "HeroLevel", Text = "Hero +1 level", Color = Color3.fromRGB(255, 170, 110) },
 	{ Id = "SeasonLevel", Text = "Season +1 level", Color = Color3.fromRGB(150, 230, 140) },
+	{ Id = "PetDust", Text = "+500 Pet Dust", Color = Color3.fromRGB(200, 170, 255) },
+	{ Id = "FivePets", Text = "+5 Slimey", Color = Color3.fromRGB(255, 196, 60) },
 }
 
 local gui = make("ScreenGui", { Name = "DevPanel", ResetOnSpawn = false, DisplayOrder = 6,

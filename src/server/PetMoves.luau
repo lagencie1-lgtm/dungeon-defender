@@ -39,9 +39,10 @@ local function rootOf(player)
 	return nil
 end
 
--- 10% more per pet level, x1.5 when evolved (the same growth as the pet's bonus, a bit gentler on evolving)
+-- 10% more per pet level, x1.5 when evolved (the same growth as the pet's bonus, a bit gentler on evolving),
+-- x1.25 Golden and x1.5 Rainbow (Config.PetTiers Move)
 local function strength(pet)
-	return (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 1.5 or 1)
+	return (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 1.5 or 1) * Config.PetTierOf(pet).Move
 end
 
 local function waitFor(pet, seconds)
@@ -229,7 +230,7 @@ local function fetchStep(player, pet, root)
 	if trip.busy or os.clock() < trip.next then
 		return
 	end
-	local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true)
+	local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true, pet.tier)
 	local at, load = pickLoot(player, root, carry)
 	if not at then
 		trip.next = os.clock() + 0.5

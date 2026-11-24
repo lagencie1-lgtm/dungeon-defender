@@ -12,7 +12,7 @@ local EVENTS = {
 local FUNCTIONS = { "GearSet", "AutoSalvage", "PlaceTower", "UpgradeTower", "SellTower", "BuyItem", "EquipItem", "ClaimDaily",
 	"EquipGear", "UpgradeGear", "SalvageGear", "GetInventory", "SelectHero", "SpendPoint", "ResetPoints",
 	"ClaimQuest", "GetQuests", "Rebirth", "SpendAscension", "RedeemCode", "BuySkin", "EquipSkin", "ClaimSeason", "GetSeason",
-	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets", "GetLookPreview" }
+	"HatchEgg", "EquipPet", "EvolvePet", "ReleasePet", "GetPets", "GetLookPreview", "FusePet", "FuseAllPets", "BuyPetWithDust" }
 
 local Remotes = {}
 

@@ -192,6 +192,24 @@ for _ = 1, 3 do
 		log("equip pet", Remotes.EquipPet:InvokeServer(pet.id))
 	end
 end
+-- Golden and Rainbow fusing, Pet Dust (PetService)
+log("fuse a bad kind (should fail)", Remotes.FusePet:InvokeServer("Nope", 0))
+log("fuse past Rainbow (should fail)", Remotes.FusePet:InvokeServer("Slimey", 2))
+local devGrant = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("DevGrant", 10)
+if devGrant then
+	log("dev +5 Slimey", devGrant:InvokeServer("FivePets"))
+	local fusedOk, fused = Remotes.FuseAllPets:InvokeServer()
+	log("fuse all", fusedOk, fusedOk and fused[1] and (fused[1].kind .. " tier " .. tostring(fused[1].tier)) or fused)
+	log("dev +500 Pet Dust", devGrant:InvokeServer("PetDust"))
+	local boughtOk, bought = Remotes.BuyPetWithDust:InvokeServer("MossKitten")
+	log("buy with Dust", boughtOk, boughtOk and bought.kind or bought)
+	if boughtOk then
+		log("recycle it", Remotes.ReleasePet:InvokeServer(bought.id))
+	end
+	local _, _, _, _, _, dustLeft = Remotes.GetPets:InvokeServer()
+	log("Pet Dust left", dustLeft)
+end
+log("buy a Mythic with no Dust (should fail)", Remotes.BuyPetWithDust:InvokeServer("VoidDrake"))
 log("quests", #Remotes.GetQuests:InvokeServer())
 log("claim quest 1", Remotes.ClaimQuest:InvokeServer(1))
 task.delay(150, function()

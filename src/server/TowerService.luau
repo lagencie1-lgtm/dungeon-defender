@@ -241,6 +241,49 @@ local function useModel(model, towerType, at, drop, level, noArchers)
 	return true
 end
 
+-- a stand-in in the tower's own colours and rough shape (2026-11-24, research brief: "towers must be visible while
+-- art loads"): a body, a top and a weapon block, the look's own footprint and height. It is there from the first
+-- frame; each client hides it as soon as that look's meshes and textures are in (TowerStandIn.client.luau)
+local STAND_IN = {
+	Ranger = { body = Color3.fromRGB(205, 185, 150), top = Color3.fromRGB(150, 70, 50), weapon = Color3.fromRGB(70, 140, 60), taper = 0.85 },
+	FlameCannon = { body = Color3.fromRGB(120, 72, 40), top = Color3.fromRGB(200, 150, 60), weapon = Color3.fromRGB(150, 85, 45), taper = 0.75 },
+	FrostCrystal = { body = Color3.fromRGB(215, 200, 180), top = Color3.fromRGB(240, 245, 250), weapon = Color3.fromRGB(130, 200, 245), taper = 0.7 },
+	StormObelisk = { body = Color3.fromRGB(200, 185, 165), top = Color3.fromRGB(110, 95, 115), weapon = Color3.fromRGB(170, 120, 240), taper = 0.5 },
+	Ballista = { body = Color3.fromRGB(205, 190, 160), top = Color3.fromRGB(120, 70, 40), weapon = Color3.fromRGB(150, 90, 50), taper = 0.9 },
+}
+
+local function setStandIn(model, towerType, at, height)
+	local old = model:FindFirstChild("StandIn")
+	if old then
+		old:Destroy()
+	end
+	local c = STAND_IN[towerType]
+	if not c or not height then
+		return
+	end
+	local holder = Instance.new("Model")
+	holder.Name = "StandIn"
+	local function part(name, size, cf, color, shape)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color
+		p.Material = Enum.Material.SmoothPlastic
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		if shape then
+			p.Shape = shape
+		end
+		p.Parent = holder
+	end
+	local w = 4.6
+	local bodyH = height * 0.6
+	part("Body", Vector3.new(bodyH, w, w), at * CFrame.new(0, bodyH / 2, 0) * CFrame.Angles(0, 0, math.rad(90)), c.body, Enum.PartType.Cylinder)
+	part("Top", Vector3.new(height * 0.22, w * c.taper, w * c.taper), at * CFrame.new(0, bodyH + height * 0.11, 0) * CFrame.Angles(0, 0, math.rad(90)), c.top, Enum.PartType.Cylinder)
+	part("Weapon", Vector3.new(w * 0.45, height * 0.18, w * 0.75), at * CFrame.new(0, height * 0.91, 0), c.weapon)
+	holder.Parent = model
+end
+
 local function setLevelLabel(model, level)
 	local gui = model:FindFirstChild("LevelLabel")
 	if not gui then
@@ -359,6 +402,9 @@ function TowerService.Place(player, towerType, position)
 		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
 	end
 	model.PrimaryPart = model:FindFirstChild("Base")
+	if model:FindFirstChild("Look") then
+		setStandIn(model, towerType, at, select(2, lookFor(towerType, 1)))
+	end
 	if typeof(player) == "Instance" then
 		StoreService.ApplyModelSkin(model, StoreService.SkinFor(player, towerType))
 	end
@@ -436,6 +482,7 @@ function TowerService.Upgrade(_player, model)
 		oldLook:Destroy()
 		local at = CFrame.new(t.position)
 		useModel(model, t.type, at, 0, t.level, true) -- (the archers step up after the settle, so they never stretch)
+		setStandIn(model, t.type, at, height)   -- (the new look may still be loading on a phone)
 		local look = model:FindFirstChild("Look")
 		if muzzle then
 			t.muzzle = t.position + muzzle

@@ -34,6 +34,21 @@ one shot is split across the visible weapons (src/server/TowerService.luau `shoo
 
 Each level's muzzles come from the builders' MUZZLE lines (`LEVEL_LOOKS[...].Muzzles` for the two-weapon levels).
 
+### Visible while art loads, and on low effects (2026-11-24)
+
+- **Preload:** as the models load on the server, ArtService writes each tower look's mesh and texture ids to
+  `ReplicatedStorage.TowerAssets`; `src/client/TowerStandIn.client.luau` fetches them all (ContentProvider:PreloadAsync)
+  as a run starts loading.
+- **Stand-in:** every placed tower carries a `StandIn` model (TowerService `setStandIn`): a body, a top and a weapon
+  block in the tower's own colours, its footprint and its look's height. Each client shows it until that look's meshes
+  and textures are fetched, then hides it (no pop: same footprint and height). Upgrades set a new one for the new look.
+- **Measured in the film** (Studio on Lemp's PC; its asset cache is warm, a phone's first run will be slower):
+  stand-in drawn 0.05-0.10 s after the tap, swapped for the real look 0.37-0.65 s after it (gates 0.3 s and 1 s).
+- **Low effects:** a LocalScript may not set Roblox's graphics level ("lacking capability RobloxScript"), so the
+  film's low-effects pictures are an approximation: shadows and every post effect (bloom, sun rays, colour grading,
+  depth of field) turned off on that client. Materials and draw distance, which graphics level 1 also lowers, cannot be
+  changed from a script.
+
 ## The pipeline, per tower (Blender from code, no Tripo; Lemp 2026-11-23)
 
 Lemp 2026-11-23: "you make a better workflow to make something amazing ... without the need of Tripo". Hub buildings

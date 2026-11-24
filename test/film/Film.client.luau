@@ -446,7 +446,7 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
 	-- and tower-coloured on screen. Measured every frame on this client: when the tower's model arrives, when its
 	-- first part is drawn (a part with a size), and when every mesh and texture of its look has been fetched
 	local tTap = os.clock()
-	local tModel, tPart, tMeshes = nil, nil, nil
+	local tModel, tPart, tMeshes, tStand, tSwap = nil, nil, nil, nil, nil
 	local ContentProvider = game:GetService("ContentProvider")
 	local watch = game:GetService("RunService").RenderStepped:Connect(function()
 		local now = os.clock() - tTap
@@ -478,12 +478,20 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
 		if all and any then
 			tMeshes = tMeshes or now
 		end
+		local si = t:FindFirstChild("StandIn")
+		if si and si:FindFirstChild("Body") and si.Body.LocalTransparencyModifier < 1 then
+			tStand = tStand or now   -- (the stand-in is drawn)
+		end
+		if si and si:GetAttribute("Hidden") then
+			tSwap = tSwap or now     -- (and swapped for the real look)
+		end
 	end)
 	local okPlace = Remotes.PlaceTower:InvokeServer(kind, spot)
 	task.wait(2.2)
 	watch:Disconnect()
-	mark(string.format("load %s: model %.2f s, first part drawn %.2f s, every mesh and texture %s after the tap", kind,
-		tModel or -1, tPart or -1, tMeshes and string.format("%.2f s", tMeshes) or "not within 2.2 s"))
+	mark(string.format("load %s: model %.2f s, first part drawn %.2f s, every mesh and texture %s, stand-in drawn %s, swapped %s after the tap", kind,
+		tModel or -1, tPart or -1, tMeshes and string.format("%.2f s", tMeshes) or "not within 2.2 s",
+		tStand and string.format("%.2f s", tStand) or "never", tSwap and string.format("%.2f s", tSwap) or "not within 2.2 s"))
 	local tower
 	for _, t in workspace.Towers:GetChildren() do
 		if t:GetAttribute("TowerType") == kind or t.Name == kind then

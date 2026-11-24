@@ -130,6 +130,23 @@ function ArtService.Start()
 			if #holder:GetChildren() > 0 then
 				holder.Parent = models
 				print("Art: model " .. name .. " loaded, " .. #holder:GetChildren() .. " parts")
+				-- (2026-11-24, towers visible while art loads): the meshes and textures a placed tower will need, for the
+				-- client to fetch as a run starts loading (src/client/TowerStandIn.client.luau): one attribute per model
+				if name:sub(1, 6) == "tower_" or name == "ranger_archer" then
+					local list = {}
+					for _, p in holder:GetChildren() do
+						if p:IsA("MeshPart") then
+							table.insert(list, p.MeshId)
+							if p.TextureID ~= "" then
+								table.insert(list, p.TextureID)
+							end
+						end
+					end
+					local pre = ReplicatedStorage:FindFirstChild("TowerAssets") or Instance.new("Folder")
+					pre.Name = "TowerAssets"
+					pre.Parent = ReplicatedStorage
+					pre:SetAttribute(name, table.concat(list, " "))
+				end
 			else
 				warn("Art: could not load model " .. name .. " " .. tostring(asset))
 			end

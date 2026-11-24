@@ -9,10 +9,11 @@ Pieces (front faces -Y, the long side runs along X, studs):
   pillar    a broken column, 6.5 high, its top drum lying beside it
   bridge    a plank deck 15 x 16 with a stone parapet and end posts on each side (lies on the lane across a channel)
   set       the theme's own piece: a trilithon of standing stones / a fire brazier / a crystal cart on its rails
-  face      a retaining wall for the edge of raised ground: 12 long, big stones from 1.5 below the ground to a coping
-            at 5.5 (the top of ground raised 5; sink it by 1 for ground raised 4)
-  stairs    stone steps up raised ground: 7 wide, five steps to 5 high over a run of 6.5, cheek walls; the top step
-            is at the origin, the steps come down towards the front
+  face      a retaining wall for the edge of raised ground: 12 long, big stones from 1.5 below the ground, with a rim
+            of flagstones on top (at 5.15, for ground raised 5; sink it by 1 for ground raised 4) that reaches 5.2
+            studs back over the bevel of the terrain
+  stairs    a flight of five steps that runs along a retaining wall, in front of its face: 6.5 long, 2.8 deep, from
+            5 high at one end down to 1, with an outer cheek and a newel at the foot
 Run: blender -b -P map_kit.py -- out.fbx <piece> <theme>
 """
 import math
@@ -280,39 +281,47 @@ elif piece == "set":
                   (rnd.uniform(-0.45, 0.45), rnd.uniform(-0.45, 0.45)), glow=(i % 3 == 0))
         rubble(3, 3.6, 1.8, kind="cap")
 elif piece == "face":
-    course_wall(12, 1.3, lambda x: 5.05, z0=-1.5, big=1.6)
-    # the coping: flat stones that overhang the face a little
-    x = -6.0
-    while x < 6.0:
-        w = min(rnd.uniform(2.6, 3.6), 6.0 - x)
-        if w > 0.6:
-            block((w - 0.05, 1.75, 0.5), (x + w / 2, -0.12, 5.25), "cap" if theme == "magma" else "stone", round_=0.1)
-        x += w
+    # the wall itself, from below the ground up to just under the rim
+    course_wall(12, 1.3, lambda x: 4.75, z0=-1.5, big=1.6)
+    # the rim: a walk of flagstones lying on top, from a little in front of the wall to 5.2 studs behind it.
+    # Terrain cannot stand upright: raised ground only reaches its full height 4 studs behind its edge (measured
+    # in the terrain lab), so the rim covers that bevel and the raised floor ends in stone, not in a sloping lawn.
+    for row, (y0, y1) in enumerate(((-0.95, 1.3), (1.3, 5.2))):
+        x = -6.0 - (rnd.uniform(0.8, 1.6) if row else 0.0)
+        while x < 6.0:
+            w = rnd.uniform(2.4, 3.6)
+            left, right = max(x, -6.0), min(x + w, 6.0)
+            if right - left > 0.5:
+                block((right - left - 0.05, y1 - y0 - 0.05, 0.55), ((left + right) / 2, (y0 + y1) / 2, 4.87 + rnd.uniform(-0.02, 0.02)),
+                      "cap" if theme == "magma" else "stone", round_=0.08)
+            x += w
     if theme == "forest":
-        moss((rnd.uniform(-4, 4), -0.2, 5.5), (2.6, 1.6, 0.26))
+        moss((rnd.uniform(-4, 4), 0.2, 5.15), (2.6, 1.6, 0.22))
         moss((rnd.uniform(-5, 5), -0.75, 2.4), (1.8, 0.5, 0.5))
     elif theme == "magma":
-        seam((rnd.uniform(-3.5, 3.5), -0.69, rnd.uniform(3.4, 4.4)), rnd.uniform(2.2, 3.0))
+        seam((rnd.uniform(-3.5, 3.5), -0.69, rnd.uniform(3.2, 4.2)), rnd.uniform(2.2, 3.0))
     else:
-        shard((rnd.uniform(-4, 4), -0.5, 5.3), rnd.uniform(1.2, 1.9), 0.38, (rnd.uniform(-0.2, 0.2), -0.25), glow=True)
+        shard((rnd.uniform(-4, 4), -0.5, 5.0), rnd.uniform(1.2, 1.9), 0.38, (rnd.uniform(-0.2, 0.2), -0.25), glow=True)
 elif piece == "stairs":
-    steps, rise, run = 5, 1.0, 1.3
+    # A flight that runs ALONG a retaining wall, in front of its face (6A: stairs run along a wall). The wall goes on
+    # behind it unbroken; the top step arrives level with the wall's rim. Five steps from 5 down to 1, each 1.3 long
+    # and 2.8 deep, an outer cheek, a newel at the foot. The origin is on the wall's line, at the middle of the flight.
+    steps, rise, run, depth = 5, 1.0, 1.3, 2.8
+    y_mid = -0.65 - depth / 2
     for i in range(steps):
         top = 5.0 - i * rise
-        # each step is a solid block down to below the ground, a hair narrower than the one above it
-        block((6.0, run + 0.04, top + 1.5), (0, -(i + 0.5) * run, (top - 1.5) / 2), round_=0.08)
+        x = -2.6 + i * run
+        block((run + 0.04, depth, top + 1.5), (x, y_mid, (top - 1.5) / 2), round_=0.08)
         if theme != "forest":
             # a paler tread on each step, so the stairs read as stairs on a dark map
-            block((5.9, run - 0.1, 0.14), (0, -(i + 0.5) * run - 0.05, top + 0.05), "cap", round_=0.03)
-    for side in (-1, 1):
-        for i in range(steps):
-            top = 5.6 - i * rise
-            block((0.9, run + 0.06, top + 1.5), (side * 3.45, -(i + 0.5) * run, (top - 1.5) / 2), "cap" if theme == "magma" else "stone", round_=0.08)
-        block((1.2, 1.2, 1.6), (side * 3.45, -steps * run - 0.5, 0.8), round_=0.12)   # newel at the foot
-        if T["glow"]:
-            paint.glow(lib.box(f"Lamp{side}", (0.6, 0.6, 0.6), (side * 3.45, -steps * run - 0.5, 1.9), W, rotation=(0, 0, math.pi / 4)), T["glow"])
+            block((run - 0.1, depth - 0.1, 0.14), (x, y_mid, top + 0.05), "cap", round_=0.03)
+        # the outer cheek steps down with the flight
+        block((run + 0.06, 0.55, top + 2.1), (x, -0.65 - depth - 0.22, (top + 0.6 - 1.5) / 2), "cap" if theme == "magma" else "stone", round_=0.08)
+    block((1.1, 1.1, 2.2), (-2.6 + steps * run - 0.1, -0.65 - depth - 0.1, 1.1), round_=0.12)   # newel at the foot
+    if T["glow"]:
+        paint.glow(lib.box("Lamp", (0.6, 0.6, 0.6), (-2.6 + steps * run - 0.1, -0.65 - depth - 0.1, 2.5), W, rotation=(0, 0, math.pi / 4)), T["glow"])
     if theme == "forest":
-        moss((3.45, -1.0, 5.55), (0.9, 1.4, 0.2))
+        moss((-2.4, -0.65 - depth - 0.2, 5.7), (1.2, 0.7, 0.2))
 else:
     raise SystemExit("unknown piece " + piece)
 

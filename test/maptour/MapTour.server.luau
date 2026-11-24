@@ -79,7 +79,10 @@ for _, mapId in Config.MapOrder do
 			end
 		end
 		local note = string.format("%s %s: top %.2f..%.2f (wanted %d)", mapId, p.Name, low, high, p.H)
-		if math.abs(low - p.H) > 0.35 or math.abs(high - p.H) > 0.35 then
+		if low == math.huge then
+			-- (a narrow floor the lane runs along: every spot of its top is within the lane's reach, checked below)
+			log("ok", mapId, p.Name, "top is the lane's")
+		elseif math.abs(low - p.H) > 0.35 or math.abs(high - p.H) > 0.35 then
 			fail(note)
 		else
 			log("ok", note)
@@ -132,6 +135,27 @@ for _, mapId in Config.MapOrder do
 		local note = string.format("%s %s: %d of %d spots are liquid, surface %.2f..%.2f (%s)", mapId, c.Name, wet, seen, low, high,
 			table.concat(names, ", "))
 		if wet < seen * 0.9 or high > -0.1 then
+			fail(note)
+		else
+			log("ok", note)
+		end
+	end
+
+	-- 1c. nothing built stands alone (reviews/maps/placement-rules.md)
+	if MapLayouts and MapLayouts.Loose then
+		local loose = MapLayouts.Loose(layout)
+		local names = {}
+		for _, t in loose do
+			table.insert(names, string.format("%s of %s at %d, %d", t.Name, t.Set, t.At.X, t.At.Z))
+		end
+		local things = MapLayouts.Things(layout)
+		local sets = 0
+		for _ in layout.Sets or {} do
+			sets += 1
+		end
+		local note = string.format("%s placement: %d things in %d sets, %d stand alone %s", mapId, #things, sets, #loose,
+			table.concat(names, "; "))
+		if #loose > 0 then
 			fail(note)
 		else
 			log("ok", note)
@@ -219,13 +243,14 @@ for _, mapId in Config.MapOrder do
 	-- 4. a wave standing along the whole lane (frozen), so the stills show monsters on ramps and bridges
 	local names = {}
 	for name, stats in Config.Enemies do
-		if not stats.Summon and not stats.Boss then
+		-- (small ones only: a frozen boss or a giant slime hides the map it stands on)
+		if not stats.Summon and not stats.Boss and (stats.Size or 3) <= 3 then
 			table.insert(names, name)
 		end
 	end
 	table.sort(names)
 	local n = 0
-	for d = 6, length - 10, 9 do
+	for d = 6, length - 10, 13 do
 		n += 1
 		EnemyService.Spawn(names[n % #names + 1], 1000, d)
 	end
@@ -246,7 +271,7 @@ for _, mapId in Config.MapOrder do
 	-- a few defenders beside the lane as a player would build them
 	local rng = Random.new(5)
 	local built, tries = 0, 0
-	while built < 14 and tries < 4000 do
+	while built < 9 and tries < 4000 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 8, half.X - 8), 0, rng:NextNumber(-half.Y + 8, half.Y - 8))
 		local d = Config.DistanceToPath(pos)

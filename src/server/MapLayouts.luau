@@ -3,15 +3,19 @@
 -- stairs, pits of lava the lanes cross on bridges, walls that leave a few good building spots at each chokepoint.
 -- Here every map gets that as DATA, placed by hand for a reason (6A: a person leads the concept, nothing random):
 --   Plateaus  raised, flat ground you can build on (high ground beside a lane); the lane climbs any it crosses.
---             Stone retaining walls stand on its straight edges (Walls = which sides, "NSEW" unless given; N is the
---             edge at Z0, S at Z1, W at X0, E at X1) so the height reads from above, with Stairs where a hero goes
---             up ({ Side, At = how far along that edge, 0..1 })
+--             Stone retaining walls with a flagstone rim stand along its straight edges (Walls = which sides,
+--             "NSEW" unless given; N is the edge at Z0, S at Z1, W at X0, E at X1), a Parapet (low battlement) on
+--             top of the walls of the sides named, and Stairs: flights that run along a wall ({ Side, At = where
+--             along that side, 0 = its start, 1 = its end })
 --   Channels  a river, a lava stream or a glowing canal: nothing builds there, the lane crosses on a bridge
 --   Masses    solid rock or wood that fills the corners no lane uses, so the field is not a rectangle
 --   Bridges   where a channel is crossed: a stone abutment with a plank deck and parapets (the lane's, or a hero's)
---   Kit       the building kit (art/blender/map_kit.py): ruined walls, low battlements, gate arches over the lane,
---             broken pillars and one set piece per map. `Look` is where the piece's front faces; a wall runs across it.
---   Pieces    other models standing on the field (rocks, stumps, the old props ...) with the room they block
+--   Sets      everything else that stands on the field, as a few named compositions (reviews/maps/placement-rules.md:
+--             the floor stays clean, pieces connect, few big set pieces, soft things are massed). A set has Kit
+--             pieces (art/blender/map_kit.py; `Look` is where a piece's front faces, a wall runs across it and is
+--             tall at its right-hand end seen from the front... measured: tall end = Look x up), Props (older
+--             models with the room they block) and a Grove (a clump of trees or crystals, each { At, H }).
+--             MapLayouts.Loose lists anything that stands alone; the map tour fails on it.
 -- TerrainBuilder shapes the ground from it, MapBuilder stands the pieces on it. Heights are "top at y" in studs;
 -- flat ground is y = 0. Height rule: 4 studs (one terrain voxel) is exact for every material; 5 is fine on grass and
 -- the ash floors, but the caves' smooth floor material swells to 6 at 5 (measured in the terrain lab). Camera rule: nothing raised inside the field is higher than 5 studs, because the run camera
@@ -21,18 +25,20 @@ local MapLayouts = {}
 local v = Vector3.new
 
 MapLayouts.Forest = {
+	-- how far outside a plateau's edge its retaining wall stands (see TerrainBuilder: the ground is 1 stud high there)
+	WallOut = 1,
 	Plateaus = {
 		-- the old keep's hill inside the loop of the road: the hero starts on it and sees three lanes below
-		{ Name = "Keep Hill", X0 = -14, X1 = 2, Z0 = -34, Z1 = 0, H = 4, Round = 5,
-			Stairs = { { Side = "E", At = 0.8 }, { Side = "W", At = 0.2 } } },
-		-- the Hollow Road: two wooded banks either side of the first stretch, so the goblins march in below you
+		{ Name = "Keep Hill", X0 = -14, X1 = 2, Z0 = -34, Z1 = 0, H = 4, Parapet = "S",
+			Stairs = { { Side = "E", At = 1 }, { Side = "W", At = 1 } } },
+		-- the Hollow Road: two wooded banks either side of the first stretch, so the goblins march in below you.
+		-- Walled on the road's side only: a canyon of masonry; their backs stay natural hillside
 		{ Name = "North Bank", X0 = -88, X1 = -40, Z0 = -76, Z1 = -54, H = 5, Round = 7, Walls = "S",
-			Stairs = { { Side = "S", At = 0.25 } } },
+			Stairs = { { Side = "S", At = 0 } } },
 		{ Name = "South Bank", X0 = -84, X1 = -42, Z0 = -34, Z1 = -14, H = 5, Round = 7, Walls = "N",
-			Stairs = { { Side = "N", At = 0.75 } } },
-		-- the portal stands on a rise: the last stretch climbs to it
-		{ Name = "Portal Rise", X0 = 72, X1 = 116, Z0 = 26, Z1 = 58, H = 4, Round = 8, Walls = "NSE",
-			Stairs = { { Side = "S", At = 0.3 } } },
+			Stairs = { { Side = "N", At = 0 } } },
+		-- the shrine the portal stands on: the last stretch climbs to it through the gate in its west wall
+		{ Name = "Portal Rise", X0 = 72, X1 = 116, Z0 = 30, Z1 = 54, H = 4, Walls = "NSE", Parapet = "NS" },
 	},
 	Channels = {
 		-- the Witchwater: comes down from the north, the road crosses it twice
@@ -50,74 +56,73 @@ MapLayouts.Forest = {
 		-- south-east below the rise
 		{ At = v(20, 0, 82), Radius = 18, H = 12 },
 	},
-	Pieces = {
-		-- the ruined watchtower stands on the south bank over the Hollow Road (the hill you start on stays free to build)
-		{ Model = "keep_field_ruin", At = v(-74, 0, -23), Height = 7.5, Block = 6, Turn = 0.4 },
-		-- the old well and a watchtower on the green between the last two lanes
-		{ Model = "keep_well", At = v(40, 0, 30), Height = 6.5, Block = 3 },
-		{ Model = "keep_watchtower", At = v(64, 0, 20), Height = 15, Block = 4, Turn = 2.2 },
-		-- boulders at the feet of the banks and beside the fords
-		{ Model = "keep_field_rock", At = v(-36, 0, -24), Height = 4.2, Block = 3.4, Turn = 1 },
-		{ Model = "keep_field_rock", At = v(24, 0, -44), Height = 3.8, Block = 3.2, Turn = 2 },
-		{ Model = "keep_field_rock", At = v(42, 0, -24), Height = 4.4, Block = 3.4, Turn = 4 },
-		{ Model = "keep_field_rock", At = v(62, 0, -14), Height = 3.6, Block = 3.2, Turn = 5 },
-		{ Model = "keep_field_rock", At = v(-34, 0, 22), Height = 4.6, Block = 3.6, Turn = 3 },
-		{ Model = "keep_field_stump", At = v(-46, 0, 2), Height = 2.6, Block = 1.9, Turn = 1 },
-		{ Model = "keep_field_stump", At = v(24, 0, 34), Height = 2.6, Block = 1.9, Turn = 2 },
-		{ Model = "keep_field_bush", At = v(-30, 0, -62), Height = 3.2, Block = 3.2, Turn = 0 },
-		{ Model = "keep_field_bush", At = v(2, 0, 22), Height = 3.2, Block = 3.2, Turn = 3 },
-		{ Model = "keep_field_bush", At = v(64, 0, 56), Height = 3.2, Block = 3.2, Turn = 1 },
-		{ Model = "keep_field_mushrooms", At = v(-20, 0, 24), Height = 2.2, Block = 1.2, Turn = 0 },
-		{ Model = "keep_field_mushrooms", At = v(40, 0, 8), Height = 2.2, Block = 1.2, Turn = 2 },
-	},
 	Bridges = {
 		{ At = v(32, 0, -34), Along = v(1, 0, 0) }, -- the first ford
 		{ At = v(52, 0, -6), Along = v(0, 0, 1) }, -- the second ford
 	},
-	Kit = {
-		-- two gates: where the Hollow Road opens into the field, and at the foot of the portal's rise
-		{ Piece = "arch", At = v(-38, 0, -44), Look = v(1, 0, 0), Sink = 0.3 },
-		{ Piece = "arch", At = v(64, 0, 42), Look = v(1, 0, 0), Sink = 0.9 },
-		-- the chapel wall splits the green: defenders west of it guard one lane, east of it the other
-		{ Piece = "wall", At = v(32, 0, 10), Look = v(1, 0, 0) },
-		{ Piece = "pillar", At = v(32, 0, 22), Look = v(0, 0, 1) },
-		-- an old wall on the north bank, looking down on the Hollow Road
-		{ Piece = "wall", At = v(-64, 0, -61), Look = v(0, 0, 1) },
-		-- the keep hill's battlements at its two ends (its long sides stay open for defenders)
-		{ Piece = "low", At = v(-6, 0, -31), Look = v(0, 0, -1) },
-		{ Piece = "low", At = v(-6, 0, -3), Look = v(0, 0, 1) },
-		-- the rise's battlements either side of the last stretch, and two pillars behind the portal
-		{ Piece = "low", At = v(86, 0, 31), Look = v(0, 0, -1) },
-		{ Piece = "low", At = v(86, 0, 53), Look = v(0, 0, 1) },
-		{ Piece = "pillar", At = v(109, 0, 33), Look = v(-1, 0, 0) },
-		{ Piece = "pillar", At = v(109, 0, 51), Look = v(-1, 0, 0) },
-		-- a milestone pillar on the outside of every turn (so you can call a place: "the second turn")
-		{ Piece = "pillar", At = v(-14, 0, -54), Look = v(0, 0, 1) },
-		{ Piece = "pillar", At = v(22, 0, 20), Look = v(-1, 0, 0) },
-		{ Piece = "pillar", At = v(62, 0, -44), Look = v(-1, 0, 0) },
-		{ Piece = "pillar", At = v(42, 0, 52), Look = v(0, 0, -1) },
-		-- the standing stones south-west of the road
-		{ Piece = "set", At = v(-48, 0, 22), Look = v(0.9, 0, -0.4) },
-	},
-	-- single trees inside the field, each placed (they block building: you can't stand a defender in a trunk)
-	Trees = {
-		v(-70, 0, -66), v(-52, 0, -68), v(-64, 0, -22), v(-50, 0, -24), v(-40, 0, 12), v(-56, 0, 26), v(-30, 0, 44),
-		v(-6, 0, 30), v(18, 0, 50), v(22, 0, -60), v(-22, 0, -68), v(44, 0, -54), v(72, 0, -38), v(84, 0, 12),
-		v(40, 0, 62), v(-102, 0, -20), v(-98, 0, -66),
+	Sets = {
+		{ Name = "The keep", Why = "the hill you start on is the old keep: its broken tower at the north end, parapet and stairs at the south end",
+			Props = { { Model = "keep_field_ruin", At = v(-6, 0, -26.5), Height = 9, Turn = 0, Block = 6 } } },
+		{ Name = "The Hollow Gate", Why = "a gate IN the canyon wall: its two piers are the ends of the banks' retaining walls",
+			Kit = { { Piece = "arch", At = v(-49, 0, -44), Look = v(1, 0, 0), Sink = 0.3 } } },
+		{ Name = "The chapel", Why = "one ruin in the pocket between the last two lanes: three walls, the two columns of its door, the well before the door, trees behind",
+			Kit = {
+				{ Piece = "wall", At = v(32, 0, 8), Look = v(0, 0, 1) }, -- the back wall (tall at its west corner)
+				{ Piece = "wall", At = v(26.6, 0, 16.5), Look = v(-1, 0, 0) }, -- the west wall, tall where it meets the back wall
+				{ Piece = "low", At = v(37.4, 0, 15), Look = v(1, 0, 0) }, -- what is left of the east wall
+				{ Piece = "pillar", At = v(28, 0, 27), Look = v(0, 0, 1) },
+				{ Piece = "pillar", At = v(36, 0, 27), Look = v(0, 0, 1) },
+			},
+			Props = {
+				{ Model = "keep_well", At = v(32, 0, 34.5), Height = 6.5, Block = 3 },
+				{ Model = "keep_field_bush", At = v(25.5, 0, 4.8), Height = 3.2, Block = 2.6, Turn = 1 },
+				{ Model = "keep_field_bush", At = v(38.5, 0, 4.6), Height = 2.8, Block = 2.4, Turn = 4 },
+			},
+			Grove = { { At = v(29, 0, -1.5), H = 19 }, { At = v(35.5, 0, 0.5), H = 15 }, { At = v(23.5, 0, -4), H = 13 } } },
+		{ Name = "The standing stones", Why = "a ring of three trilithons round a mushroom ring, with its own trees, in the pocket west of the road",
+			Kit = {
+				{ Piece = "set", At = v(-49.6, 0, 22.9), Look = v(0.17, 0, -0.98) },
+				{ Piece = "set", At = v(-54.9, 0, 8.2), Look = v(0.77, 0, 0.64) },
+				{ Piece = "set", At = v(-39.5, 0, 10.9), Look = v(-0.94, 0, 0.34) },
+			},
+			Props = {
+				{ Model = "keep_field_mushrooms", At = v(-48, 0, 15.6), Height = 2.2, Block = 1.2, Turn = 0 },
+				{ Model = "keep_field_mushrooms", At = v(-49.4, 0, 13.2), Height = 1.9, Block = 1.2, Turn = 2 },
+				{ Model = "keep_field_mushrooms", At = v(-46.6, 0, 13.2), Height = 2.0, Block = 1.2, Turn = 4 },
+			},
+			Grove = { { At = v(-66, 0, 8), H = 18 }, { At = v(-70.5, 0, 15), H = 14 }, { At = v(-64, 0, 19.5), H = 16 } } },
+		{ Name = "The shrine", Why = "the portal's platform: a gate in its west wall, parapets either side of the last stretch, two columns flanking the portal",
+			Kit = {
+				{ Piece = "arch", At = v(71, 0, 42), Look = v(1, 0, 0), Sink = 0.9 },
+				{ Piece = "pillar", At = v(109, 0, 35.5), Look = v(-1, 0, 0) },
+				{ Piece = "pillar", At = v(109, 0, 48.5), Look = v(-1, 0, 0) },
+			} },
+		-- the woods: trees stand in clumps on the far halves of the banks and at the field's edge, never one by one
+		{ Name = "The north wood", Why = "the far half of the north bank (its road side stays free for defenders)",
+			Grove = { { At = v(-72, 0, -70), H = 19 }, { At = v(-63.5, 0, -72), H = 15 }, { At = v(-55, 0, -69.5), H = 17 } } },
+		{ Name = "The south wood", Why = "the far half of the south bank",
+			Grove = { { At = v(-72, 0, -19.5), H = 17 }, { At = v(-63, 0, -17.5), H = 19 }, { At = v(-54.5, 0, -20), H = 14 } } },
+		{ Name = "The river wood", Why = "where the Witchwater comes out of the north-east rocks",
+			Grove = { { At = v(46, 0, -58), H = 18 }, { At = v(52, 0, -64), H = 15 }, { At = v(42, 0, -65.5), H = 13 } } },
+		{ Name = "The camp wood", Why = "behind the goblin camp",
+			Grove = { { At = v(-103, 0, -22), H = 17 }, { At = v(-108, 0, -14.5), H = 14 }, { At = v(-99, 0, -12), H = 19 } } },
 	},
 }
 
 MapLayouts.Magma = {
+	WallOut = 1,
 	Plateaus = {
-		-- three bastions of the old fortress: flat basalt floors a step above the ash
-		{ Name = "West Bastion", X0 = -50, X1 = -20, Z0 = -40, Z1 = -28, H = 5, Stairs = { { Side = "N", At = 0.5 } } },
-		{ Name = "Heart Bastion", X0 = 0, X1 = 30, Z0 = -12, Z1 = 30, H = 4,
+		-- the bastions of the old fortress: flat basalt floors a step above the ash, walled all round, with a
+		-- parapet on the side that faces the lava river (the fortress held the river's line)
+		-- (no bastion between the first two lanes north of the river: only 12 studs fit there, and a walled floor
+		-- that shallow has no room left to build on. That pocket is open floor.)
+		{ Name = "Heart Bastion", X0 = 0, X1 = 30, Z0 = -12, Z1 = 30, H = 4, Parapet = "N",
 			Stairs = { { Side = "W", At = 0.6 }, { Side = "E", At = 0.4 } } },
-		{ Name = "East Bastion", X0 = 50, X1 = 70, Z0 = -50, Z1 = -30, H = 5, Stairs = { { Side = "W", At = 0.5 } } },
-		{ Name = "Gate Yard", X0 = -50, X1 = -20, Z0 = 6, Z1 = 40, H = 4,
+		{ Name = "East Bastion", X0 = 50, X1 = 70, Z0 = -50, Z1 = -30, H = 5, Parapet = "S", Stairs = { { Side = "W", At = 0 } } },
+		{ Name = "Gate Yard", X0 = -50, X1 = -20, Z0 = 6, Z1 = 40, H = 4, Parapet = "N",
 			Stairs = { { Side = "E", At = 0.5 }, { Side = "W", At = 0.5 } } },
-		-- the portal's keep: the last stretch climbs to it
-		{ Name = "Portal Keep", X0 = 90, X1 = 116, Z0 = 4, Z1 = 36, H = 4, Stairs = { { Side = "N", At = 0.3 } } },
+		-- the portal's keep: the last stretch climbs to it through the gate that is its whole west side
+		{ Name = "Portal Keep", X0 = 90, X1 = 116, Z0 = 10, Z1 = 30, H = 4, Walls = "NSE", Parapet = "NSE" },
 	},
 	Channels = {
 		-- the lava river cuts the whole fortress in two: four bridges
@@ -134,42 +139,37 @@ MapLayouts.Magma = {
 		{ At = v(-60, 0, -12), Along = v(0, 0, 1) }, { At = v(-10, 0, -16), Along = v(0, 0, 1) },
 		{ At = v(40, 0, -22), Along = v(0, 0, 1) }, { At = v(80, 0, -18), Along = v(0, 0, 1) },
 	},
-	Kit = {
-		-- the south gate under the heart bastion, and the gate of the portal's keep
-		{ Piece = "arch", At = v(15, 0, 40), Look = v(1, 0, 0), Sink = 0.3 },
-		{ Piece = "arch", At = v(88, 0, 20), Look = v(1, 0, 0), Sink = 0.9 },
-		-- battlements on the river side of every bastion (the fortress held the lava river's line)
-		{ Piece = "low", At = v(-35, 0, -30.5), Look = v(0, 0, 1) },
-		{ Piece = "low", At = v(8, 0, -9.5), Look = v(0, 0, -1) },
-		{ Piece = "low", At = v(60, 0, -32.5), Look = v(0, 0, 1) },
-		{ Piece = "low", At = v(-35, 0, 8.5), Look = v(0, 0, -1) },
-		-- what is left of the outer curtain wall, behind the lanes
-		{ Piece = "wall", At = v(-82, 0, 44), Look = v(0, 0, 1) },
-		{ Piece = "wall", At = v(60, 0, -76), Look = v(0, 0, 1) },
-		{ Piece = "wall", At = v(98, 0, -36), Look = v(-1, 0, 0) },
-		{ Piece = "wall", At = v(-78, 0, -32), Look = v(1, 0, 0) },
-		-- pillars at the demon gate's road and behind the portal
-		{ Piece = "pillar", At = v(-92, 0, 49), Look = v(0, 0, 1) },
-		{ Piece = "pillar", At = v(-92, 0, 71), Look = v(0, 0, -1) },
-		{ Piece = "pillar", At = v(110, 0, 10), Look = v(-1, 0, 0) },
-		{ Piece = "pillar", At = v(110, 0, 30), Look = v(-1, 0, 0) },
-		-- a fire brazier on the outside of every turn
-		{ Piece = "set", At = v(-50, 0, 70), Look = v(0, 0, -1) }, { Piece = "set", At = v(-70, 0, -60), Look = v(1, 0, 0) },
-		{ Piece = "set", At = v(0, 0, -60), Look = v(0, 0, 1) }, { Piece = "set", At = v(-20, 0, 50), Look = v(0, 0, -1) },
-		{ Piece = "set", At = v(50, 0, 50), Look = v(0, 0, -1) }, { Piece = "set", At = v(30, 0, -70), Look = v(0, 0, 1) },
-		{ Piece = "set", At = v(90, 0, -70), Look = v(0, 0, 1) }, { Piece = "set", At = v(70, 0, 30), Look = v(0, 0, -1) },
+	Sets = {
+		{ Name = "The south gate", Why = "a gate between the heart bastion's wall and the south curtain, which runs on to the rocks at the field's edge",
+			Kit = {
+				{ Piece = "arch", At = v(15, 0, 40), Look = v(1, 0, 0), Sink = 0.3 },
+				{ Piece = "wall", At = v(15, 0, 57.2), Look = v(-1, 0, 0) }, -- tall at the gate, breached in the middle
+				{ Piece = "wall", At = v(15, 0, 71.2), Look = v(1, 0, 0) }, -- tall again at the rocks
+			} },
+		{ Name = "The keep gate", Why = "the portal keep's west side is its gate, a fire either side of it",
+			Kit = {
+				{ Piece = "arch", At = v(89, 0, 20), Look = v(1, 0, 0), Sink = 0.9 },
+				{ Piece = "set", At = v(84.5, 0, 10.6), Look = v(-1, 0, 0) },
+				{ Piece = "set", At = v(84.5, 0, 29.4), Look = v(-1, 0, 0) },
+			} },
+		{ Name = "The demon gate's fires", Why = "two fires flank the road where it leaves the demon gate",
+			Kit = {
+				{ Piece = "set", At = v(-99, 0, 50), Look = v(1, 0, 0) },
+				{ Piece = "set", At = v(-99, 0, 70), Look = v(1, 0, 0) },
+			} },
 	},
-	Pieces = {},
-	Trees = {},
 }
 
 MapLayouts.Crystal = {
+	-- (the caves' smooth floor material stands up steeper than grass or ash: its walls stand 3 studs out)
+	WallOut = 3,
 	Plateaus = {
-		{ Name = "West Terrace", X0 = -56, X1 = -34, Z0 = -32, Z1 = 40, H = 4, Round = 4,
+		-- two long mine terraces between the tunnels: walled, a low wall across each end
+		{ Name = "West Terrace", X0 = -53, X1 = -37, Z0 = -32, Z1 = 40, H = 4, Parapet = "NS",
 			Stairs = { { Side = "W", At = 0.3 }, { Side = "E", At = 0.7 } } },
-		{ Name = "East Terrace", X0 = 24, X1 = 46, Z0 = -22, Z1 = 50, H = 4, Round = 4,
+		{ Name = "East Terrace", X0 = 27, X1 = 43, Z0 = -22, Z1 = 50, H = 4, Parapet = "NS",
 			Stairs = { { Side = "W", At = 0.7 }, { Side = "E", At = 0.3 } } },
-		{ Name = "Portal Ledge", X0 = 84, X1 = 116, Z0 = 26, Z1 = 56, H = 4, Round = 6, Stairs = { { Side = "S", At = 0.3 } } },
+		{ Name = "Portal Ledge", X0 = 84, X1 = 112, Z0 = 30, Z1 = 50, H = 4, Walls = "NSE", Parapet = "NSE" },
 	},
 	Channels = {
 		-- two glowing canals between the tunnels: one row of defenders fits on each bank
@@ -188,35 +188,90 @@ MapLayouts.Crystal = {
 		{ At = v(-84.6, 0, -10), Along = v(1, 0, 0) },
 		{ At = v(-5.7, 0, 10), Along = v(1, 0, 0) },
 	},
-	Kit = {
-		-- the mouth of the rift tunnel, and the gate of the portal's ledge
-		{ Piece = "arch", At = v(-105, 0, -54), Look = v(0, 0, 1), Sink = 0.3 },
-		{ Piece = "arch", At = v(80, 0, 40), Look = v(1, 0, 0), Sink = 0.9 },
-		-- low walls close the two ends of each terrace (their long sides stay open for defenders)
-		{ Piece = "low", At = v(-45, 0, -29.5), Look = v(0, 0, -1) },
-		{ Piece = "low", At = v(-45, 0, 37.5), Look = v(0, 0, 1) },
-		{ Piece = "low", At = v(35, 0, -19.5), Look = v(0, 0, -1) },
-		{ Piece = "low", At = v(35, 0, 47.5), Look = v(0, 0, 1) },
-		-- old mine walls at the edges of the cavern
-		{ Piece = "wall", At = v(-116, 0, 0), Look = v(1, 0, 0) },
-		{ Piece = "wall", At = v(92, 0, -44), Look = v(0, 0, 1) },
-		{ Piece = "wall", At = v(58, 0, 66), Look = v(0, 0, -1) },
-		-- the colonnade of the great hall, either side of the last stretch
-		{ Piece = "pillar", At = v(66, 0, 51), Look = v(0, 0, -1) },
-		{ Piece = "pillar", At = v(73, 0, 51), Look = v(0, 0, -1) },
-		{ Piece = "pillar", At = v(66, 0, 29), Look = v(0, 0, 1) },
-		{ Piece = "pillar", At = v(73, 0, 29), Look = v(0, 0, 1) },
-		-- crystal carts left on their rails
-		{ Piece = "set", At = v(-45, 0, 54), Look = v(0, 0, -1) },
-		{ Piece = "set", At = v(35, 0, -36), Look = v(0, 0, 1) },
-		{ Piece = "set", At = v(90, 0, 16), Look = v(0.3, 0, 1) },
+	Sets = {
+		{ Name = "The ledge gate", Why = "the portal ledge's west side is its gate; a colonnade of four columns lines the last stretch up to it",
+			Kit = {
+				{ Piece = "arch", At = v(81, 0, 40), Look = v(1, 0, 0), Sink = 0.9 },
+				{ Piece = "pillar", At = v(66, 0, 51), Look = v(0, 0, -1) },
+				{ Piece = "pillar", At = v(73.5, 0, 51), Look = v(0, 0, -1) },
+				{ Piece = "pillar", At = v(66, 0, 29), Look = v(0, 0, 1) },
+				{ Piece = "pillar", At = v(73.5, 0, 29), Look = v(0, 0, 1) },
+			} },
+		{ Name = "The loading dock", Why = "the mine's one working place: three carts on one track along the dock wall, the crystals they were loading at its end",
+			Kit = {
+				{ Piece = "set", At = v(68, 0, -40), Look = v(0, 0, 1) },
+				{ Piece = "set", At = v(75.5, 0, -40), Look = v(0, 0, 1) },
+				{ Piece = "set", At = v(83, 0, -40), Look = v(0, 0, 1) },
+				{ Piece = "wall", At = v(75, 0, -46), Look = v(0, 0, 1) },
+				{ Piece = "wall", At = v(89, 0, -46), Look = v(0, 0, -1) },
+			},
+			Grove = { { At = v(93, 0, -38.5), H = 16 }, { At = v(96.5, 0, -42.5), H = 10 }, { At = v(91, 0, -35), H = 6 } } },
+		-- crystals grow where the glowing water rises and where it pools: in clumps of big, middle, small
+		{ Name = "The west spring", Why = "where the west canal comes out of the rock",
+			Grove = { { At = v(-79, 0, -82), H = 15 }, { At = v(-76, 0, -77.5), H = 9 }, { At = v(-80.5, 0, -76), H = 5 } } },
+		{ Name = "The west pool", Why = "where the west canal ends",
+			Grove = { { At = v(-85, 0, 39), H = 16 }, { At = v(-80.5, 0, 42), H = 9 }, { At = v(-89, 0, 43), H = 6 } } },
+		{ Name = "The deep spring", Why = "where the deep canal comes out of the rock",
+			Grove = { { At = v(1, 0, -82), H = 15 }, { At = v(4, 0, -77.5), H = 9 }, { At = v(-0.5, 0, -76), H = 5 } } },
+		{ Name = "The deep pool", Why = "where the deep canal ends",
+			Grove = { { At = v(-5, 0, 41), H = 16 }, { At = v(-0.5, 0, 44), H = 9 }, { At = v(-9, 0, 45), H = 6 } } },
+		{ Name = "The hall spring", Why = "where the hall stream comes in from the east",
+			Grove = { { At = v(113, 0, -4), H = 15 }, { At = v(108.5, 0, 13.5), H = 9 }, { At = v(116, 0, -8), H = 6 } } },
 	},
-	Pieces = {},
-	Trees = {},
 }
 
 function MapLayouts.For(theme)
 	return MapLayouts[theme]
+end
+
+-- every placed thing of a layout, flat: { At, Radius, Kind = "kit" | "prop" | "grove", Set, Name }
+function MapLayouts.Things(layout)
+	local things = {}
+	for _, set in layout.Sets or {} do
+		for _, k in set.Kit or {} do
+			table.insert(things, { At = k.At, Radius = 9, Kind = "kit", Set = set.Name, Name = k.Piece,
+				Reach = k.Piece == "arch" and 9 or k.Piece == "wall" and 7 or 0 })
+		end
+		for _, p in set.Props or {} do
+			table.insert(things, { At = p.At, Radius = (p.Block or 2) + 2, Kind = "prop", Set = set.Name, Name = p.Model })
+		end
+		for _, g in set.Grove or {} do
+			table.insert(things, { At = g.At, Radius = 4, Kind = "grove", Set = set.Name, Name = "grove" })
+		end
+	end
+	return things
+end
+
+-- Rule 3 and 4 of reviews/maps/placement-rules.md as a check: nothing built stands alone. A thing is "loose" when
+-- no other thing of its own set stands within 22 studs of it (two pieces that flank a lane are about 20 apart), it
+-- does not touch a plateau (on it, or within 4 studs of its edge, counting an arch's or a wall's own length) and
+-- it is not at a bridge. Returns the loose ones.
+function MapLayouts.Loose(layout)
+	local things = MapLayouts.Things(layout)
+	local loose = {}
+	for i, t in things do
+		local attached = false
+		for j, other in things do
+			if i ~= j and other.Set == t.Set and (other.At - t.At).Magnitude <= 22 then
+				attached = true
+				break
+			end
+		end
+		for _, p in layout.Plateaus do
+			local dx = math.max(p.X0 - t.At.X, 0, t.At.X - p.X1)
+			local dz = math.max(p.Z0 - t.At.Z, 0, t.At.Z - p.Z1)
+			if math.sqrt(dx * dx + dz * dz) <= 4 + (t.Reach or 0) then
+				attached = true
+			end
+		end
+		for _, b in layout.Bridges or {} do
+			attached = attached or (b.At - t.At).Magnitude <= 14
+		end
+		if not attached then
+			table.insert(loose, t)
+		end
+	end
+	return loose
 end
 
 -- The straight part of one side of a plateau: where it starts, which way it runs, how long it is and which way
@@ -231,6 +286,19 @@ function MapLayouts.Edge(p, side)
 		return v(p.X0, 0, p.Z0 + r), v(0, 0, 1), p.Z1 - p.Z0 - r * 2, v(-1, 0, 0)
 	end
 	return v(p.X1, 0, p.Z0 + r), v(0, 0, 1), p.Z1 - p.Z0 - r * 2, v(1, 0, 0)
+end
+
+-- where each flight of stairs stands (the middle of the flight, on its wall's line) and which way is out
+function MapLayouts.StairSpots(layout)
+	local spots = {}
+	for _, p in layout.Plateaus do
+		for _, st in p.Stairs or {} do
+			local start, along, length, out = MapLayouts.Edge(p, st.Side)
+			table.insert(spots, { At = start + along * (4 + st.At * (length - 8)) + out * (layout.WallOut or 1), Out = out,
+				Plateau = p })
+		end
+	end
+	return spots
 end
 
 -- the designed height of the ground at (x, z): the highest plateau there, else 0
@@ -278,8 +346,8 @@ function MapLayouts.Open(layout, pos, margin)
 			return false
 		end
 	end
-	for _, k in layout.Kit or {} do
-		if (v(pos.X, 0, pos.Z) - k.At).Magnitude < 9 + margin then
+	for _, t in MapLayouts.Things(layout) do
+		if (v(pos.X, 0, pos.Z) - t.At).Magnitude < t.Radius + margin then
 			return false
 		end
 	end

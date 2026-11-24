@@ -1,7 +1,8 @@
 """Before / after sheets of the battle maps from two map_tour takes (labelled columns: Lemp could not tell target
 from result on unlabelled sheets).
   python scripts/map_compare.py <before> <after> [--views overview,hero,lane2,lane5] [--out name]
-Writes reviews/maps/img/<out>-<Map>.jpg (default out = compare) and <out>-all.jpg with the three maps' first row.
+                                [--labels "BEFORE,NOW"] [--crop]   (--crop for pc-size takes: cuts the HUD's edges away)
+Writes reviews/maps/img/<out>-<Map>.jpg (default out = compare).
 """
 import os
 import sys
@@ -26,8 +27,11 @@ def font(size):
     return ImageFont.load_default()
 
 
-def tile(take, map_id, view, w):
+def tile(take, map_id, view, w, crop=False):
     im = Image.open(os.path.join(IMG, f"{take}-{map_id}-{view}.jpg")).convert("RGB")
+    if crop:
+        W, H = im.size
+        im = im.crop((int(W * 0.14), int(H * 0.13), int(W * 0.86), int(H * 0.86)))
     return im.resize((w, int(im.height * w / im.width)), Image.LANCZOS)
 
 
@@ -35,15 +39,16 @@ def main():
     before, after = sys.argv[1], sys.argv[2]
     views = arg("--views", "overview,hero,lane2,lane5").split(",")
     out = arg("--out", "compare")
+    labels = arg("--labels", "BEFORE,NOW").split(",")
+    crop = "--crop" in sys.argv   # pc-size stills: cut the HUD's edges away and keep the middle of the view
     w, pad, head = 900, 14, 64
-    firsts = []
     for map_id, title in MAPS.items():
-        rows = [(tile(before, map_id, v, w), tile(after, map_id, v, w)) for v in views]
+        rows = [(tile(before, map_id, v, w, crop), tile(after, map_id, v, w, crop)) for v in views]
         h = sum(max(a.height, b.height) for a, b in rows) + pad * (len(rows) + 1) + head
         sheet = Image.new("RGB", (w * 2 + pad * 3, h), (24, 22, 20))
         d = ImageDraw.Draw(sheet)
-        d.text((pad, 12), f"{title}: BEFORE", font=font(36), fill=(235, 190, 120))
-        d.text((w + pad * 2, 12), f"{title}: NOW", font=font(36), fill=(140, 230, 150))
+        d.text((pad, 12), f"{title}: {labels[0]}", font=font(36), fill=(235, 190, 120))
+        d.text((w + pad * 2, 12), f"{title}: {labels[1]}", font=font(36), fill=(140, 230, 150))
         y = head + pad
         for a, b in rows:
             sheet.paste(a, (pad, y))
@@ -51,13 +56,6 @@ def main():
             y += max(a.height, b.height) + pad
         sheet.save(os.path.join(IMG, f"{out}-{map_id}.jpg"), quality=90)
         print(os.path.join(IMG, f"{out}-{map_id}.jpg"))
-        firsts.append(sheet)
-    total = Image.new("RGB", (firsts[0].width, sum(f.height for f in firsts)), (24, 22, 20))
-    y = 0
-    for f in firsts:
-        total.paste(f, (0, y))
-        y += f.height
-    total.save(os.path.join(IMG, f"{out}-all.jpg"), quality=88)
 
 
 if __name__ == "__main__":

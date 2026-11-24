@@ -469,7 +469,7 @@ function MapBuilder.BuildBattlefield(mapId)
 		end
 		local inside, outside, n = 0, 0, 0
 		local layout = MapLayouts.For(mapInfo.Theme)
-		local wantInside, wantOutside = crystal and 14 or 0, crystal and 45 or 70
+		local wantInside, wantOutside = 0, crystal and 45 or 70 -- (inside the field: MapLayouts groves only)
 		while (inside < wantInside or outside < wantOutside) and n < 3000 do
 			n += 1
 			local pos = Vector3.new(treeRng:NextNumber(-half.X - 40, half.X + 40), 0, treeRng:NextNumber(-half.Y - 40, half.Y + 40))
@@ -549,9 +549,6 @@ function MapBuilder.BuildBattlefield(mapId)
 			end
 			return look
 		end
-		for _, piece in layout.Pieces do
-			stand(piece.Model, piece.At, piece.Height, piece.Turn, piece.Block)
-		end
 		-- the building kit: the picture at its true size, invisible boxes for what is solid in it, and build
 		-- blockers along those boxes
 		local themeKey = magma and "magma" or crystal and "crystal" or "forest"
@@ -587,62 +584,48 @@ function MapBuilder.BuildBattlefield(mapId)
 			end
 			return model, origin
 		end
-		-- raised ground: a retaining wall on each straight edge (so the height reads, also from straight above) and
-		-- stairs where the layout says. Their pieces are built for ground raised 5: they sink a stud for 4.
+		-- Raised ground. Along each straight edge: a retaining wall whose flagstone rim covers the terrain's bevel
+		-- (so the floor ends in stone and its height reads, also from straight above), a parapet on top where the
+		-- layout asks for one, and flights of stairs that run along the wall. The pieces are built for ground raised
+		-- 5: they sink a stud for 4. The wall line stands `WallOut` outside the edge, where the ground is 1 high.
+		local wallOut = layout.WallOut or 1
 		for _, p in layout.Plateaus do
 			for _, side in { "N", "S", "W", "E" } do
 				local start, along, length, out = MapLayouts.Edge(p, side)
-				local stairs = {}
-				for _, st in p.Stairs or {} do
-					if st.Side == side then
-						table.insert(stairs, start + along * (length * st.At))
+				if length >= 8 and string.find(p.Walls or "NSEW", side, 1, true) then
+					-- 12-stud pieces from end to end, overlapping where the edge is not a whole number of them
+					local count = math.max(1, math.ceil((length - 1.5) / 12))
+					for i = 1, count do
+						local d = count == 1 and length / 2 or 6 + (length - 12) * (i - 1) / (count - 1)
+						local at = start + along * d
+						-- not where the lane climbs through this edge (a wall ALONG a lane, 9 studs off, stays)
+						local clear = true
+						for _, reach in { -5, 0, 5 } do
+							clear = clear and Config.DistanceToPath(at + along * reach) > Config.PathWidth / 2 + 1
+						end
+						if clear then
+							-- (every other piece stands a hair further out: two overlapping pieces never share a face)
+							local line = at + out * (wallOut + i % 2 * 0.06)
+							kit("face", line, out, nil, p.H - 5)
+							if string.find(p.Parapet or "", side, 1, true) then
+								kit("low", line - out * 0.9, out, nil, p.H + 0.15)
+							end
+						end
 					end
-				end
-				for _, at in stairs do
-					local _, origin = kit("stairs", at, out, nil, p.H - 5)
-					if origin then
-						-- what feet walk on: one smooth invisible ramp over the drawn steps (6A: stairs that walk smoothly)
-						local top = Vector3.new(at.X, p.H, at.Z)
-						local foot = Vector3.new(at.X, 0, at.Z) + out * 6.5
-						part({ Name = "StairRamp", Size = Vector3.new(6, 0.4, (top - foot).Magnitude),
-							CFrame = CFrame.lookAt((top + foot) / 2 - Vector3.new(0, 0.2, 0), top - Vector3.new(0, 0.2, 0)),
-							Transparency = 1, CanQuery = false, CanTouch = false, Parent = decor })
-						blocker(at + out * 2, 3.4)
-						blocker(at + out * 5.5, 3.4)
-					end
-				end
-				if string.find(p.Walls or "NSEW", side, 1, true) then
-					-- the wall fills the stretches between the stairs (each stair takes 8.4 studs of the edge):
-					-- 12-stud pieces from end to end of a stretch, overlapping where it is not a whole number of them
-					local cuts = { 0 }
-					table.sort(stairs, function(a, b)
-						return (a - start).Magnitude < (b - start).Magnitude
-					end)
-					for _, st in stairs do
-						local d = (st - start).Magnitude
-						table.insert(cuts, d - 4.2)
-						table.insert(cuts, d + 4.2)
-					end
-					table.insert(cuts, length)
-					local n = 0
-					for c = 1, #cuts, 2 do
-						local from, to = math.max(0, cuts[c]), math.min(length, cuts[c + 1])
-						local span = to - from
-						if span >= 8 then
-							local count = span <= 12 and 1 or math.ceil(span / 12)
-							for i = 1, count do
-								local d = count == 1 and (from + to) / 2 or from + 6 + (span - 12) * (i - 1) / (count - 1)
-								local at = start + along * d
-								-- not where the lane climbs through this edge (a wall ALONG a lane, 10 studs off, stays)
-								local clear = true
-								for _, reach in { -5, 0, 5 } do
-									clear = clear and Config.DistanceToPath(at + along * reach) > Config.PathWidth / 2 + 1
-								end
-								if clear then
-									n += 1
-									-- (every other piece stands a hair further out: two overlapping pieces never share a face)
-									kit("face", at + out * (n % 2 * 0.06), out, nil, p.H - 5)
-								end
+					for _, st in p.Stairs or {} do
+						if st.Side == side then
+							local at = start + along * (4 + st.At * (length - 8)) + out * wallOut
+							local _, origin = kit("stairs", at, out, nil, p.H - 5)
+							if origin then
+								-- what feet walk on: one smooth invisible ramp over the drawn steps (6A: stairs that walk
+								-- smoothly), from the rim's level at the flight's top end down along the wall
+								local top = (origin * CFrame.new(3.25, 5.05, -2.05)).Position
+								local foot = (origin * CFrame.new(-3.25, 0.05, -2.05)).Position
+								part({ Name = "StairRamp", Size = Vector3.new(2.8, 0.4, (top - foot).Magnitude),
+									CFrame = CFrame.lookAt((top + foot) / 2 - Vector3.new(0, 0.2, 0), top - Vector3.new(0, 0.2, 0)),
+									Transparency = 1, CanQuery = false, CanTouch = false, Parent = decor })
+								blocker((origin * CFrame.new(1.8, 0, -2.05)).Position, 1.6)
+								blocker((origin * CFrame.new(-1.8, 0, -2.05)).Position, 1.6)
 							end
 						end
 					end
@@ -650,22 +633,29 @@ function MapBuilder.BuildBattlefield(mapId)
 			end
 			task.wait()
 		end
-		for _, k in layout.Kit or {} do
-			kit(k.Piece, k.At, k.Look, k.Sink)
-		end
 		for _, b in layout.Bridges or {} do
 			-- the bridge model runs along its X: its front looks across the crossing
 			kit("bridge", b.At, Vector3.new(b.Along.Z, 0, -b.Along.X), -0.02)
 		end
-		-- single trees inside the field
+		-- the sets: a few named compositions (MapLayouts.Sets). Kit pieces, older props, and groves: clumps of trees
+		-- (dead ones on Magma) or of crystals in the caves, never single ones dotted over the field
 		local rng = Random.new(31)
 		local treeModel = magma and "tree_dead" or "tree_oak"
-		for _, at in layout.Trees do
-			local kind = (not magma and rng:NextNumber() < 0.3) and "tree_dead" or treeModel
-			local tree = stand(kind, at, rng:NextNumber(14, 19), rng:NextNumber(0, math.pi * 2), 2.2)
-			if tree then
-				tree:SetAttribute("Tall", true)
+		for _, set in layout.Sets or {} do
+			for _, k in set.Kit or {} do
+				kit(k.Piece, k.At, k.Look, k.Sink)
 			end
+			for _, piece in set.Props or {} do
+				stand(piece.Model, piece.At, piece.Height, piece.Turn, piece.Block)
+			end
+			for i, g in set.Grove or {} do
+				local kind = crystal and "crystal_cluster" or (not magma and i % 3 == 0) and "tree_dead" or treeModel
+				local tree = stand(kind, g.At, g.H, rng:NextNumber(0, math.pi * 2), crystal and math.clamp(g.H / 5, 1.4, 3) or 2.2)
+				if tree and g.H > 8 then
+					tree:SetAttribute("Tall", true)
+				end
+			end
+			task.wait()
 		end
 		-- the rock masses in the corners carry wood (dead trees on Magma, crystals in the caves)
 		local onMass = crystal and "crystal_cluster" or treeModel
@@ -683,9 +673,10 @@ function MapBuilder.BuildBattlefield(mapId)
 			for _, channel in layout.Channels do
 				for i = 1, #channel.Points - 1 do
 					local a, b = channel.Points[i], channel.Points[i + 1]
-					-- (the bed is rough, its surface runs from -1.9 to -1.2: at -1.62 the glow fills the low half and the
-					-- crust stands out of it, instead of one flat orange sheet)
-					local mid = (a + b) / 2 + Vector3.new(0, -1.62, 0)
+					-- (the bed is rough, its surface runs from -1.9 to -1.2. At -1.3 the glow was one flat orange sheet, at
+					-- -1.62 a few loose patches that read as scattered blobs from above: at -1.45 it is one river with
+					-- the highest crust standing out of it)
+					local mid = (a + b) / 2 + Vector3.new(0, -1.45, 0)
 					part({ Name = "LavaGlow", Size = Vector3.new(channel.Width - 2.5, 0.1, (b - a).Magnitude + 2),
 						CFrame = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z)), Color = Color3.fromRGB(255, 104, 26),
 						Material = Enum.Material.Neon, Transparency = 0.3, CanCollide = false, CanQuery = false, CanTouch = false,
@@ -720,8 +711,9 @@ function MapBuilder.BuildBattlefield(mapId)
 		end
 	end)
 
-	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides) with a barrel or crate now and
-	-- then, all inside the no-build band beside the road so they never stand where a defender goes
+	-- lane dressing: lanterns along the path (every ~28 studs, alternating sides), inside the no-build band beside
+	-- the road so they never stand where a defender goes. One thing in a rhythm on a line; no barrels or crates
+	-- sprinkled between them any more (reviews/maps/placement-rules.md, rule 6)
 	task.spawn(function()
 		ArtService.WaitModel("keep_lantern", 20)
 		local Ground = require(ReplicatedStorage.Shared.Ground)
@@ -748,12 +740,6 @@ function MapBuilder.BuildBattlefield(mapId)
 							light.Parent = p
 						end
 					end
-				end
-				if n % 3 == 0 then
-					local prop = (n % 6 == 0) and "keep_crate" or "keep_barrel"
-					local at = spot + dir * 2.4
-					placeModel(decor, prop, CFrame.new(Vector3.new(at.X, (Ground.At(at.X, at.Z)), at.Z)) * CFrame.Angles(0, n, 0),
-						prop == "keep_crate" and 2.2 or 2.8)
 				end
 			end
 		end

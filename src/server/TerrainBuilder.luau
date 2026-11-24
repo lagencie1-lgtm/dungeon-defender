@@ -120,14 +120,25 @@ local function farFromPath(pos, margin)
 	return Config.DistanceToPath(pos) > Config.PathWidth / 2 + margin
 end
 
+-- the band along the field's edge, at the foot of the cliffs. Loose boulders belong there and nowhere else: the
+-- floor inside stays clean (reviews/maps/placement-rules.md, rule 1)
+local function border(pos)
+	local half = Config.MapSize / 2
+	return math.abs(pos.X) > half.X - 16 or math.abs(pos.Z) > half.Y - 16
+end
+
 -------------------------------------------------------------------------------
 -- The designed layout (MapLayouts): raised ground, channels, rock masses and a lane that climbs.
 -- Everything stays solid terrain (no caves, no overhangs): Ground.At sees one surface everywhere, so defenders and
 -- enemies always stand on what you see.
 -------------------------------------------------------------------------------
--- a flat-topped plateau: `top` on the floor you build on, a `skirt` of rough rock showing on its slopes.
--- `p.Round` rounds its corners (hills; a fortress floor stays square).
-local function plateau(p, top, skirt)
+-- A flat-topped plateau of `top` material. Measured in the terrain lab (scripts/terrain_lab.py), for a block
+-- filled 4 high with its edge at x: on grass and the ash floors the ground is 0 at x - 4, 1.0 at x - 1, 2.0 at x and
+-- only reaches 4.0 at x + 4 (an 8-stud bevel centred on the edge); the caves' smooth floor is 4.0 at x and falls to 0
+-- at x - 4. No rock skirt any more: it only pushed the foot of the slope 3 studs further out. The bevel is covered
+-- by the retaining walls' flagstone rim instead (MapBuilder; `layout.WallOut` = how far outside the edge they stand).
+-- `p.Round` rounds its corners (hills; built floors stay square).
+local function plateau(p, top)
 	local t = terrain()
 	local w, d = p.X1 - p.X0, p.Z1 - p.Z0
 	local cx, cz = (p.X0 + p.X1) / 2, (p.Z0 + p.Z1) / 2
@@ -135,20 +146,19 @@ local function plateau(p, top, skirt)
 	-- the shape: BLOCKS only (a filled disc stands up to 1.5 studs higher than a block filled to the same height,
 	-- and shaving the top with an Air block halves it: both measured). Rounded corners are three crossing blocks,
 	-- an eight-sided outline that the terrain's own smoothing rounds off.
-	local function shape(grow, topY, bottomY, material)
+	local function shape(topY, bottomY, material)
 		local mid, height = (topY + bottomY) / 2, topY - bottomY
 		if r <= 0 then
-			t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w + grow * 2, height, d + grow * 2), material)
+			t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w, height, d), material)
 			return
 		end
-		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w + grow * 2, height, d - r * 2 + grow * 2), material)
-		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 2 + grow * 2, height, d + grow * 2), material)
-		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 0.6 + grow * 2, height, d - r * 0.6 + grow * 2), material)
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w, height, d - r * 2), material)
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 2, height, d), material)
+		t:FillBlock(CFrame.new(cx, mid, cz), Vector3.new(w - r * 0.6, height, d - r * 0.6), material)
 	end
-	shape(3, p.H - 1.5, 0, skirt)
-	-- (a new material only replaces empty voxels: dig the body out of the skirt and the ground, then fill it)
-	shape(0, p.H, -2, M.Air)
-	shape(0, p.H, -2, top)
+	-- (a new material only replaces empty voxels: dig the body out of the ground, then fill it)
+	shape(p.H, -2, M.Air)
+	shape(p.H, -2, top)
 end
 
 -- A river, lava stream or canal along a line of points. Built from WHOLE blocks only: thin fills (a 1.6-stud rim,
@@ -236,7 +246,7 @@ local function shapeLayout(layout, look)
 		end
 	end
 	for _, p in layout.Plateaus do
-		plateau(p, look.Top, look.Skirt)
+		plateau(p, look.Top)
 	end
 	for _, c in layout.Channels do
 		channel(c, look.Bed, look.Rim, look.BedY, look.Liquid, look.LiquidY)
@@ -279,7 +289,7 @@ function TerrainBuilder.Magma(map, camp)
 	while rocks < 12 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if border(pos) and MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2.5, 5.5)
 			t:FillBall(pos + Vector3.new(0, r * 0.25, 0), r, rng:NextNumber() < 0.7 and M.Basalt or M.Rock)
 			rocks += 1
@@ -321,14 +331,9 @@ function TerrainBuilder.Forest(map, camp)
 	local rng = rngFor(7)
 	local half = Config.MapSize / 2
 
-	-- a meadow with no edge in sight (top at y = 0), bare soil patches
+	-- a meadow with no edge in sight (top at y = 0)
 	t:FillBlock(CFrame.new(0, -6, 0), Vector3.new(900, 12, 900), M.Grass)
-	for _ = 1, 30 do
-		local pos = Vector3.new(rng:NextNumber(-half.X, half.X), -1, rng:NextNumber(-half.Y, half.Y))
-		if farFromPath(pos, 6) then
-			t:FillCylinder(CFrame.new(pos), 2, rng:NextNumber(2.5, 5), M.Mud)
-		end
-	end
+	-- (no random soil patches any more: from above they were dark blots on a clean lawn)
 
 	-- the path: packed sandy dirt inside a cobbled kerb (leafy soil read as a red carpet in the violet light)
 	-- a cobbled road with a packed-earth verge (the old orange dirt road read as a red carpet on the phone)
@@ -345,7 +350,7 @@ function TerrainBuilder.Forest(map, camp)
 	while rocks < 8 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if border(pos) and MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2, 4.5)
 			t:FillBall(pos + Vector3.new(0, r * 0.2, 0), r, M.Rock)
 			rocks += 1
@@ -396,7 +401,7 @@ function TerrainBuilder.Crystal(map, camp)
 	while rocks < 9 and tries < 600 do
 		tries += 1
 		local pos = Vector3.new(rng:NextNumber(-half.X + 6, half.X - 6), 0, rng:NextNumber(-half.Y + 6, half.Y - 6))
-		if MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
+		if border(pos) and MapLayouts.Flat(layout, pos, 6) and farFromPath(pos, 10) and (pos - Config.SpawnPoint).Magnitude > 16 and (pos - camp).Magnitude > 16 then
 			local r = rng:NextNumber(2, 4)
 			t:FillBall(pos + Vector3.new(0, r * 0.3, 0), r, M.Basalt)
 			if rng:NextNumber() < 0.5 then

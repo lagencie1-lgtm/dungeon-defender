@@ -14,5 +14,6 @@ reviews/maps/img/*
 !reviews/maps/img/*-sheet.jpg
 !reviews/maps/img/kit-*.jpg
 !reviews/maps/img/compare-*.jpg
+!reviews/maps/img/built-*.jpg
 test/maptour-only.project.json
 test/maptour-pc.project.json

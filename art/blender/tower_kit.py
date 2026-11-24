@@ -649,6 +649,10 @@ def cull_hidden(reach=0.9, rays=16):
     model is joined and unwrapped: the texture's room then goes to what is seen (about twice the paint detail).
     A face is hidden when every ray from it into its open side hits another part within `reach` studs."""
     from mathutils.bvhtree import BVHTree
+    # parts moved or turned after they were made (obj.location / rotation) keep an identity matrix_world until the
+    # next update: without this they were tested where they were made (often inside another part) and lost their
+    # faces (the barricade's shield, stake tips and iron bands, 2026-11-24)
+    bpy.context.view_layer.update()
     objs = [o for o in bpy.context.scene.objects if o.type == "MESH"]
     whole = bmesh.new()
     for o in objs:

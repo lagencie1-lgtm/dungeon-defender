@@ -347,8 +347,8 @@ local function buildIndex()
 	-- the Dust shop along the bottom: tap a pet above, then Buy
 	local shop = make("Frame", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.new(0, 10, 1, -54),
 		BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(10) })
-	local shopText = label({ Size = UDim2.new(1, -138, 1, -8), Position = UDim2.fromOffset(10, 4), Font = Enum.Font.GothamMedium,
-		TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, ZIndex = 34, Parent = shop })
+	local shopText = label({ Size = UDim2.new(1, -138, 0, 28), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 34, Parent = shop })
 	local buy = button({ Size = UDim2.fromOffset(120, 44), Position = UDim2.new(1, -2, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 		Text = "Buy", BackgroundColor3 = Color3.fromRGB(120, 90, 170), ZIndex = 34, Parent = shop })
 	local picks = {} -- [kind] = the rim shown round the picked tile
@@ -358,13 +358,13 @@ local function buildIndex()
 		end
 		local price = shopKind and Config.PetDustPrice[shopKind]
 		if not price then
-			shopText.Text = "Pet Dust " .. dust .. " · tap a pet to buy it with Dust"
+			shopText.Text = "Dust " .. dust .. " · tap a pet to buy"
 			shopText.TextColor3 = Ui.TEXT_DIM
 			buy.Visible = false
 			return
 		end
 		local locked = Config.PetDustFoundOnly and not index[shopKind]
-		shopText.Text = string.format("%s · %d Dust (you have %d)", Config.Pets[shopKind].Name, price, dust)
+		shopText.Text = string.format("%s · %d Dust", Config.Pets[shopKind].Name, price)
 		shopText.TextColor3 = dust >= price and Ui.TEXT_DIM or Ui.BAD
 		buy.Visible = not locked
 		buy.AutoButtonColor = dust >= price
@@ -453,12 +453,13 @@ local function buildFuse()
 		return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
 	end)
 	local shown = math.min(#list2, 6)
-	local card = make("Frame", { Size = UDim2.new(1, -12, 0, 98 + shown * 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = -2,
+	local card = make("Frame", { Size = UDim2.new(1, -12, 0, 72 + shown * 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = -2,
 		ZIndex = 32, Parent = list }, { corner(8), stroke(Config.PetTiers[1].Color, 2) })
 	label({ Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(10, 8), Text = "Fuse " .. need .. " of a kind",
 		TextColor3 = Config.PetTiers[1].Color, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-	label({ Size = UDim2.new(1, -150, 0, 20), Position = UDim2.fromOffset(10, 36), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
-		Text = "Always works · Pet Dust: " .. dust, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	-- (phone check 2026-11-24: 20-unit Gotham lines were about 6 px tall on an iPhone 13; lines here are 26 and bold)
+	label({ Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(10, 36), Font = Enum.Font.GothamBold, TextColor3 = Ui.TEXT_DIM,
+		Text = "Always works · Dust " .. dust, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
 	local all = button({ Size = UDim2.fromOffset(130, 44), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0),
 		Text = sets > 0 and ("Fuse all (" .. sets .. ")") or "Fuse all", AutoButtonColor = sets > 0,
 		BackgroundColor3 = sets > 0 and Color3.fromRGB(170, 125, 30) or Color3.fromRGB(70, 60, 55), ZIndex = 33, Parent = card })
@@ -479,30 +480,27 @@ local function buildFuse()
 		end
 	end)
 	if shown == 0 then
-		label({ Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 60), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
-			TextWrapped = true, Text = "Hatch " .. need .. " of the same pet to fuse a Golden one. Spare pets recycle into Dust",
-			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+		label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 66), Font = Enum.Font.GothamBold, TextColor3 = Ui.TEXT_DIM,
+			Text = "Get " .. need .. " of one pet to fuse a Golden", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
 		card.Size = UDim2.new(1, -12, 0, 100)
 		return
 	end
-	label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(10, 62), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
-		Text = need .. " Golden make a Rainbow. Each step: double bonus, stronger move", TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 33, Parent = card })
 	for n = 1, shown do
 		local g = list2[n]
 		local ready = g.count >= need
 		local into = { kind = g.kind, tier = g.tier + 1 }
-		local row = make("Frame", { Size = UDim2.new(1, -16, 0, 58), Position = UDim2.fromOffset(8, 88 + (n - 1) * 64),
+		local row = make("Frame", { Size = UDim2.new(1, -16, 0, 58), Position = UDim2.fromOffset(8, 66 + (n - 1) * 64),
 			BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(8) })
 		petTile(row, g.kind, 50, 34, { Position = UDim2.fromOffset(4, 4) }, g.tier)
-		local title = label({ Size = UDim2.new(1, -170, 0, 24), Position = UDim2.fromOffset(62, 4), Text = "Make " .. Config.PetNameOf(into),
+		local title = label({ Size = UDim2.new(1, -170, 0, 26), Position = UDim2.fromOffset(62, 3),
+			Text = Config.PetNameOf(into) .. " x" .. Config.PetTiers[into.tier].Bonus,
 			TextColor3 = into.tier == 2 and Color3.new(1, 1, 1) or Config.PetTiers[into.tier].Color,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 34, Parent = row })
 		if into.tier == 2 then
 			rainbowGradient(title)
 		end
 		-- how close it is: a bar that fills to five
-		local bar = make("Frame", { Size = UDim2.new(1, -170, 0, 14), Position = UDim2.fromOffset(62, 34),
+		local bar = make("Frame", { Size = UDim2.new(1, -170, 0, 20), Position = UDim2.fromOffset(62, 32),
 			BackgroundColor3 = Color3.fromRGB(25, 18, 14), ZIndex = 34, Parent = row }, { corner(7) })
 		make("Frame", { Size = UDim2.fromScale(math.min(g.count / need, 1), 1), BackgroundColor3 = Config.PetTiers[into.tier].Color,
 			ZIndex = 35, Parent = bar }, { corner(7) })

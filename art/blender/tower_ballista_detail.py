@@ -1,0 +1,157 @@
+"""The Ballista at its three levels, built with the tower kit to match art/ref3d/tower_ballista_l1..l3.png.
+Part list from the pictures:
+  level 1  stone ring footing; a wooden trestle (two A-frame legs with cross timbers and brass bolts); a turntable hub;
+           the weapon: a thick stock, a curved wooden bow with rope wrappings and its string, a big bolt with an iron
+           head and red fletching
+  level 2  as level 1, heavier: iron-shod leg feet, iron bow arms with brass caps, a brass crank wheel on the side
+  level 3  a round stone bastion with crenellations and three red banners; two level-2 ballistae on top
+The weapons are their own part ("Skin_barrel": the game kicks it back on every shot). Front = the bolt's aim.
+Run: blender -b -P tower_ballista_detail.py -- out.fbx <1|2|3> [params.json]"""
+import json
+import math
+import os
+import sys
+
+import bpy
+from mathutils import Matrix, Vector
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(HERE)
+import sculpt as S  # noqa: E402
+import tower_kit as K  # noqa: E402
+
+args = sys.argv[sys.argv.index("--") + 1:]
+out, level = args[0], int(args[1])
+FRONT = -75
+rad = math.radians
+IRON = (0.45, 0.45, 0.5)
+ROPE = (0.93, 0.86, 0.68)
+RED = (0.78, 0.16, 0.16)
+CRIMSON = (0.7, 0.14, 0.17)
+
+DEFAULTS = {
+    1: dict(foot_r=2.9, foot_h=0.8, foot_n=10, leg_h=2.1, leg_spread=1.25, bow_w=4.8, stock=5.0, aim=40, pitch=18, bend=2.2, thick=1.6),
+    2: dict(foot_r=2.9, foot_h=0.8, foot_n=10, leg_h=2.3, leg_spread=1.3, bow_w=5.0, stock=5.2, aim=40, pitch=18, bend=2.2, thick=1.6),
+    3: dict(foot_r=3.4, foot_h=0.8, foot_n=12, wall_r=3.0, wall_h=3.4, bow_w=2.6, stock=3.2, aim=50, pitch=8, gap=1.5, bend=1.6, thick=1.3),
+}
+P = dict(DEFAULTS[level])
+saved = os.path.join(HERE, "params", f"tower_ballista_l{level}.json")
+src = args[2] if len(args) > 2 and os.path.exists(args[2]) else saved
+if os.path.exists(src):
+    P.update(json.load(open(src)))
+if os.environ.get("HTD_PARAMS_ONLY"):
+    print("PARAMS " + json.dumps(P), flush=True)
+    os._exit(0)
+S.start()
+K.SIZES["barrel"] = 512
+A = rad(FRONT + P["aim"])
+FWD = Vector((math.cos(A), math.sin(A), 0))
+SIDE = Vector((-math.sin(A), math.cos(A), 0))
+
+
+def place_all(objs, m):
+    for o in objs:
+        o.matrix_world = m @ o.matrix_world
+
+
+def weapon(name, base, iron=False, scale=1.0):
+    """stock, bow, string and bolt, built at the origin pointing along +Y, then turned to the aim and tilted up"""
+    before = set(bpy.context.scene.objects)
+    st, bw = P["stock"] * scale, P["bow_w"] * scale
+    with K.atlas("barrel"):
+        K.block(name + "Stock", (0, 0, 0), (0.5 * scale * P["thick"], st, 0.42 * scale * P["thick"]), K.WOOD, key="wood", tile=1.2, bevel=0.1)
+        K.block(name + "Rail", (0, st * 0.05, 0.25 * scale), (0.18 * scale, st * 0.95, 0.12 * scale), K.WOOD_DARK, key="wood_dark", tile=1.0, bevel=0.04)
+        # the bow: a curved limb across the front, swept back at the tips
+        pts = []
+        for k in range(9):
+            t = (k / 8) * 2 - 1
+            pts.append((t * bw / 2 * (1 - 0.25 * t * t), st * 0.32 - (t * t) * P["bend"] * scale, 0.05))   # a deep C like the pictures
+        K.chain(name + "Bow", pts, [v * scale * P['thick'] for v in (0.12, 0.15, 0.17, 0.18, 0.19, 0.18, 0.17, 0.15, 0.12)],
+                IRON if iron else K.WOOD, seg=8)
+        for tip in (pts[0], pts[-1]):
+            if iron:
+                K.block(name + f"Cap{tip[0]:.1f}", tip, (0.42 * scale, 0.42 * scale, 0.42 * scale), K.BRASS, key="brass", tile=0.6, bevel=0.06)
+            else:
+                K.ball(name + f"Knot{tip[0]:.1f}", tip, 0.2 * scale, ROPE, seg=8)
+            K.limb(name + f"String{tip[0]:.1f}", tip, (0, -st * 0.25, 0.1), 0.03 * scale, 0.03 * scale, ROPE, verts=4, end=False)
+        for s in (-1, 1):
+            K.ball(name + f"Wrap{s}", (s * 0.45 * scale, st * 0.3, 0.05), 0.2 * scale, ROPE, (1.2, 1, 1), seg=8)
+        # the bolt
+        K.limb(name + "Bolt", (0, -st * 0.25, 0.32 * scale), (0, st * 0.55, 0.32 * scale), 0.07 * scale, 0.07 * scale, K.WOOD_DARK, verts=6, end=False)
+        K.cone(name + "Head", (0, st * 0.62, 0.32 * scale), 0.17 * scale, 0.38 * scale, IRON, rot=(rad(-90), 0, 0), verts=4)
+        for s in (-1, 1):
+            K.block(name + f"Fletch{s}", (s * 0.12 * scale, -st * 0.12, 0.42 * scale), (0.05, 0.5 * scale, 0.28 * scale), RED, (0, s * rad(30), 0), key=None, bevel=0.0)
+    made = [o for o in set(bpy.context.scene.objects) - before]
+    m = Matrix.Translation(base) @ Matrix.Rotation(A - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
+    place_all(made, m)
+    return m @ Vector((0, P["stock"] * scale * 0.7, 0.32 * scale))
+
+
+def trestle(base_z, h, spread, iron=False, scale=1.0):
+    """two A-frame legs either side, cross timbers, brass bolts, a turntable hub on top"""
+    for s in (-1, 1):
+        c = SIDE * (s * spread)
+        for f in (-1, 1):
+            foot = c + FWD * (f * spread * 0.9)
+            top = c * 0.55
+            mid = (foot + top) / 2
+            d = Vector((top.x - foot.x, top.y - foot.y, h))
+            ln = d.length
+            K.limb(f"Leg{s}{f}{base_z:.1f}", (foot.x, foot.y, base_z), (top.x, top.y, base_z + h), 0.3 * scale, 0.28 * scale, K.WOOD, verts=6, end=False)
+            if iron:
+                K.block(f"Shoe{s}{f}{base_z:.1f}", (foot.x, foot.y, base_z + 0.25), (0.6 * scale, 0.6 * scale, 0.5 * scale), IRON, key=None, tile=0.8, bevel=0.06)
+        K.block(f"Cross{s}{base_z:.1f}", (c.x * 0.8, c.y * 0.8, base_z + h * 0.45), (0.35 * scale, spread * 1.6, 0.3 * scale), K.WOOD_DARK,
+                (0, 0, A), key="wood_dark", tile=1.0, bevel=0.06)
+        K.ball(f"Bolt{s}{base_z:.1f}", (c.x * 0.8 + SIDE.x * s * 0.2, c.y * 0.8 + SIDE.y * s * 0.2, base_z + h * 0.45), 0.16 * scale, K.BRASS, seg=8)
+    K.lathe(f"Hub{base_z:.1f}", [(0.9 * scale, base_z + h - 0.1), (0.95 * scale, base_z + h + 0.2), (0.6 * scale, base_z + h + 0.35)], K.WOOD_DARK, key="wood_dark", verts=16)
+    for s in (-1, 1):
+        K.block(f"Cheek{s}{base_z:.1f}", tuple(SIDE * (s * 0.45 * scale) + Vector((0, 0, base_z + h + 0.55 * scale))), (0.25 * scale, 0.7 * scale, 0.75 * scale),
+                IRON if iron else K.WOOD_DARK, (0, 0, A + rad(90)), key=None, tile=0.8, bevel=0.08)
+    return base_z + h + 0.75 * scale
+
+
+K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], P["foot_n"], depth=1.1)
+K.lathe("FootCore", [(P["foot_r"] - 0.9, 0), (P["foot_r"] - 0.9, P["foot_h"] - 0.02)], K.MORTAR)
+K.grass(P["foot_r"] - 0.05, 22, h=0.75)
+fz = P["foot_h"]
+muzzles = []
+if level in (1, 2):
+    top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))
+    muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2)))
+    if level == 2:   # the crank wheel on the side
+        c = SIDE * 0.75 + Vector((0, 0, top - 0.2))
+        w = K.lathe("Crank", [(0.0, -0.1), (0.55, -0.1), (0.6, 0.0), (0.55, 0.1), (0.0, 0.1)], K.BRASS, key="brass", verts=12)
+        w.matrix_world = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
+        for k in range(4):
+            ang = k * math.pi / 2
+            K.block(f"Spoke{k}", tuple(c + SIDE * 0.12 + Vector((0, 0, 0)) + FWD * (math.cos(ang) * 0.7) + Vector((0, 0, math.sin(ang) * 0.7))),
+                    (0.14, 0.14, 0.14), K.BRASS, key="brass", tile=0.6)
+        K.limb("Handle", tuple(c + SIDE * 0.15 + FWD * 0.75), tuple(c + SIDE * 0.55 + FWD * 0.75), 0.07, 0.07, K.WOOD_DARK, verts=6)
+else:
+    # the bastion: cut stone wall, crenellations, a wooden deck, three red banners
+    K.stone_wall("Wall", fz, fz + P["wall_h"], P["wall_r"], P["wall_r"] - 0.15, 4, 12, depth=0.45)
+    top = fz + P["wall_h"]
+    K.lathe("Deck", [(P["wall_r"] - 0.3, top - 0.05), (P["wall_r"] - 0.3, top + 0.15)], K.WOOD_DARK, key="wood_dark", verts=24)
+    for i in range(8):
+        a = rad(FRONT + 22.5 + i * 45)
+        K.block(f"Merlon{i}", K.at(a, P["wall_r"] - 0.1, top + 0.45), (1.2, 0.7, 0.95), K.STONE, (0, 0, a + rad(90)), key=None, tile=1.2, bevel=0.14)
+    for k, da in enumerate((-40, 0, 40)):
+        K.banner(FRONT + da, P["wall_r"] + 0.05, top - 0.05, 1.1 if da else 1.4, 1.8 if da else 2.4, field=CRIMSON, trim=K.BRASS, mark=K.BRASS)
+    for s in (-1, 1):
+        base = SIDE * (s * P["gap"]) + Vector((0, 0, top + 0.15))
+        before = set(bpy.context.scene.objects)
+        t2 = trestle(top + 0.15, 0.8, 0.55, iron=True, scale=0.7)
+        place_all([o for o in set(bpy.context.scene.objects) - before], Matrix.Translation((base.x, base.y, 0)))
+        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=0.75))
+
+for m in muzzles:
+    print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
+if not os.environ.get("HTD_FAST"):
+    K.cull_hidden()
+K.finish_check()
+if os.environ.get("HTD_FAST"):
+    import lib
+    lib.export_fbx(os.path.abspath(out))
+    print("EXPORTED", out)
+else:
+    K.bake_atlases(f"tower_ballista_l{level}", out, budget=9000)

@@ -1,0 +1,22 @@
+[MAPTOUR] 1795510769272 ok CursedForest Keep Hill: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795510769276 ok CursedForest North Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795510769279 ok CursedForest South Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795510769283 ok CursedForest Portal Rise: top 4.02..4.07 (wanted 4)
+[MAPTOUR] 1795510769285 ok CursedForest Witchwater: 26 of 26 spots are liquid, surface -1.29..-1.09 (Water 26)
+[MAPTOUR] 1795510769285 ok CursedForest placement: 45 things in 11 sets, 0 stand alone 
+[MAPTOUR] 1795510769288 ok CursedForest lane: ground 0.00..4.00, biggest step 0.80 per 2 studs, furthest from the plan 1.38
+[MAPTOUR] 1795510770288 ok CursedForest beside the lane (8.5 to 18 studs): 45% of the ground takes a defender, room for about 99
+[MAPTOUR] 1795510770288 CursedForest field: Can't build on the path 14%, Can't build on water 4%, Something is in the way 31%, Too bumpy here 7%, Too close to another defender 1%, Too close to the portal 1%, Too rocky here 4%, ok 38%
+[MAPTOUR] 1795510782705 shot CursedForest hero
+[MAPTOUR] 1795510785558 shot CursedForest plan
+[MAPTOUR] 1795510788223 shot CursedForest overview
+[MAPTOUR] 1795510790823 shot CursedForest lane1
+[MAPTOUR] 1795510793489 shot CursedForest lane2
+[MAPTOUR] 1795510796157 shot CursedForest lane3
+[MAPTOUR] 1795510798756 shot CursedForest lane4
+[MAPTOUR] 1795510801426 shot CursedForest lane5
+[MAPTOUR] 1795510804023 shot CursedForest lane6
+[MAPTOUR] 1795510806756 shot CursedForest lane7
+[MAPTOUR] 1795510809254 DONE PASS 0 failures
+
+errors:

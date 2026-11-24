@@ -1,0 +1,59 @@
+[MAPTOUR] 1795488964968 ok CursedForest Keep Hill: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795488964972 ok CursedForest North Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795488964975 ok CursedForest South Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795488964978 ok CursedForest Portal Rise: top 4.03..4.06 (wanted 4)
+[MAPTOUR] 1795488964980 ok CursedForest Witchwater: 26 of 26 spots are liquid, surface -1.29..-1.09 (Water 26)
+[MAPTOUR] 1795488964983 FAIL CursedForest lane: ground 0.00..4.00, biggest step 0.80 per 2 studs, furthest from the plan 1.38
+[MAPTOUR] 1795488965652 ok CursedForest beside the lane (8.5 to 18 studs): 40% of the ground takes a defender, room for about 88
+[MAPTOUR] 1795488965652 CursedForest field: Can't build on the path 14%, Can't build on water 3%, Something is in the way 31%, Too bumpy here 7%, Too close to another defender 1%, Too close to the portal 1%, Too rocky here 10%, ok 33%
+[MAPTOUR] 1795488978086 shot CursedForest hero
+[MAPTOUR] 1795488980937 shot CursedForest plan
+[MAPTOUR] 1795488983602 shot CursedForest overview
+[MAPTOUR] 1795488986270 shot CursedForest lane1
+[MAPTOUR] 1795488988936 shot CursedForest lane2
+[MAPTOUR] 1795488991605 shot CursedForest lane3
+[MAPTOUR] 1795488994206 shot CursedForest lane4
+[MAPTOUR] 1795488996870 shot CursedForest lane5
+[MAPTOUR] 1795488999535 shot CursedForest lane6
+[MAPTOUR] 1795489002138 shot CursedForest lane7
+[MAPTOUR] 1795489006401 ok MagmaFortress West Bastion: top 4.75..5.00 (wanted 5)
+[MAPTOUR] 1795489006411 ok MagmaFortress Heart Bastion: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795489006415 ok MagmaFortress East Bastion: top 4.75..5.00 (wanted 5)
+[MAPTOUR] 1795489006422 ok MagmaFortress Gate Yard: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795489006427 ok MagmaFortress Portal Keep: top 3.82..4.02 (wanted 4)
+[MAPTOUR] 1795489006429 ok MagmaFortress Lava River: 32 of 34 spots are liquid, surface -1.87..-1.16 (dry at 25, -23 (-1.3) 1, CrackedLava 32, Salt 2, dry at -73, -10 (-1.2) 1)
+[MAPTOUR] 1795489006433 ok MagmaFortress lane: ground 0.00..3.40, biggest step 1.05 per 2 studs, furthest from the plan 1.25
+[MAPTOUR] 1795489007512 ok MagmaFortress beside the lane (8.5 to 18 studs): 39% of the ground takes a defender, room for about 130
+[MAPTOUR] 1795489007512 MagmaFortress field: Can't build on the path 21%, Something is in the way 31%, Too bumpy here 7%, Too close to another defender 1%, Too close to the portal 1%, Too rocky here 16%, ok 23%
+[MAPTOUR] 1795489019936 shot MagmaFortress hero
+[MAPTOUR] 1795489022738 shot MagmaFortress plan
+[MAPTOUR] 1795489025402 shot MagmaFortress overview
+[MAPTOUR] 1795489028135 shot MagmaFortress lane1
+[MAPTOUR] 1795489030740 shot MagmaFortress lane2
+[MAPTOUR] 1795489033402 shot MagmaFortress lane3
+[MAPTOUR] 1795489036003 shot MagmaFortress lane4
+[MAPTOUR] 1795489038668 shot MagmaFortress lane5
+[MAPTOUR] 1795489041270 shot MagmaFortress lane6
+[MAPTOUR] 1795489043869 shot MagmaFortress lane7
+[MAPTOUR] 1795489048236 ok CrystalCaves West Terrace: top 4.00..4.00 (wanted 4)
+[MAPTOUR] 1795489048244 ok CrystalCaves East Terrace: top 4.00..4.00 (wanted 4)
+[MAPTOUR] 1795489048249 ok CrystalCaves Portal Ledge: top 4.00..4.00 (wanted 4)
+[MAPTOUR] 1795489048250 ok CrystalCaves West Canal: 24 of 24 spots are liquid, surface -1.41..-1.09 (Water 24)
+[MAPTOUR] 1795489048252 ok CrystalCaves Deep Canal: 24 of 24 spots are liquid, surface -1.35..-1.09 (Water 24)
+[MAPTOUR] 1795489048253 ok CrystalCaves Hall Stream: 14 of 14 spots are liquid, surface -1.40..-1.09 (Water 14)
+[MAPTOUR] 1795489048264 ok CrystalCaves lane: ground 0.00..3.85, biggest step 0.81 per 2 studs, furthest from the plan 1.15
+[MAPTOUR] 1795489049087 ok CrystalCaves beside the lane (8.5 to 18 studs): 45% of the ground takes a defender, room for about 177
+[MAPTOUR] 1795489049087 CrystalCaves field: Can't build on the path 30%, Can't build on water 9%, Something is in the way 19%, Too bumpy here 2%, Too close to another defender 1%, Too close to the portal 1%, Too rocky here 9%, ok 29%
+[MAPTOUR] 1795489061551 shot CrystalCaves hero
+[MAPTOUR] 1795489064367 shot CrystalCaves plan
+[MAPTOUR] 1795489066966 shot CrystalCaves overview
+[MAPTOUR] 1795489069700 shot CrystalCaves lane1
+[MAPTOUR] 1795489072366 shot CrystalCaves lane2
+[MAPTOUR] 1795489075032 shot CrystalCaves lane3
+[MAPTOUR] 1795489077698 shot CrystalCaves lane4
+[MAPTOUR] 1795489080300 shot CrystalCaves lane5
+[MAPTOUR] 1795489082965 shot CrystalCaves lane6
+[MAPTOUR] 1795489085632 shot CrystalCaves lane7
+[MAPTOUR] 1795489088331 DONE FAIL 1 failures
+
+errors:

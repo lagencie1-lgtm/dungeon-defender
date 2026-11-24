@@ -1,0 +1,10 @@
+{
+    "className":  "MaterialVariant",
+    "properties":  {
+                       "BaseMaterial":  "Salt",
+                       "ColorMap":  "rbxassetid://76514196473655",
+                       "StudsPerTile":  14.0,
+                       "RoughnessMap":  "rbxassetid://100925396897052",
+                       "TexturePack":  "rbxassetid://120378134513651"
+                   }
+}

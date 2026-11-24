@@ -1,0 +1,4 @@
+tower_flame_l1
+before: IoU 90.3%  width profile off 9.6%  region colour dE 14.7  (pixel dE 44.3)  detail 10.8% vs picture 8.6% (ratio 1.27)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+after:  IoU 90.3%  width profile off 9.6%  region colour dE 17.3  (pixel dE 43.4)  detail 7.5% vs picture 8.6% (ratio 0.88)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+skipped views: none

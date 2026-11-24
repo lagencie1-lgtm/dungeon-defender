@@ -1,0 +1,42 @@
+[MAPTOUR] 1795487909654 ok CursedForest lane: ground 0.00..0.00, biggest step 0.00 per 2 studs, furthest from the plan 0.00
+[MAPTOUR] 1795487910044 ok CursedForest beside the lane (8.5 to 18 studs): 84% of the ground takes a defender
+[MAPTOUR] 1795487910044 CursedForest field: Can't build on the path 14%, Something is in the way 3%, Too bumpy here 6%, Too close to the portal 1%, Too rocky here 8%, ok 67%
+[MAPTOUR] 1795487922435 shot CursedForest hero
+[MAPTOUR] 1795487925270 shot CursedForest plan
+[MAPTOUR] 1795487927867 shot CursedForest overview
+[MAPTOUR] 1795487930485 shot CursedForest lane1
+[MAPTOUR] 1795487933104 shot CursedForest lane2
+[MAPTOUR] 1795487935704 shot CursedForest lane3
+[MAPTOUR] 1795487938318 shot CursedForest lane4
+[MAPTOUR] 1795487940917 shot CursedForest lane5
+[MAPTOUR] 1795487943519 shot CursedForest lane6
+[MAPTOUR] 1795487946134 shot CursedForest lane7
+[MAPTOUR] 1795487950336 FAIL MagmaFortress lane: ground 0.00..1.86, biggest step 0.48 per 2 studs, furthest from the plan 1.86
+[MAPTOUR] 1795487950641 ok MagmaFortress beside the lane (8.5 to 18 studs): 73% of the ground takes a defender
+[MAPTOUR] 1795487950641 MagmaFortress field: Can't build on the path 21%, Too bumpy here 14%, Too close to the portal 1%, Too rocky here 17%, ok 47%
+[MAPTOUR] 1795487963052 shot MagmaFortress hero
+[MAPTOUR] 1795487965869 shot MagmaFortress plan
+[MAPTOUR] 1795487968486 shot MagmaFortress overview
+[MAPTOUR] 1795487971098 shot MagmaFortress lane1
+[MAPTOUR] 1795487973716 shot MagmaFortress lane2
+[MAPTOUR] 1795487976318 shot MagmaFortress lane3
+[MAPTOUR] 1795487978952 shot MagmaFortress lane4
+[MAPTOUR] 1795487981549 shot MagmaFortress lane5
+[MAPTOUR] 1795487984155 shot MagmaFortress lane6
+[MAPTOUR] 1795487986756 shot MagmaFortress lane7
+[MAPTOUR] 1795487991252 ok CrystalCaves lane: ground 0.00..0.00, biggest step 0.00 per 2 studs, furthest from the plan 0.00
+[MAPTOUR] 1795487991836 ok CrystalCaves beside the lane (8.5 to 18 studs): 91% of the ground takes a defender
+[MAPTOUR] 1795487991836 CrystalCaves field: Can't build on the path 30%, Too bumpy here 2%, Too close to the portal 1%, Too rocky here 9%, ok 59%
+[MAPTOUR] 1795488004401 shot CrystalCaves hero
+[MAPTOUR] 1795488007223 shot CrystalCaves plan
+[MAPTOUR] 1795488009834 shot CrystalCaves overview
+[MAPTOUR] 1795488012432 shot CrystalCaves lane1
+[MAPTOUR] 1795488015051 shot CrystalCaves lane2
+[MAPTOUR] 1795488017652 shot CrystalCaves lane3
+[MAPTOUR] 1795488020269 shot CrystalCaves lane4
+[MAPTOUR] 1795488022901 shot CrystalCaves lane5
+[MAPTOUR] 1795488025485 shot CrystalCaves lane6
+[MAPTOUR] 1795488028089 shot CrystalCaves lane7
+[MAPTOUR] 1795488030761 DONE FAIL 1 failures
+
+errors:

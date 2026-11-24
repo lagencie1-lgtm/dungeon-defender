@@ -1,0 +1,4 @@
+tower_ranger_l2
+before: IoU 88.8%  width profile off 12.0%  region colour dE 10.5  (pixel dE 46.8)  detail 22.4% vs picture 21.3% (ratio 1.05)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+after:  IoU 88.8%  width profile off 12.0%  region colour dE 13.1  (pixel dE 46.3)  detail 20.1% vs picture 21.3% (ratio 0.94)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+skipped views: none

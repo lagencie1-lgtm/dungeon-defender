@@ -1,0 +1,49 @@
+{
+ "hair": {
+  "dE": 4.9,
+  "dE_mid": 3.4,
+  "pixels": 13110,
+  "stroke": 4.17,
+  "stroke_painting": 4.75
+ },
+ "face": {
+  "dE": 1.5,
+  "dE_mid": 0.6,
+  "pixels": 10144,
+  "stroke": 1.82,
+  "stroke_painting": 1.67
+ },
+ "hood": {
+  "dE": 19.8,
+  "dE_mid": 9.0,
+  "pixels": 21893,
+  "stroke": 4.29,
+  "stroke_painting": 2.27
+ },
+ "tunic": {
+  "dE": 17.7,
+  "dE_mid": 9.6,
+  "pixels": 32863,
+  "stroke": 2.77,
+  "stroke_painting": 2.02
+ },
+ "arms": {
+  "dE": 15.9,
+  "dE_mid": 9.3,
+  "pixels": 29222,
+  "stroke": 4.25,
+  "stroke_painting": 4.32
+ },
+ "boots": {
+  "dE": 9.8,
+  "dE_mid": 2.7,
+  "pixels": 35936,
+  "stroke": 1.62,
+  "stroke_painting": 3.05
+ },
+ "face_gate": {
+  "p99": 9.9,
+  "biggest_dark_patch": 0.0,
+  "ok": true
+ }
+}

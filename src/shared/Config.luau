@@ -185,7 +185,59 @@ Config.PetMaxLevel = 10
 Config.PetXpPerLevel = 60 -- pet xp per level (pets get 1 xp per enemy defeated)
 Config.PetEvolveGold = 2500
 Config.PetBagSize = 30
-Config.PetReleaseGold = { 50, 80, 150, 400, 1000, 4000 }
+
+-- Golden and Rainbow pets (Lemp 2026-11-24: "do 1 and 3"): five copies of the same pet always fuse into one of the
+-- next tier, never fail, and keep the best level of the five (evolved if any of them was). Five Goldens make a
+-- Rainbow. Bonus multiplies the pet's bonus (and the gold it digs up while you are away), Move its fight move,
+-- Fetch how fast it trots for loot. Wash = how strongly the colour shows over the painted pet (a Highlight fill:
+-- 1 = invisible); Rainbow slowly turns through RainbowHues on each player's own device (PetShine.client.luau).
+Config.PetFuseCount = 5
+Config.PetTiers = {
+	[0] = { Name = "", Bonus = 1, Move = 1, Fetch = 1 },
+	{ Name = "Golden", Bonus = 2, Move = 1.25, Fetch = 1.15, Color = Color3.fromRGB(255, 196, 60), Wash = 0.68 },
+	{ Name = "Rainbow", Bonus = 4, Move = 1.5, Fetch = 1.3, Color = Color3.fromRGB(255, 140, 220), Wash = 0.72 },
+}
+Config.RainbowHues = { Color3.fromRGB(255, 110, 110), Color3.fromRGB(255, 200, 80), Color3.fromRGB(120, 230, 120),
+	Color3.fromRGB(90, 190, 255), Color3.fromRGB(200, 130, 255) }
+Config.RainbowSeconds = 8 -- one slow turn through the hues (6A: an effect you can name is too strong)
+
+-- Pet Dust: a spare pet recycles into Dust (by rarity, x5 for a Golden, x25 for a Rainbow, so a fused pet is worth
+-- exactly its five or twenty-five copies). Dust buys a pet of your choice in the Pet Index. It is earned only, never
+-- sold for Robux or gems (no paid luck). Prices are about 2.5x what the pet costs on average from its best egg
+-- (scratch math 2026-11-24: one Dust is worth about 250-450 gold of eggs), so hatching stays the faster way and Dust
+-- is the safety net that ends bad luck. PetDustFoundOnly = true would sell only kinds already in your Index.
+Config.PetDust = { 1, 2, 5, 15, 50, 150 }
+Config.PetDustPrice = {
+	Slimey = 15, Leafling = 15, Stonepup = 30, MossKitten = 60, Glowbug = 80, EmberFox = 40, CrystalOwl = 90,
+	MiniGolem = 150, BabyDragon = 600, StarUnicorn = 3500, Phoenix = 6000, VoidDrake = 8000,
+}
+Config.PetDustFoundOnly = false
+
+-- the tier of a pet (0 normal, 1 Golden, 2 Rainbow) and its numbers
+function Config.PetTierOf(pet)
+	local tier = type(pet) == "table" and tonumber(pet.tier) or 0
+	return Config.PetTiers[tier] or Config.PetTiers[0], Config.PetTiers[tier] and tier or 0
+end
+-- the name with its tier in front: "Golden Slimey"
+function Config.PetNameOf(pet)
+	local tier = Config.PetTierOf(pet)
+	local info = Config.Pets[pet.kind]
+	return (tier.Name ~= "" and (tier.Name .. " ") or "") .. (info and info.Name or tostring(pet.kind))
+end
+-- the pet's bonus in percent: +10% per level, x2 evolved, x the tier's Bonus
+function Config.PetBonusValue(pet)
+	local info = Config.Pets[pet.kind]
+	if not info then
+		return 0
+	end
+	return info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) * Config.PetTierOf(pet).Bonus
+end
+-- the Dust a pet recycles into
+function Config.PetDustOf(pet)
+	local info = Config.Pets[pet.kind]
+	local _, tier = Config.PetTierOf(pet)
+	return (Config.PetDust[info and info.Rarity or 1] or 1) * Config.PetFuseCount ^ tier
+end
 
 -- Pet team: up to three pets walk with the hero. Slot 2 and 3 open with the level of your best hero.
 -- The first pet is the LEAD: full bonus, and it does its move in a fight. Helpers give half their bonus.
@@ -230,7 +282,7 @@ Config.PetCarry = {
 	{ Gems = true, MaxItemRarity = 6, Range = 36, Speed = 15, Carry = 3, Rest = 1.4 },
 	{ Gems = true, MaxItemRarity = 6, Range = 44, Speed = 18, Carry = 4, Rest = 1 },
 }
-function Config.PetCarryOf(kind, evolved, pass)
+function Config.PetCarryOf(kind, evolved, pass, tier)
 	local info = Config.Pets[kind]
 	if not info then
 		return nil
@@ -244,6 +296,10 @@ function Config.PetCarryOf(kind, evolved, pass)
 		carry.Carry += 1
 		carry.Rest *= 0.75
 	end
+	-- Golden and Rainbow pets trot faster and rest less (tier = 0, 1 or 2)
+	local fetch = (Config.PetTiers[tier or 0] or Config.PetTiers[0]).Fetch
+	carry.Speed *= fetch
+	carry.Rest /= fetch
 	if pass then
 		carry.Speed *= Config.PetCarryPass.Speed
 		carry.Rest *= Config.PetCarryPass.Rest
@@ -679,7 +735,8 @@ Config.DailyGold = { [3] = 300, [5] = 500, [7] = 1500 }
 Config.ComeBack = {
 	-- the first win of each day (UTC): the run's gold is multiplied and a bonus chest (Rare or better) is added
 	FirstWinGold = 2,
-	-- while you are away your equipped pet digs up gold: per hour by pet rarity, +10% per pet level, x2 evolved.
+	-- while you are away your equipped pet digs up gold: per hour by pet rarity, +10% per pet level, x2 evolved,
+	-- x2 Golden, x4 Rainbow (Config.PetTiers).
 	-- Counted from MinMinutes away, up to MaxHours, so a night's sleep fills it and a week away gives no more.
 	AwayGoldPerHour = { 25, 35, 50, 80, 120, 180 },
 	AwayMinMinutes = 30,

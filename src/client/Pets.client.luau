@@ -1,5 +1,6 @@
 -- The Pets screen: hatch eggs with gold (chances shown before you buy),
--- pick the pet that follows you, evolve or release pets.
+-- pick the pet that follows you, evolve pets, fuse five of a kind into a Golden or Rainbow one,
+-- recycle spare pets into Pet Dust and buy the pet you want with Dust in the Pet Index.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -20,9 +21,6 @@ Ui.fitRoot(gui, root, 964, 564)
 local Art = require(ReplicatedStorage.Shared.Art)
 local TweenService = game:GetService("TweenService")
 
--- touch: panel buttons at least 36 px on the smallest phone preset (this screen's scale there: 0.5)
-local PET_TAP = Ui.isTouch and 74 or 44
-local LIST_TOP = Ui.isTouch and 96 or 66 -- (touch: the pet list starts under the bigger close button)
 local petButton = require(script.Parent.Menu).Add("Pets", "Pets", 6)
 
 local function rarityColor(kind)
@@ -35,8 +33,38 @@ local function eggImage(egg)
 	return Art.Image("egg_" .. string.lower((string.gsub(egg.Id, "Egg$", ""))))
 end
 
+local function rainbowGradient(parent)
+	local keys = {}
+	for i, hue in Config.RainbowHues do
+		table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#Config.RainbowHues - 1), hue))
+	end
+	return make("UIGradient", { Color = ColorSequence.new(keys), Rotation = 30, Parent = parent })
+end
+
+-- a Golden or Rainbow tile: a gold (or rainbow) rim and the tier's name on a strip along the bottom
+local function tierMark(tile, tier, size, zIndex)
+	local info = Config.PetTiers[tier or 0]
+	if not info or not info.Color then
+		return
+	end
+	local rim = tile:FindFirstChildOfClass("UIStroke")
+	rim.Thickness = 3
+	rim.Color = tier == 2 and Color3.new(1, 1, 1) or info.Color
+	if tier == 2 then
+		rainbowGradient(rim)
+	end
+	local strip = make("Frame", { Size = UDim2.new(1, 0, 0, math.max(14, math.floor(size * 0.24))), Position = UDim2.fromScale(0, 1),
+		AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = Color3.fromRGB(30, 22, 16), BackgroundTransparency = 0.25,
+		ZIndex = zIndex + 2, Parent = tile }, { corner(math.floor(size / 6)) })
+	local text = label({ Size = UDim2.new(1, -4, 1, -2), Position = UDim2.fromOffset(2, 1), Text = info.Name,
+		TextColor3 = tier == 2 and Color3.new(1, 1, 1) or info.Color, ZIndex = zIndex + 3, Parent = strip })
+	if tier == 2 then
+		rainbowGradient(text)
+	end
+end
+
 -- a square tile with a pet's picture on a plate in its rarity colour (its name when the picture isn't loaded)
-local function petTile(parent, kind, size, zIndex, props)
+local function petTile(parent, kind, size, zIndex, props, tier)
 	local color = rarityColor(kind)
 	local defaults = { Size = UDim2.fromOffset(size, size), BackgroundColor3 = color:Lerp(Color3.fromRGB(30, 24, 36), 0.72),
 		ZIndex = zIndex, Parent = parent }
@@ -52,6 +80,7 @@ local function petTile(parent, kind, size, zIndex, props)
 		label({ Size = UDim2.new(1, -4, 1, -4), Position = UDim2.fromOffset(2, 2), Text = Config.Pets[kind].Name, TextWrapped = true,
 			TextColor3 = color, ZIndex = zIndex + 1, Parent = tile })
 	end
+	tierMark(tile, tier, size, zIndex)
 	return tile
 end
 
@@ -64,7 +93,7 @@ local goldLabel = label({ Size = UDim2.fromOffset(200, 28), Position = UDim2.fro
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
 local message = label({ Size = UDim2.fromOffset(440, 24), Position = UDim2.fromOffset(350, 22), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
-local closeButton = button({ Size = UDim2.fromOffset(PET_TAP, PET_TAP), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
+local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
 
 -------------------------------------------------------------------------------
@@ -83,7 +112,7 @@ local revealName = label({ Size = UDim2.new(1, -40, 0, 36), Position = UDim2.fro
 	ZIndex = 52, Parent = reveal })
 local revealInfo = label({ Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 290), Text = "", Font = Enum.Font.Gotham,
 	TextColor3 = Ui.TEXT_DIM, ZIndex = 52, Parent = reveal })
-local revealOk = button({ Size = UDim2.fromOffset(180, Ui.isTouch and PET_TAP or 46), Position = UDim2.new(0.5, 0, 1, -22), AnchorPoint = Vector2.new(0.5, 1),
+local revealOk = button({ Size = UDim2.fromOffset(180, 46), Position = UDim2.new(0.5, 0, 1, -22), AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Nice!", ZIndex = 52, Parent = reveal })
 revealOk.Activated:Connect(function()
 	reveal.Visible = false
@@ -128,6 +157,26 @@ local function showReveal(egg, pet, chance)
 	Ui.playSound("Coin")
 end
 
+-- the same card for a fused pet or a pet bought with Dust: no egg, the pet pops in at once
+local function showResult(title, pet, info)
+	revealToken += 1
+	local tier = Config.PetTierOf(pet)
+	local color = tier.Color or rarityColor(pet.kind)
+	reveal.Visible = true
+	revealTitle.Text = title
+	revealPicture.Rotation = 0
+	revealPicture.Image = petImage(pet.kind) or ""
+	revealSlot.BackgroundColor3 = color:Lerp(Color3.fromRGB(30, 24, 36), 0.65)
+	revealSlot:FindFirstChildOfClass("UIStroke").Color = color
+	reveal:FindFirstChildOfClass("UIStroke").Color = color
+	revealName.Text = Config.PetNameOf(pet)
+	revealName.TextColor3 = color
+	revealInfo.Text = info
+	Ui.pop(reveal, 0.85)
+	Ui.pop(revealSlot, 1.3)
+	Ui.playSound("Coin")
+end
+
 -------------------------------------------------------------------------------
 -- eggs on the left: the egg, its price, and a picture of every pet inside with its chance
 -------------------------------------------------------------------------------
@@ -147,7 +196,7 @@ local function buildEggs()
 			total += c[2]
 		end
 		local rows = math.ceil(#egg.Chances / 4)
-		local card = make("Frame", { Size = UDim2.fromOffset(428, PET_TAP + 66 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
+		local card = make("Frame", { Size = UDim2.fromOffset(428, 110 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
 			ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
 		local eggSlot = make("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.fromOffset(10, 10),
 			BackgroundColor3 = egg.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7), ZIndex = 33, Parent = card }, { corner(14), stroke(egg.Color, 2) })
@@ -155,13 +204,13 @@ local function buildEggs()
 			Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
 		label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-		local hatch = button({ Size = UDim2.fromOffset(212, PET_TAP), Position = UDim2.fromOffset(110, 50),
+		local hatch = button({ Size = UDim2.fromOffset(212, 44), Position = UDim2.fromOffset(110, 50),
 			BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
 		-- three at once: the same price each and the same odds (gold only)
-		local hatch3 = button({ Size = UDim2.fromOffset(80, PET_TAP), Position = UDim2.fromOffset(330, 50),
+		local hatch3 = button({ Size = UDim2.fromOffset(80, 44), Position = UDim2.fromOffset(330, 50),
 			BackgroundColor3 = Color3.fromRGB(50, 105, 50), Text = "x3", ZIndex = 33, Parent = card })
 		-- what can come out
-		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, PET_TAP + 62),
+		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
 			BackgroundTransparency = 1, ZIndex = 33, Parent = card },
 			{ make("UIGridLayout", { CellSize = UDim2.fromOffset(96, 86), CellPadding = UDim2.fromOffset(6, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -225,7 +274,7 @@ end
 -------------------------------------------------------------------------------
 -- your pets on the right
 -------------------------------------------------------------------------------
-local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 516 - LIST_TOP), Position = UDim2.new(1, -24, 0, LIST_TOP), AnchorPoint = Vector2.new(1, 0),
+local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 450), Position = UDim2.new(1, -24, 0, 66), AnchorPoint = Vector2.new(1, 0),
 	BackgroundColor3 = Color3.fromRGB(35, 28, 48), BorderSizePixel = 0, ScrollBarThickness = 6,
 	AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 31, Parent = panel },
 	{ corner(10), make("UIListLayout", { Padding = UDim.new(0, 6) }),
@@ -233,16 +282,20 @@ local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 516 - LIST_TO
 
 local pets, equippedId = {}, nil
 local team, index, slots = {}, {}, 1 -- the ids walking with you (lead first), the kinds ever hatched, open team slots
+local dust = 0 -- Pet Dust, from recycling spare pets
+local shopKind = nil -- the pet picked in the Pet Index to buy with Dust
+local refresh -- (below)
 
-local function take(list2, equipped, team2, index2, slots2)
+local function take(list2, equipped, team2, index2, slots2, dust2)
 	pets, equippedId = list2 or {}, equipped
 	team, index, slots = team2 or (equipped and { equipped } or {}), index2 or {}, slots2 or 1
+	dust = tonumber(dust2) or dust
 end
 
 -- helper = a team pet that is not the lead: it gives a part of its bonus
 local function bonusText(pet, helper)
 	local info = Config.Pets[pet.kind]
-	local value = info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) * (helper and Config.PetHelperBonus or 1)
+	local value = Config.PetBonusValue(pet) * (helper and Config.PetHelperBonus or 1)
 	return string.format("+%.1f%% %s", value, Items.Stats[info.Stat] and Items.Stats[info.Stat].Name or info.Stat)
 end
 
@@ -279,7 +332,7 @@ local function buildIndex()
 		end
 	end
 	local rows = math.ceil(#kinds / 6)
-	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 62 + rows * 68), BackgroundColor3 = Ui.PANEL,
+	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 62 + rows * 68 + 58), BackgroundColor3 = Ui.PANEL,
 		LayoutOrder = 0, ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(Ui.GOLD, 2) })
 	label({ Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(12, 6), Text = string.format("Pet Index %d/%d", found, #kinds),
 		TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
@@ -291,9 +344,62 @@ local function buildIndex()
 		BackgroundTransparency = 1, ZIndex = 33, Parent = card },
 		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(62, 62), CellPadding = UDim2.fromOffset(6, 6),
 			SortOrder = Enum.SortOrder.LayoutOrder }) })
+	-- the Dust shop along the bottom: tap a pet above, then Buy
+	local shop = make("Frame", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.new(0, 10, 1, -54),
+		BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(10) })
+	local shopText = label({ Size = UDim2.new(1, -138, 1, -8), Position = UDim2.fromOffset(10, 4), Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, ZIndex = 34, Parent = shop })
+	local buy = button({ Size = UDim2.fromOffset(120, 44), Position = UDim2.new(1, -2, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		Text = "Buy", BackgroundColor3 = Color3.fromRGB(120, 90, 170), ZIndex = 34, Parent = shop })
+	local picks = {} -- [kind] = the rim shown round the picked tile
+	local function showShop()
+		for kind, rim in picks do
+			rim.Visible = kind == shopKind
+		end
+		local price = shopKind and Config.PetDustPrice[shopKind]
+		if not price then
+			shopText.Text = "Pet Dust " .. dust .. " · tap a pet to buy it with Dust"
+			shopText.TextColor3 = Ui.TEXT_DIM
+			buy.Visible = false
+			return
+		end
+		local locked = Config.PetDustFoundOnly and not index[shopKind]
+		shopText.Text = string.format("%s · %d Dust (you have %d)", Config.Pets[shopKind].Name, price, dust)
+		shopText.TextColor3 = dust >= price and Ui.TEXT_DIM or Ui.BAD
+		buy.Visible = not locked
+		buy.AutoButtonColor = dust >= price
+		buy.BackgroundColor3 = dust >= price and Color3.fromRGB(120, 90, 170) or Color3.fromRGB(70, 60, 80)
+		buy.Text = dust >= price and "Buy" or ("Need " .. (price - dust))
+	end
+	buy.Activated:Connect(function()
+		local kind = shopKind
+		if not kind or dust < (Config.PetDustPrice[kind] or math.huge) then
+			return
+		end
+		local ok, result = Remotes.BuyPetWithDust:InvokeServer(kind)
+		if ok and type(result) == "table" then
+			message.Text = (result.indexGold or 0) > 0
+				and string.format("New for your Pet Index: +%d gold, +%d gems", result.indexGold, result.indexGems or 0) or ""
+			message.TextColor3 = Ui.GOLD
+			showResult("Bought with Dust", result, Items.Rarities[Config.Pets[kind].Rarity].Name)
+		else
+			message.Text = (type(result) == "string" and result) or "Can't buy"
+			message.TextColor3 = Ui.BAD
+		end
+	end)
 	for n, kind in kinds do
 		local cell = make("Frame", { BackgroundTransparency = 1, LayoutOrder = n, ZIndex = 33, Parent = grid })
 		petTile(cell, kind, 62, 34)
+		picks[kind] = make("Frame", { Size = UDim2.new(1, 6, 1, 6), Position = UDim2.fromOffset(-3, -3), BackgroundTransparency = 1,
+			Visible = false, ZIndex = 39, Parent = cell }, { corner(12), stroke(Color3.fromRGB(200, 170, 255), 3) })
+		-- the whole tile is the button (touch and controller): it picks the pet for the Dust shop
+		local pick = make("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 40,
+			Parent = cell })
+		pick.Activated:Connect(function()
+			shopKind = kind
+			Ui.playSound("Click")
+			showShop()
+		end)
 		if not index[kind] then
 			-- not found yet: in the dark, with the reward it will pay
 			local rarity = Config.Pets[kind].Rarity
@@ -305,9 +411,124 @@ local function buildIndex()
 				Text = "+" .. (Config.PetIndexGold[rarity] or 0), TextColor3 = Ui.GOLD, ZIndex = 37, Parent = shade })
 		end
 	end
+	showShop()
 end
 
-local function refresh()
+-- how many pets of each kind and tier you have: [kind .. tier] = { kind, tier, count }
+local function groups()
+	local found = {}
+	for _, pet in pets do
+		if Config.Pets[pet.kind] then
+			local _, tier = Config.PetTierOf(pet)
+			local key = pet.kind .. tier
+			found[key] = found[key] or { kind = pet.kind, tier = tier, count = 0 }
+			found[key].count += 1
+		end
+	end
+	return found
+end
+
+-- the Fuse card on top of your pets: Pet Dust, Fuse all, and every pet you have two or more of with how close it
+-- is to five (always a visible next goal)
+local function buildFuse()
+	local need = Config.PetFuseCount
+	local list2, sets = {}, 0
+	for _, g in groups() do
+		if Config.PetTiers[g.tier + 1] and g.count >= 2 then
+			table.insert(list2, g)
+			sets += math.floor(g.count / need)
+		end
+	end
+	table.sort(list2, function(a, b)
+		local ra, rb = a.count >= need, b.count >= need
+		if ra ~= rb then
+			return ra
+		end
+		if a.tier ~= b.tier then
+			return a.tier > b.tier
+		end
+		if a.count ~= b.count then
+			return a.count > b.count
+		end
+		return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
+	end)
+	local shown = math.min(#list2, 6)
+	local card = make("Frame", { Size = UDim2.new(1, -12, 0, 98 + shown * 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = -2,
+		ZIndex = 32, Parent = list }, { corner(8), stroke(Config.PetTiers[1].Color, 2) })
+	label({ Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(10, 8), Text = "Fuse " .. need .. " of a kind",
+		TextColor3 = Config.PetTiers[1].Color, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	label({ Size = UDim2.new(1, -150, 0, 20), Position = UDim2.fromOffset(10, 36), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
+		Text = "Always works · Pet Dust: " .. dust, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+	local all = button({ Size = UDim2.fromOffset(130, 44), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0),
+		Text = sets > 0 and ("Fuse all (" .. sets .. ")") or "Fuse all", AutoButtonColor = sets > 0,
+		BackgroundColor3 = sets > 0 and Color3.fromRGB(170, 125, 30) or Color3.fromRGB(70, 60, 55), ZIndex = 33, Parent = card })
+	all.Activated:Connect(function()
+		if sets == 0 then
+			return
+		end
+		local ok, result = Remotes.FuseAllPets:InvokeServer()
+		if ok and type(result) == "table" and result[1] then
+			message.Text = string.format("Fused %d new pet%s", #result, #result == 1 and "" or "s")
+			message.TextColor3 = Ui.GOLD
+			local best = result[1]
+			showResult("Fused!", best, string.format("%s · x%d bonus", Items.Rarities[Config.Pets[best.kind].Rarity].Name,
+				Config.PetTierOf(best).Bonus))
+		else
+			message.Text = (type(result) == "string" and result) or "Nothing to fuse"
+			message.TextColor3 = Ui.BAD
+		end
+	end)
+	if shown == 0 then
+		label({ Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 60), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
+			TextWrapped = true, Text = "Hatch " .. need .. " of the same pet to fuse a Golden one. Spare pets recycle into Dust",
+			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
+		card.Size = UDim2.new(1, -12, 0, 100)
+		return
+	end
+	label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(10, 62), Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM,
+		Text = need .. " Golden make a Rainbow. Each step: double bonus, stronger move", TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 33, Parent = card })
+	for n = 1, shown do
+		local g = list2[n]
+		local ready = g.count >= need
+		local into = { kind = g.kind, tier = g.tier + 1 }
+		local row = make("Frame", { Size = UDim2.new(1, -16, 0, 58), Position = UDim2.fromOffset(8, 88 + (n - 1) * 64),
+			BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(8) })
+		petTile(row, g.kind, 50, 34, { Position = UDim2.fromOffset(4, 4) }, g.tier)
+		local title = label({ Size = UDim2.new(1, -170, 0, 24), Position = UDim2.fromOffset(62, 4), Text = "Make " .. Config.PetNameOf(into),
+			TextColor3 = into.tier == 2 and Color3.new(1, 1, 1) or Config.PetTiers[into.tier].Color,
+			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 34, Parent = row })
+		if into.tier == 2 then
+			rainbowGradient(title)
+		end
+		-- how close it is: a bar that fills to five
+		local bar = make("Frame", { Size = UDim2.new(1, -170, 0, 14), Position = UDim2.fromOffset(62, 34),
+			BackgroundColor3 = Color3.fromRGB(25, 18, 14), ZIndex = 34, Parent = row }, { corner(7) })
+		make("Frame", { Size = UDim2.fromScale(math.min(g.count / need, 1), 1), BackgroundColor3 = Config.PetTiers[into.tier].Color,
+			ZIndex = 35, Parent = bar }, { corner(7) })
+		label({ Size = UDim2.new(1, 0, 1, 2), Text = math.min(g.count, need) .. "/" .. need, TextColor3 = Color3.new(1, 1, 1),
+			ZIndex = 36, Parent = bar })
+		local go = button({ Size = UDim2.fromOffset(96, 44), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+			Text = ready and "Fuse" or (need - g.count) .. " more", AutoButtonColor = ready,
+			BackgroundColor3 = ready and Color3.fromRGB(170, 125, 30) or Color3.fromRGB(70, 60, 55), ZIndex = 34, Parent = row })
+		go.Activated:Connect(function()
+			if not ready then
+				return
+			end
+			local ok, result = Remotes.FusePet:InvokeServer(g.kind, g.tier)
+			if ok and type(result) == "table" then
+				message.Text = ""
+				showResult("Fused!", result, string.format("Lv %d · x%d bonus · stronger move, faster fetch", result.level or 1,
+					Config.PetTierOf(result).Bonus))
+			else
+				message.Text = (type(result) == "string" and result) or "Can't fuse"
+				message.TextColor3 = Ui.BAD
+			end
+		end)
+	end
+end
+
+function refresh()
 	goldLabel.Text = (player:GetAttribute("Gold") or 0) .. " gold"
 	buildIndex()
 	list:FindFirstChildOfClass("UIListLayout").SortOrder = Enum.SortOrder.LayoutOrder
@@ -324,6 +545,7 @@ local function refresh()
 			Text = string.format("Team %d/%d · the lead fights, all fetch loot", #team, slots)
 				.. (nextLevel and (" · next slot: hero level " .. nextLevel) or "") })
 	end
+	buildFuse()
 	if #pets == 0 then
 		local empty = make("Frame", { Size = UDim2.new(1, -12, 0, 60), BackgroundTransparency = 1, ZIndex = 32, Parent = list })
 		label({ Size = UDim2.fromScale(1, 1), Text = "No pets yet. Hatch an egg with gold!", Font = Enum.Font.Gotham,
@@ -337,6 +559,9 @@ local function refresh()
 		if ta ~= tb then
 			return (ta or 99) < (tb or 99) -- the team first, the lead on top
 		end
+		if (a.tier or 0) ~= (b.tier or 0) then
+			return (a.tier or 0) > (b.tier or 0) -- then Rainbow, then Golden
+		end
 		if ra ~= rb then
 			return ra > rb
 		end
@@ -345,37 +570,40 @@ local function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, Ui.isTouch and 130 or 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
 		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
-		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
-		label({ Size = UDim2.fromOffset(Ui.isTouch and 150 or 170, 26), Position = UDim2.fromOffset(76, 8),
-			Text = info.Name .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
-			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
+		local tierInfo, tier = Config.PetTierOf(pet)
+		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) }, tier)
+		local name = label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 8),
+			Text = Config.PetNameOf(pet) .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
+			TextColor3 = tier == 2 and Color3.new(1, 1, 1) or tierInfo.Color or color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
-		label({ Size = UDim2.fromOffset(Ui.isTouch and 150 or 170, 22), Position = UDim2.fromOffset(76, 38),
+		if tier == 2 then
+			rainbowGradient(name)
+		end
+		label({ Size = UDim2.fromOffset(170, 22), Position = UDim2.fromOffset(76, 38),
 			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet, place ~= nil and place > 1), Font = Enum.Font.Gotham,
 			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, Ui.isTouch and 84 or 72),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 72),
 				Text = (place == 1 and "In a fight · " or "As lead · ") .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham,
 				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
-		local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true)
+		local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true, tier)
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, Ui.isTouch and 106 or 94),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 94),
 				Text = string.format("Fetches %s%s · %d per trip%s", carry.Gems and "gems and " or "", best, carry.Carry,
 					carry.Pass and " · 2x speed, whole map" or ""),
 				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
-		local equip = button({ Size = UDim2.fromOffset(Ui.isTouch and 78 or 70, PET_TAP),
-			Position = UDim2.new(1, Ui.isTouch and -176 or -164, 0, Ui.isTouch and 42 or 36), AnchorPoint = Vector2.new(0, 0.5),
+		local equip = button({ Size = UDim2.fromOffset(70, 44), Position = UDim2.new(1, -164, 0, 36), AnchorPoint = Vector2.new(0, 0.5),
 			Text = place == 1 and "Lead" or place and "Lead it" or "Equip",
 			BackgroundColor3 = place == 1 and Color3.fromRGB(60, 60, 70) or place and Color3.fromRGB(150, 110, 40)
 				or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
@@ -386,8 +614,11 @@ local function refresh()
 			end
 		end)
 		local maxed = (pet.level or 1) >= Config.PetMaxLevel and not pet.evolved
-		local other = button({ Size = UDim2.fromOffset(84, PET_TAP), Position = UDim2.new(1, -8, 0, Ui.isTouch and 42 or 36), AnchorPoint = Vector2.new(1, 0.5),
-			Text = maxed and "Evolve" or place and "Rest" or "Release", ZIndex = 33,
+		local petDust = Config.PetDustOf(pet)
+		-- a pet worth keeping asks once more before it is recycled (the button says "Sure?" for 3 seconds)
+		local precious = info.Rarity >= 4 or tier > 0 or pet.evolved or (pet.level or 1) >= 5
+		local other = button({ Size = UDim2.fromOffset(84, 44), Position = UDim2.new(1, -8, 0, 36), AnchorPoint = Vector2.new(1, 0.5),
+			Text = maxed and "Evolve" or place and "Rest" or ("+" .. petDust .. " Dust"), ZIndex = 33,
 			BackgroundColor3 = maxed and Color3.fromRGB(150, 110, 40) or place and Color3.fromRGB(60, 60, 70)
 				or Color3.fromRGB(110, 60, 60), Parent = row })
 		other.Activated:Connect(function()
@@ -401,16 +632,26 @@ local function refresh()
 				ok, result = Remotes.EvolvePet:InvokeServer(pet.id)
 				message.Text = ok and (info.Name .. " evolved!") or (result or "Can't evolve")
 			else
+				if precious and other.Text ~= "Sure?" then
+					other.Text = "Sure?"
+					task.delay(3, function()
+						if other.Parent and other.Text == "Sure?" then
+							other.Text = "+" .. petDust .. " Dust"
+						end
+					end)
+					return
+				end
 				ok, result = Remotes.ReleasePet:InvokeServer(pet.id)
-				message.Text = ok and ("Released for " .. tostring(result) .. " gold") or (result or "Can't release")
+				message.Text = ok and ("Recycled " .. Config.PetNameOf(pet) .. " into " .. tostring(result) .. " Pet Dust")
+					or (result or "Can't recycle")
 			end
 			message.TextColor3 = ok and Ui.GOLD or Ui.BAD
 		end)
 	end
 end
 
-Remotes.Pets.OnClientEvent:Connect(function(list2, equipped, team2, index2, slots2)
-	take(list2, equipped, team2, index2, slots2)
+Remotes.Pets.OnClientEvent:Connect(function(list2, equipped, team2, index2, slots2, dust2)
+	take(list2, equipped, team2, index2, slots2, dust2)
 	if panel.Visible then
 		refresh()
 	end
@@ -426,7 +667,7 @@ local function toggle()
 	if panel.Visible then
 		buildEggs() -- (before asking the server, so the screen is never empty while it answers)
 		take(Remotes.GetPets:InvokeServer())
-		message.Text = "Eggs cost gold. Gold is earned by playing"
+		message.Text = "Eggs cost gold. Five of a kind fuse into a Golden pet"
 		message.TextColor3 = Ui.TEXT_DIM
 		Ui.pop(panel, 0.85)
 		refresh()

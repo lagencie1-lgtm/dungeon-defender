@@ -13,6 +13,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Store = require(ReplicatedStorage.Shared.Store)
 local DataService = require(script.Parent.DataService)
 local HeroService = require(script.Parent.HeroService)
+local PetService = require(script.Parent.PetService)
 local SeasonService = require(script.Parent.SeasonService)
 local State = require(script.Parent.State)
 
@@ -51,6 +52,8 @@ DevService.Grants = {
 	{ Id = "HeroLevel", Text = "Hero +1 level" },
 	{ Id = "SeasonLevel", Text = "Season pass +1 level" },
 	{ Id = "ResetSave", Text = "Reset my save (press twice)" }, -- "ResetSaveConfirm" is the second press
+	{ Id = "PetDust", Text = "+500 Pet Dust" },
+	{ Id = "FivePets", Text = "+5 Slimey (to test fusing)" },
 }
 
 local function grant(player, id)
@@ -86,6 +89,13 @@ local function grant(player, id)
 		HeroService.AddXp(player, Config.XpForLevel(level))
 	elseif id == "SeasonLevel" then
 		SeasonService.AddXp(player, Store.Season.XpPerLevel)
+	elseif id == "PetDust" then
+		PetService.AddDust(player, 500)
+	elseif id == "FivePets" then
+		local ok, why = PetService.Give(player, "Slimey", Config.PetFuseCount)
+		if not ok then
+			return false, why
+		end
 	else
 		return false, "Unknown"
 	end

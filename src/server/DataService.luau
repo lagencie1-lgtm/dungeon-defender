@@ -38,6 +38,7 @@ local function defaultProfile()
 		DailyStreak = 0,
 		Gold = 0, -- earned only by playing, never bought
 		Scrap = 0, -- from salvaging gear
+		PetDust = 0, -- from recycling spare pets; buys a pet of your choice (never sold)
 		Items = {}, -- the backpack: a list of items (see shared/Items)
 		Gear = {}, -- [slot] = id of the equipped item
 		Heroes = {}, -- [heroId] = { Level, Xp, Points = { Power, Vitality, Command, Engineering } }

@@ -61,6 +61,8 @@ def layout(theme):
         "plateaus": plateaus, "channels": channels, "things": things,
         "border": points(block(read("src/shared/MapOutline.luau"), "MapOutline.%s = " % theme)),
         "bridges": points(block(body, "Bridges = "), r"At = " + V3) if "Bridges = " in body else [],
+        "paths": [(float(m.group(1)), points(m.group(2))) for m in
+                  re.finditer(r"Width = %s, Points = (\{[^}]*\})" % NUM, block(body, "Paths = "))] if "Paths = " in body else [],
     }
 
 
@@ -140,6 +142,12 @@ def main():
         d.line([px(*p) for p in path], fill=(150, 175, 110), width=36 * SCALE, joint="curve")
         d.line([px(*p) for p in path], fill=(120, 150, 90), width=17 * SCALE, joint="curve")
         d.line([px(*p) for p in path], fill=(110, 70, 50), width=10 * SCALE, joint="curve")
+        for width, pts in L["paths"]:
+            (x0, z0), (x1, z1) = pts[0], pts[-1]
+            if z0 == z1:
+                rect(min(x0, x1), z0 - width / 2, max(x0, x1), z0 + width / 2, fill=(170, 130, 90))
+            else:
+                rect(x0 - width / 2, min(z0, z1), x0 + width / 2, max(z0, z1), fill=(170, 130, 90))
         for b in L["bridges"]:
             x, y = px(*b)
             d.rectangle((x - 30, y - 30, x + 30, y + 30), outline=(250, 200, 80), width=3)

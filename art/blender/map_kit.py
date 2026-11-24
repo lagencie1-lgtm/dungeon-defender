@@ -16,6 +16,8 @@ Pieces (front faces -Y, the long side runs along X, studs):
             5 high at one end down to 1, with an outer cheek and a newel at the foot
   tower     (forest) the landmark: a broken keep tower 9 x 9, 21 high at its tall corner, an old tree grown up inside
             it, its crown over the top and its roots over the walls and down into the ground (about 28 high)
+  pad       a build spot: a round of flat flagstones 7 across lying on the ground (blocks nothing)
+  flags     four flat stones of a footpath, 4 along by 3 across (laid in a row along a route; blocks nothing)
 Run: blender -b -P map_kit.py -- out.fbx <piece> <theme>
 """
 import math
@@ -424,6 +426,30 @@ elif piece == "tower":
     # moss on the broken tops
     theme_touches([(-3.4, s - t / 2, top_at(-3.4, s) + 0.1), (3.6, -s + t / 2, top_at(3.6, -s) + 0.1),
                    (-s + t / 2, -2.0, top_at(-s, -2.0) + 0.1), (s - t / 2, 2.4, top_at(s, 2.4) + 0.1)], front=0.75)
+elif piece == "pad":
+    # A build spot you can recognise (research briefs: "valid ground must be obvious on a phone"; Lemp's map audit:
+    # "a recognizable build position"): a round of flat flagstones 7 across, lying on the ground, a defender's
+    # footprint. Nothing stands up from it (it blocks nothing, it only says "a defender goes here").
+    paver = "cap" if theme == "magma" else "stone"
+    block((2.9, 2.9, 0.16), (0, 0, 0.08), paver, turn=0.4, round_=0.05)
+    for k in range(8):
+        a = k / 8 * math.pi * 2 + rnd.uniform(-0.04, 0.04)
+        r = 2.6 + rnd.uniform(-0.06, 0.06)
+        block((2.05, 1.6, 0.14), (math.cos(a) * r, math.sin(a) * r, 0.07), paver, turn=a + math.pi / 2, round_=0.05)
+    if theme == "forest":
+        for k in range(3):
+            a = k / 3 * math.pi * 2 + 0.5
+            moss((math.cos(a) * 3.3, math.sin(a) * 3.3, 0.16), (0.9, 0.6, 0.12))
+    elif theme == "crystal":
+        shard((3.2, -1.0, 0.0), 0.9, 0.22, (0.2, 0.1), glow=True)
+elif piece == "flags":
+    # A footpath of flat stones (4 along X, 3 wide), laid in a row along a route (MapLayouts.Paths with Stones). Painted
+    # earth beside the road merged with the road's own verge; light stones on the grass read as a path at once.
+    paver = "cap" if theme == "magma" else "stone"
+    for k, (x, y, w, d) in enumerate(((-1.0, -0.72, 1.75, 1.3), (1.0, -0.62, 1.6, 1.4), (-0.9, 0.72, 1.6, 1.35),
+                                      (1.05, 0.68, 1.7, 1.25))):
+        block((w + rnd.uniform(-0.12, 0.12), d + rnd.uniform(-0.1, 0.1), 0.13),
+              (x + rnd.uniform(-0.08, 0.08), y + rnd.uniform(-0.06, 0.06), 0.065), paver, turn=rnd.uniform(-0.12, 0.12), round_=0.05)
 else:
     raise SystemExit("unknown piece " + piece)
 

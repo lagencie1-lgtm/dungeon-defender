@@ -48,9 +48,10 @@ MapOutline.BuildStop = 4
 --   FirstSpot  the defender spot the tutorial points at: on clearly free ground beside the landmark, a few studs from
 --              the spawn, in the first view, covering the lanes near it (the map tour checks it takes a Ranger)
 MapOutline.Start = {
-	-- the keep tower 30 degrees to the left, the first ford 30 degrees to the right; the spot is on the keep hill
-	-- between the hero and the tower, where a Ranger covers the road on all four sides of the hill
-	Forest = { Look = v(0.5, 0, -0.866), FirstSpot = v(-6, 0, -16.5) },
+	-- the keep tower at the left edge of the view, the first ford a little left of the middle, the chapel and the
+	-- second ford on the right (at 60 degrees the tower filled the middle: the first film); the spot is on the keep
+	-- hill between the hero and the tower, where a Ranger covers the road on all four sides of the hill
+	Forest = { Look = v(0.766, 0, -0.643), FirstSpot = v(-6, 0, -16.5) },
 	-- on the heart bastion, looking west at the lava bridge it watches
 	Magma = { Look = v(-0.92, 0, -0.4), FirstSpot = v(9, 0, 2) },
 	-- in the great hall, looking west at the last tunnel

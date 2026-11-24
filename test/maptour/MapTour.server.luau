@@ -56,13 +56,46 @@ for _, mapId in Config.MapOrder do
 	if only and only ~= mapId then
 		continue
 	end
+	-- (a run only starts from the lobby: after the last map's run the game may still be on its way back)
+	local ready = os.clock() + 20
+	while State.Get("State") ~= "Lobby" and os.clock() < ready do
+		task.wait(0.25)
+	end
 	State.Set("Map", mapId)
 	GameService.StartRun()
 	task.wait(1)
+	if Config.CurrentMap ~= mapId then
+		fail(mapId, "the run did not start (state " .. tostring(State.Get("State")) .. ")")
+	end
 	State.Set("BuildMax", 100000)
 	local info = Config.Maps[mapId]
 	local layout = MapLayouts and MapLayouts.For(info.Theme) or { Plateaus = {} }
 	local half = Config.MapSize / 2
+
+	-- 0. the first spot (MapOutline.Start, the one the tutorial points at): free for a Ranger, near the spawn, and
+	-- room around it (a tap that lands a little off still finds it). Research briefs: a fresh phone player places a
+	-- defender within 90 seconds; "no wall may block the first tower spot"
+	local Outline = ReplicatedStorage.Shared:FindFirstChild("MapOutline") and require(ReplicatedStorage.Shared.MapOutline)
+	local start = Outline and Outline.Start and Outline.Start[info.Theme]
+	if start and start.FirstSpot then
+		local spot = start.FirstSpot
+		local ok, why = TowerService.CanPlace(spot)
+		local height, ground = Ground.Pad(spot, 2.5)
+		local around = 0
+		for i = 0, 7 do
+			local a = i * math.pi / 4
+			local near = spot + Vector3.new(math.cos(a), 0, math.sin(a)) * 1.5
+			around += (TowerService.CanPlace(near) and Ground.Pad(near, 2.5)) and 1 or 0
+		end
+		local fromSpawn = (Config.SpawnPoint - spot).Magnitude
+		local note = string.format("%s first spot at %d, %d: %s, %.0f studs from the spawn, %d of 8 spots 1.5 studs round it free too",
+			mapId, spot.X, spot.Z, ok and height and "free" or tostring(why or ground), fromSpawn, around)
+		if not (ok and height) or fromSpawn > 16 or around < 3 then
+			fail(note)
+		else
+			log("ok", note)
+		end
+	end
 
 	-- 1. plateaus: flat at their height, and a Ranger stands on each
 	for _, p in layout.Plateaus do

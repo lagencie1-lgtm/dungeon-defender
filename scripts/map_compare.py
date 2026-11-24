@@ -1,7 +1,8 @@
 """Before / after sheets of the battle maps from two map_tour takes (labelled columns: Lemp could not tell target
 from result on unlabelled sheets).
   python scripts/map_compare.py <before> <after> [--views overview,hero,lane2,lane5] [--out name]
-                                [--labels "BEFORE,NOW"] [--crop]   (--crop for pc-size takes: cuts the HUD's edges away)
+                                [--labels "BEFORE,NOW"] [--crop] [--maps CursedForest,...]
+   (--crop for pc-size takes: cuts the HUD's edges away)
 Writes reviews/maps/img/<out>-<Map>.jpg (default out = compare).
 """
 import os
@@ -42,7 +43,10 @@ def main():
     labels = arg("--labels", "BEFORE,NOW").split(",")
     crop = "--crop" in sys.argv   # pc-size stills: cut the HUD's edges away and keep the middle of the view
     w, pad, head = 900, 14, 64
+    only = arg("--maps", ",".join(MAPS)).split(",")
     for map_id, title in MAPS.items():
+        if map_id not in only:
+            continue
         rows = [(tile(before, map_id, v, w, crop), tile(after, map_id, v, w, crop)) for v in views]
         h = sum(max(a.height, b.height) for a, b in rows) + pad * (len(rows) + 1) + head
         sheet = Image.new("RGB", (w * 2 + pad * 3, h), (24, 22, 20))

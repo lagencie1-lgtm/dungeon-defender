@@ -301,7 +301,7 @@ function TowerService.CanPlace(position)
 		for _, d in decor:GetChildren() do
 			local r = d:GetAttribute("BlockRadius")
 			if r and (flat(d:GetPivot().Position) - flat(position)).Magnitude < r + 2.5 then
-				return false, "Something is in the way"
+				return false, d:GetAttribute("BlockWhy") or "Something is in the way"
 			end
 		end
 	end

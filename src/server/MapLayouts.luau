@@ -60,24 +60,33 @@ MapLayouts.Forest = {
 		{ At = v(52, 0, -6), Along = v(0, 0, 1) }, -- the second ford
 	},
 	Sets = {
-		{ Name = "The keep", Why = "the hill you start on is the old keep: its broken tower at the north end, parapet and stairs at the south end",
-			Props = { { Model = "keep_field_ruin", At = v(-6, 0, -26.5), Height = 9, Turn = 0, Block = 6 } } },
+		-- Lemp's map audit (2026-11-24), "Keep lookout": the landmark that frames the first view, and one clear build
+		-- spot. The heroes arrive facing north-east (MapOutline.Start): the tower 30 degrees to the left, the first
+		-- ford 30 degrees to the right, the build spot just ahead. A Ranger on it covers the road on all four sides of
+		-- the hill (the hill is narrow: its middle strip is all that is free of the walls' flagstone rims)
+		{ Name = "The keep", Why = "the hill you start on is the old keep: its tower (an old tree grown up through it) at the north end, the first build spot between it and you, parapet and stairs at the south end",
+			Kit = {
+				{ Piece = "tower", At = v(-6, 0, -25), Look = v(0, 0, 1) },
+				{ Piece = "pad", At = v(-6, 0, -16.5), Look = v(0, 0, 1), Sink = -0.02 },
+			} },
 		{ Name = "The Hollow Gate", Why = "a gate IN the canyon wall: its two piers are the ends of the banks' retaining walls",
 			Kit = { { Piece = "arch", At = v(-49, 0, -44), Look = v(1, 0, 0), Sink = 0.3 } } },
-		{ Name = "The chapel", Why = "one ruin in the pocket between the last two lanes: three walls, the two columns of its door, the well before the door, trees behind",
+		-- "Chapel yard": a wide flat yard before the door (Paths), the well in it, one build spot beside the road
+		{ Name = "The chapel", Why = "one ruin in the pocket between the last two lanes: three walls, the two columns of its door, a yard with the well and a build spot before the door, trees behind",
 			Kit = {
 				{ Piece = "wall", At = v(32, 0, 8), Look = v(0, 0, 1) }, -- the back wall (tall at its west corner)
 				{ Piece = "wall", At = v(26.6, 0, 16.5), Look = v(-1, 0, 0) }, -- the west wall, tall where it meets the back wall
 				{ Piece = "low", At = v(37.4, 0, 15), Look = v(1, 0, 0) }, -- what is left of the east wall
 				{ Piece = "pillar", At = v(28, 0, 27), Look = v(0, 0, 1) },
 				{ Piece = "pillar", At = v(36, 0, 27), Look = v(0, 0, 1) },
+				{ Piece = "pad", At = v(40, 0, 33), Look = v(0, 0, -1), Sink = -0.02 },
 			},
 			Props = {
 				{ Model = "keep_well", At = v(32, 0, 34.5), Height = 6.5, Block = 3 },
 				{ Model = "keep_field_bush", At = v(25.5, 0, 4.8), Height = 3.2, Block = 2.6, Turn = 1 },
 				{ Model = "keep_field_bush", At = v(38.5, 0, 4.6), Height = 2.8, Block = 2.4, Turn = 4 },
 			},
-			Grove = { { At = v(29, 0, -1.5), H = 19 }, { At = v(35.5, 0, 0.5), H = 15 }, { At = v(23.5, 0, -4), H = 13 } } },
+			Grove = { { At = v(29, 0, -1.5), H = 19 }, { At = v(35.5, 0, 0.5), H = 15 }, { At = v(31, 0, -7), H = 13 } } },
 		{ Name = "The standing stones", Why = "a ring of three trilithons round a mushroom ring, with its own trees, in the pocket west of the road",
 			Kit = {
 				{ Piece = "set", At = v(-49.6, 0, 22.9), Look = v(0.17, 0, -0.98) },
@@ -107,9 +116,11 @@ MapLayouts.Forest = {
 			Grove = { { At = v(-103, 0, -22), H = 17 }, { At = v(-108, 0, -14.5), H = 14 }, { At = v(-99, 0, -12), H = 19 } } },
 		-- two lane sides had no edge at all (the judge on cycle 4: "lane edges remain bare"): a wood closes each,
 		-- 20 studs back from the road so the building ground beside the lane stays clear
-		{ Name = "The east wood", Why = "closes the east side of the last turn, between the river and the shrine",
-			Grove = { { At = v(70, 0, 14), H = 18 }, { At = v(76.5, 0, 19.5), H = 15 }, { At = v(69, 0, 23), H = 13 },
-				{ At = v(79, 0, 12.5), H = 16 } } },
+		-- "Shrine bridge": the second ford is the last place to cut off a wave before the portal. A build spot at its
+		-- near landing; its far side (where the east wood stood) is open ground for the fight near the portal, closed
+		-- by the valley side behind it
+		{ Name = "The shrine bridge", Why = "a build spot at the near landing of the last bridge before the shrine",
+			Kit = { { Piece = "pad", At = v(61, 0, -15), Look = v(-1, 0, 0), Sink = -0.02 } } },
 		{ Name = "The south wood", Why = "closes the south side of the road below the keep",
 			Grove = { { At = v(-16, 0, 31), H = 17 }, { At = v(-8, 0, 34.5), H = 19 }, { At = v(0, 0, 30.5), H = 14 },
 				{ At = v(6.5, 0, 35), H = 16 } } },
@@ -117,8 +128,19 @@ MapLayouts.Forest = {
 	-- footpaths of trodden earth: flat (they block nothing), they tie a set piece to the road so it does not sit
 	-- on the lawn like a dropped object. Width is what TerrainBuilder writes, and 4 is the least that shows (as a
 	-- track about 7 studs wide); a line must lie on 4k + 2 and run along X or Z (the terrain's 4-stud cells).
+	-- (a strip's ends lie on multiples of 4 too: a half-covered cell keeps its old ground)
+	-- `Stones = true`: a line of flat stepping stones (kit piece `flags`) instead of painted earth, for a route that
+	-- runs beside the road (painted earth there merged with the road's own verge: cycle 6's first film)
 	Paths = {
-		{ Name = "from the chapel's well to the road", Width = 4, Points = { v(32, 0, 38), v(44, 0, 38) } },
+		-- the hero's shortcut (Lemp's map audit: "connect the keep and chapel with a short hero footpath so a player
+		-- can see a wave advance and get ahead of it"): stepping stones from the foot of the keep's east stairs (its
+		-- north end) across the road, down between the road and the chapel's west wall, into its yard, which opens
+		-- onto the road before the shrine bridge. The goblins go the long way round by both fords (about 130
+		-- studs), the hero's way is about 70
+		{ Name = "the hero's shortcut from the keep to the chapel yard", Stones = true,
+			Points = { v(5.5, 0, -9.5), v(20.5, 0, -9.5), v(22.5, 0, -5), v(22.5, 0, 24), v(26, 0, 29) } },
+		-- the yard: trodden earth before the door, a grass gap from the road on its east
+		{ Name = "the chapel yard", Width = 16, Points = { v(24, 0, 36), v(40, 0, 36) } },
 		{ Name = "from the standing stones to the road", Width = 4, Points = { v(-44, 0, 14), v(-32, 0, 14) } },
 	},
 }
@@ -349,7 +371,7 @@ end
 -- studs (the camera pulled back to 1.7 times its run distance), so the rise never pushes the camera in. Steeper
 -- would look more like a wall, and would do exactly that on a phone. Beyond 30 studs a layout may climb as it likes
 -- (`Rise` in the layout: the caves' wall does).
-MapLayouts.Rise = { { 0, 5 }, { 8, 10 }, { 18, 16 }, { 30, 24 }, { 42, 30 } }
+MapLayouts.Rise = { { 0, 5 }, { 8, 10 }, { 18, 16 }, { 32, 22 }, { 44, 30 } } -- (the crater's rough rock stood 0.4 into the line at 28 with 24 from 30)
 MapLayouts.CameraLine = { Degrees = 32, Focus = 3, Clear = 0.5, Reach = 30 }
 -- the first studs of every step are its face: rock (TerrainBuilder), the rest its tread (grass, ash, cave floor)
 MapLayouts.Face = 4

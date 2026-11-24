@@ -60,7 +60,30 @@ defender for a ramp), so its numbers order the work and its claims were checked 
   stones to the road. A footpath is terrain paint: it must be written 4 wide and 0.1 proud of the ground to show
   (measured: level with the ground it does not show at all, 2 wide it does not show either).
 
+- Cycle 6, after the research briefs and Lemp's map audit (`dungeon-defenders-layout-audit.md`):
+  - Real edges. Each map has an outline (`src/shared/MapOutline.luau`) about 24 studs behind its lanes; outside it
+    the ground rises in steps with rock faces and grass / ash / cave-floor treads, woods and crystals massed on it,
+    the rivers and the lava coming out of gorges: the forest is a valley, the fortress a crater, the caves have
+    cave walls (before: a rectangle of lawn inside a ring of trees). Heroes stop 5 studs short of it, so the camera
+    behind a hero who looks back into the field stays over the rise (the tour checks the line); nothing within 4
+    studs of it can be built, on the server and in the build ghost alike.
+  - Lemp's Forest first pass. Keep lookout: the keep tower (`map_kit.py tower`: a broken keep with an old tree grown
+    up through its broken corner, roots down its walls) at the hill's north end; heroes arrive facing north-east,
+    so the first view has the tower on the left and the first ford on the right; the tutorial's first build spot is
+    a round of flagstones (`pad`) between the hero and the tower, where a Ranger covers the road on all four sides
+    of the hill. Chapel yard: a broad yard of trodden earth before the door with the well and a build spot, and the
+    hero's shortcut, a footpath from the keep's stairs across the road down the chapel's side into the yard (about
+    70 studs against the goblins' 130). Shrine bridge: a build spot at the near landing of the last bridge, the wood
+    on its far side cleared for the fight near the portal.
+  - Building on a phone: a tap (or a controller's ghost) a little off a free spot takes the nearest free one within
+    4.5 studs; choosing a card near the map's first spot shows the ghost there; a refused build names what is in
+    the way ("The well is in the way", "A wall is in the way", "Too close to the water"...).
+  - Not done (by the briefs): no new lanes before there is a boss mechanic.
+
 ## Checks (they run in `python scripts/map_tour.py <take>`, and the ground test)
+- the first build spot (`MapOutline.Start`) takes a Ranger, lies within 16 studs of the spawn, and 3 of the 8
+  spots 1.5 studs round it are free too; the lane and the spawn keep 10 studs from the outline, nothing by or
+  beyond it takes a defender, and the rise stays under the camera's line;
 - every raised floor is flat at its height and takes a defender; every channel holds liquid; the lane's ground
   never steps more than 1.2 studs per 2 walked; nothing built stands alone (`MapLayouts.Loose`: 0 on all maps);
 - `test/ground`: PASS, 0 of 4653 checks outside the limits: no defender and no monster sinks or floats on any
@@ -81,8 +104,9 @@ defender for a ramp), so its numbers order the work and its claims were checked 
 `img/<take>-<Map>-sheet.jpg` (all ten views of a take), `img/kit-<theme>.jpg` (the kit in Blender).
 
 ## Open
-- The Forest's lanes have no edge outside the keep, the canyon and the shrine (judge, cycle 4).
-- The judge on the Forest after cycle 3: the ring of round trees looks procedural (cliffs and ramparts instead).
-- One lane per map. A second gate per map is the biggest step towards Dungeon Defenders left.
+- Magma (the audit): a furnace court with a visible lava feed, lighter paving and bridge landings, a choice between
+  holding the front bridge and the back one. Crystal: a loading platform with a timber hoist, paler usable floor,
+  a high perch against a low melee route. A second enemy approach (Magma first) waits for a boss mechanic.
+- The fast enemy that teaches the Forest's shortcut is the features thread's (first-wave rescue).
 - Defenders shoot through walls (no line of sight in the game).
 - The kit's stone is soft up close (512 px paint on a 14-stud wall).

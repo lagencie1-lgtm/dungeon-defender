@@ -296,7 +296,7 @@ local function shapeLayout(layout, look)
 	-- not show at all (4 wide) or only its middle (8 wide); filled 0.1 proud, a strip written 4 wide shows about 7
 	-- wide, and one written 2 wide does not show. Flat and smooth, so defenders can stand on it.
 	for _, path in layout.Paths or {} do
-		for i = 1, #path.Points - 1 do
+		for i = 1, path.Stones and 0 or #path.Points - 1 do
 			local a, b = path.Points[i], path.Points[i + 1]
 			local mid = (a + b) / 2
 			local strip = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z))

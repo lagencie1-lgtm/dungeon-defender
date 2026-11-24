@@ -1325,7 +1325,7 @@ local function canPlaceHere(position)
 			local r = d:GetAttribute("BlockRadius")
 			local p = r and d:GetPivot().Position
 			if r and (Vector3.new(p.X, 0, p.Z) - Vector3.new(position.X, 0, position.Z)).Magnitude < r + 2.5 then
-				return false, "Something is in the way"
+				return false, d:GetAttribute("BlockWhy") or "Something is in the way"
 			end
 		end
 	end
@@ -1371,6 +1371,30 @@ local function groundUnder(screenPos)
 	if hit then
 		return Vector3.new(hit.Position.X, 0, hit.Position.Z)
 	end
+end
+
+local function snapPlacement(pos)
+	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
+end
+
+-- A tap (or a controller's ghost) that lands a little off a free spot takes the nearest free one within 4.5 studs
+-- (research briefs, 2026-11-24: a fresh phone player should get a defender down within 90 seconds, and a thumb is
+-- not a mouse). Rings of 8 spots at 1.5, 3 and 4.5 studs; nil when none is free. The mouse stays exact.
+local function nearestFree(pos)
+	pos = snapPlacement(pos)
+	if canPlaceHere(pos) then
+		return pos
+	end
+	for _, r in { 1.5, 3, 4.5 } do
+		for i = 0, 7 do
+			local a = i * math.pi / 4
+			local spot = snapPlacement(pos + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r))
+			if canPlaceHere(spot) then
+				return spot
+			end
+		end
+	end
+	return nil
 end
 
 local function startPlacing(towerType)
@@ -1419,26 +1443,28 @@ local function startPlacing(towerType)
 	if isTouch then
 		-- Show a legal preview as soon as a card is chosen. Players can move it before confirming.
 		local camera = workspace.CurrentCamera
-		if camera then
+		-- the map's designed first spot (MapOutline.Start, the one the tutorial points at) when it is near and free
+		local map = Config.Maps[Config.CurrentMap]
+		local start = map and MapOutline.Start[map.Theme]
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if start and start.FirstSpot and root and (root.Position * Vector3.new(1, 0, 1) - start.FirstSpot).Magnitude < 24
+			and canPlaceHere(start.FirstSpot) then
+			ghostPos = start.FirstSpot
+			confirmBar.Visible = true
+		elseif camera then
 			for _, x in { 0.5, 0.38, 0.62 } do
 				local viewport = camera.ViewportSize
 				local spot = groundUnder(Vector2.new(viewport.X * x, viewport.Y * 0.6))
+				spot = spot and nearestFree(spot)
 				if spot then
-					spot = Vector3.new(math.round(spot.X), 0, math.round(spot.Z))
-					if canPlaceHere(spot) then
-						ghostPos = spot
-						confirmBar.Visible = true
-						break
-					end
+					ghostPos = spot
+					confirmBar.Visible = true
+					break
 				end
 			end
 		end
 		tapHint.Visible = ghostPos == nil
 	end
-end
-
-local function snapPlacement(pos)
-	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
 end
 
 local function visualGround(pos)
@@ -1491,6 +1517,7 @@ local function padSpot()
 end
 
 local placementElapsed = 0
+local padAsked, padFound = nil, nil -- the controller's last spot and the free one found for it
 RunService.Heartbeat:Connect(function(dt)
 	if not placing or not ghost then
 		return
@@ -1499,7 +1526,11 @@ RunService.Heartbeat:Connect(function(dt)
 	if placementElapsed >= (isTouch and 0.12 or 0.03) then
 		placementElapsed = 0
 		if placingWithPad then
-			ghostPos = padSpot()
+			local spot = padSpot()
+			if spot and (not padAsked or (spot - padAsked).Magnitude > 0.75) then
+				padAsked, padFound = spot, nearestFree(spot)
+			end
+			ghostPos = padFound or spot
 			refreshPlacement(ghostPos)
 		elseif isTouch then
 			refreshPlacement(ghostPos)
@@ -1629,7 +1660,8 @@ local function worldClick(screenPos)
 		if isTouch then
 			local pos = groundUnder(screenPos)
 			if pos then
-				ghostPos = pos
+				-- (a little off a free spot: the nearest free one; nowhere free near: where the thumb was, red, with why)
+				ghostPos = nearestFree(pos) or pos
 				refreshPlacement(ghostPos)
 				confirmBar.Visible = true
 				tapHint.Visible = false

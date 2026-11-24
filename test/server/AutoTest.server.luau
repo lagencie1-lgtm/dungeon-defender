@@ -117,6 +117,13 @@ function testBarricade()
 		end
 	end
 	local spotAt = pts[best]:Lerp(pts[best + 1], 0.5) + Vector3.new(1.5, 0, 0.5) -- (a little off the middle: it snaps)
+	-- placeTowers() fills the Build Points: sell defenders until two barricades fit (the off-path check may place one)
+	for _, m in workspace.Towers:GetChildren() do
+		if (State.Get("BuildUsed") or 0) + 2 * Config.BuildPoints.Barricade <= (State.Get("BuildMax") or 0) then
+			break
+		end
+		TowerService.Sell(player, m)
+	end
 	local before = State.Get("BuildUsed") or 0
 	local ok, reason = TowerService.Place(player, "Barricade", spotAt)
 	assert(ok, "barricade not placed: " .. tostring(reason))

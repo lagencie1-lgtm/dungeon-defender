@@ -121,6 +121,18 @@ local function positionAt(distance)
 	return Vector3.new(pos.X, groundAt(distance), pos.Z), dir
 end
 
+-- the path for other services (RescueService): its length, a point on the real ground at a distance along it,
+-- and how far along it a corner is
+function EnemyService.PathLength()
+	return pathLength
+end
+function EnemyService.PathPoint(distance)
+	return (positionAt(distance))
+end
+function EnemyService.CornerDistance(index)
+	return corners[math.clamp(index, 1, #corners)] or 0
+end
+
 local function newPart(model, props)
 	local p = Instance.new(props.ClassName or "Part")
 	props.ClassName = nil
@@ -483,8 +495,29 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	end
 	-- armor takes a flat bite out of every hit (but never more than 75%)
 	local armor = enemy.stats.Armor
+	if enemy.crackedUntil and Clock.now < enemy.crackedUntil then
+		armor = nil -- cracked by the King's Cleaver: full damage from everyone for a moment
+	end
 	if armor and amount >= 1 then
 		amount = math.max(amount - armor, amount * 0.25)
+	end
+	-- a boss that staggered out of a broken charge takes more damage for a moment (BossService)
+	if enemy.weakUntil and Clock.now < enemy.weakUntil then
+		amount *= enemy.stats.Charge.Weak
+	end
+	-- heroes hitting a boss during its charge wind-up: enough hits break the charge
+	local charging = enemy.charging
+	if charging and player and amount >= 1 then
+		charging.hits += 1
+		if charging.hits >= enemy.stats.Charge.BreakHits then
+			enemy.charging = nil
+			enemy.weakUntil = Clock.now + enemy.stats.Charge.WeakTime
+			enemy.knockLeft = (enemy.knockLeft or 0) + enemy.stats.Charge.Knock
+			enemy.hitStopUntil = math.max(enemy.hitStopUntil or 0, Clock.now + 0.6)
+			enemy.nextCharge = Clock.now + enemy.stats.Charge.Every
+			enemy.nextSlam = math.max(enemy.nextSlam or 0, enemy.weakUntil + 1) -- the opening stays safe
+			EnemyService.OnChargeEnd(enemy, charging.target, true, player)
+		end
 	end
 	-- a pet's Mark (PetMoves): the next real hit is a sure crit, and the mark goes away
 	if enemy.petMark and amount >= 1 then
@@ -511,6 +544,11 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 		local color = crit and Color3.fromRGB(255, 230, 60) or big and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(255, 255, 255)
 		Effects.Text(enemy.position + Vector3.new(math.random() * 2 - 1, enemy.stats.Size * 1.3, 0),
 			(crit and "CRIT " or "") .. tostring(math.floor(amount)), color, big and 1.4 or 0.8)
+	end
+	if enemy.stats.Dummy and enemy.health <= 0 then
+		enemy.health = enemy.maxHealth -- the training knight never falls
+		enemy.model:SetAttribute("Health", enemy.health)
+		enemy.fill.Size = UDim2.fromScale(1, 1)
 	end
 	if enemy.health <= 0 then
 		kill(enemy, player)
@@ -540,6 +578,10 @@ end
 
 -- set by GameService: a boss slam hits heroes and stuns defenders near it
 EnemyService.OnBossSlam = function(_position, _radius) end
+-- set by BossService: a boss's charge at a defender (stats.Charge): who it aims at, the tell, and the end of it
+EnemyService.PickChargeTarget = function(_enemy, _range) return nil end
+EnemyService.OnChargeTell = function(_enemy, _target, _seconds) end
+EnemyService.OnChargeEnd = function(_enemy, _target, _broken, _by) end
 
 function EnemyService.Slow(enemy, factor, seconds)
 	local now = Clock.now
@@ -566,11 +608,14 @@ function EnemyService.GetActive()
 end
 
 -- enemies within `radius` of a point, the one furthest along the path first
-function EnemyService.InRange(position, radius)
+-- bodies = true: count from the enemy's body, not its middle (a sword reaches a big boss's belly; the batch film
+-- showed a hero swinging beside the Goblin King and missing, because his middle was out of reach)
+function EnemyService.InRange(position, radius, bodies)
 	local found = {}
 	local flat = Vector3.new(position.X, 0, position.Z)
 	for _, e in active do
-		if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude <= radius then
+		local reach = radius + (bodies and e.stats.Size * 0.5 or 0)
+		if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude <= reach then
 			table.insert(found, e)
 		end
 	end
@@ -588,8 +633,25 @@ function EnemyService.Clear()
 	end
 end
 
+-- enemies of the run (the Outpost's training knight doesn't count)
 function EnemyService.Count()
-	return #active
+	local n = 0
+	for _, e in active do
+		if not e.stats.Dummy then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- the training knight at a spot on the ground, facing `look` (Config.Enemies.TrainingKnight)
+function EnemyService.SpawnDummy(position, look)
+	local e = EnemyService.Spawn("TrainingKnight", 1, 0)
+	local stats = e.stats
+	e.position = position
+	e.model:PivotTo(CFrame.lookAt(position + Vector3.new(0, stats.Size * 0.74 + Ground.Feet, 0),
+		position + Vector3.new(look.X, stats.Size * 0.74 + Ground.Feet, look.Z)))
+	return e
 end
 
 local WHITE = Color3.new(1, 1, 1)
@@ -630,6 +692,10 @@ function EnemyService.Start()
 				end)
 				continue
 			end
+			if e.stats.Dummy then
+				e.knockLeft = 0 -- the training knight stands where it was put (SpawnDummy)
+				continue
+			end
 
 			local speed = e.stats.Speed * (e.speedMult or 1) * (e.enraged and 1.4 or 1)
 			if e.knockLeft and e.knockLeft > 0.01 then
@@ -650,8 +716,31 @@ function EnemyService.Start()
 					Effects.Text(e.position + Vector3.new(0, e.stats.Size * 1.6, 0), "ENRAGED!", Color3.fromRGB(255, 80, 80), 1.6)
 					Sound.Play("PortalHit", e.position)
 				end
+				-- the charge at a defender (stats.Charge, BossService draws it): stands still while winding up
+				local charge = e.stats.Charge
+				if charge then
+					e.nextCharge = e.nextCharge or (now + charge.First)
+					if e.charging then
+						speed = 0
+						if now >= e.charging.endsAt then
+							local done = e.charging
+							e.charging = nil
+							e.nextCharge = now + charge.Every
+							EnemyService.OnChargeEnd(e, done.target, false, nil)
+						end
+					elseif now >= e.nextCharge and not e.slamming then
+						local target = EnemyService.PickChargeTarget(e, charge.Range)
+						if target then
+							e.charging = { target = target, endsAt = now + charge.Windup, hits = 0 }
+							e.nextSlam = math.max(e.nextSlam or now, now + charge.Windup + 1.5) -- no slam in the middle
+							EnemyService.OnChargeTell(e, target, charge.Windup)
+						else
+							e.nextCharge = now + 2 -- nothing in reach yet: look again soon
+						end
+					end
+				end
 				e.nextSlam = e.nextSlam or (now + 5)
-				if now >= e.nextSlam and not e.slamming then
+				if now >= e.nextSlam and not e.slamming and not e.charging then
 					e.slamming = true
 					local spot = e.position
 					local radius = 14

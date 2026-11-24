@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Items = require(ReplicatedStorage.Shared.Items)
+local Config = require(ReplicatedStorage.Shared.Config)
 local Ground = require(ReplicatedStorage.Shared.Ground)
 local Art = require(ReplicatedStorage.Shared.Art)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -17,6 +18,7 @@ local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.la
 local player = Players.LocalPlayer
 local isTouch = Ui.isTouch
 local PICKUP_RANGE = 6 -- walk right up to it
+local inventory, gear = {}, {} -- the backpack and what is worn (kept up to date by the server, below)
 
 -------------------------------------------------------------------------------
 -- screen (same scaling as the main game screen)
@@ -201,16 +203,54 @@ Remotes.LootDrop.OnClientEvent:Connect(function(dropId, position, rarityIndex, n
 	end
 end)
 
-Remotes.LootPicked.OnClientEvent:Connect(function(dropId, item)
+-- quick compare for the toast: better or worse than what is worn in that slot, in Might (Items.Might)
+local function compareText(item)
+	local wornId = gear and gear[item.slot]
+	local worn = nil
+	for _, it in inventory or {} do
+		if it.id == wornId then
+			worn = it
+		end
+	end
+	if not worn or worn.id == item.id then
+		return " · new slot", Color3.fromRGB(150, 240, 160)
+	end
+	local delta = Items.Might({ item }) - Items.Might({ worn })
+	if delta > 0 then
+		return string.format(" · better +%d", delta), Color3.fromRGB(150, 240, 160)
+	end
+	return " · not better", Ui.TEXT_DIM
+end
+
+local function picked(item)
+	local r = rarityOf(item)
+	local extra = compareText(item)
+	toast(r.Name .. " " .. Items.DisplayName(item) .. extra, r.Color, item)
+	Ui.playSound("Coin")
+end
+
+Remotes.LootPicked.OnClientEvent:Connect(function(dropId, item, carrier)
 	local d = drops[dropId]
+	if d and carrier and carrier.Parent then
+		-- a pet fetched it: the item rides on the pet to the hero and is delivered there (research briefs: the drop
+		-- stays in the level until the pet delivers it, and shows which drop the pet carries)
+		d.carrier = carrier
+		d.carriedAt = os.clock()
+		d.item = item
+		if d.ring then
+			d.ring.Transparency = 1
+		end
+		if d.beam then
+			d.beam.Transparency = 1
+		end
+		return
+	end
 	if d then
 		d.model:Destroy()
 		drops[dropId] = nil
 	end
 	if item then
-		local r = rarityOf(item)
-		toast(r.Name .. " " .. Items.DisplayName(item), r.Color, item)
-		Ui.playSound("Coin")
+		picked(item)
 	end
 end)
 
@@ -218,6 +258,26 @@ RunService.Heartbeat:Connect(function()
 	local now = os.clock()
 	local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	for dropId, d in drops do
+		-- carried by a pet: it rides over the pet's back; delivered when the pet is home (or after 8 seconds)
+		if d.carrier then
+			local body = d.carrier.PrimaryPart
+			local home = d.carrier:GetAttribute("FetchPhase") == "" or d.carrier:GetAttribute("FetchPhase") == nil
+			if not body or not d.carrier.Parent or (home and now - d.carriedAt > 0.4) or now - d.carriedAt > 8 then
+				d.model:Destroy()
+				drops[dropId] = nil
+				if d.item then
+					picked(d.item)
+				end
+				continue
+			end
+			local scale = d.carrier:GetAttribute("PetScale") or 1
+			local cf = CFrame.new(body.Position + Vector3.new(0, 1.9 * scale + math.sin(now * 4) * 0.12, 0))
+				* CFrame.Angles(math.rad(20), now * 1.5, 0)
+			for _, item in d.parts do
+				item.part.CFrame = cf * item.offset
+			end
+			continue
+		end
 		-- pop out in an arc for the first half second, then float and spin
 		local t = math.min(1, (now - d.born) / 0.5)
 		local pos
@@ -262,7 +322,7 @@ end)
 -------------------------------------------------------------------------------
 -- backpack screen
 -------------------------------------------------------------------------------
-local inventory, gear = {}, {}
+inventory, gear = {}, {}
 
 local bagButton, newDot = require(script.Parent.Menu).Add("Backpack", "Backpack", 3)
 
@@ -281,7 +341,7 @@ local countLabel = label({ Size = UDim2.fromOffset(90, 26), Position = UDim2.fro
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
 local goldLabel = label({ Size = UDim2.fromOffset(180, 28), Position = UDim2.fromOffset(300, 14), Text = "0 gold",
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
-local scrapLabel = label({ Size = UDim2.fromOffset(160, 28), Position = UDim2.fromOffset(480, 14), Text = "0 scrap",
+local scrapLabel = label({ Size = UDim2.fromOffset(120, 28), Position = UDim2.fromOffset(480, 14), Text = "0 scrap",
 	TextColor3 = Ui.SCRAP, ZIndex = 31, Parent = panel })
 local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
@@ -303,9 +363,53 @@ for i, slot in Items.Slots do
 		ZIndex = 33, Parent = b })
 	slotBoxes[slot] = { button = b, name = name, picture = picture }
 end
-local totalsLabel = label({ Size = UDim2.fromOffset(440, 40), Position = UDim2.fromOffset(16, 134), Text = "",
+local totalsLabel = label({ Size = UDim2.fromOffset(222, 40), Position = UDim2.fromOffset(16, 134), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 230, 200), TextWrapped = true,
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
+
+-- gear sets (Items.GearSets): tap a set to put it on; "Save" then a set stores what you wear now
+local saving = false
+local saveButton = button({ Size = UDim2.fromOffset(58, 40), Position = UDim2.fromOffset(244, 134), Text = "Save",
+	BackgroundColor3 = Color3.fromRGB(70, 60, 50), ZIndex = 31, Parent = panel })
+local setButtons = {}
+local function paintSets()
+	saveButton.BackgroundColor3 = saving and Color3.fromRGB(150, 110, 40) or Color3.fromRGB(70, 60, 50)
+	saveButton.Text = saving and "Pick" or "Save"
+	for i, b in setButtons do
+		local has = player:GetAttribute("GearSet" .. i) == true
+		b.BackgroundColor3 = saving and Color3.fromRGB(150, 110, 40) or (has and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(55, 50, 48))
+	end
+end
+for i = 1, Items.GearSets do
+	local b = button({ Size = UDim2.fromOffset(46, 40), Position = UDim2.fromOffset(306 + (i - 1) * 50, 134), Text = "Set " .. i,
+		ZIndex = 31, Parent = panel })
+	b.TextScaled = true
+	setButtons[i] = b
+	b.Activated:Connect(function()
+		local ok, text = Remotes.GearSet:InvokeServer(saving and "save" or "use", i)
+		saving = false
+		paintSets()
+		toast(text or (ok and "Done" or "Can't"), ok and Ui.GOLD or Ui.BAD)
+	end)
+	player:GetAttributeChangedSignal("GearSet" .. i):Connect(paintSets)
+end
+saveButton.Activated:Connect(function()
+	saving = not saving
+	paintSets()
+end)
+paintSets()
+
+-- auto-salvage: off, Common, Common and Uncommon (worse than what you wear only)
+local AUTO_TEXT = { [0] = "Auto-salvage: off", [1] = "Auto-salvage: Common", [2] = "Auto-salvage: Uncommon" }
+local autoButton = button({ Size = UDim2.fromOffset(150, 30), Position = UDim2.new(1, -64, 0, 15), AnchorPoint = Vector2.new(1, 0),
+	Text = AUTO_TEXT[player:GetAttribute("AutoSalvage") or 0], BackgroundColor3 = Color3.fromRGB(70, 60, 50), ZIndex = 31, Parent = panel })
+autoButton.TextScaled = true
+player:GetAttributeChangedSignal("AutoSalvage"):Connect(function()
+	autoButton.Text = AUTO_TEXT[player:GetAttribute("AutoSalvage") or 0] or "Auto-salvage"
+end)
+autoButton.Activated:Connect(function()
+	Remotes.AutoSalvage:InvokeServer()
+end)
 
 -- the grid of items
 local grid = make("ScrollingFrame", {
@@ -641,7 +745,7 @@ local chestPanel = make("Frame", {
 	ZIndex = 40,
 	Parent = root,
 }, { corner(18), stroke(Ui.GOLD, 4) })
-label({ Size = UDim2.new(1, -40, 0, 40), Position = UDim2.fromOffset(20, 18), Text = "VICTORY CHEST",
+local chestTitle = label({ Size = UDim2.new(1, -40, 0, 40), Position = UDim2.fromOffset(20, 18), Text = "VICTORY CHEST",
 	Font = Enum.Font.GothamBlack, TextColor3 = Ui.GOLD, ZIndex = 42, Parent = chestPanel })
 -- the item you got, big, in a slot in its rarity colour
 local chestSlot = make("Frame", { Size = UDim2.fromOffset(150, 150), Position = UDim2.new(0.5, 0, 0, 142),
@@ -663,6 +767,9 @@ end)
 
 Remotes.VictoryChest.OnClientEvent:Connect(function(item, kept)
 	local r = rarityOf(item)
+	-- a boss's own reward says whose it is (Config.BossRewards)
+	local boss = item.boss and Config.Enemies[item.boss]
+	chestTitle.Text = boss and string.upper(boss.DisplayName .. "'s reward") or "VICTORY CHEST"
 	chestPanel.Visible = true
 	chestRarity.Text = "..."
 	chestName.Text = ""

@@ -135,7 +135,8 @@ local function refresh()
 		rows[s.Id].value.Text = n .. " points = +" .. (n * s.Per) .. s.Text
 		rows[s.Id].plus.BackgroundColor3 = free > 0 and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
 	end
-	resetButton.Text = "Reset points (" .. level * Config.StatResetGoldPerLevel .. " gold)"
+	resetButton.Text = level < Config.FreeStatResetBelow and "Reset points (free)"
+		or ("Reset points (" .. level * Config.StatResetGoldPerLevel .. " gold)")
 	local rebirths = player:GetAttribute("Rebirths") or 0
 	rebirthLabel.Text = "Rebirths: " .. rebirths .. " (+" .. rebirths * Config.RebirthBonus .. "% xp and gold forever)"
 	local canRebirth = level >= Config.HeroMaxLevel

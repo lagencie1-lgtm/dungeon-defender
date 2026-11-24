@@ -32,6 +32,10 @@ Items.WeaponTypes = {
 	Longsword = { Name = "Longsword", Damage = 1, Cooldown = 0.5, Range = 10, Targets = 3, Text = "Balanced" },
 	Greatsword = { Name = "Greatsword", Damage = 1.7, Cooldown = 0.85, Range = 13, Targets = 6, Text = "Slow, hits a crowd" },
 	TwinBlades = { Name = "Twin Blades", Damage = 0.55, Cooldown = 0.25, Range = 9, Targets = 1, Text = "Very fast, one goblin" },
+	-- the Goblin King's own weapon (Config.BossRewards): never rolled at random, only from the King.
+	-- ArmorBreak = seconds an armored enemy you hit takes full damage, from you AND from every defender
+	KingsCleaver = { Name = "King's Cleaver", Damage = 1.3, Cooldown = 0.65, Range = 12, Targets = 4, ArmorBreak = 3,
+		Text = "Cracks armor: armored enemies you hit take full damage from you and your defenders for 3 s" },
 }
 Items.WeaponTypeOrder = { "Longsword", "Greatsword", "TwinBlades" }
 Items.ArmorNames = { Helmet = { "Helm", "Hood", "Crown" }, Armor = { "Chestplate", "Tunic", "Mail" },
@@ -78,6 +82,13 @@ function Items.UpgradeCost(item)
 	end
 	return gold, scrap
 end
+
+-- Gear sets (Loot screen): save what you wear in a slot, put it all back on in one tap (research report: a
+-- player must be able to try another build quickly). Free for everyone.
+Items.GearSets = 3
+-- Auto-salvage (Loot screen): new drops up to this rarity that are worse than what you wear in their slot become
+-- scrap straight away. 0 = off. The choices the button steps through:
+Items.AutoSalvageSteps = { 0, 1, 2 } -- off, Common, Common and Uncommon
 
 function Items.SalvageValue(item)
 	return Items.Rarities[item.rarity].Scrap + (item.plus or 0) * 2

@@ -73,7 +73,7 @@ local XBOX = {
 	ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y",
 	ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",
 	DPadUp = "Up", DPadDown = "Down", DPadLeft = "Left", DPadRight = "Right",
-	ButtonSelect = "View", ButtonStart = "Menu",
+	ButtonSelect = "View", ButtonStart = "Menu", ButtonL3 = "LS", ButtonR3 = "RS",
 }
 -- what Roblox reports for a PlayStation controller, made short enough for a badge
 local PLAYSTATION = {

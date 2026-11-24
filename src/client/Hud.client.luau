@@ -17,6 +17,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
 local ShopLooks = require(script.Parent.ShopLooks)
 local Store = require(ReplicatedStorage.Shared.Store)
+local Items = require(ReplicatedStorage.Shared.Items)
 local MarketplaceService = game:GetService("MarketplaceService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
@@ -324,6 +325,31 @@ local heroPanel = make("Frame", {
 }, { corner(12), stroke() })
 if isTouch then
 	make("UIScale", { Scale = 0.8, Parent = heroPanel })
+	-- the Menu button lives on its own screen with its own scale; on a narrow, tall screen (a 4:3 tablet, a Studio
+	-- window of 750x635) it reached down past this panel's top (test/mobile: "menu covers hero status").
+	-- Keep the panel just below it, wherever the two scales put them.
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function keepBelowMenu()
+		local menuGui = player.PlayerGui:FindFirstChild("SideMenu")
+		local open = menuGui and menuGui:FindFirstChild("OpenMenu", true)
+		if not open or not hudScale or hudScale.Scale <= 0 then
+			return
+		end
+		local bottom = open.AbsolutePosition.Y + open.AbsoluteSize.Y
+		local y = (bottom - root.AbsolutePosition.Y) / hudScale.Scale + 6
+		heroPanel.Position = UDim2.fromOffset(10, math.max(168, math.ceil(y)))
+	end
+	task.spawn(function()
+		local menuGui = player.PlayerGui:WaitForChild("SideMenu", 30)
+		local open = menuGui and menuGui:FindFirstChild("OpenMenu", true)
+		if open then
+			open:GetPropertyChangedSignal("AbsolutePosition"):Connect(keepBelowMenu)
+			open:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepBelowMenu)
+		end
+		root:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepBelowMenu)
+		root:GetPropertyChangedSignal("AbsolutePosition"):Connect(keepBelowMenu)
+		keepBelowMenu()
+	end)
 end
 local heroPortrait = Icons.Draw(heroPanel, Config.HeroIcons.Swordmaster, nil,
 	{ Size = UDim2.fromOffset(46, 46), Position = UDim2.fromOffset(4, 3) })
@@ -484,9 +510,32 @@ for i, mapId in Config.MapOrder do
 		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
 	label({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(28, 36), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
-	label({ Size = UDim2.new(1, -40, 0, 18), Position = UDim2.fromOffset(28, 60),
+	local statsLine = label({ Size = UDim2.new(1, -40, 0, 18), Position = UDim2.fromOffset(28, 60),
 		Text = string.format("Goblin health x%.2f · gems x%.1f · better loot +%d", info.Health, info.Gems, info.ItemLevel),
 		Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	-- the boss's own reward instead, when it has one (Config.BossRewards): what it is, what it does, your meter
+	local bossName = nil
+	for _, wave in info.Waves do
+		for _, group in ipairs(wave) do
+			if Config.BossRewards[group.Enemy] then
+				bossName = group.Enemy
+			end
+		end
+	end
+	if bossName then
+		local reward = Config.BossRewards[bossName]
+		local weapon = Items.WeaponTypes[reward.Item]
+		local function showReward()
+			local first = not player:GetAttribute("BossFirst_" .. bossName)
+			statsLine.Text = string.format("Boss reward: %s (cracks armor) · %s", weapon.Name,
+				first and "first win takes it" or string.format("meter %d/%d", player:GetAttribute("BossMeter_" .. bossName) or 0,
+					reward.Meter))
+			statsLine.TextColor3 = Items.Rarities[reward.Rarity].Color
+		end
+		showReward()
+		player:GetAttributeChangedSignal("BossMeter_" .. bossName):Connect(showReward)
+		player:GetAttributeChangedSignal("BossFirst_" .. bossName):Connect(showReward)
+	end
 	b.Activated:Connect(function()
 		Remotes.PickMap:FireServer(mapId)
 		mapPanel.Visible = false
@@ -1608,7 +1657,9 @@ local function refreshInfo()
 		upgradeButton.Text = "Max level"
 		upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 	end
-	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " mana)"
+	local full = (GameState:GetAttribute("Wave") or 0) == 0
+		or workspace:GetServerTimeNow() < (selected:GetAttribute("FullRefundUntil") or 0)
+	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * (full and 1 or Config.SellRefund)) .. " mana)"
 	local base = selected.PrimaryPart and selected.PrimaryPart.Position or Vector3.zero
 	if not rangeCircle then
 		rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))

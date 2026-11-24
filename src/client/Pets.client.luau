@@ -152,8 +152,11 @@ local function buildEggs()
 			Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
 		label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-		local hatch = button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.fromOffset(110, 50),
+		local hatch = button({ Size = UDim2.fromOffset(212, 44), Position = UDim2.fromOffset(110, 50),
 			BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
+		-- three at once: the same price each and the same odds (gold only)
+		local hatch3 = button({ Size = UDim2.fromOffset(80, 44), Position = UDim2.fromOffset(330, 50),
+			BackgroundColor3 = Color3.fromRGB(50, 105, 50), Text = "x3", ZIndex = 33, Parent = card })
 		-- what can come out
 		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
 			BackgroundTransparency = 1, ZIndex = 33, Parent = card },
@@ -167,6 +170,31 @@ local function buildEggs()
 				Text = percent >= 1 and string.format("%.0f%%", percent) or string.format("%.2f%%", percent),
 				TextColor3 = rarityColor(c[1]), ZIndex = 34, Parent = cell })
 		end
+		hatch3.Activated:Connect(function()
+			local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id, 3)
+			if ok and type(result) == "table" and result[1] then
+				-- the rarest of the three gets the reveal, the line names all three
+				local names = {}
+				local indexGold = 0
+				for _, pet in result do
+					table.insert(names, Config.Pets[pet.kind].Name)
+					indexGold += pet.indexGold or 0
+				end
+				local best = result[1]
+				local chance = 0
+				for _, ch in egg.Chances do
+					if ch[1] == best.kind then
+						chance = ch[2] / total * 100
+					end
+				end
+				message.Text = "Hatched: " .. table.concat(names, ", ") .. (indexGold > 0 and (" · Pet Index +" .. indexGold .. " gold") or "")
+				message.TextColor3 = Ui.GOLD
+				task.spawn(showReveal, egg, best, chance)
+			else
+				message.Text = (type(result) == "string" and result) or "Can't hatch"
+				message.TextColor3 = Ui.BAD
+			end
+		end)
 		hatch.Activated:Connect(function()
 			local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id)
 			if ok then

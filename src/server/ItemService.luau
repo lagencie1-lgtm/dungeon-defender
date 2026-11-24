@@ -12,6 +12,7 @@ local DataService = require(script.Parent.DataService)
 local Sound = require(script.Parent.Sound)
 local State = require(script.Parent.State)
 local QuestService = require(script.Parent.QuestService)
+local Telemetry = require(script.Parent.Telemetry)
 
 local ItemService = {}
 
@@ -198,6 +199,16 @@ local function addItem(player, item)
 		Remotes.Notify:FireClient(player, "Backpack full! " .. item.name .. " was turned into scrap", Color3.fromRGB(255, 160, 80))
 		return false
 	end
+	-- auto-salvage (the player's choice, Items.AutoSalvageSteps): a plain drop worse than what is worn in its slot
+	local worn = profile.Gear[item.slot] and findItem(profile, profile.Gear[item.slot])
+	if worn and item.rarity <= (profile.AutoSalvage or 0) and not item.boss
+		and Items.Might({ item }) < Items.Might({ worn }) then
+		local scrap = Items.SalvageValue(item)
+		profile.Scrap += scrap
+		DataService.Publish(player)
+		Remotes.Notify:FireClient(player, string.format("Auto-salvaged %s (+%d scrap)", item.name, scrap), Items.Rarities[item.rarity].Color)
+		return false
+	end
 	table.insert(profile.Items, item)
 	QuestService.Add(player, "Loot", 1)
 	-- nothing in that slot yet? put it on straight away
@@ -256,6 +267,90 @@ function ItemService.VictoryChest(difficultyId)
 		local item = ItemService.Roll(level, luck, 3)
 		local kept = addItem(player, item)
 		Remotes.VictoryChest:FireClient(player, item, kept)
+		task.spawn(DataService.Save, player)
+	end
+end
+
+-------------------------------------------------------------------------------
+-- a boss's own reward (Config.BossRewards): first win for sure, then a meter that fills with every kill
+-------------------------------------------------------------------------------
+-- the boss's unique weapon at an item level: its fixed stats, the numbers like any item of its rarity
+function ItemService.RollBossItem(bossName, itemLevel)
+	local reward = Config.BossRewards[bossName]
+	local weapon = Items.WeaponTypes[reward.Item]
+	local r = Items.Rarities[reward.Rarity]
+	local stats = {}
+	for _, stat in reward.Stats do
+		local info = Items.Stats[stat]
+		stats[stat] = math.floor((info.Base + itemLevel * info.PerLevel) * r.Mult * rng:NextNumber(0.95, 1.1) * 10 + 0.5) / 10
+	end
+	return {
+		id = HttpService:GenerateGUID(false):sub(1, 12),
+		slot = "Weapon",
+		base = reward.Item,
+		rarity = reward.Rarity,
+		ilvl = itemLevel,
+		stats = stats,
+		plus = 0,
+		name = weapon.Name,
+		boss = bossName,
+		new = true,
+	}
+end
+
+local function publishMeter(player, profile)
+	for bossName, reward in Config.BossRewards do
+		local meter = profile.BossMeter and profile.BossMeter[bossName] or 0
+		player:SetAttribute("BossMeter_" .. bossName, meter)
+		player:SetAttribute("BossMeterMax_" .. bossName, reward.Meter)
+		player:SetAttribute("BossFirst_" .. bossName, profile.BossFirst and profile.BossFirst[bossName] == true or false)
+	end
+end
+ItemService.PublishBossMeters = function(player)
+	local profile = DataService.Get(player)
+	if profile then
+		publishMeter(player, profile)
+	end
+end
+
+-- every player gets this when a boss falls: the first win's reward, a step on the meter, maybe a surprise
+function ItemService.BossReward(player, bossName, difficultyId)
+	local reward = Config.BossRewards[bossName]
+	local profile = DataService.Get(player)
+	if not reward or not profile then
+		return
+	end
+	profile.BossMeter = profile.BossMeter or {}
+	profile.BossFirst = profile.BossFirst or {}
+	local map = Config.Maps[State.Get("Map") or ""]
+	local level = 22 + levelBonus(difficultyId) + (map and map.ItemLevel or 0)
+	local give, why = false, nil
+	if not profile.BossFirst[bossName] then
+		profile.BossFirst[bossName] = true
+		give, why = true, "first"
+	else
+		local meter = (profile.BossMeter[bossName] or 0) + (reward.Fill[difficultyId] or 1)
+		if meter >= reward.Meter then
+			meter -= reward.Meter
+			give, why = true, "meter"
+		elseif rng:NextNumber() < reward.DropChance then
+			give, why = true, "luck"
+		end
+		profile.BossMeter[bossName] = meter
+	end
+	publishMeter(player, profile)
+	if give then
+		local item = ItemService.RollBossItem(bossName, level)
+		local kept = addItem(player, item)
+		-- shown once, with the chest's reveal (a little after the Victory Chest so the two don't overlap)
+		task.delay(3.5, function()
+			if player.Parent then
+				Remotes.VictoryChest:FireClient(player, item, kept)
+				Remotes.Notify:FireClient(player, why == "first" and ("First win: the " .. item.name .. " is yours! Try it on the training knight")
+					or why == "meter" and ("Boss meter full: a new " .. item.name .. " at your level")
+					or ("Lucky! Another " .. item.name), Items.Rarities[item.rarity].Color)
+			end
+		end)
 		task.spawn(DataService.Save, player)
 	end
 end
@@ -324,7 +419,8 @@ function ItemService.DropsNear(player, position, radius, maxRarity)
 	return found
 end
 
-function ItemService.TakeDrop(player, dropId)
+-- carrier: the pet model that fetched it (the drop rides on it to the hero on the screen, PetMoves)
+function ItemService.TakeDrop(player, dropId, carrier)
 	local list = pending[player]
 	local drop = list and list[dropId]
 	if not drop then
@@ -332,7 +428,7 @@ function ItemService.TakeDrop(player, dropId)
 	end
 	list[dropId] = nil
 	addItem(player, drop.item)
-	Remotes.LootPicked:FireClient(player, dropId, drop.item)
+	Remotes.LootPicked:FireClient(player, dropId, drop.item, carrier)
 	Sound.Play("Coin", drop.position)
 	return true
 end
@@ -376,6 +472,7 @@ local function equip(player, id)
 	item.new = nil
 	ItemService.ApplyBonuses(player)
 	sendInventory(player)
+	Telemetry.First(player, "FirstGearEquip")
 	return true
 end
 
@@ -427,6 +524,58 @@ local function salvage(player, id)
 	return true, scrap
 end
 
+-- gear sets: "save" what is worn now into set i, "use" puts set i back on (items still in the backpack)
+local function gearSet(player, action, index)
+	local profile = DataService.Get(player)
+	if not profile or type(index) ~= "number" or index < 1 or index > Items.GearSets or index % 1 ~= 0 then
+		return false, "No such set"
+	end
+	profile.GearSets = profile.GearSets or {}
+	if action == "save" then
+		profile.GearSets[index] = table.clone(profile.Gear)
+		player:SetAttribute("GearSet" .. index, true)
+		return true, "Saved as set " .. index
+	elseif action == "use" then
+		local set = profile.GearSets[index]
+		if not set then
+			return false, "Set " .. index .. " is empty: save one first"
+		end
+		local missing = 0
+		for _, slot in Items.Slots do
+			local id = set[slot]
+			if id == nil then
+				profile.Gear[slot] = nil -- the set had nothing in this slot
+			elseif findItem(profile, id) then
+				profile.Gear[slot] = id
+			else
+				missing += 1 -- salvaged since: the slot keeps what it has
+			end
+		end
+		ItemService.ApplyBonuses(player)
+		sendInventory(player)
+		return true, "Set " .. index .. " on" .. (missing > 0 and (" (" .. missing .. " piece" .. (missing == 1 and "" or "s") .. " gone)") or "")
+	end
+	return false, "Unknown"
+end
+
+ItemService.GearSet = gearSet
+ItemService.AddForTest = function(player, item) -- (the autotest: an item arriving like any drop)
+	return addItem(player, item)
+end
+
+-- auto-salvage: the next step of Items.AutoSalvageSteps
+local function autoSalvage(player)
+	local profile = DataService.Get(player)
+	if not profile then
+		return false
+	end
+	local steps = Items.AutoSalvageSteps
+	local at = table.find(steps, profile.AutoSalvage or 0) or 1
+	profile.AutoSalvage = steps[at % #steps + 1]
+	player:SetAttribute("AutoSalvage", profile.AutoSalvage)
+	return true, profile.AutoSalvage
+end
+
 local function seen(player)
 	local profile = DataService.Get(player)
 	if not profile then
@@ -438,8 +587,17 @@ local function seen(player)
 end
 
 function ItemService.Start()
+	table.insert(DataService.OnLoaded, function(player, profile)
+		publishMeter(player, profile)
+		player:SetAttribute("AutoSalvage", profile.AutoSalvage or 0)
+		for i = 1, Items.GearSets do
+			player:SetAttribute("GearSet" .. i, profile.GearSets ~= nil and profile.GearSets[i] ~= nil)
+		end
+	end)
 	Remotes.PickupLoot.OnServerEvent:Connect(onPickup)
 	Remotes.EquipGear.OnServerInvoke = equip
+	Remotes.GearSet.OnServerInvoke = gearSet
+	Remotes.AutoSalvage.OnServerInvoke = autoSalvage
 	Remotes.UpgradeGear.OnServerInvoke = upgrade
 	Remotes.SalvageGear.OnServerInvoke = salvage
 	Remotes.SeenGear.OnServerEvent:Connect(seen)

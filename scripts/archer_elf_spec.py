@@ -101,6 +101,14 @@ def main():
             tip.append((y, (a + b) / 2, (b - a) / 2))
     spec["tip"] = [{"z": z(y), "y": Y(c), "r": round(r * S, 4)} for y, c, r in tip]
 
+    # the hood's tail (coordinator round B: a gnome-cap tail leaving the back of the crown, curving back and down to a
+    # tip that hangs free behind the nape): its spine and half-thickness traced from the side painting (pixels)
+    # (centre = the outline's back edge in that row + the half-thickness; the start sits inside the crown)
+    back_edge = {80: 712, 100: 686, 120: 666, 140: 651, 160: 641, 180: 637, 200: 636, 220: 637, 240: 640, 260: 644, 280: 651}
+    half = {80: 46, 100: 46, 120: 44, 140: 40, 160: 35, 180: 31, 200: 28, 220: 25, 240: 22, 260: 19, 280: 11}
+    spine = [(back_edge[y] + half[y], y, half[y]) for y in sorted(back_edge)] + [(660, 293, 3)]
+    spec["tail"] = [{"y": Y(x), "z": z(yy), "r": round(r * S, 4)} for x, yy, r in spine]
+
     # ---- the collar roll where the hood meets the shoulders --------------------------------------------------------
     spec["collar"] = {"z": z(358), "hw": round(112 * S, 4), "r": round(15 * S, 4)}
 

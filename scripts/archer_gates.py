@@ -129,6 +129,7 @@ MARKS = {
 TEMPLATES = SPEC.get("marks") or MARKS[SPEC["sheet"]]
 EYE_THR = 0.9
 FACE_DENT = 0.03
+TAIL_NOTCH = 0.088   # the side painting's notch under the tail (scripts/archer_gates.py hood_side, 8.8 %)
 PAINT_HEAD_W = 2 * max(r["hw"] for r in SPEC["head"]) / SPEC["scale"]     # the hood's width in the front painting
 
 
@@ -242,7 +243,58 @@ def hood_side(fbx, d):
     overlay[a & ~b] = (255, 140, 120)
     overlay[a & b] = (90, 90, 90)
     _I.fromarray(overlay).save(os.path.join(d, "gate_hood_side_overlay.png"))
-    return {"overlap": round(float(overlap), 1), "tips": tips}
+    # round B (the hood's tail): overlap on the rear third only; the notch under the tail against the painting's;
+    # where the hanging tip ends, against the painting's
+    rear = np.zeros_like(a)
+    rear[:, :133] = True
+    rear_overlap = 100 * (a & b & rear).sum() / max(1, ((a | b) & rear).sum())
+
+    def notch_and_tip(mm):
+        """the free-hanging tail: rows where the outline's back part is a separate run; the notch = the deepest gap
+        between that run and the rest (fraction of the width), the tip = the last such row's run middle"""
+        depth, tip, rows = 0.0, None, []
+        for y in range(int(mm.shape[0] * 0.4), mm.shape[0]):   # (below the crown: the tail hangs low)
+            xs = np.where(mm[y])[0]
+            if len(xs) < 2:
+                continue
+            gaps = np.where(np.diff(xs) > 1)[0]
+            if len(gaps) and xs[gaps[0]] < mm.shape[1] * 0.5:
+                g = xs[gaps[0] + 1] - xs[gaps[0]] - 1
+                depth = max(depth, g / mm.shape[1])
+                if g / mm.shape[1] > 0.02:
+                    rows.append(y / mm.shape[0])
+                tip = (float(xs[:gaps[0] + 1].mean()) / mm.shape[1], y / mm.shape[0])
+        return depth, tip, rows
+    nd_m, tip_m, rows_m = notch_and_tip(a)
+    nd_p, tip_p, rows_p = notch_and_tip(b)
+    # the notch must be under the tail: its rows inside the painting's notch rows (+-8 % of the height)
+    notch_under = bool(rows_m) and bool(rows_p) and min(rows_m) >= min(rows_p) - 0.08 and max(rows_m) <= max(rows_p) + 0.08
+    tip_off = None if (tip_m is None or tip_p is None) else float(np.hypot(tip_m[0] - tip_p[0], tip_m[1] - tip_p[1]))
+    return {"overlap": round(float(overlap), 1), "tips": tips, "rear_overlap": round(float(rear_overlap), 1),
+            "notch_depth": round(nd_m * 100, 1), "notch_depth_painting": round(nd_p * 100, 1),
+            "tip_offset": None if tip_off is None else round(tip_off * 100, 1), "notch_under_tail": notch_under,
+            "notch_rows": [round(min(rows_m), 2), round(max(rows_m), 2)] if rows_m else None,
+            "notch_rows_painting": [round(min(rows_p), 2), round(max(rows_p), 2)] if rows_p else None}
+
+
+def tail_bump(fbx, d, ball_fbx):
+    """frames 2, 3, 5, 11, 13 and 14 of the turntable: the hood's outline against round A's ball-shaped hood: the
+    tail must add a clear bump at the back (at least 1.5 % of the hood's area)"""
+    out = {}
+    for k in (2, 3, 5, 11, 13, 14):
+        az = -90 + k * 22.5
+        a = mask_of(render(fbx, os.path.join(d, f"gate_tail_{k:02d}.png"), az, el=8, grey=True))
+        b = mask_of(render(ball_fbx, os.path.join(d, f"gate_ball_{k:02d}.png"), az, el=8, grey=True))
+        # only on the hood's rear half (the side away from the face), where the tail is
+        cols = np.where(a.any(0))[0]
+        mid = (cols.min() + cols.max()) // 2
+        rear = np.zeros_like(a)
+        if math.sin(math.radians(k * 22.5)) > 0:
+            rear[:, mid:] = True
+        else:
+            rear[:, :mid] = True
+        out[k] = round(100 * (a & ~b & rear).sum() / max(1, a.sum()), 1)
+    return out
 
 
 def main():
@@ -295,6 +347,24 @@ def main():
         res["fails"].append(f"hood side outline overlap {hs['overlap']}% (needs 90%)")
     if hs["tips"] != 1:
         res["fails"].append(f"hood back outline has {hs['tips']} tips (needs exactly 1)")
+    if hs["rear_overlap"] < 85:
+        res["fails"].append(f"hood rear third overlap {hs['rear_overlap']}% (needs 85%)")
+    if hs["notch_depth"] < 0.7 * hs["notch_depth_painting"]:
+        res["fails"].append(f"notch under the tail {hs['notch_depth']}% (needs 70% of the painting's {hs['notch_depth_painting']}%)")
+    if not hs["notch_under_tail"]:
+        res["fails"].append(f"the notch is not under the tail (rows {hs['notch_rows']}, painting {hs['notch_rows_painting']})")
+    if hs["tip_offset"] is None or hs["tip_offset"] > 5:
+        res["fails"].append(f"tail tip {hs['tip_offset']}% away from the painting's (needs within 5%)")
+    ball = os.path.join(d, "no_tail", "ranger_archer.fbx")   # the same build without the tail (the control)
+    if not os.path.exists(ball):
+        subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "archer_loft.py"), "--", os.path.dirname(ball)],
+                       capture_output=True, env=dict(os.environ, HTD_NO_TAIL="1"))
+    if os.path.exists(ball):
+        tb = tail_bump(fbx, d, ball)
+        res["tail_bump"] = tb
+        weak = [k for k, v in tb.items() if v < 1.5]
+        if weak:
+            res["fails"].append(f"tail not seen as a bump in frames {weak} ({tb})")
     res["notch"] = []
     for k in range(16):
         turn = k * 22.5
@@ -307,7 +377,10 @@ def main():
             bottom = c["y"] > 0.92        # under the hood's hem (it sits on the shoulders), not its outline
             # in the spec too: the face opening at the front, the trim standing proud of the recessed face (<= 6 %)
             opening = abs(s) > 0.3 and (c["x"] < 0.15 if s > 0 else c["x"] > 0.85) and 0.25 < c["y"] < 0.95 and c["depth"] <= FACE_DENT + 0.03
-            if not spec and not bottom and not opening and (worst is None or c["depth"] > worst["depth"]):
+            # and the notch under the hood's tail (round B, the painting's gnome cap) seen from a front or back
+            # quarter: on the back side, no deeper than the side painting's own tail notch + 3 %
+            tail_notch = abs(s) > 0.3 and (c["x"] > 0.55 if s > 0 else c["x"] < 0.45) and 0.25 < c["y"] < 0.85 and                 c["depth"] <= TAIL_NOTCH + 0.03
+            if not spec and not bottom and not opening and not tail_notch and (worst is None or c["depth"] > worst["depth"]):
                 worst = c
         dep = worst["depth"] if worst else 0.0
         res["notch"].append(round(dep * 100, 2))

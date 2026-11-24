@@ -140,6 +140,14 @@ do
 		mark("archer open light")
 		task.wait(1.5)
 		m:Destroy()
+		local dr = workspace:FindFirstChild("OpenDragon")
+		if dr then
+			local dcf, dsize = dr:GetBoundingBox()
+			workspace.CurrentCamera.CFrame = CFrame.lookAt(dcf.Position + dr:GetPivot().LookVector * dsize.Y * 1.8 + Vector3.new(0, dsize.Y * 0.2, 0), dcf.Position)
+			mark("dragon open light")
+			task.wait(1.5)
+			dr:Destroy()
+		end
 		workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	end
 end

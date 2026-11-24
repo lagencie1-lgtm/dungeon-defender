@@ -87,6 +87,26 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 			end
 			m.Parent = workspace
 		end
+		-- the Baby Dragon beside him (2026-11-24 brightness check: is the game's light the same for every painted
+		-- asset?), facing the same way
+		local dragon = art and art:FindFirstChild("pet_babydragon")
+		if dragon then
+			local d = dragon:Clone()
+			d.Name = "OpenDragon"
+			local _, sz = d:GetBoundingBox()
+			d:ScaleTo(d:GetScale() * 2.2 / sz.Y)
+			local hit2 = workspace:Raycast(arg + Vector3.new(3, 50, 0), Vector3.new(0, -200, 0))
+			local g2 = hit2 and hit2.Position.Y or arg.Y
+			d:PivotTo(CFrame.new(arg.X + 3, g2, arg.Z))
+			local cf2, s4 = d:GetBoundingBox()
+			d:PivotTo(d:GetPivot() + Vector3.new(0, g2 - (cf2.Position.Y - s4.Y / 2), 0))
+			for _, x in d:GetDescendants() do
+				if x:IsA("BasePart") then
+					x.Anchored = true
+				end
+			end
+			d.Parent = workspace
+		end
 		cue:FireClient(player, "OpenArcherReady")
 	elseif step == "Done" then
 		pcall(function()

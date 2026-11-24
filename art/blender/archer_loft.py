@@ -215,13 +215,22 @@ head = Part("Head")
 # so the hood runs back to a ridge and a point instead of a round dome
 # the skull is about as deep as it is wide: what the side outline shows behind that is the hood's cone and tail
 for r in SPEC["head"]:
-    r["body_back"] = min(r["back"], r["front"] + 1.75 * r["hw"])
-head_rows = []
+    # (above the tail's start the whole outline is crown: the crown runs back into the tail with no saddle)
+    # the notch only where the side painting has it (the rows where the tail hangs free); above, the crown is merged
+    # into the tail as painted
+    free = [t["z"] for t in SPEC.get("tip", [])]
+    zt0 = (min(free) - 0.04) if free else 0
+    zt1 = (max(free) + 0.06) if free else 0
+    narrow = min(r.get("body_back", r["back"]), r["front"] + 1.75 * r["hw"])
+    w_ = max(0.0, min(1.0, min(r["z"] - zt0, zt1 - r["z"]) / 0.05))
+    skull = r.get("body_back", r["back"]) * (1 - w_) + narrow * w_
+    t = max(0.0, min(1.0, (2.20 - r["z"]) / 0.12))
+    r["body_back"] = r["back"] * (1 - t) + skull * t
+# the hood is the skull's round shape here; its tail is a tube of its own along a curved spine, melted on below
+# (round B: a single loft along the vertical cannot hang a tail free over the nape)
+head_rows = [dict(r, back=r["body_back"]) for r in SPEC["head"]]
 for r in SPEC["head"]:
-    # where the side outline reaches further back than the skull, that reach is the tail: the back half of the row
-    # narrows and comes to a point (a teardrop), so the crown's ridge runs on into one tapered tail
-    tail = max(0.0, min(1.0, (r["back"] - r.get("body_back", r["back"])) / 0.3))
-    head_rows.append(dict(r, nb=2.2 - 1.0 * tail, wb=1.0 - 0.5 * tail))   # (nb stays >= 1.2: no folded rows)
+    r["back"] = r["body_back"]
 hood_faces = head.add(loft(head.bm, head_rows, dome=0.035, seg=40), "hood")
 hood_verts = list({v for f in hood_faces for v in f.verts})
 for _ in range(3):
@@ -258,6 +267,36 @@ for v in hood_verts:
             v.co.y += RECESS * (f * f * (3 - 2 * f))
 
 HEAD_C = Vector((0, head_c(1.85), 1.85))
+
+# the tail: a tapered tube along the traced spine, joined to the hood with a smooth union (no seam, no knob)
+if SPEC.get("tail") and not os.environ.get("HTD_NO_TAIL"):   # (HTD_NO_TAIL: the same hood without it, the gate's control)
+    import vdb_union
+    tl = SPEC["tail"]
+    tb = bmesh.new()
+    TAIL_FAT = float(os.environ.get("HTD_TAIL_FAT", "1.0"))   # (as traced; fuller tails overshot the painting's outline)
+    tube(tb, [Vector((0, t["y"], t["z"])) for t in tl], [max(0.012, t["r"] * TAIL_FAT) for t in tl], seg=20, per=6, flat=1.15)
+    tb.verts.index_update()
+    t_pts = [v.co[:] for v in tb.verts]
+    t_faces = [[v.index for v in f.verts] for f in tb.faces]
+    tb.free()
+    hv = sorted({v for f in hood_faces for v in f.verts}, key=lambda v: v.index)
+    idx = {v: i for i, v in enumerate(hv)}
+    h_pts = [v.co[:] for v in hv]
+    h_faces = [[idx[v] for v in f.verts] for f in hood_faces]
+    pts, faces = vdb_union.smooth_union([(h_pts, h_faces), (t_pts, t_faces)], voxel=0.011, k=0.1)
+    for f in hood_faces:
+        head.tags.pop(f, None)
+    bmesh.ops.delete(head.bm, geom=hv, context="VERTS")
+    nv = [head.bm.verts.new(p) for p in pts.tolist()]
+    new_faces = []
+    for f in faces:
+        try:
+            new_faces.append(head.bm.faces.new([nv[i] for i in f]))
+        except ValueError:
+            pass
+    head.add(new_faces, "hood")
+    hood_faces = new_faces
+    print("TAIL joined:", len(new_faces), "faces in the hood")
 
 
 def band_loop(bm, pts, half_w, half_t, centre, seg=12, lift=None):
@@ -311,7 +350,9 @@ for x, zz in loop:
 head.add(band_loop(head.bm, pts, TW / 2, 0.016, HEAD_C), "cream")
 
 # the hair: big flat locks across the forehead and down by the cheeks, lying on the face under the trim
-LOCKS = [(-0.25, 0.1, -0.55), (-0.085, 0.12, -0.2), (0.085, 0.12, 0.2), (0.25, 0.1, 0.55)]   # (above the brows)
+# three broad swept locks along the fringe line of the front painting, parted a little left of the middle, each a
+# flattened leaf with a soft point (round B: the forehead read as a row of small curls)
+LOCKS = [(-0.17, 0.12, -0.45), (-0.02, 0.14, -0.25), (0.14, 0.13, 0.38)]   # (kept well inside the opening)
 for x, ln, tilt in LOCKS:
     zt = Z_OPEN_TOP - TW
     while opening_w(zt) - TW < abs(x) + 0.05 and zt > Z_OPEN_BOT:
@@ -319,10 +360,10 @@ for x, ln, tilt in LOCKS:
     y0, _ = head_surface(x, zt)
     a = Vector((x, y0 + RECESS * 0.6, zt - 0.025))    # (its top tucked under the trim)
     b = a + Vector((math.sin(tilt) * ln, -0.025, -math.cos(tilt) * ln))
-    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.085, 0.075, 0.03], seg=12, per=3, flat=0.45, nvec=(0, 1, 0)), "hair")
+    head.add(tube(head.bm, [a, (a + b) / 2 + Vector((0, -0.025, 0)), b], [0.11, 0.1, 0.03], seg=12, per=4, flat=0.32, nvec=(0, 1, 0)), "hair")
 for s in (-1, 1):       # side locks by the cheeks
     zt = 1.8
-    x = s * (opening_w(zt) - TW - 0.045)     # (by the cheek, clear of the eye)
+    x = s * (opening_w(zt) - TW - 0.12)      # (by the cheek, clear of the eye, inside the opening's outline seen side-on)
     y0, _ = head_surface(x * 0.95, zt)
     a = Vector((x, y0 + RECESS * 0.7, zt))
     b = a + Vector((-s * 0.03, 0.0, -0.17))
@@ -549,7 +590,7 @@ def to_object(part):
                         c = lin(PAL["hood_inner"]) + (1.0,)
             loop[col] = c
             loop[facew] = (w, w, w, 1.0)
-            k = 1.0 if (part.name == "Head" and part.tags.get(f) == "cream") else 0.0
+            k = 1.0 if (part.name == "Head" and part.tags.get(f) in ("cream", "hair")) else 0.0   # (smooth as baked)
             loop[keepw] = (k, k, k, 1.0)
     bm.to_mesh(mesh)
     o = bpy.data.objects.new(part.name, mesh)
@@ -743,7 +784,7 @@ def bake(o, size):
     o.data.uv_layers.new(name="UVMap")
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(72), island_margin=0.01, area_weight=0.0, scale_to_bounds=True)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(88 if o.name == "Head" else 72), island_margin=0.012, area_weight=0.0, scale_to_bounds=True)
     bpy.ops.object.mode_set(mode="OBJECT")
     mat, nt = material(o)
     o.data.materials.append(mat)
@@ -755,7 +796,7 @@ def bake(o, size):
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
     sc.cycles.samples = 96
-    sc.render.bake.margin = 16
+    sc.render.bake.margin = 16   # (every island padded well past 8 px)
     bpy.ops.object.bake(type="EMIT")
     path = os.path.join(OUT, f"{NAME}_{o.name.lower()}_paint.png")
     tex.filepath_raw = path

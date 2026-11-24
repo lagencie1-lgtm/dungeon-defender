@@ -18,7 +18,7 @@ def main():
         for k in range(16):
             out = f"{prefix}_{kind}_{k:02d}.png"
             subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "parts_render.py"), "--", fbx, out,
-                            str(-90 + k * 22.5), "8", "512", "persp", "lit"], capture_output=True,
+                            str(-90 + k * 22.5), "8", "512", "persp", *(["lit"] if kind == "grey" else [])], capture_output=True,
                            env=dict(os.environ, HTD_GREY="1" if kind == "grey" else ""))
             frames.append(out)
         top = f"{prefix}_{kind}_top.png"

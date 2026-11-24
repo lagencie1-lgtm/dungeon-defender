@@ -121,6 +121,12 @@ def main():
         soften_hood(os.path.join(out, f"{NAME}_head_paint.png"), os.path.join(build, f"{NAME}_head_paint.png"))
     for f in (NAME + ".fbx", f"{NAME}_bow_paint.png", f"{NAME}_quiver_paint.png", "gates_build.json"):
         shutil.copy(os.path.join(build, f), os.path.join(out, f))
+    # the colour blended across every texture seam (about 3 px), so a cut never shows as a line
+    r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "seam_blend.py"), "--", os.path.join(out, NAME + ".fbx"),
+                        "radius=3", "skip=Bow,Quiver"], capture_output=True, text=True, encoding="utf-8", errors="ignore")
+    for ln in r.stdout.splitlines():
+        if ln.startswith("BLENDED"):
+            print(ln)
     print("PAINTED", out)
 
 

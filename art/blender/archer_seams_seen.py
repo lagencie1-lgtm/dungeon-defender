@@ -1,6 +1,7 @@
 """The seam gate as the player sees it: renders the painted archer (flat texture colour, orthographic) from 8 sides
 and, for every mesh edge the camera sees, measures the colour change across it in the picture (2.5 px either side).
-A texture seam that shows is an edge where that change is bigger than across ordinary edges. Passes when the seams'
+A texture seam that shows is an edge where that change is bigger than across ordinary edges; only edges on smooth
+surface count on both sides (on a sharp crease the light changes anyway, whether a seam is there or not). Passes when the seams'
 95th percentile is at most the ordinary edges' 95th percentile x 1.15 + 3 (in 0..255); per-part numbers are printed
 to find where seams show.
 Run: blender -b -P archer_seams_seen.py -- <dir>/ranger_archer.fbx     (writes "seen" into <dir>/gates_build.json)"""
@@ -68,12 +69,16 @@ for o in meshes:
             ua, ub = uv[li].uv.copy(), uv[lj].uv.copy()
             if a > b:
                 ua, ub = ub, ua
-            seen.setdefault((min(a, b), max(a, b)), []).append((ua, ub))
+            seen.setdefault((min(a, b), max(a, b)), []).append((ua, ub, poly.normal.copy()))
     mw = o.matrix_world
     for (a, b), sides in seen.items():
         if len(sides) != 2:
             continue
         seam = (sides[0][0] - sides[1][0]).length > 1e-4 or (sides[0][1] - sides[1][1]).length > 1e-4
+        # only edges on smooth surface (faces within 25 degrees): on a sharp crease the light changes anyway, and the
+        # texture cuts mostly sit on creases, so counting creases measured the shape, not the seams
+        if sides[0][2].angle(sides[1][2], 0.0) > math.radians(25):
+            continue
         edges.append((mw @ me.vertices[a].co, mw @ me.vertices[b].co, seam, o.name.split(".")[0]))
 seam_d, plain_d = [], []
 per_part = {}

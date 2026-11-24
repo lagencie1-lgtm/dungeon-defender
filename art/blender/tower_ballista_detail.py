@@ -34,7 +34,11 @@ CRIMSON = (0.7, 0.14, 0.17)
 # than the painting's weapon: lighter and a touch greyer)
 WEAPON_WOOD = (0.58, 0.38, 0.27)
 WEAPON_DARK = (0.42, 0.27, 0.19)
+# (round 5 weapon gate: level 1's wooden bow is a warm mid brown in the painting, the weapon came out greyer and
+# darker (Lab 34.5 15 21 against 38.8 24 28) with dark-wood arms)
+BOW_WOOD = (0.66, 0.34, 0.16)
 LAYOUT = []
+BOWLINES = []
 # round 2 (2026-11-24): the paintings' wood is a warm mid-dark brown (about 130, 72, 38), not the kit's pale pine
 K.WOOD = (0.55, 0.32, 0.17)
 K.WOOD_DARK = (0.38, 0.21, 0.11)
@@ -54,7 +58,7 @@ if os.path.exists(src):
 # trestle's height, tilted up about 15 degrees (level 3's sit nearly level on their cradles)
 if level in (1, 2):
     P["stock"] = round(1.3 * (P["leg_h"] + 0.75), 3)
-    P["pitch"] = 15
+    P["pitch"] = float(os.environ.get("HTD_PITCH", P.get("pitch_fixed", 15)))   # (HTD_PITCH: the pitch sweep in tools/bal_cover.sh)
 if os.environ.get("HTD_PARAMS_ONLY"):
     print("PARAMS " + json.dumps(P), flush=True)
     os._exit(0)
@@ -78,80 +82,101 @@ def weapon(name, base, iron=False, scale=1.0):
     lies on top, iron head out front, red fletching at the back"""
     before = set(bpy.context.scene.objects)
     st = P["stock"] * scale
-    th = P["thick"]
     span = st * 0.9   # (round 4: the bow spans about 0.9 of the stock)
+    # round 5 (coordinator 2026-11-24): the stock is a long slender beam (width about 0.12 of its length) with a groove
+    # on top and the bolt lying in it, gold bands, a trigger block at the rear; small red fletching on the bolt's tail
+    sw, sh = 0.12 * st, 0.11 * st
+    ztop = sh / 2 + 0.04 * st          # top of the groove's rails
     with K.atlas("barrel"):
-        K.block(name + "Stock", (0, 0, 0), (0.55 * scale * th, st, 0.5 * scale * th), WEAPON_WOOD, key=None, tile=1.2, bevel=0.1)
-        K.block(name + "Rail", (0, st * 0.02, 0.29 * scale * th), (0.2 * scale, st * 0.9, 0.1 * scale), WEAPON_DARK, key=None, tile=1.0, bevel=0.03)
-        for k in (-0.3, 0.38):   # brass bands round the stock
-            K.block(name + f"Band{k}", (0, st * k, 0), (0.62 * scale * th, 0.16 * scale, 0.56 * scale * th), K.BRASS, key=None, tile=0.6, bevel=0.03)
-        # round 4 (coordinator 2026-11-24): the bow lies FLAT: two arms out to the left and right of the stock's nose,
-        # in the plane of the stock's top, curving back and flicking forward at the tips (a recurve); the string runs
-        # from both tips back to the trigger notch. (Round 3 stood it upright to fit one camera's C: from every other
-        # side it read as a hoop. A ballista's layout is checked by a gate below.)
-        ztop = 0.25 * scale * th + 0.06 * scale
-        nose = st * 0.48   # (at the stock's front end, ahead of the body so it is not hidden behind it)
+        K.block(name + "Stock", (0, 0, 0), (sw, st, sh), WEAPON_WOOD, key=None, tile=1.2, bevel=0.04 * st)
+        for e in (-1, 1):   # the groove: two rails along the top
+            K.block(name + f"Rail{e}", (e * sw * 0.36, st * 0.02, sh / 2 + 0.02 * st), (sw * 0.28, st * 0.92, 0.05 * st), WEAPON_DARK, key=None, tile=1.0, bevel=0.01 * st)
+        for k in (-0.3, 0.12, 0.42):   # gold bands round the stock
+            K.block(name + f"Band{k}", (0, st * k, 0.01 * st), (sw * 1.18, 0.05 * st, sh * 1.22), K.BRASS, key=None, tile=0.6, bevel=0.01 * st)
+        K.block(name + "Trigger", (0, -st * 0.45, -0.02 * st), (sw * 1.3, 0.12 * st, sh * 1.45), WEAPON_DARK, key=None, tile=0.8, bevel=0.02 * st)
+        K.block(name + "TriggerPlate", (0, -st * 0.45, sh * 0.55), (sw * 1.34, 0.06 * st, 0.03 * st), K.BRASS, key=None, tile=0.6, bevel=0.005 * st)
+        # round 5: the bow lies FLAT (the layout gate stays) but deeply curved, as painted: each arm leaves the stock's
+        # nose sideways and sweeps back in a strong arc, the whole bow close to a half circle seen from above (arc
+        # depth from the nose to the tips at least 0.4 of the span); arms thick at the centre (about 0.12 of the
+        # span), tapering to the tips; the string from tip to tip, drawn back to the notch
+        nose = st * 0.5
+        # (a C a little past a half circle, +-100 degrees, like the paintings' bows: a flat arc cut at +-80 degrees reads
+        # as an arc (sagitta >= 0.3 chord) from only 10 of 16 directions at 32 degrees, even drawn as a thin line)
+        R = span / (2 * math.sin(rad(100)))
         pts = []
-        for k in range(13):
-            u = -1 + 2 * k / 12                      # -1 (left tip) .. 1 (right tip)
-            back = 0.24 * span * (abs(u) ** 1.6)     # the arms sweep back from the nose ...
-            flick = 0.12 * span * max(0.0, abs(u) - 0.8) / 0.2   # ... and flick forward at the tips
-            pts.append(Vector((u * span / 2, nose - back + flick, ztop)))
-        # arms of squared timber (level 1) or flat, slightly tapered iron (levels 2 and 3): one block per segment
+        for k in range(17):
+            th_ = rad(-100 + 200 * k / 16)
+            pts.append(Vector((R * math.sin(th_), nose - R * (1 - math.cos(th_)), ztop)))
+        depth = nose - pts[0].y
         for i in range(len(pts) - 1):
             p0, p1 = pts[i], pts[i + 1]
             d = p1 - p0
             mid = (p0 + p1) / 2
-            taper = 1.0 - 0.45 * abs(mid.x) / (span / 2)
+            taper = 1.0 - 0.55 * abs(mid.x) / (span / 2)
             yaw = math.atan2(d.y, d.x)
-            if iron:
-                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.08, 0.55 * scale * taper, 0.22 * scale), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.03)
-            else:
-                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.08, 0.38 * scale * taper + 0.08, 0.38 * scale * taper + 0.08), WEAPON_DARK, (0, 0, yaw), key=None, tile=0.8, bevel=0.03)
-        K.block(name + "BowBlock", (0, nose, ztop), (0.8 * scale, 0.5 * scale, 0.36 * scale), K.BRASS if iron else WEAPON_DARK, key=None, bevel=0.05)
-        notch = (0, -st * 0.36, ztop + 0.04)
+            w_ = 0.12 * span * taper
+            if iron:   # flat, tapered iron
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.6), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
+            else:      # squared timber
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
+        K.block(name + "BowBlock", (0, nose, ztop), (0.2 * span, 0.12 * span, 0.13 * span), K.BRASS if iron else WEAPON_DARK, key=None, bevel=0.02 * span)
+        notch = (0, -st * 0.38, ztop + 0.01 * st)
         for tip in (pts[0], pts[-1]):
             if iron:
-                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.42 * scale, 0.42 * scale, 0.3 * scale), K.BRASS, key=None, tile=0.6, bevel=0.06)
+                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
             else:
-                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.32 * scale, 0.36 * scale, 0.34 * scale), ROPE, key=None, bevel=0.06)
-            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.05 * scale, 0.05 * scale, ROPE, verts=6, end=False)
-        # the bolt on the stock
-        K.limb(name + "Bolt", (0, -st * 0.36, ztop + 0.1 * scale), (0, st * 0.62, ztop + 0.1 * scale), 0.09 * scale, 0.09 * scale, WEAPON_DARK, verts=6, end=False)
-        K.cone(name + "Head", (0, st * 0.7, ztop + 0.1 * scale), 0.22 * scale, 0.55 * scale, IRON, rot=(rad(-90), 0, 0), verts=4)
+                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.085 * span, 0.09 * span, 0.09 * span), ROPE, key=None, bevel=0.015 * span)
+            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.012 * st, 0.012 * st, ROPE, verts=6, end=False)
+        # the bolt in the groove, iron head out front, small red fletching at its tail
+        zb = sh / 2 + 0.03 * st
+        K.limb(name + "Bolt", (0, -st * 0.38, zb), (0, st * 0.6, zb), 0.025 * st, 0.025 * st, WEAPON_DARK, verts=6, end=False)
+        K.cone(name + "Head", (0, st * 0.66, zb), 0.06 * st, 0.14 * st, IRON, rot=(rad(-90), 0, 0), verts=4)
         for s_ in (-1, 1):
-            K.block(name + f"Fletch{s_}", (s_ * 0.16 * scale, -st * 0.22, ztop + 0.24 * scale), (0.06, 0.75 * scale, 0.36 * scale), RED, (0, s_ * rad(32), 0), key=None, bevel=0.0)
+            K.block(name + f"Fletch{s_}", (s_ * 0.03 * st, -st * 0.3, zb + 0.035 * st), (0.012 * st, 0.13 * st, 0.07 * st), RED, (0, s_ * rad(32), 0), key=None, bevel=0.0)
     # the layout gate (docs/tower-pipeline.md "pose against the object's layout"): the bow's tips level with each
     # other and with the stock's top (within 15 degrees of its plane), mirror images left and right
     lt, rt = pts[0], pts[-1]
     plane = math.degrees(math.atan2(abs(lt.z - rt.z), abs(lt.x - rt.x)))
     sym = abs(lt.x + rt.x) + abs(lt.y - rt.y) + abs(lt.z - rt.z)
-    LAYOUT.append({"weapon": name, "bow_plane_deg": round(plane, 1), "asymmetry": round(sym, 3), "span_over_stock": round(span / st, 2)})
+    LAYOUT.append({"weapon": name, "bow_plane_deg": round(plane, 1), "asymmetry": round(sym, 3), "span_over_stock": round(span / st, 2),
+                   "arc_depth_over_span": round(depth / span, 2)})
     made = [o for o in set(bpy.context.scene.objects) - before]
     m = Matrix.Translation(base) @ Matrix.Rotation(A - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
     place_all(made, m)
-    return m @ Vector((0, st * 0.7, ztop + 0.1 * scale))   # (the bolt's iron head)
+    BOWLINES.append([list(m @ q) for q in pts])   # (the bow's centre line in the world, for scripts/bow_gate.py)
+    return m @ Vector((0, st * 0.72, zb))   # (the bolt's iron head)
 
 
 def trestle(base_z, h, spread, iron=False, scale=1.0):
-    """two A-frame legs either side, cross timbers, brass bolts, a turntable hub on top"""
+    """round 5 (coordinator 2026-11-24, from the painting): two A-frames, one each side of the weapon, each of two square
+    legs splayed fore and aft and meeting under the hub, a cross brace across the A low down, gold bolts at the
+    joints; a top beam and a low tie join the two A-frames; a turntable hub on top"""
+    side = spread * 0.75
     for s in (-1, 1):
-        c = SIDE * (s * spread)
+        c = SIDE * (s * side)
+        tops = []
         for f in (-1, 1):
-            foot = c + FWD * (f * spread * 0.9)
-            top = c * 0.55
-            mid = (foot + top) / 2
-            d = Vector((top.x - foot.x, top.y - foot.y, h))
-            ln = d.length
+            foot = c + FWD * (f * spread * 1.05)
+            top = c + FWD * (f * 0.18 * scale)
+            tops.append(top)
             K.limb(f"Leg{s}{f}{base_z:.1f}", (foot.x, foot.y, base_z), (top.x, top.y, base_z + h), 0.42 * scale, 0.38 * scale, K.WOOD, verts=4, end=False)   # (square beams, as painted)
-            for t in (0.3, 0.75):   # brass bolts down each beam
-                q = Vector((foot.x, foot.y, base_z)).lerp(Vector((top.x, top.y, base_z + h)), t)
-                K.ball(f"Rivet{s}{f}{t}{base_z:.1f}", tuple(q + Vector((FWD.x, FWD.y, 0)) * (-0.32 * scale * f)), 0.12 * scale, K.BRASS, seg=6)
             if iron:
                 K.block(f"Shoe{s}{f}{base_z:.1f}", (foot.x, foot.y, base_z + 0.25), (0.6 * scale, 0.6 * scale, 0.5 * scale), IRON, key=None, tile=0.8, bevel=0.06)
-        K.block(f"Cross{s}{base_z:.1f}", (c.x * 0.8, c.y * 0.8, base_z + h * 0.45), (0.35 * scale, spread * 1.6, 0.3 * scale), K.WOOD_DARK,
+        # the cross brace across the A, a third of the way up, with gold bolts at both legs
+        t = 0.33
+        q = [Vector((c.x, c.y, base_z)) + FWD * (f * spread * 1.05) for f in (-1, 1)]
+        q = [qq.lerp(Vector((tp.x, tp.y, base_z + h)), t) for qq, tp in zip(q, tops)]
+        mid = (q[0] + q[1]) / 2
+        K.block(f"Cross{s}{base_z:.1f}", tuple(mid), ((q[1] - q[0]).length + 0.5 * scale, 0.34 * scale, 0.3 * scale), K.WOOD_DARK,
                 (0, 0, A), key="wood_dark", tile=1.0, bevel=0.06)
-        K.ball(f"Bolt{s}{base_z:.1f}", (c.x * 0.8 + SIDE.x * s * 0.2, c.y * 0.8 + SIDE.y * s * 0.2, base_z + h * 0.45), 0.16 * scale, K.BRASS, seg=8)
+        for qq in q:
+            K.ball(f"Bolt{s}{qq.x:.1f}{base_z:.1f}", tuple(qq + SIDE * (s * 0.24 * scale)), 0.13 * scale, K.BRASS, seg=8)
+        K.ball(f"TopBolt{s}{base_z:.1f}", tuple(c + SIDE * (s * 0.24 * scale) + Vector((0, 0, base_z + h * 0.88))), 0.14 * scale, K.BRASS, seg=8)
+    # top beam and low tie between the two A-frames
+    K.block(f"TopBeam{base_z:.1f}", (0, 0, base_z + h - 0.15 * scale), (0.4 * scale, side * 2 + 0.5 * scale, 0.32 * scale), K.WOOD_DARK,
+            (0, 0, A), key="wood_dark", tile=1.0, bevel=0.06)
+    K.block(f"Tie{base_z:.1f}", (0, 0, base_z + h * 0.2), (0.3 * scale, side * 2, 0.26 * scale), K.WOOD_DARK,
+            (0, 0, A), key="wood_dark", tile=1.0, bevel=0.05)
     K.lathe(f"Hub{base_z:.1f}", [(0.9 * scale, base_z + h - 0.1), (0.95 * scale, base_z + h + 0.2), (0.6 * scale, base_z + h + 0.35)], K.WOOD_DARK, key="wood_dark", verts=16)
     for s in (-1, 1):
         K.block(f"Cheek{s}{base_z:.1f}", tuple(SIDE * (s * 0.45 * scale) + Vector((0, 0, base_z + h + 0.55 * scale))), (0.25 * scale, 0.7 * scale, 0.75 * scale),
@@ -174,23 +199,26 @@ if level in (1, 2):
         fz += 1.2
     top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))
     muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2)))
-    if level == 2:   # the crank wheel on the side
-        # (the winch wheel stands well out on the side the run camera and the painting see: round 4 found it on the far
-        # side, hidden behind the trestle)
-        # (lowered to the trestle's middle so it shows beside the trestle, not over the weapon: at top - 0.6 the
-        # phone close-up saw only a gold disc where the bow should be)
-        c = -SIDE * 1.6 + Vector((0, 0, top - 1.5))
-        # (a spoked wheel, not a disc: the painter read the full disc as a brick shield)
-        w = K.lathe("Crank", [(1.0, -0.16), (1.25, -0.16), (1.35, 0.0), (1.25, 0.16), (1.0, 0.16), (0.95, 0.0), (1.0, -0.16)],
-                    K.BRASS, key="brass", verts=20)
-        w.matrix_world = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
-        for k in range(4):   # four spokes of dark wood from the hub to the rim
-            ang = k * math.pi / 4
-            d = FWD * math.cos(ang) + Vector((0, 0, math.sin(ang)))
-            K.limb(f"Spoke{k}", tuple(c - d * 1.05), tuple(c + d * 1.05), 0.1, 0.1, K.WOOD_DARK, verts=6)
-        K.ball("Hub", tuple(c - SIDE * 0.1), 0.28, K.BRASS, seg=10)
-        K.limb("Handle", tuple(c - SIDE * 0.2 + FWD * 1.4), tuple(c - SIDE * 0.8 + FWD * 1.4), 0.09, 0.09, K.WOOD_DARK, verts=6)
-        K.limb("Axle", tuple(c + SIDE * 1.2), tuple(c - SIDE * 0.1), 0.14, 0.14, IRON, verts=8)
+    if level == 2:
+        # round 5 (coordinator 2026-11-24, as painted): a small gold gear with teeth beside the stock's pivot, about a
+        # third of the trestle's height across, on the side the camera sees, with two crank handles on its axle
+        r = (P["leg_h"] + 0.75) / 6
+        c = -SIDE * (P["leg_spread"] * 0.75 + 0.45) - FWD * 0.15 + Vector((0, 0, top - 0.45))   # (outside the A-frame on that side)
+        ax = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
+        g = K.lathe("Gear", [(0.0, -0.12), (r, -0.12), (r, 0.12), (0.0, 0.12)], K.BRASS, key="brass", verts=24)
+        g.matrix_world = ax
+        for k in range(12):   # the teeth
+            a_ = k * math.pi / 6
+            d = FWD * math.cos(a_) + Vector((0, 0, math.sin(a_)))
+            K.block(f"Tooth{k}", tuple(c + d * (r + 0.07)), (0.16, 0.22, 0.16), K.BRASS, (0, 0, 0), key="brass", tile=0.5, bevel=0.03)
+        K.ball("GearHub", tuple(c - SIDE * 0.14), r * 0.35, K.BRASS, seg=10)
+        K.limb("Axle", tuple(c + SIDE * 0.5), tuple(c - SIDE * 0.55), 0.08, 0.08, IRON, verts=8)
+        e = c - SIDE * 0.55
+        bar0, bar1 = e + Vector((0, 0, r * 1.1)), e - Vector((0, 0, r * 1.1))
+        K.limb("CrankBar", tuple(bar0), tuple(bar1), 0.07, 0.07, IRON, verts=6)
+        for q in (bar0, bar1):   # the two handles
+            K.limb(f"Handle{q.z:.1f}", tuple(q), tuple(q - SIDE * 0.3), 0.06, 0.06, IRON, verts=6)
+            K.ball(f"Knob{q.z:.1f}", tuple(q - SIDE * 0.36), 0.13, K.BRASS, seg=8)
 else:
     # the bastion: cut stone wall, crenellations, a wooden deck, three red banners
     K.stone_wall("Wall", fz, fz + P["wall_h"], P["wall_r"] * 1.18, P["wall_r"], 4, 13, depth=0.5)   # (wide at the foot, as painted)
@@ -212,10 +240,12 @@ else:
         muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=1.4))
 
 for g in LAYOUT:
-    ok = g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0
+    ok = (g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0
+          and g["arc_depth_over_span"] >= 0.4)   # (round 5: a deep arc, close to a half circle)
     print("LAYOUT %s %s" % ("ok" if ok else "FAIL", g))
     if not ok:
         raise SystemExit("ballista layout gate failed: %s" % g)
+json.dump(BOWLINES, open(os.path.abspath(out)[:-4] + "_bow.json", "w"))
 for m in muzzles:
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
 if not os.environ.get("HTD_FAST"):

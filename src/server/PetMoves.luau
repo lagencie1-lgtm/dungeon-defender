@@ -39,9 +39,10 @@ local function rootOf(player)
 	return nil
 end
 
--- 10% more per pet level, x1.5 when evolved (the same growth as the pet's bonus, a bit gentler on evolving)
+-- 10% more per pet level, x1.5 when evolved (the same growth as the pet's bonus, a bit gentler on evolving),
+-- x1.25 Golden and x1.5 Rainbow (Config.PetTiers Move)
 local function strength(pet)
-	return (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 1.5 or 1)
+	return (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 1.5 or 1) * Config.PetTierOf(pet).Move
 end
 
 local function waitFor(pet, seconds)
@@ -229,7 +230,7 @@ local function fetchStep(player, pet, root)
 	if trip.busy or os.clock() < trip.next then
 		return
 	end
-	local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true)
+	local carry = Config.PetCarryOf(pet.kind, pet.evolved, player:GetAttribute("PassAutoCollect") == true, pet.tier)
 	local at, load = pickLoot(player, root, carry)
 	if not at then
 		trip.next = os.clock() + 0.5
@@ -244,6 +245,7 @@ local function fetchStep(player, pet, root)
 	task.delay(there, function()
 		-- grab: whatever is still lying there (someone may have walked over it) goes into the backpack now
 		local best = nil
+		local carriesGear = false
 		for _, piece in load do
 			claimed[piece.gem or piece.dropId] = nil
 			if not player.Parent then
@@ -253,13 +255,12 @@ local function fetchStep(player, pet, root)
 				if LootService.TakeGem(piece.gem, player) then
 					best = best or GEM_COLOR
 				end
-			elseif ItemService.TakeDrop(player, piece.dropId) then
-				local r = Items.Rarities[piece.rarity]
-				best = r and r.Color or best
+			elseif ItemService.TakeDrop(player, piece.dropId, modelOf(player, pet.id)) then
+				carriesGear = true -- (the item itself rides on the pet: Loot.client.luau)
 			end
 		end
 		local model = modelOf(player, pet.id)
-		if best and model and model.Parent then
+		if (best or carriesGear) and model and model.Parent then
 			model:SetAttribute("PetFetched", (model:GetAttribute("PetFetched") or 0) + 1) -- read by the autotest
 		end
 		local hero = rootOf(player)

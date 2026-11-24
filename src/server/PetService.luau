@@ -1,6 +1,8 @@
 -- Pets: hatch eggs with gold, equip up to three (Config.PetTeamLevels), they follow your hero and give
 -- a small bonus. The first one is the lead. Pets level up while you play and can evolve once.
 -- New kinds go into the Pet Index and pay a one-off reward.
+-- Five copies fuse into a Golden pet, five Goldens into a Rainbow one (Config.PetTiers). Spare pets recycle into
+-- Pet Dust, which buys a pet of your choice from the Pet Index (Config.PetDustPrice).
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -36,8 +38,7 @@ function PetService.BonusOf(pet)
 	if not info then
 		return nil, 0
 	end
-	local value = info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1)
-	return info.Stat, value
+	return info.Stat, Config.PetBonusValue(pet)
 end
 
 -- how many pets may walk with this player: by the level of their best hero
@@ -141,7 +142,7 @@ local function send(player)
 	local profile = DataService.Get(player)
 	if profile then
 		Remotes.Pets:FireClient(player, profile.Pets or {}, profile.EquippedPet,
-			teamIds(profile, PetService.SlotsOf(player)), indexOf(profile), PetService.SlotsOf(player))
+			teamIds(profile, PetService.SlotsOf(player)), indexOf(profile), PetService.SlotsOf(player), profile.PetDust or 0)
 	end
 end
 
@@ -230,6 +231,18 @@ local function buildModel(pet, skin, withTag)
 			end
 		end
 	end
+	local tier, tierLevel = Config.PetTierOf(pet)
+	if tierLevel > 0 then
+		-- Golden and Rainbow: a soft wash of colour over the painted pet, never seen through walls. (A texture on a
+		-- MeshPart can't be tinted by its Color, a Highlight fill can.) Rainbow turns slowly on each device.
+		local wash = Instance.new("Highlight")
+		wash.Name = "TierWash"
+		wash.FillColor = tier.Color
+		wash.FillTransparency = tier.Wash
+		wash.OutlineTransparency = 1
+		wash.DepthMode = Enum.HighlightDepthMode.Occluded
+		wash.Parent = model
+	end
 	if pet.evolved then
 		local sparkles = Instance.new("Sparkles")
 		sparkles.SparkleColor = skin and skin.Accent or info.Color
@@ -249,9 +262,19 @@ local function buildModel(pet, skin, withTag)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
-	label.TextColor3 = Items.Rarities[info.Rarity].Color
+	label.TextColor3 = tierLevel == 1 and tier.Color or Items.Rarities[info.Rarity].Color
 	label.TextStrokeTransparency = 0.3
-	label.Text = info.Name .. " Lv " .. (pet.level or 1)
+	label.Text = Config.PetNameOf(pet) .. " Lv " .. (pet.level or 1)
+	if tierLevel == 2 then
+		label.TextColor3 = Color3.new(1, 1, 1)
+		local keys = {}
+		for i, hue in Config.RainbowHues do
+			table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#Config.RainbowHues - 1), hue))
+		end
+		local gradient = Instance.new("UIGradient")
+		gradient.Color = ColorSequence.new(keys)
+		gradient.Parent = label
+	end
 	label.Parent = tag
 	return model, offsets
 end
@@ -273,6 +296,7 @@ local function placeFollower(player, pet, slot)
 	end
 	model:SetAttribute("PetOwner", player.UserId)
 	model:SetAttribute("PetKind", pet.kind)
+	model:SetAttribute("PetTier", select(2, Config.PetTierOf(pet))) -- 2 = Rainbow: PetShine.client.luau turns its colour
 	model:SetAttribute("PetScale", pet.evolved and 1.6 or 1)
 	model:SetAttribute("PetSlot", slot) -- 1 = lead; where it walks (PetFollow.client.luau)
 	CollectionService:AddTag(model, "PetFollower")
@@ -298,34 +322,18 @@ end
 -------------------------------------------------------------------------------
 -- actions
 -------------------------------------------------------------------------------
-local function hatch(player, eggId)
-	local profile = DataService.Get(player)
-	local egg = Config.FindById(Config.Eggs, eggId)
-	if not profile or not egg then
-		return false, "Unknown egg"
-	end
-	profile.Pets = profile.Pets or {}
-	if #profile.Pets >= Config.PetBagSize then
-		return false, "Pet bag full (" .. Config.PetBagSize .. "). Release a pet first"
-	end
-	if profile.Gold < egg.Price then
-		return false, "Not enough gold (need " .. egg.Price .. ")"
-	end
-	profile.Gold -= egg.Price
-	local total = 0
-	for _, c in egg.Chances do
-		total += c[2]
-	end
-	local roll = rng:NextNumber() * total
-	local kind = egg.Chances[1][1]
-	for _, c in egg.Chances do
-		roll -= c[2]
-		if roll <= 0 then
-			kind = c[1]
-			break
-		end
-	end
+local function newPet(kind, fields)
 	local pet = { id = HttpService:GenerateGUID(false):sub(1, 12), kind = kind, level = 1, xp = 0, evolved = false }
+	for k, v in fields or {} do
+		pet[k] = v
+	end
+	return pet
+end
+
+-- puts a new pet in the bag (hatched or bought with Dust): the Pet Index pays for a new kind, a free team place
+-- takes it at once. Returns the pet and what the Index paid.
+local function addPet(player, profile, kind)
+	local pet = newPet(kind)
 	local index = indexOf(profile)
 	local isNew = not index[kind]
 	table.insert(profile.Pets, pet)
@@ -359,6 +367,37 @@ local function hatch(player, eggId)
 	DataService.Publish(player)
 	send(player)
 	task.spawn(DataService.Save, player)
+	return pet, indexGold, indexGems
+end
+
+local function hatch(player, eggId)
+	local profile = DataService.Get(player)
+	local egg = Config.FindById(Config.Eggs, eggId)
+	if not profile or not egg then
+		return false, "Unknown egg"
+	end
+	profile.Pets = profile.Pets or {}
+	if #profile.Pets >= Config.PetBagSize then
+		return false, "Pet bag full (" .. Config.PetBagSize .. "). Fuse or recycle a pet first"
+	end
+	if profile.Gold < egg.Price then
+		return false, "Not enough gold (need " .. egg.Price .. ")"
+	end
+	profile.Gold -= egg.Price
+	local total = 0
+	for _, c in egg.Chances do
+		total += c[2]
+	end
+	local roll = rng:NextNumber() * total
+	local kind = egg.Chances[1][1]
+	for _, c in egg.Chances do
+		roll -= c[2]
+		if roll <= 0 then
+			kind = c[1]
+			break
+		end
+	end
+	local pet, indexGold, indexGems = addPet(player, profile, kind)
 	local info = Config.Pets[kind]
 	if info.Rarity >= 5 then
 		-- a big moment for the whole server
@@ -438,6 +477,8 @@ local function evolve(player, id)
 	return true
 end
 
+-- recycle a spare pet into Pet Dust (Config.PetDustOf). It used to pay gold; Dust is worth more to a player
+-- because it buys the pet they want.
 local function release(player, id)
 	local profile = DataService.Get(player)
 	local pet, index = nil, nil
@@ -451,10 +492,184 @@ local function release(player, id)
 		return false, "Take it out of your team first"
 	end
 	table.remove(profile.Pets, index)
-	local gold = Config.PetReleaseGold[Config.Pets[pet.kind].Rarity] or 50
-	DataService.AddGold(player, gold)
+	local dust = Config.PetDustOf(pet)
+	profile.PetDust = (profile.PetDust or 0) + dust
 	send(player)
-	return true, gold
+	task.spawn(DataService.Save, player)
+	return true, dust
+end
+
+-------------------------------------------------------------------------------
+-- fusing: five of the same pet and tier make one of the next tier. Always works.
+-------------------------------------------------------------------------------
+-- fuses one set of five (kind, tier) in the profile. Returns the new pet, or nil when there are not five.
+-- The five are picked team first, then evolved, then highest level: the new pet keeps the best of them and
+-- takes the team place of the best-placed one, so a fuse never makes the team weaker.
+local function fuseOnce(profile, slots, kind, tier)
+	if not Config.Pets[kind] or not Config.PetTiers[tier + 1] then
+		return nil
+	end
+	local ids = teamIds(profile, slots)
+	local group = {}
+	for _, pet in profile.Pets or {} do
+		if pet.kind == kind and select(2, Config.PetTierOf(pet)) == tier then
+			table.insert(group, pet)
+		end
+	end
+	if #group < Config.PetFuseCount then
+		return nil
+	end
+	table.sort(group, function(a, b)
+		local ta, tb = table.find(ids, a.id) or 99, table.find(ids, b.id) or 99
+		if ta ~= tb then
+			return ta < tb
+		end
+		if (a.evolved == true) ~= (b.evolved == true) then
+			return a.evolved == true
+		end
+		if (a.level or 1) ~= (b.level or 1) then
+			return (a.level or 1) > (b.level or 1)
+		end
+		return (a.xp or 0) > (b.xp or 0)
+	end)
+	local used = {}
+	local evolved = false
+	for n = 1, Config.PetFuseCount do
+		used[group[n].id] = true
+		evolved = evolved or group[n].evolved == true
+	end
+	local best = group[1]
+	local fused = newPet(kind, { level = best.level or 1, xp = best.xp or 0, evolved = evolved, tier = tier + 1 })
+	for i = #profile.Pets, 1, -1 do
+		if used[profile.Pets[i].id] then
+			table.remove(profile.Pets, i)
+		end
+	end
+	table.insert(profile.Pets, fused)
+	local team, placed = {}, false
+	for _, id in ids do
+		if not used[id] then
+			table.insert(team, id)
+		elseif not placed then
+			table.insert(team, fused.id)
+			placed = true
+		end
+	end
+	setTeam(profile, team)
+	return fused
+end
+
+local function afterFuse(player)
+	refreshFollower(player)
+	PetService.OnPetChanged(player)
+	DataService.Publish(player)
+	send(player)
+	task.spawn(DataService.Save, player)
+end
+
+local function fuse(player, kind, tier)
+	local profile = DataService.Get(player)
+	tier = tonumber(tier) or 0
+	if not profile or type(kind) ~= "string" or not Config.Pets[kind] or tier ~= math.floor(tier) or tier < 0 then
+		return false, "Pet not found"
+	end
+	if not Config.PetTiers[tier + 1] then
+		return false, "Rainbow is the top"
+	end
+	local fused = fuseOnce(profile, PetService.SlotsOf(player), kind, tier)
+	if not fused then
+		return false, "Needs " .. Config.PetFuseCount .. " of the same pet"
+	end
+	afterFuse(player)
+	return true, fused
+end
+
+-- Fuse all: every set of five, Goldens made on the way count for Rainbows. Returns the new pets, best first.
+local function fuseAll(player)
+	local profile = DataService.Get(player)
+	if not profile then
+		return false, "Pet not found"
+	end
+	local slots = PetService.SlotsOf(player)
+	local made = {}
+	for tier = 0, #Config.PetTiers - 1 do
+		for kind in Config.Pets do
+			while true do
+				local fused = fuseOnce(profile, slots, kind, tier)
+				if not fused then
+					break
+				end
+				table.insert(made, fused)
+			end
+		end
+	end
+	if #made == 0 then
+		return false, "No set of " .. Config.PetFuseCount .. " yet"
+	end
+	-- (a Golden fused again into a Rainbow is gone: list only the pets that are still in the bag)
+	local kept = {}
+	for _, pet in made do
+		if findPet(profile, pet.id) then
+			table.insert(kept, pet)
+		end
+	end
+	table.sort(kept, function(a, b)
+		if (a.tier or 0) ~= (b.tier or 0) then
+			return (a.tier or 0) > (b.tier or 0)
+		end
+		return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
+	end)
+	afterFuse(player)
+	return true, kept
+end
+
+-------------------------------------------------------------------------------
+-- the Dust shop in the Pet Index: a pet of your choice, at a fixed price
+-------------------------------------------------------------------------------
+local function buyWithDust(player, kind)
+	local profile = DataService.Get(player)
+	if not profile or type(kind) ~= "string" or not Config.Pets[kind] or not Config.PetDustPrice[kind] then
+		return false, "Pet not found"
+	end
+	profile.Pets = profile.Pets or {}
+	if Config.PetDustFoundOnly and not indexOf(profile)[kind] then
+		return false, "Hatch one first to unlock it in your Pet Index"
+	end
+	if #profile.Pets >= Config.PetBagSize then
+		return false, "Pet bag full (" .. Config.PetBagSize .. "). Fuse or recycle a pet first"
+	end
+	local price = Config.PetDustPrice[kind]
+	if (profile.PetDust or 0) < price then
+		return false, "Needs " .. price .. " Pet Dust"
+	end
+	profile.PetDust -= price
+	local pet, indexGold, indexGems = addPet(player, profile, kind)
+	local shown = table.clone(pet)
+	shown.indexGold, shown.indexGems = indexGold, indexGems
+	return true, shown
+end
+
+-- for the developer panel (DevService): Dust, and n copies of one pet to try fusing
+function PetService.AddDust(player, amount)
+	local profile = DataService.Get(player)
+	if profile then
+		profile.PetDust = (profile.PetDust or 0) + amount
+		send(player)
+	end
+end
+function PetService.Give(player, kind, n)
+	local profile = DataService.Get(player)
+	if not profile or not Config.Pets[kind] then
+		return false, "Pet not found"
+	end
+	profile.Pets = profile.Pets or {}
+	if #profile.Pets + n > Config.PetBagSize then
+		return false, "Pet bag full"
+	end
+	for _ = 1, n do
+		addPet(player, profile, kind)
+	end
+	return true
 end
 
 -- every pet of the team learns from every enemy defeated
@@ -487,17 +702,48 @@ PetService.Equip = function(player, id, action)
 end
 
 function PetService.Start()
-	Remotes.HatchEgg.OnServerInvoke = hatch
+	-- count 3 = Hatch x3: three eggs in one tap (research report: automate low-value steps). Same price each, same
+	-- odds, gold only (gold is earned by playing, never bought). Returns the three pets, rarest first.
+	Remotes.HatchEgg.OnServerInvoke = function(player, eggId, count)
+		if count ~= 3 then
+			return hatch(player, eggId)
+		end
+		local profile = DataService.Get(player)
+		local egg = Config.FindById(Config.Eggs, eggId)
+		if not profile or not egg then
+			return false, "Unknown egg"
+		end
+		if #(profile.Pets or {}) + 3 > Config.PetBagSize then
+			return false, "Not enough room in the pet bag for 3 (" .. Config.PetBagSize .. " max)"
+		end
+		if profile.Gold < egg.Price * 3 then
+			return false, "Not enough gold (need " .. egg.Price * 3 .. ")"
+		end
+		local hatched = {}
+		for _ = 1, 3 do
+			local ok, pet = hatch(player, eggId)
+			if ok then
+				table.insert(hatched, pet)
+			end
+		end
+		table.sort(hatched, function(a, b)
+			return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
+		end)
+		return #hatched > 0, hatched
+	end
 	Remotes.EquipPet.OnServerInvoke = equip
 	Remotes.EvolvePet.OnServerInvoke = evolve
 	Remotes.ReleasePet.OnServerInvoke = release
+	Remotes.FusePet.OnServerInvoke = fuse
+	Remotes.FuseAllPets.OnServerInvoke = fuseAll
+	Remotes.BuyPetWithDust.OnServerInvoke = buyWithDust
 	Remotes.GetPets.OnServerInvoke = function(player)
 		local profile = DataService.Get(player)
 		if not profile then
-			return {}, nil, {}, {}, 1
+			return {}, nil, {}, {}, 1, 0
 		end
 		return profile.Pets or {}, profile.EquippedPet, teamIds(profile, PetService.SlotsOf(player)), indexOf(profile),
-			PetService.SlotsOf(player)
+			PetService.SlotsOf(player), profile.PetDust or 0
 	end
 	table.insert(DataService.OnLoaded, function(player)
 		-- what the equipped pet dug up while its owner was away (Config.ComeBack)
@@ -509,7 +755,7 @@ function PetService.Start()
 			if hours * 60 >= cb.AwayMinMinutes then
 				local info = Config.Pets[pet.kind]
 				local gold = math.floor(hours * (cb.AwayGoldPerHour[info.Rarity] or cb.AwayGoldPerHour[1])
-					* (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) + 0.5)
+					* (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) * Config.PetTierOf(pet).Bonus + 0.5)
 				profile.LastSeen = os.time() -- counted once, also when this server keeps running
 				DataService.AddGold(player, gold)
 				task.delay(6, function() -- after the loading screen

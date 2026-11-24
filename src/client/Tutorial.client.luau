@@ -72,8 +72,15 @@ local animateArrow = RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- a good first spot for a Ranger: next to the first bend of the path
+-- a good first spot for a Ranger: the map's designed one (MapOutline.Start: on clearly free ground beside the
+-- landmark, in the first view), else next to the first bend of the path
+local MapOutline = require(game:GetService("ReplicatedStorage").Shared.MapOutline)
 local function goodSpot()
+	local map = Config.Maps[Config.CurrentMap]
+	local start = map and MapOutline.Start[map.Theme]
+	if start and start.FirstSpot then
+		return start.FirstSpot
+	end
 	local a, b = Config.Path[2], Config.Path[3]
 	local dir = (b - a).Unit
 	return a:Lerp(b, 0.3) + Vector3.new(-dir.Z, 0, dir.X) * 11

@@ -7,13 +7,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local GameState = ReplicatedStorage:WaitForChild("GameState")
+local Config = require(ReplicatedStorage.Shared.Config)
 local player = Players.LocalPlayer
 
-local RUN_DISTANCE = 20.5 -- studs from the hero in a run: the hero is 12-15% of the screen height (film rig measures it)
+local RUN_DISTANCE = Config.RunCamera.Distance -- studs from the hero in a run: the hero is 12-15% of the screen height (film rig measures it)
 local HUB_DISTANCE = 14
 local MAX_DISTANCE = 60
 
-local PITCH = math.rad(42) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
+local PITCH = math.rad(Config.RunCamera.Pitch) -- in a run the camera looks down on the lane, not along the ground
 
 local function zoomTo(distance, pitch, toward)
 	-- forcing the minimum to the wanted distance moves the camera out at once; letting it go next frame keeps it there
@@ -21,14 +22,24 @@ local function zoomTo(distance, pitch, toward)
 	player.CameraMinZoomDistance = distance
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local camera = workspace.CurrentCamera
+	local hum0 = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if hum0 and not pitch then
+		hum0.CameraOffset = Vector3.zero   -- (the hub: the normal aim)
+	end
 	if pitch and root and camera then
 		-- tilt the follow camera down once; the default camera keeps the angle it is given after a scripted frame
 		-- facing where the hero faces, or (at a wave's start) towards the wave
 		local look = (toward and (toward - root.Position) or root.CFrame.LookVector) * Vector3.new(1, 0, 1)
 		look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
-		local eye = root.Position - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
+		-- (aimed AimHeight above the hero: the follow camera keeps that through the humanoid's camera offset)
+		local aimUp = Vector3.new(0, Config.RunCamera.AimHeight, 0)
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.CameraOffset = aimUp
+		end
+		local eye = root.Position + aimUp - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = CFrame.lookAt(eye, root.Position)
+		camera.CFrame = CFrame.lookAt(eye, root.Position + aimUp)
 		RunService.RenderStepped:Wait()
 		camera.CameraType = Enum.CameraType.Custom
 	end

@@ -15,10 +15,20 @@ local ForestPath = {
 	Vector3.new(95, 0, 42), -- the magic portal you defend
 }
 Config.PathWidth = 10
+
+-- the first-wave rescue (RescueService, RescueCue.client): when the Sneak has walked EscapeAt of the path it counts
+-- as slipping past and every hero is shown where they can still catch it (heroes run 20; HeroSpeed allows for
+-- turns and stairs, Margin is seconds to spare)
+Config.Rescue = { EscapeAt = 0.55, HeroSpeed = 16, Margin = 0.8 }
 Config.MapSize = Vector2.new(240, 180) -- ground size (X, Z)
 Config.OutpostCenter = Vector3.new(0, 0, 1600) -- the hub, far from the battlefield (its own terrain and hills)
 -- which hub: "Keep" (the Watch Keep, 2026-11-22, layout in HubLayout.luau) or "Meadow" (the old open meadow)
 Config.HubVersion = "Keep"
+
+-- the camera at a run's start (src/client/RunCamera.client.luau): degrees down, studs from the hero, and how far above
+-- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Was 42, 20.5, 0;
+-- 2026-11-24 the camera trial (reviews/camera/starting_views.png): 32 degrees aimed 3 studs up, in the test build.
+Config.RunCamera = { Pitch = 32, Distance = 20.5, AimHeight = 3 }
 
 Config.StartGold = 200
 Config.PortalHealth = 100
@@ -175,7 +185,59 @@ Config.PetMaxLevel = 10
 Config.PetXpPerLevel = 60 -- pet xp per level (pets get 1 xp per enemy defeated)
 Config.PetEvolveGold = 2500
 Config.PetBagSize = 30
-Config.PetReleaseGold = { 50, 80, 150, 400, 1000, 4000 }
+
+-- Golden and Rainbow pets (Lemp 2026-11-24: "do 1 and 3"): five copies of the same pet always fuse into one of the
+-- next tier, never fail, and keep the best level of the five (evolved if any of them was). Five Goldens make a
+-- Rainbow. Bonus multiplies the pet's bonus (and the gold it digs up while you are away), Move its fight move,
+-- Fetch how fast it trots for loot. Wash = how strongly the colour shows over the painted pet (a Highlight fill:
+-- 1 = invisible); Rainbow slowly turns through RainbowHues on each player's own device (PetShine.client.luau).
+Config.PetFuseCount = 5
+Config.PetTiers = {
+	[0] = { Name = "", Bonus = 1, Move = 1, Fetch = 1 },
+	{ Name = "Golden", Bonus = 2, Move = 1.25, Fetch = 1.15, Color = Color3.fromRGB(255, 196, 60), Wash = 0.68 },
+	{ Name = "Rainbow", Bonus = 4, Move = 1.5, Fetch = 1.3, Color = Color3.fromRGB(255, 140, 220), Wash = 0.72 },
+}
+Config.RainbowHues = { Color3.fromRGB(255, 110, 110), Color3.fromRGB(255, 200, 80), Color3.fromRGB(120, 230, 120),
+	Color3.fromRGB(90, 190, 255), Color3.fromRGB(200, 130, 255) }
+Config.RainbowSeconds = 8 -- one slow turn through the hues (6A: an effect you can name is too strong)
+
+-- Pet Dust: a spare pet recycles into Dust (by rarity, x5 for a Golden, x25 for a Rainbow, so a fused pet is worth
+-- exactly its five or twenty-five copies). Dust buys a pet of your choice in the Pet Index. It is earned only, never
+-- sold for Robux or gems (no paid luck). Prices are about 2.5x what the pet costs on average from its best egg
+-- (scratch math 2026-11-24: one Dust is worth about 250-450 gold of eggs), so hatching stays the faster way and Dust
+-- is the safety net that ends bad luck. PetDustFoundOnly = true would sell only kinds already in your Index.
+Config.PetDust = { 1, 2, 5, 15, 50, 150 }
+Config.PetDustPrice = {
+	Slimey = 15, Leafling = 15, Stonepup = 30, MossKitten = 60, Glowbug = 80, EmberFox = 40, CrystalOwl = 90,
+	MiniGolem = 150, BabyDragon = 600, StarUnicorn = 3500, Phoenix = 6000, VoidDrake = 8000,
+}
+Config.PetDustFoundOnly = false
+
+-- the tier of a pet (0 normal, 1 Golden, 2 Rainbow) and its numbers
+function Config.PetTierOf(pet)
+	local tier = type(pet) == "table" and tonumber(pet.tier) or 0
+	return Config.PetTiers[tier] or Config.PetTiers[0], Config.PetTiers[tier] and tier or 0
+end
+-- the name with its tier in front: "Golden Slimey"
+function Config.PetNameOf(pet)
+	local tier = Config.PetTierOf(pet)
+	local info = Config.Pets[pet.kind]
+	return (tier.Name ~= "" and (tier.Name .. " ") or "") .. (info and info.Name or tostring(pet.kind))
+end
+-- the pet's bonus in percent: +10% per level, x2 evolved, x the tier's Bonus
+function Config.PetBonusValue(pet)
+	local info = Config.Pets[pet.kind]
+	if not info then
+		return 0
+	end
+	return info.Bonus * (1 + 0.1 * ((pet.level or 1) - 1)) * (pet.evolved and 2 or 1) * Config.PetTierOf(pet).Bonus
+end
+-- the Dust a pet recycles into
+function Config.PetDustOf(pet)
+	local info = Config.Pets[pet.kind]
+	local _, tier = Config.PetTierOf(pet)
+	return (Config.PetDust[info and info.Rarity or 1] or 1) * Config.PetFuseCount ^ tier
+end
 
 -- Pet team: up to three pets walk with the hero. Slot 2 and 3 open with the level of your best hero.
 -- The first pet is the LEAD: full bonus, and it does its move in a fight. Helpers give half their bonus.
@@ -220,7 +282,7 @@ Config.PetCarry = {
 	{ Gems = true, MaxItemRarity = 6, Range = 36, Speed = 15, Carry = 3, Rest = 1.4 },
 	{ Gems = true, MaxItemRarity = 6, Range = 44, Speed = 18, Carry = 4, Rest = 1 },
 }
-function Config.PetCarryOf(kind, evolved, pass)
+function Config.PetCarryOf(kind, evolved, pass, tier)
 	local info = Config.Pets[kind]
 	if not info then
 		return nil
@@ -234,6 +296,10 @@ function Config.PetCarryOf(kind, evolved, pass)
 		carry.Carry += 1
 		carry.Rest *= 0.75
 	end
+	-- Golden and Rainbow pets trot faster and rest less (tier = 0, 1 or 2)
+	local fetch = (Config.PetTiers[tier or 0] or Config.PetTiers[0]).Fetch
+	carry.Speed *= fetch
+	carry.Rest /= fetch
 	if pass then
 		carry.Speed *= Config.PetCarryPass.Speed
 		carry.Rest *= Config.PetCarryPass.Rest
@@ -265,6 +331,13 @@ Config.Enemies = {
 		DisplayName = "Goblin",
 		Health = 30, Speed = 9, Damage = 1, Gold = 4, Xp = 2, Gems = 1, GemChance = 0.03,
 		Color = Color3.fromRGB(90, 160, 60), Size = 3,
+	},
+	-- the first-wave rescue (RescueService): slips out past the first Ranger's reach, too tough for one Ranger,
+	-- slow enough for a hero to catch. Caught: a handful of gems. Missed: a small, recoverable hit on the portal.
+	Sneak = {
+		DisplayName = "Goblin Sneak", Rescue = true, DropChance = 0.25,
+		Health = 60, Speed = 12, Damage = 8, Gold = 15, Xp = 12, Gems = 5, GemChance = 1,
+		Color = Color3.fromRGB(230, 150, 60), Size = 2.5,
 	},
 	Runner = {
 		DisplayName = "Goblin Speedrunner",
@@ -329,8 +402,19 @@ Config.Enemies = {
 		Health = 2800, Speed = 4.5, Damage = 100, Gold = 300, Xp = 150, Gems = 55, GemChance = 1,
 		Color = Color3.fromRGB(120, 40, 160), Size = 6.5,
 	},
+	-- the Outpost's training knight (EnemyService.SpawnDummy): armored like an Obsidian Knight, stands still, never
+	-- falls. Hit it to see what a weapon does (the King's Cleaver cracks its armor) before the next run.
+	TrainingKnight = {
+		DisplayName = "Training Knight", Look = "Knight", Dummy = true, Armor = 6, DropChance = 0,
+		Health = 400, Speed = 0, Damage = 0, Gold = 0, Xp = 0,
+		Color = Color3.fromRGB(190, 160, 110), Size = 3.6,
+	},
 	GoblinKing = {
 		DisplayName = "Goblin King", Model = "boss_goblin_king", -- its own image-to-3D model (art/ref3d)
+		-- two jobs (BossService): every Every seconds (First after he appears) he winds up a charge at the nearest
+		-- defender within Range. BreakHits hero hits during the Windup break it: he staggers back Knock studs and takes
+		-- Weak x damage for WeakTime seconds. Unanswered, the charge jams that defender for Stun seconds.
+		Charge = { First = 7, Every = 14, Windup = 6, Range = 45, BreakHits = 3, Knock = 6, Weak = 1.5, WeakTime = 3.5, Stun = 6 },
 		Health = 2600, Speed = 4, Damage = 100, Gold = 250, Xp = 100, Gems = 40, GemChance = 1,
 		Color = Color3.fromRGB(120, 60, 140), Size = 7, Boss = true,
 	},
@@ -340,9 +424,13 @@ Config.Enemies = {
 -- Waves: each wave is a list of groups that come one after another.
 -- Count = how many, Gap = seconds between each one.
 -------------------------------------------------------------------------------
+-- Delay = seconds before the group starts; StartCorner = the group appears at that corner of the path, not the start.
 local ForestWaves = {
+	-- the first-wave rescue: slow goblins the first Ranger can watch and shoot, then a Sneak that comes out of the
+	-- woods past the keep hill (corner 5) and runs for the portal, then a few more slow ones
 	{ Title = "The tutorial nobody asked for",
-		{ Enemy = "Goblin", Count = 8, Gap = 1.2 } },
+		{ Enemy = "Goblin", Count = 5, Gap = 1.6 }, { Enemy = "Sneak", Count = 1, Gap = 1, Delay = 6, StartCorner = 5 },
+		{ Enemy = "Goblin", Count = 3, Gap = 1.6 } },
 	{ Title = "They brought friends",
 		{ Enemy = "Goblin", Count = 14, Gap = 0.9 } },
 	{ Title = "Any% portal speedrun",
@@ -524,6 +612,9 @@ Config.HeroIcons = { Swordmaster = "hero_swordmaster", BeastHunter = "hero_hunte
 
 Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" }
 Config.SellRefund = 0.7 -- you get back 70% of what you paid
+-- Trying a build must never cost you (research report: "get the early investment back"): before the first wave,
+-- and for RefundWindow seconds after placing or upgrading, selling gives back everything that was paid.
+Config.RefundWindow = 10
 Config.TowerSpacing = 6 -- defenders can't stand closer than this
 
 -------------------------------------------------------------------------------
@@ -555,6 +646,7 @@ Config.StatPoints = {
 }
 Config.HeroBaseHealth = 100
 Config.StatResetGoldPerLevel = 20
+Config.FreeStatResetBelow = 10 -- resetting stat points is free until the hero reaches this level
 
 -- the heroes. Abilities are on F, E and R.
 Config.Heroes = {
@@ -627,6 +719,15 @@ Config.DailyRewards = { 20, 30, 40, 50, 60, 80, 150 }
 Config.DailyCooldownHours = 20 -- how long until you can claim again
 Config.DailyStreakHours = 48 -- miss it longer than this and the streak resets
 
+-- A loot hunt you can follow (research report, priority three): each boss shows the one reward it carries.
+-- The first win against it gives that reward for sure. After that every boss kill fills a meter (Fill by
+-- difficulty) and a full meter gives it again at your current item level, so a bad roll never wastes a run;
+-- DropChance is the small extra surprise per kill. Item = an Items.WeaponTypes id (a unique weapon).
+Config.BossRewards = {
+	GoblinKing = { Item = "KingsCleaver", Rarity = 5, Stats = { "Power", "Command", "Crit" }, Meter = 8,
+		Fill = { Easy = 1, Normal = 2, Hard = 3, Insane = 4, Mythic = 4 }, DropChance = 0.08 },
+}
+
 -- gold on top of the gems on some days of the streak (day 7 is the big one)
 Config.DailyGold = { [3] = 300, [5] = 500, [7] = 1500 }
 
@@ -634,7 +735,8 @@ Config.DailyGold = { [3] = 300, [5] = 500, [7] = 1500 }
 Config.ComeBack = {
 	-- the first win of each day (UTC): the run's gold is multiplied and a bonus chest (Rare or better) is added
 	FirstWinGold = 2,
-	-- while you are away your equipped pet digs up gold: per hour by pet rarity, +10% per pet level, x2 evolved.
+	-- while you are away your equipped pet digs up gold: per hour by pet rarity, +10% per pet level, x2 evolved,
+	-- x2 Golden, x4 Rainbow (Config.PetTiers).
 	-- Counted from MinMinutes away, up to MaxHours, so a night's sleep fills it and a week away gives no more.
 	AwayGoldPerHour = { 25, 35, 50, 80, 120, 180 },
 	AwayMinMinutes = 30,
@@ -674,7 +776,14 @@ Config.Sounds = {
 	Zap = { Id = "rbxasset://sounds/impact_explosion_03.mp3", Volume = 0.2, Pitch = { 2.5, 3 } },
 	Click = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.5, Pitch = { 1, 1.1 } },
 	Coin = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.6, Pitch = { 1.8, 2.1 } },
+	Sneak = { Id = "rbxasset://sounds/action_footsteps_plastic.mp3", Volume = 0.9, Pitch = { 1.7, 1.8 } }, -- quick feet
 	Land = { Id = "rbxasset://sounds/action_jump_land.mp3", Volume = 1, Pitch = { 0.6, 0.7 } },
+	-- pet moves (made from code: art/sounds/pet_sounds.py; played by PetFollow at the pet, quiet, a few times a minute)
+	PetPounce = { Id = "rbxassetid://108573592683800", Volume = 0.45, Pitch = { 0.96, 1.04 } },
+	PetRally = { Id = "rbxassetid://138761381729872", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetMark = { Id = "rbxassetid://99606147842320", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetSpark = { Id = "rbxassetid://107579833673360", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetDig = { Id = "rbxassetid://73012526581803", Volume = 0.4, Pitch = { 0.96, 1.04 } },
 }
 
 -- how far a point is from the middle line of the path

@@ -23,15 +23,20 @@ BANDS = {
 }
 # the sizes the loop may change (by a few percent at a time, kept when the outline overlap gets better) and the
 # rules a tower must keep (a wall never grows toward the top, the roof stays wider than the lookout)
-SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "bend", "thick"],
-          "ballista2": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock", "bend", "thick"],
-          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "bow_w", "stock", "gap", "bend"],
+# (ballista, 2026-11-24 rebuild: the bow's bend and the stock's thickness are drawn from the paintings and kept; the
+# loop once grew the stock to 2.3 times its thickness for outline, which hid the bow behind a beam)
+SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock"],
+          "ballista2": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock"],
+          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "bow_w", "stock", "gap"],
           "storm1": ["foot_r", "foot_h", "stone_w", "stone_h", "stone_d"],
-          "storm2": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_top", "ob_h", "rod"],
-          "storm3": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_top", "ob_h", "orb_r"],
-          "frost1": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "lean"],
-          "frost2": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "ring_r"],
-          "frost3": ["foot_r", "foot_h", "ped_r0", "ped_r1", "ped_h", "shard_h", "shard_r", "crown_r", "orb_r"],
+          # (storm, 2026-11-24 rebuild: the obelisk's taper is drawn from the paintings and kept; the loop once
+          # straightened it for outline)
+          "storm2": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_h", "rod"],
+          "storm3": ["foot_r", "plinth_r", "plinth_h", "ob_w", "ob_h", "orb_r"],
+          # (frost, 2026-11-24 rebuild: the drum's taper is kept; only its height and the crystals are tuned)
+          "frost1": ["foot_r", "foot_h", "ped_h", "shard_h", "shard_r", "lean"],
+          "frost2": ["foot_r", "foot_h", "ped_h", "shard_h", "shard_r", "ring_r"],
+          "frost3": ["foot_r", "foot_h", "ped_h", "shard_h", "shard_r", "crown_r", "orb_r"],
           "flame1": ["aim", "tilt", "foot_r", "foot_h", "cradle", "barrel_r", "barrel_len", "barrel_z"],
           "flame2": ["aim", "tilt", "foot_r", "drum_r", "drum_h", "barrel_r", "barrel_len", "barrel_z"],
           "flame3": ["aim", "tilt", "foot_r", "drum_r", "drum_h", "barrel_r", "barrel_len", "barrel_z"],

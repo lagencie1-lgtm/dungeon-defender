@@ -71,11 +71,16 @@ function ArtService.Start()
 			end)
 			local holder = Instance.new("Model")
 			holder.Name = name
+			-- pets (second generation, art/blender/pets2.py): one painted "Body" plus glowing pieces
+			local isPet = name:sub(1, 4) == "pet_"
 			if ok and asset then
 				for _, part in asset:GetDescendants() do
 					if part:IsA("MeshPart") then
 						local r, g, b = part.Name:match("^c_(%d+)_(%d+)_(%d+)")
 						part.Material = Enum.Material.SmoothPlastic
+						-- (A fully rough "matte" MaterialVariant for the pets' Body took the white shine spots off the painted
+						-- fur in Studio, but on phones a variant only shows with a baked TexturePack, which the release check
+						-- demands for every file in src/materials. Until such a pack exists the pets use plain SmoothPlastic.)
 						if name == "ranger_archer" then
 							-- matte like the paintings (coordinator 2026-11-23: "everything renders like shiny vinyl"): a rough
 							-- material, no reflectance, no sun glints on the cloth
@@ -108,6 +113,11 @@ function ArtService.Start()
 							-- very bright, strong colours glow (cannon fire, magic)
 							local _, sat, val = part.Color:ToHSV()
 							if val >= 0.95 and sat >= 0.6 and part.Name ~= "c_0_255_0" then -- (pure green = skin marker, not a glow)
+								part.Material = Enum.Material.Neon
+							end
+							if isPet then
+								-- on a pet every separate coloured piece is a glowing one (gem, flame tip, the stars of the three
+								-- rarest pets), also the pale ones the rule above would leave as plastic
 								part.Material = Enum.Material.Neon
 							end
 						end

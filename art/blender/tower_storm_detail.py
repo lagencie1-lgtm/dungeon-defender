@@ -35,8 +35,9 @@ rnd = random.Random(level)
 
 DEFAULTS = {
     1: dict(foot_r=3.2, foot_h=0.8, foot_n=10, stone_w=2.0, stone_h=4.4, stone_d=1.5),
-    2: dict(foot_r=3.0, foot_h=0.8, foot_n=10, plinth_r=2.4, plinth_h=1.8, ob_w=2.2, ob_top=0.55, ob_h=3.6, rod=1.6),
-    3: dict(foot_r=3.0, foot_h=0.8, foot_n=10, plinth_r=2.4, plinth_h=1.8, ob_w=2.0, ob_top=0.6, ob_h=4.4, orb_r=0.75),
+    # (round 2: the skirt is tall and the obelisk stands on its whole top, one tapering shape from foot to cap)
+    2: dict(foot_r=3.2, foot_h=0.8, foot_n=10, plinth_r=2.4, plinth_h=2.6, ob_w=3.4, ob_top=0.45, ob_h=4.2, rod=1.6),
+    3: dict(foot_r=3.4, foot_h=0.8, foot_n=10, plinth_r=2.5, plinth_h=2.8, ob_w=3.5, ob_top=0.45, ob_h=5.2, orb_r=1.1),
 }
 P = dict(DEFAULTS[level])
 saved = os.path.join(HERE, "params", f"tower_storm_l{level}.json")
@@ -116,14 +117,14 @@ def obelisk(z0, w, top_w, h, coils=False):
     K.paint.paint(o, None, SLATE)
     face_c = FWD * ((w + top_w) / 4 + 0.04) + Vector((0, 0, z0 + h * 0.48))
     rune("Rune", face_c, FWD + Vector((0, 0, (w - top_w) / (2 * h))), 0.75 * (w + top_w) / 2)
-    if coils:
-        pts = []
-        for k in range(40):
-            t = k / 39
-            ang = a0 + t * 2 * math.pi * 2.2
-            rr = (w + (top_w - w) * (0.25 + 0.5 * t)) * 0.72 + 0.28   # outside the obelisk's corners
-            pts.append((math.cos(ang) * rr, math.sin(ang) * rr, z0 + h * (0.25 + 0.5 * t)))
-        K.chain("Coil", pts, [0.14] * len(pts), COPPER, seg=6)
+    if coils:   # round 2: two thick copper rings round the obelisk with gold clamps (as painted), not a thin helix
+        for j, t in enumerate((0.3, 0.62)):
+            rr = (w + (top_w - w) * t) * 0.74 + 0.3
+            pts = [(math.cos(a0 + 2 * math.pi * k / 24) * rr, math.sin(a0 + 2 * math.pi * k / 24) * rr, z0 + h * t) for k in range(25)]
+            K.chain(f"Coil{j}", pts, [0.22] * len(pts), COPPER, seg=8)
+            for c in range(4):
+                a = a0 + rad(45 + c * 90)
+                K.block(f"Clamp{j}{c}", (math.cos(a) * rr, math.sin(a) * rr, z0 + h * t), (0.42, 0.42, 0.55), K.BRASS, (0, 0, a), key="brass", tile=0.6, bevel=0.06)
     return z0 + h
 
 
@@ -131,38 +132,47 @@ footing()
 fz = P["foot_h"]
 if level == 1:
     # the rune stone: a rough boulder, taller than wide
-    o = K.ball("RuneStone", (0, 0, fz + P["stone_h"] * 0.45), 1.0, K.STONE, (P["stone_w"], P["stone_d"], P["stone_h"] * 0.55), seg=12, key=None)
-    for v in o.data.vertices:   # chipped, uneven faces
-        v.co += Vector((rnd.uniform(-0.08, 0.08), rnd.uniform(-0.08, 0.08), rnd.uniform(-0.08, 0.08)))
-    rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.5)), FWD, 1.45)
-    for i in range(4):
-        a = a0 + rad(45 + i * 90)
-        post(f"Post{i}", a, P["stone_w"] * 0.92, fz, 1.9, strap_z=fz + 1.2)
+    # round 2 (2026-11-24): a chunky cut rock with flat facets, not an egg (few segments, big chips, a flat top)
+    o = K.ball("RuneStone", (0, 0, fz + P["stone_h"] * 0.45), 1.0, K.STONE, (P["stone_w"], P["stone_d"], P["stone_h"] * 0.55), seg=8, key=None)
+    for v in o.data.vertices:
+        v.co += Vector((rnd.uniform(-0.1, 0.1), rnd.uniform(-0.1, 0.1), rnd.uniform(-0.06, 0.06)))
+    rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.48)), FWD, 2.0)
+    for s_ in (-1, 1):   # two big posts at the sides, bound with gold bands (as painted)
+        a = a0 + rad(90 * s_)
+        post(f"Post{s_}", a, P["stone_w"] * 0.95, fz, 2.3, strap_z=fz + 1.5)
+        K.block(f"PostBand{s_}", K.at(a, P["stone_w"] * 0.95, fz + 0.6), (0.82, 0.7, 0.32), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.05)
     muzzle_z = fz + P["stone_h"] * 0.8
 else:
     # the plinth: a stone drum with arched niches, wooden posts, a brass collar on top
     pr, ph = P["plinth_r"], P["plinth_h"]
-    K.lathe("Plinth", [(pr, fz), (pr * 0.9, fz + ph)], K.STONE, key=None, verts=24)
+    # round 2 (2026-11-24): the paintings' skirt: cut stone flaring out at the foot, arched doors all round, dark wood
+    # planks between them, a gold trim band at the top (not a ring of posts)
+    K.stone_wall("Plinth", fz, fz + ph, pr * 1.12, pr * 0.82, 3, 12, depth=0.45, gaps=[(FRONT + i * 60, 14, fz + ph * 0.72) for i in range(6)])
     for i in range(6):
-        a = a0 + rad(30 + i * 60)
-        post(f"Post{i}", a, pr * 0.95, fz, ph + 0.2)
         na = a0 + rad(i * 60)
-        K.block(f"Niche{i}", K.at(na, pr * 0.95, fz + ph * 0.42), (0.7, 0.2, ph * 0.6), (0.36, 0.3, 0.3), (0, 0, na + rad(90)), key=None, bevel=0.05)
-    K.brass_band("Collar", fz + ph + 0.1, pr * 0.85, 0.5, 14)
+        K.arched_door(FRONT + i * 60, pr * 0.97 - 0.15, fz + 0.02, 0.85, ph * 0.66, steps=0, arch_stones=5)
+        a = a0 + rad(30 + i * 60)
+        post(f"Post{i}", a, pr * 1.0, fz, ph * 0.75)
+    K.brass_band("Collar", fz + ph + 0.05, pr * 0.84, 0.55, 14)
+    for i in range(12):   # the gold band's pointed scallops, as painted
+        a = a0 + rad(i * 30 + 15)
+        K.cone(f"Scallop{i}", K.at(a, pr * 0.86, fz + ph - 0.25), 0.26, 0.5, K.BRASS, rot=(rad(180), 0, 0), verts=4)
     top = obelisk(fz + ph + 0.3, P["ob_w"], P["ob_w"] * P["ob_top"], P["ob_h"], coils=(level == 3))
-    K.lathe("Cap", [(P["ob_w"] * 0.65, top - 0.1), (P["ob_w"] * 0.75, top + 0.1), (P["ob_w"] * 0.6, top + 0.35), (0.2, top + 0.4)], K.BRASS, key="brass", verts=8)
-    for s in (-1, 1):
-        base = SIDE * (s * P["ob_w"] * 0.55) + Vector((0, 0, top + 0.25))
-        horn = [tuple(base + SIDE * (s * 0.25 * t) + Vector((0, 0, 0.8 * t))) for t in (0, 0.5, 1.0)]
-        K.chain(f"Horn{s}", horn, [0.16, 0.12, 0.05], COPPER, seg=6)
+    tw = P["ob_w"] * P["ob_top"]
+    K.lathe("Cap", [(tw * 0.75, top - 0.15), (tw * 0.85, top + 0.1), (tw * 0.7, top + 0.35), (0.2, top + 0.42)], K.BRASS, key="brass", verts=8)
+    for s in (-1, 1):   # two big horns curving out and up (they hold the orb on level 3)
+        base = SIDE * (s * tw * 0.45) + Vector((0, 0, top + 0.25))
+        horn = [tuple(base + SIDE * (s * 0.55 * math.sin(t * 1.4)) + Vector((0, 0, 1.5 * t))) for t in (0, 0.33, 0.66, 1.0)]
+        K.chain(f"Horn{s}", horn, [0.24, 0.2, 0.13, 0.05], COPPER, seg=8)
     if level == 2:
         K.limb("Rod", (0, 0, top + 0.35), (0, 0, top + 0.35 + P["rod"]), 0.09, 0.08, COPPER, verts=8, end=False)
         K.ball("RodBall", (0, 0, top + 0.45 + P["rod"]), 0.24, COPPER, seg=10)
         K.lathe("RodRing", [(0.25, top + 0.75), (0.28, top + 0.8), (0.25, top + 0.85)], COPPER, verts=10)
         muzzle_z = top + 0.45 + P["rod"]
     else:
-        S.glow_ball("Orb", (0, 0, top + 0.6 + P["orb_r"]), P["orb_r"], (0.75, 0.5, 1.0), seg=16)
-        muzzle_z = top + 0.6 + P["orb_r"]
+        # the orb: round, the brightest thing on the tower (Neon), held between the horns' tips
+        S.glow_ball("Orb", (0, 0, top + 0.5 + P["orb_r"]), P["orb_r"], (0.85, 0.65, 1.0), seg=20)
+        muzzle_z = top + 0.5 + P["orb_r"]
 
 print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % muzzle_z)
 if not os.environ.get("HTD_FAST"):

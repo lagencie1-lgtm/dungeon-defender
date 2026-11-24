@@ -239,6 +239,10 @@ for r in SPEC["head"]:
     skull = r.get("body_back", r["back"]) * (1 - w_) + narrow * w_
     t = max(0.0, min(1.0, (2.20 - r["z"]) / 0.12))
     r["body_back"] = r["back"] * (1 - t) + skull * t
+# round D (D4): the painting's chin reaches about 8 px below the hood's last measured row; one more row, the same
+# section a little narrower, carries the face down to it (the collar roll hides it everywhere else)
+_last = min(SPEC["head"], key=lambda r: r["z"])
+SPEC["head"].append(dict(_last, z=round(_last["z"] - float(os.environ.get("HTD_CHIN_EXTEND", "0.03")), 4), hw=_last["hw"] * 0.96))
 # the hood is the skull's round shape here; its tail is a tube of its own along a curved spine, melted on below
 # (round B: a single loft along the vertical cannot hang a tail free over the nape)
 head_rows = [dict(r, back=r["body_back"]) for r in SPEC["head"]]
@@ -264,10 +268,22 @@ def opening_w(zz):
     return interp(OPEN, "ow", zz)
 
 
+# round D (coordinator D4): the trim under the chin sat about 20 px higher than painted since round A; it now dips
+# under the chin in a U to the painting's line, and the face reaches down with it
+CHIN_DROP = float(os.environ.get("HTD_CHIN_DROP", "0.055"))   # (0.07 cost the side outline its 90 %)
+XB = OPEN[0]["ow"] - TW / 2
+
+
+def chin_dip(x):
+    return CHIN_DROP * math.cos(math.pi / 2 * min(1.0, abs(x) / XB))
+
+
 def edge_distance(x, zz):
     """how far (x, z) is inside the trim band's inner edge, seen from the front (0 at that edge, negative outside)"""
     ow = opening_w(zz) - TW
-    return min(ow - abs(x), Z_OPEN_TOP - TW - zz, zz - (Z_OPEN_BOT - 0.04))
+    if zz < Z_OPEN_BOT:   # (below the opening's last measured row: the chin's U, the opening as wide as there)
+        ow = OPEN[0]["ow"] - TW
+    return min(ow - abs(x), Z_OPEN_TOP - TW - zz, zz - (Z_OPEN_BOT - 0.04 - chin_dip(x)))
 
 
 RECESS = 0.025
@@ -359,7 +375,7 @@ for r in reversed(OPEN):
 xb = OPEN[0]["ow"] - TW / 2
 for k in range(1, 8):     # under the chin, right to left, dipping a little
     x = xb - 2 * xb * k / 8
-    loop.append((x, Z_OPEN_BOT + TW * 0.3))   # resting on the chin's rim, not hanging below it
+    loop.append((x, Z_OPEN_BOT + TW * 0.3 - chin_dip(x)))   # (round D: dipping under the chin to the painting's line)
 pts = []
 for x, zz in loop:
     y, _ = head_surface(x, max(zz, SPEC["head"][-1]["z"]))
@@ -716,6 +732,10 @@ PAL["bracer_edge"] = [v * 0.78 for v in PAL["bracer"]]
 PAL["skin_line"] = [v * 0.8 for v in PAL["skin"]]
 
 
+TAGS = sorted(set(PAL) | {"hood", "cream", "hair", "skin", "tunic", "lime", "leather", "gold", "strap", "trousers", "boot",
+                          "boot_cuff", "sole", "roll", "bracer", "bracer_edge", "skin_line"})
+
+
 def to_object(part):
     mesh = bpy.data.meshes.new(part.name)
     bm = part.bm
@@ -724,6 +744,7 @@ def to_object(part):
     col = bm.loops.layers.float_color.new("pal")
     facew = bm.loops.layers.float_color.new("facew")
     keepw = bm.loops.layers.float_color.new("keepw")   # kept from the plain bake by the painterly pass (the trim)
+    tagc = bm.loops.layers.float_color.new("tagc")     # round D: which palette part each texel is (TAGS index / 64)
     for f in bm.faces:
         c = lin(PAL[part.tags.get(f, "hood")]) + (1.0,)
         for loop in f.loops:
@@ -756,6 +777,8 @@ def to_object(part):
             if part.name == "Head" and part.tags.get(f) == "hair":
                 k = w   # (kept where it is the painting's)
             loop[keepw] = (k, k, k, 1.0)
+            ti = TAGS.index(part.tags.get(f, "hood")) / 64.0
+            loop[tagc] = (ti, ti, ti, 1.0)
     bm.to_mesh(mesh)
     o = bpy.data.objects.new(part.name, mesh)
     bpy.context.scene.collection.objects.link(o)
@@ -941,6 +964,42 @@ def bake_keep(o, size):
     keep.save()
 
 
+def bake_tags(o, size):
+    """round D: a picture of which palette part each texel belongs to (grey level = TAGS index / 64; written to
+    <name>_<part>_tags.png with tags.json), so the painting projection knows cloth from modelled details"""
+    m = bpy.data.materials.new(o.name + "_tags")
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    em = nt.nodes.new("ShaderNodeEmission")
+    vc = nt.nodes.new("ShaderNodeVertexColor")
+    vc.layer_name = "tagc"
+    nt.links.new(vc.outputs["Color"], em.inputs["Color"])
+    nt.links.new(em.outputs[0], out.inputs[0])
+    img = bpy.data.images.new(o.name + "_tags", size, size, float_buffer=True)
+    t = nt.nodes.new("ShaderNodeTexImage")
+    t.image = img
+    nt.nodes.active = t
+    keep = list(o.data.materials)
+    o.data.materials.clear()
+    o.data.materials.append(m)
+    sc = bpy.context.scene
+    s0, m0 = sc.cycles.samples, sc.render.bake.margin
+    sc.cycles.samples, sc.render.bake.margin = 1, 2
+    sc.render.bake.margin_type = "EXTEND"
+    bpy.ops.object.bake(type="EMIT")
+    sc.cycles.samples, sc.render.bake.margin = s0, m0
+    import numpy as np
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(size, size, 4)[::-1, :, 0]
+    np.save(os.path.join(OUT, f"{NAME}_{o.name.lower()}_tags.npy"), np.round(px * 64).astype(np.int16))
+    json.dump(TAGS, open(os.path.join(OUT, "tags.json"), "w"))
+    o.data.materials.clear()
+    for mm in keep:
+        o.data.materials.append(mm)
+
+
 def bake(o, size):
     bpy.ops.object.select_all(action="DESELECT")
     o.select_set(True)
@@ -976,6 +1035,7 @@ def bake(o, size):
     o.data.materials.clear()
     o.data.materials.append(fin)
     seam_check(o, tex)
+    bake_tags(o, size)
     print("PART", o.name, sum(len(p.vertices) - 2 for p in o.data.polygons), "triangles", path)
 
 

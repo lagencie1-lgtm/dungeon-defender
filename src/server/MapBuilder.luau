@@ -6,6 +6,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local TerrainBuilder = require(script.Parent.TerrainBuilder)
 local ArtService = require(script.Parent.ArtService)
 local MapLayouts = require(script.Parent.MapLayouts)
+local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
 local MapKit = require(script.Parent.MapKit)
 local Ground = require(ReplicatedStorage.Shared.Ground)
 
@@ -289,6 +290,17 @@ function MapBuilder.BuildBattlefield(mapId)
 		Parent = map,
 	})
 	walls(map, Vector3.zero, Config.MapSize.X, Config.MapSize.Y)
+	-- and inside the field's real outline (MapOutline): the rise beyond it is scenery. Heroes stop HeroStop studs
+	-- short of it, so the camera behind them stays over the rise's first steps. (See-through and not solid for the
+	-- camera: the follow camera only stops at things you can see.)
+	local outline = MapOutline.For(mapInfo.Theme)
+	local heroLine = outline and MapOutline.Inset(outline, MapOutline.HeroStop)
+	for i, a in heroLine or {} do
+		local b = heroLine[i % #heroLine + 1]
+		local mid = (a + b) / 2 + Vector3.new(0, 28, 0)
+		part({ Name = "Wall", Size = Vector3.new(2, 60, (b - a).Magnitude + 2),
+			CFrame = CFrame.lookAt(mid, Vector3.new(b.X, mid.Y, b.Z)), Transparency = 1, CanQuery = false, Parent = map })
+	end
 
 	-- the path, one piece between each pair of points
 	local pathFolder = folder("Path", map)
@@ -468,7 +480,8 @@ function MapBuilder.BuildBattlefield(mapId)
 		end
 		local inside, outside, n = 0, 0, 0
 		local layout = MapLayouts.For(mapInfo.Theme)
-		local wantInside, wantOutside = 0, crystal and 45 or 70 -- (inside the field: MapLayouts groves only)
+		-- (inside the field: MapLayouts groves only. Outside it: massed on the rise, below, when the map has an outline)
+		local wantInside, wantOutside = 0, layout.Border and 0 or crystal and 45 or 70
 		while (inside < wantInside or outside < wantOutside) and n < 3000 do
 			n += 1
 			local pos = Vector3.new(treeRng:NextNumber(-half.X - 40, half.X + 40), 0, treeRng:NextNumber(-half.Y - 40, half.Y + 40))
@@ -494,6 +507,56 @@ function MapBuilder.BuildBattlefield(mapId)
 	-- the enclosure: a wall of tall trees just outside the build area (dead trees on Magma), so the battlefield is a
 	-- clearing with no empty horizon (the same rule as the hub's tree ring)
 	task.spawn(function()
+		local layout = MapLayouts.For(mapInfo.Theme)
+		if layout.Border then
+			-- A map with an outline: its wood (dead trees on Magma, crystals in the caves) is MASSED on the rise
+			-- outside the outline, close together near the field and taller further up, and follows the map's
+			-- shape. (Before: one ring of trees round a rectangle, and single ones dotted beyond it.)
+			local kind = crystal and "crystal_cluster" or magma and "tree_dead" or "tree_oak"
+			if not ArtService.WaitModel(kind, 30) then
+				return
+			end
+			local Ground = require(ReplicatedStorage.Shared.Ground)
+			local half = Config.MapSize / 2
+			local rng = Random.new(77)
+			local spacing = crystal and 10 or magma and 13 or 11
+			local planted = 0
+			for gx = -half.X - 44, half.X + 44, spacing do
+				for gz = -half.Y - 44, half.Y + 44, spacing do
+					local x = gx + rng:NextNumber(-0.35, 0.35) * spacing
+					local z = gz + rng:NextNumber(-0.35, 0.35) * spacing
+					local roll, size, turn, dead = rng:NextNumber(), rng:NextNumber(), rng:NextNumber(0, math.pi * 2), rng:NextNumber()
+					local rise, out, face = MapLayouts.RiseAt(layout, x, z)
+					if rise > 0 and out >= 3 and out <= 46 and roll < (out < 20 and 0.85 or out < 34 and 0.6 or 0.4) and planted < 170 then
+						local y = Ground.At(x, z)
+						-- (on the treads, not on a step's rock face; the gorges have no rise)
+						if not face then
+							local step = out < 10 and 1 or out < 20 and 2 or 3
+							local height = crystal and (2 + step * 4 + size * (3 + step * 2))
+								or magma and (18 + step * 2 + size * 10)
+								or (14 + step * 4 + size * (6 + step * 2))
+							local model = (forest and dead < 0.2) and "tree_dead" or kind
+							local look = placeModel(decor, model, CFrame.new(x, y - 0.4, z) * CFrame.Angles(0, turn, 0), height)
+							if look then
+								look:SetAttribute("Tall", true) -- fades while it hides the hero (MapFade)
+								-- scenery only: nothing walks there, and the follow camera must pass through it
+								for _, p in look:GetDescendants() do
+									if p:IsA("BasePart") then
+										p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
+									end
+								end
+							end
+							planted += 1
+							if planted % 10 == 0 then
+								task.wait()
+							end
+						end
+					end
+				end
+			end
+			print("Map: massed on the rise", planted, kind)
+			return
+		end
 		local treeModel = magma and "tree_dead" or (not crystal and "tree_oak") or nil
 		if not treeModel or not ArtService.WaitModel(treeModel, 30) then
 			return
@@ -533,10 +596,24 @@ function MapBuilder.BuildBattlefield(mapId)
 	-- room it takes, so nothing can be built inside it (BlockRadius: TowerService.CanPlace and the build preview)
 	task.spawn(function()
 		local layout = MapLayouts.For(mapInfo.Theme)
-		local function blocker(pos, r)
+		-- what a refused build says (research briefs: "every invalid placement must say why, in a reason the player
+		-- can repeat"): the thing that is in the way, by name
+		local WHY = {
+			wall = "A wall is in the way", low = "A wall is in the way", face = "A wall is in the way",
+			arch = "The gate is in the way", pillar = "A column is in the way", bridge = "The bridge is in the way",
+			set_forest = "The standing stones are in the way", set_magma = "A fire is in the way",
+			set_crystal = "A mine cart is in the way", stairs = "The stairs are in the way", tower = "The tower is in the way",
+			keep_well = "The well is in the way", keep_field_bush = "A bush is in the way",
+			keep_field_mushrooms = "Mushrooms are in the way", keep_field_ruin = "The ruin is in the way",
+			tree_oak = "A tree is in the way", tree_dead = "A tree is in the way", crystal_cluster = "Crystals are in the way",
+		}
+		local function blocker(pos, r, why)
 			local mark = part({ Name = "Blocked", Size = Vector3.one, Position = pos, Transparency = 1, CanCollide = false,
 				CanQuery = false, CanTouch = false, Parent = decor })
 			mark:SetAttribute("BlockRadius", r)
+			if why then
+				mark:SetAttribute("BlockWhy", why)
+			end
 		end
 		local function stand(name, at, height, turn, block)
 			if not ArtService.WaitModel(name, 30) then
@@ -546,6 +623,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			local look = placeModel(decor, name, CFrame.new(at.X, y - 0.15, at.Z) * CFrame.Angles(0, turn or 0, 0), height)
 			if look and block then
 				look:SetAttribute("BlockRadius", block)
+				look:SetAttribute("BlockWhy", WHY[name])
 			end
 			return look
 		end
@@ -569,6 +647,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			if MapKit.Boxes[name].Max.Y > 5 then
 				model:SetAttribute("Tall", true)
 			end
+			local why = WHY[piece] or WHY[piece .. "_" .. themeKey]
 			for _, solid in MapKit.Solid[piece] or MapKit.Solid[piece .. "_" .. themeKey] or {} do
 				part({ Name = "Solid", Size = solid.Size, CFrame = origin * CFrame.new(solid.Centre), Transparency = 1,
 					CanQuery = false, CanTouch = false, Parent = model })
@@ -579,7 +658,7 @@ function MapBuilder.BuildBattlefield(mapId)
 				local count = math.max(1, math.ceil(long / 3))
 				for i = 1, count do
 					local along = (i - 0.5) / count * long - long / 2
-					blocker((origin * CFrame.new(solid.Centre + axis * along)).Position, short / 2)
+					blocker((origin * CFrame.new(solid.Centre + axis * along)).Position, short / 2, why)
 				end
 			end
 			return model, origin
@@ -624,8 +703,8 @@ function MapBuilder.BuildBattlefield(mapId)
 								part({ Name = "StairRamp", Size = Vector3.new(2.8, 0.4, (top - foot).Magnitude),
 									CFrame = CFrame.lookAt((top + foot) / 2 - Vector3.new(0, 0.2, 0), top - Vector3.new(0, 0.2, 0)),
 									Transparency = 1, CanQuery = false, CanTouch = false, Parent = decor })
-								blocker((origin * CFrame.new(1.8, 0, -2.05)).Position, 1.6)
-								blocker((origin * CFrame.new(-1.8, 0, -2.05)).Position, 1.6)
+								blocker((origin * CFrame.new(1.8, 0, -2.05)).Position, 1.6, WHY.stairs)
+								blocker((origin * CFrame.new(-1.8, 0, -2.05)).Position, 1.6, WHY.stairs)
 							end
 						end
 					end
@@ -660,13 +739,45 @@ function MapBuilder.BuildBattlefield(mapId)
 		-- the rock masses in the corners carry wood (dead trees on Magma, crystals in the caves)
 		local onMass = crystal and "crystal_cluster" or treeModel
 		for _, mass in layout.Masses do
-			blocker(mass.At, mass.Radius + 1)
+			blocker(mass.At, mass.Radius + 1, "Rocks are in the way")
 			for _ = 1, math.max(2, math.floor(mass.Radius / (crystal and 5 or 3.5))) do
 				local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, mass.Radius * 0.85)
 				local at = mass.At + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
 				stand(onMass, at, crystal and rng:NextNumber(9, 18) or rng:NextNumber(18, 28), rng:NextNumber(0, math.pi * 2), nil)
 			end
 			task.wait()
+		end
+		-- stepping-stone paths (MapLayouts.Paths with Stones): a `flags` piece every 4.5 studs along the route, not on
+		-- the road itself (the road is the path there)
+		for _, path in layout.Paths or {} do
+			if path.Stones then
+				for i = 1, #path.Points - 1 do
+					local a, b = path.Points[i], path.Points[i + 1]
+					local length = (b - a).Magnitude
+					local n = math.max(1, math.floor(length / 4.5))
+					for k = 0, n - 1 do
+						local at = a + (b - a) * ((k + 0.5) / n)
+						if Config.DistanceToPath(at) > Config.PathWidth / 2 + 3 then
+							-- (the piece's long side runs along the route: its front looks across it)
+							local along = (b - a).Unit
+							kit("flags", at, Vector3.new(along.Z, 0, -along.X), -0.02)
+						end
+					end
+				end
+				task.wait()
+			end
+		end
+		-- nothing is built in a gorge: the strip of floor beside a channel where it comes through the rise
+		for _, channel in layout.Channels do
+			for i = 1, #channel.Points - 1 do
+				local a, b = channel.Points[i], channel.Points[i + 1]
+				for d = 0, (b - a).Magnitude, 6 do
+					local pos = a + (b - a).Unit * d
+					if MapLayouts.Outside(layout, pos.X, pos.Z) > -6 and math.abs(pos.X) < half.X and math.abs(pos.Z) < half.Y then
+						blocker(pos, channel.Width / 2 + MapLayouts.Gorge + 1, magma and "Too close to the lava" or "Too close to the water")
+					end
+				end
+			end
 		end
 		-- the lava river glows: a thin sheet of light just over its bed, the dark crust shows through it
 		if magma then
@@ -1005,11 +1116,16 @@ function MapBuilder.Teleport(player, where)
 	end
 	local target = where == "Outpost" and (Config.OutpostCenter + Vector3.new(math.random(-2, 2), 4, 36))
 		or (Config.SpawnPoint + Vector3.new(math.random(-3, 3), 4, math.random(-3, 3)))
+	local look = Vector3.new(0, 0, -1)
 	if where ~= "Outpost" then
 		-- the battle spawn can be on raised ground: 4 studs above whatever is there
 		target += Vector3.new(0, (Ground.At(target.X, target.Z)), 0)
+		-- facing the way the map's first view is framed (MapOutline.Start: the landmark and a bridge in view)
+		local map = Config.Maps[Config.CurrentMap]
+		local start = map and MapOutline.Start[map.Theme]
+		look = start and start.Look or look
 	end
-	character:PivotTo(CFrame.new(target))
+	character:PivotTo(CFrame.lookAt(target, target + look))
 end
 
 -- writes the best players onto the trophy wall

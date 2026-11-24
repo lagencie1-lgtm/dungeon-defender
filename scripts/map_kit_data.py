@@ -20,6 +20,8 @@ SOLID = {
     "set_crystal": [((0, 0, 1.4), (4.0, 2.8, 2.8))],
     # the wall, and the flagstone rim lying behind it (a hero walks on the rim over the terrain's bevel)
     "face": [((0, 0, 1.55), (12.0, 1.3, 6.1)), ((0, 2.15, 4.87), (12.0, 6.2, 0.55))],
+    # the keep tower: all of it (its door is a picture; nobody goes in)
+    "tower": [((0, 0, 9.0), (9.6, 9.6, 18.0))],
 }
 
 

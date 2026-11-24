@@ -46,6 +46,8 @@ HubLayout.Showcase = {
 	{ Tower = "Ballista", At = Vector3.new(36, 0, -34) },
 }
 HubLayout.Trophies = Vector3.new(48, 0, -30)
+-- the training knight beside the forge, off the plaza's edge: try new gear on it before the next run
+HubLayout.Dummy = Vector3.new(-28, 0, -1)
 
 -- life: keepers stand beside their stations and turn to whoever comes close
 HubLayout.Keepers = {

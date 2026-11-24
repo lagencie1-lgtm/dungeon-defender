@@ -115,7 +115,9 @@ def main():
     target = cutout(os.path.join(ROOT, "art", "ref3d", "batch2", f"pet_{kind}.png"), (255, 255, 255))
     grey = (41, 41, 46)
     d = os.path.join(ROOT, "art", "models", "pets2")
-    views = [os.path.join(d, f"_old_{kind}.png")] if old else [os.path.join(d, f"_v_{kind}_{a}.png") for a in (24, -50)]
+    import glob
+    views = [os.path.join(d, f"_old_{kind}_24.png")] if old else [
+        v for v in glob.glob(os.path.join(d, f"_v_{kind}_*.png")) if not v.endswith(("_160.png", "_-160.png"))]
     best = None
     for v in views:
         if not os.path.exists(v):
@@ -140,17 +142,41 @@ def main():
         f.write(f"{datetime.datetime.now():%Y-%m-%d %H:%M},{kind},{label},{iou:.1f},{de:.1f},{rich:.0f},{detail:.0f}\n")
     if old:
         return
-    # sheet: target | new front | new other side | new back | old
-    T = 420
-    tiles = [Image.open(os.path.join(ROOT, "art", "ref3d", "batch2", f"pet_{kind}.png")).convert("RGB").resize((T, T))]
-    for a in (24, -50, 160):
-        tiles.append(Image.open(os.path.join(d, f"_v_{kind}_{a}.png")).convert("RGB").crop((90, 60, 610, 640)).resize((T, T)))
-    oldp = os.path.join(d, f"_old_{kind}.png")
+    # sheet, every column labelled: TARGET | NEW front | NEW other side | NEW back | OLD | NEW at phone size
+    from PIL import ImageFont
+    T, BAR = 420, 46
+    try:
+        font = ImageFont.truetype("arialbd.ttf", 24)
+    except OSError:
+        font = ImageFont.load_default()
+
+    def tile(path, crop=True):
+        im = Image.open(path).convert("RGB")
+        return (im.crop((90, 60, 610, 640)) if crop else im).resize((T, T), Image.LANCZOS)
+
+    tiles = [("TARGET PICTURE", (150, 110, 20), tile(os.path.join(ROOT, "art", "ref3d", "batch2", f"pet_{kind}.png"), False))]
+    for a, name in ((24, "NEW  front"), (-50, "NEW  other side"), (160, "NEW  back")):
+        lit = os.path.join(d, f"_lit_{kind}_{a}.png")   # lit like the engine: shows lumps and facets the flat view hides
+        tiles.append((name, (30, 130, 60), tile(lit if os.path.exists(lit) else os.path.join(d, f"_v_{kind}_{a}.png"))))
+    oldp = os.path.join(d, f"_old_{kind}_24.png")
     if os.path.exists(oldp):
-        tiles.append(Image.open(oldp).convert("RGB").crop((90, 60, 610, 640)).resize((T, T)))
-    sheet = Image.new("RGB", (T * len(tiles), T), (41, 41, 46))
-    for i, t in enumerate(tiles):
-        sheet.paste(t, (i * T, 0))
+        tiles.append(("OLD MODEL", (150, 40, 40), tile(oldp)))
+    # how it reads on a phone: the new pet at 96 px and as a 64 px black outline
+    phone = Image.new("RGB", (T, T), (41, 41, 46))
+    small = Image.open(os.path.join(d, f"_v_{kind}_24.png")).convert("RGB").crop((90, 60, 610, 640))
+    phone.paste(small.resize((96, 96), Image.LANCZOS), (70, 150))
+    cut = cutout(os.path.join(d, f"_v_{kind}_24.png"), grey).resize((64, 64), Image.LANCZOS)
+    blob = Image.new("RGB", (64, 64), (235, 235, 235))
+    blob.paste((0, 0, 0), (0, 0), cut.split()[3])
+    phone.paste(blob, (240, 166))
+    tiles.append(("NEW  phone size / outline", (60, 60, 70), phone))
+    sheet = Image.new("RGB", (T * len(tiles), T + BAR), (41, 41, 46))
+    draw = ImageDraw.Draw(sheet)
+    for i, (name, colour, t) in enumerate(tiles):
+        draw.rectangle((i * T, 0, (i + 1) * T - 2, BAR - 2), fill=colour)
+        draw.text((i * T + 12, 9), name, fill=(255, 255, 255), font=font)
+        sheet.paste(t, (i * T, BAR))
+    draw.text((T + 12, T + BAR - 34), f"shape {iou:.0f}%   colour dE {de:.0f}   detail {detail:.0f}%", fill=(255, 255, 255), font=font)
     sheet.save(os.path.join(out_dir, "img", f"_cycle_{kind}.png"))
 
 

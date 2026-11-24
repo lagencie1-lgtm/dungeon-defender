@@ -80,6 +80,10 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	tower_barricade_thorn = "134336351181462",
+	tower_barricade_root = "138006996909154",
+	tower_barricade_l2 = "107723066728579",
+	tower_barricade_l1 = "92374570739223",
 	mapkit_stairs_magma = "113865995439876",
 	mapkit_stairs_forest = "114535015859995",
 	mapkit_stairs_crystal = "135666276174351",

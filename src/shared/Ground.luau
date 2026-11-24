@@ -7,7 +7,7 @@ local Ground = {}
 Ground.MaxBump = 0.6 -- a defender's footprint may rise at most this much; its plinth reaches down to the low side
 Ground.Feet = 0.05 -- enemies' feet float this much over the ground (never in it)
 -- how wide each defender stands: the radius of ground it needs
-Ground.Foot = { Ranger = 2.5, FlameCannon = 2.75, FrostCrystal = 2.5, StormObelisk = 2.5, Ballista = 3 }
+Ground.Foot = { Ranger = 2.5, FlameCannon = 2.75, FrostCrystal = 2.5, StormObelisk = 2.5, Ballista = 3, Barricade = 2.5 }
 
 local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Include

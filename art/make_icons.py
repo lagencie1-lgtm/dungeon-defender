@@ -38,6 +38,7 @@ ICONS = {
     "tower_frost": "a tall pale-blue ice crystal on a frosty stone base, accent frost blue",
     "tower_storm": "a dark stone obelisk with a crackling purple orb on top, accent storm purple",
     "tower_ballista": "a wooden ballista loaded with a big bolt, brass fittings",
+    "tower_barricade": "a low wall of three stacked oak logs held by posts with sharpened tops, tied with rope",
     # gear (the picture of each item kind; its rarity shows as the frame colour)
     "item_longsword": "a straight knightly longsword with a brass crossguard and leather grip, blade pointing up-right",
     "item_greatsword": "a huge heavy two-handed greatsword with a wide blade and a big brass pommel, blade pointing up-right",

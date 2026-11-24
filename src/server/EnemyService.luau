@@ -594,10 +594,59 @@ end
 
 local WHITE = Color3.new(1, 1, 1)
 
+-- path defenders (the Oak Barricade, TowerService): enemies that walk into one stop in rows in front of it, and the
+-- front row hits it. [key] = { Key = key, Distance = studs along the path, Depth = half its thickness,
+-- OnHit = function(enemy, dt) }. Flying enemies (maps 4 and 5) pass over.
+EnemyService.Blockers = {}
+local BARRICADE = Config.Barricade
+
+local function wallOf(e)
+	local wall = e.wall
+	if wall and EnemyService.Blockers[wall.Key] == wall then
+		return wall
+	end
+	e.wall = nil
+	return nil
+end
+
+-- where an enemy in `slot` waits in front of a wall: the front row against it, the next rows behind, three abreast
+local function stopFor(wall, e, slot)
+	local row = (slot - 1) // BARRICADE.Attackers
+	return wall.Distance - wall.Depth - e.stats.Size * 0.45 - row * BARRICADE.RowDepth
+end
+
+-- the first wall ahead of an enemy that is at `distance` (nil when none)
+local function wallAhead(distance)
+	local best = nil
+	for _, wall in EnemyService.Blockers do
+		if wall.Distance >= distance - 0.05 and (not best or wall.Distance < best.Distance) then
+			best = wall
+		end
+	end
+	return best
+end
+
 function EnemyService.Start()
 	RunService.Heartbeat:Connect(function(realDt)
 		local dt = realDt * Clock.scale
 		local now = Clock.now
+		-- the queues at the walls: whoever already waits keeps their place (front first), newcomers join the back
+		local waiting = {}
+		for _, wall in EnemyService.Blockers do
+			wall.count = 0
+		end
+		for _, e in active do
+			if not e.dead and wallOf(e) then
+				table.insert(waiting, e)
+			end
+		end
+		table.sort(waiting, function(a, b)
+			return a.distance > b.distance
+		end)
+		for _, e in waiting do
+			e.wall.count += 1
+			e.blockSlot = e.wall.count
+		end
 		for i = #active, 1, -1 do
 			local e = active[i]
 			if not e.dead and now < e.burnUntil then
@@ -631,6 +680,7 @@ function EnemyService.Start()
 				continue
 			end
 
+			local before = e.distance
 			local speed = e.stats.Speed * (e.speedMult or 1) * (e.enraged and 1.4 or 1)
 			if e.knockLeft and e.knockLeft > 0.01 then
 				-- knockback: ease backwards (1 - exp(-k*dt), about 0.28 s to settle)
@@ -690,6 +740,36 @@ function EnemyService.Start()
 					e.distance += blink.Distance
 				end
 			end
+			-- a wall on the path: stop at your place in the queue; the front row hits it (a Shade can't blink past it)
+			e.bashing = false
+			if not e.stats.Flying then
+				local wall = wallOf(e)
+				if not wall then
+					wall = wallAhead(before)
+					if wall then
+						local stop = stopFor(wall, e, wall.count + 1)
+						if e.distance >= stop then
+							wall.count += 1
+							e.wall, e.blockSlot = wall, wall.count
+						end
+					end
+				end
+				wall = wallOf(e)
+				if wall then
+					local stop = stopFor(wall, e, e.blockSlot)
+					if e.distance >= stop then
+						e.distance = stop
+						if e.blockSlot <= BARRICADE.Attackers then
+							e.bashing = true
+							wall.OnHit(e, dt)
+						end
+					end
+				end
+			end
+			-- spread across the path while waiting, back to the middle when walking again (1 - exp(-k*dt))
+			local slot = e.wall and e.blockSlot or nil
+			local sideTarget = slot and ((slot - 1) % BARRICADE.Attackers - (BARRICADE.Attackers - 1) / 2) * 2.6 or 0
+			e.sideNow = (e.sideNow or 0) + (sideTarget - (e.sideNow or 0)) * (1 - math.exp(-8 * dt))
 			-- the Shadow Queen calls helpers
 			local summon = e.stats.Summon
 			if summon then
@@ -721,6 +801,11 @@ function EnemyService.Start()
 				local side = Vector3.zero
 				if e.stats.Loot then
 					side = Vector3.new(-dir.Z, 0, dir.X) * math.sin(e.distance * 0.35) * 2.5
+				end
+				if math.abs(e.sideNow or 0) > 0.05 then
+					side += Vector3.new(-dir.Z, 0, dir.X) * e.sideNow
+				end
+				if side.Magnitude > 0.05 then
 					-- off the middle of the path: stand on the ground where it really is (the kerb is higher)
 					local x, z = pos.X + side.X, pos.Z + side.Z
 					pos = Vector3.new(pos.X, (Ground.At(x, z)), pos.Z)
@@ -734,6 +819,10 @@ function EnemyService.Start()
 				local moving = speed > 0 and 1 or 0
 				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
 				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
+				if e.bashing then
+					-- hitting the wall: a forward chop about once a second, each enemy on its own beat
+					lean = -0.07 - 0.24 * math.max(0, math.sin(now * 6.5 + (e.blockSlot or 0) * 1.3))
+				end
 				-- tilting swings the model's lower edge down: lift by exactly that, so feet stay Ground.Feet over the ground
 				local tilt = (e.model:GetAttribute("FootHalfWidth") or s * 0.4) * math.abs(math.sin(waddle))
 					+ (e.model:GetAttribute("FootHalfDepth") or s * 0.4) * math.abs(math.sin(lean))

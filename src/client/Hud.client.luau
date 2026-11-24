@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Ground = require(ReplicatedStorage.Shared.Ground)
@@ -421,6 +422,14 @@ local upgradeButton = button({ Name = "Upgrade", Size = UDim2.new(1, -20, 0, INF
 	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Upgrade", Parent = infoPanel })
 local sellButton = button({ Name = "Sell", Size = UDim2.new(1, -20, 0, INFO_BUTTON), Position = UDim2.fromOffset(10, 90 + INFO_BUTTON),
 	BackgroundColor3 = Color3.fromRGB(140, 50, 50), Text = "Sell", Parent = infoPanel })
+-- the level 3 choice of a branching defender (the Oak Barricade): two buttons where Upgrade stands, picked by shape
+-- and name (Thornwall left, Rootwall right); shown instead of Upgrade at the level before the last
+local branchButtons = {}
+for i = 1, 2 do
+	branchButtons[i] = button({ Name = "Branch" .. i, Size = UDim2.new(0.5, -15, 0, INFO_BUTTON),
+		Position = i == 1 and UDim2.fromOffset(10, 82) or UDim2.new(0.5, 5, 0, 82),
+		BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "", TextWrapped = true, Visible = false, Parent = infoPanel })
+end
 
 -- phones: confirm where to build
 local confirmBar = make("Frame", {
@@ -1290,7 +1299,48 @@ local function mouseRay(include)
 end
 
 -- same rules as the server, so the ghost shows green or red
+local function buildPointsFull()
+	return (GameState:GetAttribute("BuildUsed") or 0) + (Config.BuildPoints[placing] or 0)
+		> (GameState:GetAttribute("BuildMax") or Config.BuildLimit)
+end
+
+-- a path defender (the Oak Barricade): on the path, snapped to its middle (same rule as TowerService.CanPlaceOnPath)
+local function canPlaceOnPath(position)
+	local others = {}
+	for _, tower in workspace.Towers:GetChildren() do
+		local d = tower:GetAttribute("PathDistance")
+		if d then
+			table.insert(others, d)
+		end
+	end
+	local ok, reason, spot = Config.CanPlaceOnPath(position, others)
+	if not ok then
+		return false, reason
+	end
+	for _, tower in workspace.Towers:GetChildren() do
+		if tower.PrimaryPart and not tower:GetAttribute("PathDistance") then
+			local p = tower.PrimaryPart.Position
+			local foot = Ground.Foot[tower:GetAttribute("TowerType")] or 2.5
+			if (Vector3.new(p.X, 0, p.Z) - spot.Point).Magnitude < Config.PathWidth / 2 + foot then
+				return false, "Too close to another defender"
+			end
+		end
+	end
+	if buildPointsFull() then
+		return false, "Build Points full"
+	end
+	return true, nil
+end
+
+local function onPath(towerType)
+	local info = towerType and Config.Towers[towerType]
+	return info ~= nil and info.OnPath == true
+end
+
 local function canPlaceHere(position)
+	if onPath(placing) then
+		return canPlaceOnPath(position)
+	end
 	local half = Config.MapSize / 2
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
 		return false, "Too close to the edge"
@@ -1309,7 +1359,7 @@ local function canPlaceHere(position)
 			end
 		end
 	end
-	if (GameState:GetAttribute("BuildUsed") or 0) + (Config.BuildPoints[placing] or 0) > (GameState:GetAttribute("BuildMax") or Config.BuildLimit) then
+	if buildPointsFull() then
 		return false, "Build Points full"
 	end
 	-- rocks, bushes, the ruin (same rule as the server)
@@ -1392,18 +1442,19 @@ local function startPlacing(towerType)
 		return p
 	end
 	-- the tower's shape (a simple stand-in) with a bright outline you see through anything
-	local body = ghostPart({ Name = "Body", Size = Vector3.new(3, 7, 3), Color = info.Color, Transparency = 0.35,
-		Material = Enum.Material.SmoothPlastic })
-	ghostPart({ Name = "Top", Shape = Enum.PartType.Ball, Size = Vector3.one * 3.4, Color = info.Color, Transparency = 0.35 })
+	local body = ghostPart({ Name = "Body", Size = info.OnPath and Vector3.new(Config.PathWidth + 1, 3.2, 1.6) or Vector3.new(3, 7, 3),
+		Color = info.Color, Transparency = 0.35, Material = Enum.Material.SmoothPlastic })
+	ghostPart({ Name = "Top", Shape = Enum.PartType.Ball, Size = Vector3.one * 3.4, Color = info.Color,
+		Transparency = info.OnPath and 1 or 0.35 })
 	-- the exact spot it takes: a solid circle on the ground
 	ghostPart({ Name = "Foot", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, Config.TowerSpacing, Config.TowerSpacing),
 		Color = Color3.fromRGB(120, 255, 120), Transparency = 0.25 })
 	ghost.PrimaryPart = body
 	-- The translucent floor disc shows the full range without an outline pass or 40 edge parts.
-	local range = info.Levels[1].Range
+	local range = math.max(info.Levels[1].Range or 0, 1)
 	local disc = makeDisc(range, Color3.fromRGB(120, 255, 120))
 	disc.Name = "Range"
-	disc.Transparency = 0.85
+	disc.Transparency = info.OnPath and 1 or 0.85
 	disc.Parent = ghost
 	local tagHolder = ghostPart({ Name = "TagHolder", Size = Vector3.one * 0.2, Transparency = 1 })
 	local tag = make("BillboardGui", { Name = "Tag", Size = UDim2.fromOffset(260, 34), StudsOffset = Vector3.new(0, 7, 0),
@@ -1432,6 +1483,13 @@ local function startPlacing(towerType)
 end
 
 local function snapPlacement(pos)
+	if onPath(placing) then
+		-- onto the middle of the path, where the server will put it
+		local spot = Config.PathSpot(pos)
+		if spot and spot.Offset <= Config.PathWidth / 2 + 2 then
+			return spot.Point
+		end
+	end
 	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
 end
 
@@ -1456,11 +1514,18 @@ local function refreshPlacement(pos)
 	pos = visualGround(pos)
 	local color = ok and Color3.fromRGB(120, 255, 120) or Color3.fromRGB(255, 80, 80)
 	ghost.Body.CFrame = CFrame.new(pos + Vector3.new(0, 3.5, 0))
+	local spot = onPath(placing) and Config.PathSpot(pos)
+	if spot then
+		-- across the path, as it will stand
+		local middle = pos + Vector3.new(0, 1.6, 0)
+		ghost.Body.CFrame = CFrame.lookAt(middle, middle + spot.Dir)
+	end
 	ghost.Top.CFrame = CFrame.new(pos + Vector3.new(0, 7.5, 0))
 	ghost.Top.Color = ok and Config.Towers[placing].Color or color
 	ghost.Body.Color = ghost.Top.Color
 	ghost.Foot.CFrame = CFrame.new(pos + Vector3.new(0, 0.18, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	ghost.Foot.Color = color
+	ghost.Foot.Transparency = spot and 1 or 0.25
 	ghost.Range.CFrame = CFrame.new(pos + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	ghost.Range.Color = color
 	ghost.TagHolder.CFrame = CFrame.new(pos)
@@ -1548,10 +1613,39 @@ local function refreshInfo()
 	local towerType = selected:GetAttribute("TowerType")
 	local info = Config.Towers[towerType]
 	local level = selected:GetAttribute("Level")
-	local stats = info.Levels[level]
-	infoTitle.Text = info.DisplayName .. "  Lv " .. level
-	infoStats.Text = "Damage " .. stats.Damage .. " · Range " .. stats.Range .. " · every " .. stats.Cooldown .. "s"
+	local branchId = selected:GetAttribute("Branch")
+	local stats = Config.TowerStats(towerType, level, branchId)
+	local branch = Config.TowerBranch(towerType, branchId)
+	infoTitle.Text = (branch and branch.Name or info.DisplayName) .. "  Lv " .. level
+	if info.OnPath then
+		local health = selected:GetAttribute("Health") or stats.Health
+		infoStats.Text = "Health " .. health .. "/" .. (selected:GetAttribute("MaxHealth") or stats.Health)
+			.. (branch and (" · " .. branch.Text) or " · Stand near it to repair it")
+	else
+		infoStats.Text = "Damage " .. stats.Damage .. " · Range " .. stats.Range .. " · every " .. stats.Cooldown .. "s"
+	end
 	local nextLevel = info.Levels[level + 1]
+	-- the level before the last of a branching defender: two choices instead of one Upgrade
+	local branching = nextLevel and info.Branches and level + 1 == #info.Levels
+	upgradeButton.Visible = not branching
+	for i, b in branchButtons do
+		local choice = branching and info.Branches[i]
+		b.Visible = choice ~= nil and choice ~= false
+		if choice then
+			local gold = GameState:GetAttribute("Gold") or 0
+			b.Text = choice.Name .. "\n" .. nextLevel.Cost .. " mana"
+			b.BackgroundColor3 = gold >= nextLevel.Cost and choice.Color:Lerp(Color3.new(0, 0, 0), 0.35) or Color3.fromRGB(70, 70, 80)
+		end
+	end
+	if Ui.Gamepad.active then
+		-- keep the highlight on a button that is showing
+		local picked = GuiService.SelectedObject
+		if picked == upgradeButton and branching then
+			GuiService.SelectedObject = branchButtons[1]
+		elseif picked and not branching and table.find(branchButtons, picked) then
+			GuiService.SelectedObject = upgradeButton
+		end
+	end
 	-- the next level's painted picture beside the panel (docs/tower-pipeline.md), when that tower has one
 	local preview = infoPanel:FindFirstChild("NextLook")
 	if not preview then
@@ -1573,6 +1667,14 @@ local function refreshInfo()
 	end
 	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " mana)"
 	local base = selected.PrimaryPart and selected.PrimaryPart.Position or Vector3.zero
+	if info.OnPath then
+		-- a wall has no range ring (Rootwall's slowed lane shows on the road itself)
+		if rangeCircle then
+			rangeCircle:Destroy()
+			rangeCircle = nil
+		end
+		return
+	end
 	if not rangeCircle then
 		rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
 	end
@@ -1589,11 +1691,11 @@ local function selectTower(model)
 	refreshInfo()
 end
 
-local function upgradeSelected()
+local function upgradeSelected(branchId)
 	if not selected then
 		return
 	end
-	local ok, reason = Remotes.UpgradeTower:InvokeServer(selected)
+	local ok, reason = Remotes.UpgradeTower:InvokeServer(selected, branchId)
 	if ok then
 		Ui.playSound("Coin")
 	else
@@ -1601,9 +1703,29 @@ local function upgradeSelected()
 	end
 	refreshInfo()
 end
-upgradeButton.Activated:Connect(upgradeSelected)
+upgradeButton.Activated:Connect(function()
+	upgradeSelected()
+end)
+for i, b in branchButtons do
+	b.Activated:Connect(function()
+		local info = selected and Config.Towers[selected:GetAttribute("TowerType")]
+		local choice = info and info.Branches and info.Branches[i]
+		if choice then
+			upgradeSelected(choice.Id)
+		end
+	end)
+	make("BindableEvent", { Name = "Press", Parent = b }).Event:Connect(function()
+		local info = selected and Config.Towers[selected:GetAttribute("TowerType")]
+		local choice = info and info.Branches and info.Branches[i]
+		if choice then
+			upgradeSelected(choice.Id)
+		end
+	end)
+end
 -- the test build presses this button through here (scripts can't press A on a real controller)
-make("BindableEvent", { Name = "Press", Parent = upgradeButton }).Event:Connect(upgradeSelected)
+make("BindableEvent", { Name = "Press", Parent = upgradeButton }).Event:Connect(function()
+	upgradeSelected()
+end)
 
 sellButton.Activated:Connect(function()
 	if not selected then
@@ -1793,7 +1915,6 @@ end
 -------------------------------------------------------------------------------
 -- controllers (the full button table is at the top of Gamepad.luau)
 -------------------------------------------------------------------------------
-local GuiService = game:GetService("GuiService")
 local Gamepad = Ui.Gamepad
 
 -- panels: the highlight jumps in when they open, B closes them
@@ -1803,7 +1924,9 @@ end })
 Gamepad.Panel(dailyPanel, { default = claimButton, closeButton = dailyClose })
 Gamepad.Panel(mapPanel, { closeButton = mapClose })
 Gamepad.Panel(endPanel, { default = playAgainButton, closable = false })
-Gamepad.Panel(infoPanel, { default = upgradeButton, close = closeInfo })
+Gamepad.Panel(infoPanel, { default = function()
+	return branchButtons[1].Visible and branchButtons[1] or upgradeButton
+end, close = closeInfo })
 Gamepad.Hint(infoPanel, Enum.KeyCode.ButtonB, UDim2.new(1, -6, 0, 6))
 
 local function panelOpen()

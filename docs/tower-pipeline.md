@@ -15,6 +15,12 @@ kid sees the level from across the lane on a phone. Glow only at the top level.
 | Frost Crystal | one ice shard on a frosted stone | a crystal cluster with a silver ring | a tall crown of crystals around a floating core that glows | pale stone, ice blue, silver |
 | Storm Obelisk | a short rune stone | a carved obelisk with a copper rod | a tall obelisk with a floating storm orb and copper coils | slate, copper, storm violet |
 | Ballista | a light wooden bow on a stand | a heavier ballista with iron arms | a double ballista on a stone bastion with a crank and banners | oak, iron, crimson |
+| Oak Barricade (on the path, 2026-11-24) | three oak logs between sharpened posts, rope lashing | four logs, iron-banded posts, a round shield crest | branch: Thornwall (stakes pointing out at the enemies, braces behind) or Rootwall (roots over the wall and the road, moss, a sapling) | oak, rope, iron, red-brown tips / moss green |
+
+The Oak Barricade stands across the path instead of on a plinth: `art/blender/tower_barricade_detail.py -- out.fbx
+<l1|l2|thorn|root>`, sheet `python art/make_tower_sheets.py barricade` (four looks, cut into
+`art/ref3d/tower_barricade_<l1|l2|thorn|root>.png`). Its plan view stays centred on the wall line (the game centres
+the model's box on the path).
 
 Rules: same footprint at every level (it stands on the same plinth and keeps its spot), height grows about 15% per
 level, the turning head and the muzzle stay separate nodes on the game's pivots, feet on the ground (test/ground).

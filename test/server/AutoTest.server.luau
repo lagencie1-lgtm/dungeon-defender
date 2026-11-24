@@ -100,6 +100,146 @@ local RUNS = {
 	{ "CursedForest", "Endless", 40 },
 }
 local fetchTested = false
+local barricadeTested = false
+
+-- the Oak Barricade (2026-11-24): stands on the path, stops enemies, loses health to them, is repaired by a hero near
+-- it, branches at level 3 (Thornwall / Rootwall), and breaks under boss slams
+function testBarricade()
+	local EnemyService = require(Server.EnemyService)
+	local pts = Config.Path
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	-- the middle of the longest straight stretch: far from bends, start and portal
+	local best, bestLength = 1, 0
+	for i = 1, #pts - 1 do
+		local length = (pts[i + 1] - pts[i]).Magnitude
+		if length > bestLength then
+			best, bestLength = i, length
+		end
+	end
+	local spotAt = pts[best]:Lerp(pts[best + 1], 0.5) + Vector3.new(1.5, 0, 0.5) -- (a little off the middle: it snaps)
+	local before = State.Get("BuildUsed") or 0
+	local ok, reason = TowerService.Place(player, "Barricade", spotAt)
+	assert(ok, "barricade not placed: " .. tostring(reason))
+	local wall
+	for _, m in workspace.Towers:GetChildren() do
+		if m:GetAttribute("TowerType") == "Barricade" then
+			wall = m
+		end
+	end
+	assert(wall, "no barricade model")
+	local d = wall:GetAttribute("PathDistance")
+	assert(d and (State.Get("BuildUsed") or 0) == before + Config.BuildPoints.Barricade, "build points not counted")
+	local ok2, reason2 = TowerService.Place(player, "Barricade", spotAt + Vector3.new(0, 0, 2))
+	assert(not ok2, "two barricades on one spot")
+	log("barricade at", math.floor(d), "of the path; second one refused:", reason2)
+	local ok3 = TowerService.Place(player, "Barricade", pts[best]:Lerp(pts[best + 1], 0.5) + Vector3.new(30, 0, 30))
+	-- (only refused when that spot is off the path: a far spot may land on another stretch)
+	log("barricade off the path", ok3 and "placed on another stretch" or "refused")
+	if ok3 then
+		for _, m in workspace.Towers:GetChildren() do
+			if m:GetAttribute("TowerType") == "Barricade" and m ~= wall then
+				TowerService.Sell(player, m)
+			end
+		end
+	end
+	-- the hero far away (no repairs), tough goblins walking into it
+	if root then
+		root.CFrame = CFrame.new(pts[1] + Vector3.new(0, 6, 0))
+	end
+	local goblins = {}
+	for i = 1, 6 do
+		table.insert(goblins, EnemyService.Spawn("Goblin", 60, math.max(0, d - 20 - i * 2)))
+	end
+	Clock.scale = 4
+	local waited = 0
+	while waited < 10 and (wall:GetAttribute("Health") or 0) >= (wall:GetAttribute("MaxHealth") or 1) do
+		task.wait(0.25)
+		waited += 0.25
+	end
+	task.wait(1)
+	local passed, stopped = 0, 0
+	for _, e in goblins do
+		if not e.dead then
+			if e.distance > d then
+				passed += 1
+			elseif e.wall then
+				stopped += 1
+			end
+		end
+	end
+	local hurt = wall:GetAttribute("Health")
+	log("barricade: health", hurt, "/", wall:GetAttribute("MaxHealth"), "stopped", stopped, "passed", passed, "after", waited, "s")
+	assert(passed == 0, "goblins walked through the barricade")
+	assert(stopped >= 3, "goblins did not stop at the barricade")
+	assert(hurt < wall:GetAttribute("MaxHealth"), "the goblins did not hurt the barricade")
+	-- a hero standing next to it repairs it faster than the goblins hurt it
+	if root then
+		root.CFrame = CFrame.new(wall.PrimaryPart.Position + Vector3.new(0, 4, 0) + wall.PrimaryPart.CFrame.LookVector * 4)
+	end
+	task.wait(2)
+	log("barricade repaired to", wall:GetAttribute("Health"), "repairing", wall:GetAttribute("Repairing"))
+	assert(wall:GetAttribute("Repairing") == true, "the hero near it does not repair it")
+	-- level 2, then level 3 needs a branch
+	assert(TowerService.Upgrade(player, wall), "upgrade to level 2 failed")
+	local plain, why = TowerService.Upgrade(player, wall)
+	assert(not plain, "level 3 without a branch")
+	assert(TowerService.Upgrade(player, wall, "Thornwall"), "Thornwall upgrade failed (" .. tostring(why) .. ")")
+	assert(wall:GetAttribute("Level") == 3 and wall:GetAttribute("Branch") == "Thornwall", "branch not set")
+	local hp = {}
+	for _, e in goblins do
+		hp[e] = e.health
+	end
+	if root then
+		root.CFrame = CFrame.new(pts[1] + Vector3.new(0, 6, 0))
+	end
+	task.wait(1.5)
+	local thorned = 0
+	for _, e in goblins do
+		if e.wall and e.blockSlot and e.blockSlot <= Config.Barricade.Attackers and e.health < hp[e] then
+			thorned += 1
+		end
+	end
+	log("thornwall hurt", thorned, "goblins in the front row")
+	assert(thorned >= 1, "the Thornwall did not hurt the goblins hitting it")
+	-- four boss slams break it, and its build points come back
+	local used = State.Get("BuildUsed")
+	for _ = 1, 5 do
+		if wall.Parent then
+			TowerService.Stun(wall.PrimaryPart.Position, 6, 0.1)
+		end
+	end
+	assert(not wall.Parent, "boss slams did not break the barricade")
+	assert(State.Get("BuildUsed") == used - Config.BuildPoints.Barricade, "build points not given back")
+	task.wait(1)
+	local walking = 0
+	for _, e in goblins do
+		if not e.dead and not e.wall then
+			walking += 1
+		end
+	end
+	log("barricade broke; goblins walking again", walking)
+	assert(walking >= 3, "goblins stayed stuck after the barricade broke")
+	-- Rootwall: the lane in front of it walks slowly
+	State.Set("Gold", 100000)
+	assert(TowerService.Place(player, "Barricade", spotAt), "second barricade not placed")
+	for _, m in workspace.Towers:GetChildren() do
+		if m:GetAttribute("TowerType") == "Barricade" then
+			wall = m
+		end
+	end
+	TowerService.Upgrade(player, wall)
+	assert(TowerService.Upgrade(player, wall, "Rootwall"), "Rootwall upgrade failed")
+	local slowed = EnemyService.Spawn("Goblin", 60, wall:GetAttribute("PathDistance") - 8)
+	task.wait(0.5)
+	log("rootwall: slow", slowed.slowFactor)
+	assert(slowed.slowFactor < 1, "the Rootwall does not slow the lane in front of it")
+	TowerService.Sell(player, wall)
+	for _, e in goblins do
+		EnemyService.Damage(e, 1e9)
+	end
+	EnemyService.Damage(slowed, 1e9)
+	Clock.scale = 1
+end
 -- the Baby Dragon follows the test player, for the pet look check
 step("equip baby dragon", function()
 	local ArtService = require(Server.ArtService)
@@ -239,6 +379,10 @@ for _, run in RUNS do
 		end)
 		State.Set("Gold", 100000)
 		placeTowers()
+		if not barricadeTested then
+			barricadeTested = true
+			step("oak barricade " .. mapId, testBarricade)
+		end
 		if not fetchTested then
 			fetchTested = true
 			-- pets fetch loot (PetMoves): gems and a gear drop 14 studs from the hero, out of the hero's own reach

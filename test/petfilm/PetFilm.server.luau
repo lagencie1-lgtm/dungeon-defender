@@ -12,6 +12,7 @@ local LootService = require(Server.LootService)
 local ItemService = require(Server.ItemService)
 local State = require(Server.State)
 local Config = require(ReplicatedStorage.Shared.Config)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local cue = ReplicatedStorage.FilmCue
 
@@ -63,7 +64,10 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 		local dir = (b - a).Unit
 		local side = Vector3.new(-dir.Z, 0, dir.X)
 		local spot = a:Lerp(b, 0.5) + side * 9
-		player.Character:PivotTo(CFrame.lookAt(spot + Vector3.new(0, 5, 0), a:Lerp(b, 0.5) + Vector3.new(0, 5, 0)))
+		-- (the ground is not flat: stand on whatever is there)
+		local feet = math.max(spot.Y, (Ground.At(spot.X, spot.Z))) + 5
+		player.Character:PivotTo(CFrame.lookAt(Vector3.new(spot.X, feet, spot.Z),
+			Vector3.new(a:Lerp(b, 0.5).X, feet, a:Lerp(b, 0.5).Z)))
 		State.AddGold(3000)
 		local placed = 0
 		-- defenders only on the last stretch, so the wave walks past the hero and the lead pet has something to pounce on
@@ -125,6 +129,7 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 			for i = 1, 5 do
 				local a = i / 5 * math.pi * 2
 				local spot = root.Position + Vector3.new(math.cos(a) * 15, 0, math.sin(a) * 15)
+				spot = Vector3.new(spot.X, (Ground.At(spot.X, spot.Z)), spot.Z)
 				LootService.DropGems(spot, i == 1 and 12 or 2)
 				if i % 2 == 0 then
 					ItemService.OnEnemyKilled({ name = "Film", stats = { DropChance = 50 }, position = spot + Vector3.new(2, 0, 2) },

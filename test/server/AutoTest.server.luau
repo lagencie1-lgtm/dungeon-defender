@@ -59,14 +59,25 @@ local function placeTowers()
 		local dir = (b - a).Unit
 		local side = Vector3.new(-dir.Z, 0, dir.X)
 		for _, t in { 0.3, 0.7 } do
-			for _, k in { -11, 11 } do
-				local pos = a:Lerp(b, t) + side * k
-				local ok, reason = TowerService.Place(player, types[placed % #types + 1], pos)
-				if ok then
-					placed += 1
-				elseif reason ~= "Can't build on the path" and reason ~= "Too close to another defender"
-					and reason ~= "Too close to the portal" and reason ~= "Too close to the edge" then
-					log("place failed:", reason)
+			for _, sign in { -1, 1 } do
+				-- 11 studs off the lane, then further out: the raised ground leaves less room beside the lanes
+				local reasons = {}
+				for _, k in { 11, 14, 17 } do
+					local pos = a:Lerp(b, t) + side * (k * sign)
+					local ok, reason = TowerService.Place(player, types[placed % #types + 1], pos)
+					if ok then
+						placed += 1
+						reasons = {}
+						break
+					end
+					table.insert(reasons, tostring(reason))
+				end
+				for _, reason in reasons do
+					if reason ~= "Can't build on the path" and reason ~= "Too close to another defender"
+						and reason ~= "Too close to the portal" and reason ~= "Too close to the edge" then
+						log("place failed:", reason)
+						break
+					end
 				end
 			end
 		end
@@ -232,7 +243,11 @@ for _, run in RUNS do
 			local LootService = require(Server.LootService)
 			local ItemService = require(Server.ItemService)
 			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			local spot = root.Position + Vector3.new(14, 0, 0)
+			local Ground = require(game:GetService("ReplicatedStorage").Shared.Ground)
+			local function onGround(v)
+				return Vector3.new(v.X, (Ground.At(v.X, v.Z)), v.Z)
+			end
+			local spot = onGround(root.Position + Vector3.new(14, 0, 0))
 			-- (the place's owner has the Auto Collect pass in Studio: off for this check, or the pass takes the loot first)
 			local hadAuto = player:GetAttribute("PassAutoCollect")
 			player:SetAttribute("PassAutoCollect", false)
@@ -264,7 +279,7 @@ for _, run in RUNS do
 			assert(teamTrips() > 0, "the loot came in, but not by a pet")
 			-- with the Auto Collect pass the pets still do the fetching: twice as fast, from the whole map
 			player:SetAttribute("PassAutoCollect", true)
-			local far = root.Position + Vector3.new(60, 0, 0)
+			local far = onGround(root.Position + Vector3.new(60, 0, 0))
 			local itemsBefore = #DataService.Get(player).Items
 			ItemService.OnEnemyKilled({ name = "Test", stats = { DropChance = 50 }, position = far }, State.Get("Difficulty"), 1)
 			task.wait(0.3)

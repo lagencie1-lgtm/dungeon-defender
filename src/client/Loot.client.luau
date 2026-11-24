@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Items = require(ReplicatedStorage.Shared.Items)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local Art = require(ReplicatedStorage.Shared.Art)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
@@ -147,7 +148,10 @@ Remotes.LootDrop.OnClientEvent:Connect(function(dropId, position, rarityIndex, n
 	local r = Items.Rarities[rarityIndex] or Items.Rarities[1]
 	local loud = LOUDNESS[rarityIndex] or LOUDNESS[1]
 	local model = make("Model", { Name = "Loot" })
-	local base = Vector3.new(position.X, 1.6, position.Z)
+	-- on the ground where it falls: the higher of the monster's own footing (a lane, a bridge) and the terrain
+	-- there (a raised floor beside the lane). The ground is not flat any more: never a fixed height.
+	local floor = math.max(position.Y, (Ground.At(position.X, position.Z)))
+	local base = Vector3.new(position.X, floor + 1.6, position.Z)
 	local material = rarityIndex >= 3 and Enum.Material.Neon or Enum.Material.Metal
 	local parts = itemShape(model, slot, r.Color, material)
 	local core = parts[1].part
@@ -155,7 +159,7 @@ Remotes.LootDrop.OnClientEvent:Connect(function(dropId, position, rarityIndex, n
 
 	-- glowing circle on the ground
 	local ring = lootPart(model, { Name = "Ring", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, loud.ring, loud.ring),
-		CFrame = CFrame.new(base.X, 0.12, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
+		CFrame = CFrame.new(base.X, floor + 0.12, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
 		Material = Enum.Material.Neon, Transparency = 0.5 })
 	-- sparkles
 	if loud.sparkles > 0 then
@@ -167,7 +171,7 @@ Remotes.LootDrop.OnClientEvent:Connect(function(dropId, position, rarityIndex, n
 	local beam = nil
 	if loud.beam > 0 then
 		beam = lootPart(model, { Name = "Beam", Shape = Enum.PartType.Cylinder, Size = Vector3.new(loud.beam, loud.width, loud.width),
-			CFrame = CFrame.new(base.X, loud.beam / 2, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
+			CFrame = CFrame.new(base.X, floor + loud.beam / 2, base.Z) * CFrame.Angles(0, 0, math.pi / 2), Color = r.Color,
 			Material = Enum.Material.Neon, Transparency = 0.4 })
 	end
 	local tag = make("BillboardGui", { Size = UDim2.fromOffset(240, 40), StudsOffset = Vector3.new(0, 2.6, 0),

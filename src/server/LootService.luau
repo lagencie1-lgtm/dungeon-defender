@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local Effects = require(script.Parent.Effects)
 local Sound = require(script.Parent.Sound)
 local DataService = require(script.Parent.DataService)
@@ -27,7 +28,10 @@ function LootService.DropGems(position, amount)
 	p.Size = Vector3.one * (amount >= 10 and 2.2 or 1.3)
 	p.Material = Enum.Material.Neon
 	p.Color = GEM_COLOR
-	local base = Vector3.new(position.X + math.random() * 4 - 2, 1.8, position.Z + math.random() * 4 - 2)
+	-- on the ground where it falls: the higher of the monster's own footing (a lane, a bridge) and the terrain
+	-- there (a raised floor beside the lane). The ground is not flat any more: never a fixed height.
+	local x, z = position.X + math.random() * 4 - 2, position.Z + math.random() * 4 - 2
+	local base = Vector3.new(x, math.max(position.Y, (Ground.At(x, z))) + 1.8, z)
 	p.CFrame = CFrame.new(base)
 	local light = Instance.new("PointLight")
 	light.Color = GEM_COLOR

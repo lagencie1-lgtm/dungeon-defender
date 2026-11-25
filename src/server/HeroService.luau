@@ -643,7 +643,13 @@ local function onCharacter(player, character)
 		local maxHealth = player:GetAttribute("HeroMaxHealth") or Config.HeroBaseHealth
 		humanoid.MaxHealth = maxHealth
 		humanoid.Health = maxHealth
+		-- the body stays in one piece and in place when knocked out: HeroAnim plays the fall (knees buckle, over backwards)
+		humanoid.BreakJointsOnDeath = false
 		humanoid.Died:Connect(function()
+			local r = character:FindFirstChild("HumanoidRootPart")
+			if r then
+				r.Anchored = true
+			end
 			Remotes.Notify:FireAllClients(player.DisplayName .. " got bonked by goblins! Back in a few seconds",
 				Color3.fromRGB(255, 140, 140))
 		end)

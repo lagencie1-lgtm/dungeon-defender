@@ -1,89 +1,233 @@
--- Attack animations for every hero in the game, made in code (no animation assets): when a hero's ability goes on
--- cooldown (the "...ReadyAt" attributes every player's computer can see), their arms and body play a swing, a cast,
--- a bow shot, a slam or a spin on top of the normal walking animation.
+-- Hero animation, all in code (no animation assets), played on every player's computer for every hero.
+-- On top of Roblox's own walk and idle it adds:
+--   * moves: each ability press (the "...ReadyAt" attributes every computer can see) plays a full-body move from
+--     src/shared/HeroMoves.luau: wind-up, lunge, contact, a short freeze on impact (hit-stop) with an arm shudder,
+--     follow-through and a recovery that overshoots and settles. Sword presses chain into a three-hit combo.
+--   * a ready stance after fighting, a flinch when hurt, and a knock-out fall when the hero dies
+--   * life that is always on: lean into running and turns (springs), shoulders turning against the stride,
+--     breathing, and the head and free arm trailing the body a little (overlap)
+-- The legs bend whenever the body crouches or lunges, so the feet stay on the ground.
+-- Every number lives in HeroMoves; this file only plays them. Nothing here changes the game, only the look.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local playing = {} -- [player] = { kind, start, duration }
+local HeroMoves = require(ReplicatedStorage.Shared.HeroMoves)
+local Life = HeroMoves.Life
 
--- which move each hero plays for the attack (F), the second ability (E) and the third (R)
-local MOVES = {
-	Swordmaster = { AttackReadyAt = "swing", WhirlwindReadyAt = "spin", LeapReadyAt = "slam" },
-	RuneMage = { AttackReadyAt = "cast", WhirlwindReadyAt = "raise", LeapReadyAt = "slam" },
-	BeastHunter = { AttackReadyAt = "shoot", WhirlwindReadyAt = "cast", LeapReadyAt = "raise" },
-	Engineer = { AttackReadyAt = "swing", WhirlwindReadyAt = "raise", LeapReadyAt = "slam" },
+local JOINTS = {
+	-- our name = { part, joint }
+	Root = { "LowerTorso", "Root" },
+	Waist = { "UpperTorso", "Waist" },
+	Neck = { "Head", "Neck" },
+	RShoulder = { "RightUpperArm", "RightShoulder" },
+	RElbow = { "RightLowerArm", "RightElbow" },
+	LShoulder = { "LeftUpperArm", "LeftShoulder" },
+	LElbow = { "LeftLowerArm", "LeftElbow" },
+	RHip = { "RightUpperLeg", "RightHip" },
+	RKnee = { "RightLowerLeg", "RightKnee" },
+	RAnkle = { "RightFoot", "RightAnkle" },
+	LHip = { "LeftUpperLeg", "LeftHip" },
+	LKnee = { "LeftLowerLeg", "LeftKnee" },
+	LAnkle = { "LeftFoot", "LeftAnkle" },
 }
-local DURATION = { swing = 0.34, cast = 0.4, shoot = 0.36, slam = 0.55, spin = 0.5, raise = 0.6 }
+local POSE_JOINTS = { "Root", "Waist", "Neck", "RShoulder", "RElbow", "LShoulder", "LElbow", "RHip", "RKnee", "LHip", "LKnee" }
+local ZERO = Vector3.zero
+local RAD = math.pi / 180
 
--- a value that goes a → b → 0 over the move: wind up, strike, recover
-local function strike(t, windup, a, b)
-	if t < windup then
-		return a * math.sin(t / windup * math.pi / 2)
+-------------------------------------------------------------------------------
+-- poses: { [joint] = Vector3 degrees, Drop = studs, Push = studs }
+-------------------------------------------------------------------------------
+local function emptyPose()
+	local p = { Drop = 0, Push = 0 }
+	for _, name in POSE_JOINTS do
+		p[name] = ZERO
 	end
-	local u = (t - windup) / (1 - windup)
-	if u < 0.45 then
-		local k = u / 0.45
-		return a + (b - a) * (1 - (1 - k) ^ 3) -- fast into the hit
-	end
-	return b * (1 - (u - 0.45) / 0.55) ^ 2 -- ease back
+	return p
 end
 
-local function joints(character)
-	local function find(partName, jointName)
-		local part = character:FindFirstChild(partName)
-		return part and part:FindFirstChild(jointName)
+local function poseFromKey(key)
+	local p = emptyPose()
+	p.Drop = key.Drop or 0
+	p.Push = key.Push or 0
+	for _, name in POSE_JOINTS do
+		local v = key[name]
+		if v then
+			p[name] = Vector3.new(v[1] or 0, v[2] or 0, v[3] or 0)
+		end
 	end
-	return find("RightUpperArm", "RightShoulder"), find("LeftUpperArm", "LeftShoulder"), find("UpperTorso", "Waist"),
-		find("LowerTorso", "Root")
+	return p
 end
 
-local function apply(character, kind, t)
-	local right, left, waist, root = joints(character)
-	if not right or not left then
+local function lerpPose(a, b, w)
+	local p = { Drop = a.Drop + (b.Drop - a.Drop) * w, Push = a.Push + (b.Push - a.Push) * w }
+	for _, name in POSE_JOINTS do
+		p[name] = a[name]:Lerp(b[name], w)
+	end
+	return p
+end
+
+-- out += p * w
+local function addPose(out, p, w)
+	out.Drop += p.Drop * w
+	out.Push += p.Push * w
+	for _, name in POSE_JOINTS do
+		out[name] += p[name] * w
+	end
+end
+
+local EASE = {
+	out = function(k)
+		return 1 - (1 - k) ^ 3
+	end,
+	inout = function(k)
+		return k * k * (3 - 2 * k)
+	end,
+	["in"] = function(k)
+		return k * k * k
+	end,
+	back = function(k)
+		local c = 1.7
+		return 1 + (c + 1) * (k - 1) ^ 3 + c * (k - 1) ^ 2
+	end,
+}
+
+-- each clip's keys turned into full poses once ("hold" copies the pose before it)
+local clips = {}
+for name, clip in HeroMoves.Clips do
+	local keys = {}
+	local last = emptyPose()
+	for _, key in clip.Keys do
+		local pose = key.hold and last or poseFromKey(key)
+		table.insert(keys, { t = key.t, ease = EASE[key.ease or "inout"] or EASE.inout, pose = pose })
+		last = pose
+	end
+	clips[name] = { keys = keys, length = keys[#keys].t, shudder = clip.Shudder }
+end
+
+-- the pose of a clip `t` seconds after it started from pose `from`; second value true once it has ended
+local function sample(clip, from, t)
+	local prevT, prevPose = 0, from
+	for _, key in clip.keys do
+		if t < key.t then
+			local w = (t - prevT) / math.max(1e-3, key.t - prevT)
+			return lerpPose(prevPose, key.pose, key.ease(math.clamp(w, 0, 1))), false
+		end
+		prevT, prevPose = key.t, key.pose
+	end
+	return prevPose, true
+end
+
+-- a pose to start a new clip from: a turn already made (a spin ends at -360) counts as no turn
+local function wrapped(pose)
+	local p = table.clone(pose)
+	local r = p.Root
+	p.Root = Vector3.new(r.X, (r.Y + 180) % 360 - 180, r.Z)
+	return p
+end
+
+-------------------------------------------------------------------------------
+-- springs, stepped in small slices so 30 fps moves like 240 fps
+-------------------------------------------------------------------------------
+local function springStep(x, v, goal, hz, damping, dt)
+	local w = 2 * math.pi * hz
+	local steps = math.max(1, math.ceil(dt / (1 / 240)))
+	local h = dt / steps
+	for _ = 1, steps do
+		v += ((goal - x) * w * w - v * 2 * damping * w) * h
+		x += v * h
+	end
+	return x, v
+end
+
+-------------------------------------------------------------------------------
+-- per-character state
+-------------------------------------------------------------------------------
+local states = {} -- [character] = state
+
+local function findJoints(character)
+	local found = {}
+	for name, spec in JOINTS do
+		local part = character:FindFirstChild(spec[1])
+		local joint = part and part:FindFirstChild(spec[2])
+		if joint and joint:IsA("Motor6D") then
+			found[name] = joint
+		end
+	end
+	return found
+end
+
+-- leg lengths from the joints themselves (hip to knee, knee to ankle)
+local function legLength(j, hip, knee, ankle)
+	local h, k, a = j[hip], j[knee], j[ankle]
+	if not (h and k and a) then
+		return 2
+	end
+	return (k.C0.Position - h.C1.Position).Magnitude + (a.C0.Position - k.C1.Position).Magnitude
+end
+
+local function stateOf(character)
+	local st = states[character]
+	if st then
+		return st
+	end
+	st = {
+		character = character,
+		joints = {},
+		nextLook = 0,
+		written = {}, -- [joint] = { value, delta }: what we wrote last frame, to undo it if nothing reset it
+		action = nil, -- { clip, start, from, name }
+		actionPose = emptyPose(),
+		react = nil,
+		reactPose = emptyPose(),
+		stance = 0,
+		stanceVel = 0,
+		lastMove = -100,
+		combo = 0,
+		lean = 0, leanVel = 0,
+		bank = 0, bankVel = 0,
+		speed = 0,
+		yaw = nil,
+		follow = {}, -- [joint] = { x, v }
+		dead = false,
+		phase = math.random() * 10,
+	}
+	states[character] = st
+	return st
+end
+
+local function play(st, name, layer)
+	local clip = clips[name]
+	if not clip then
 		return
 	end
-	local A = CFrame.Angles
-	if kind == "swing" then
-		-- arm up and back, then a fast slash down across the body, the torso twisting with it
-		right.Transform *= A(strike(t, 0.3, 2.6, -0.5), 0, strike(t, 0.3, 0.5, -0.6))
-		if waist then
-			waist.Transform *= A(strike(t, 0.3, -0.15, 0.3), strike(t, 0.3, -0.6, 0.7), 0)
-		end
-	elseif kind == "cast" then
-		-- the staff arm thrusts forward, the other hand supports it
-		right.Transform *= A(strike(t, 0.35, 0.6, 1.7), 0, 0)
-		left.Transform *= A(strike(t, 0.35, 0.2, 0.9), 0, 0)
-		if waist then
-			waist.Transform *= A(strike(t, 0.35, -0.2, 0.25), 0, 0)
-		end
-	elseif kind == "shoot" then
-		-- bow arm straight out, the other draws back and lets go
-		right.Transform *= A(1.5 * math.sin(math.min(1, t * 3) * math.pi / 2) * (t < 0.8 and 1 or (1 - t) * 5), 0, 0)
-		left.Transform *= A(strike(t, 0.5, 1.3, 0.4), 0, strike(t, 0.5, -0.9, 0))
-		if waist then
-			waist.Transform *= A(0, strike(t, 0.5, 0.5, -0.1), 0)
-		end
-	elseif kind == "slam" then
-		-- both arms high, then down hard, bending at the waist
-		local arms = strike(t, 0.45, 3.0, 0.4)
-		right.Transform *= A(arms, 0, 0)
-		left.Transform *= A(arms, 0, 0)
-		if waist then
-			waist.Transform *= A(strike(t, 0.45, -0.35, 0.6), 0, 0)
-		end
-	elseif kind == "raise" then
-		-- both arms up and out, held for a moment (summons, buffs, big spells)
-		local up = math.sin(math.min(1, t * 2.5) * math.pi / 2) * (t < 0.7 and 1 or (1 - t) / 0.3)
-		right.Transform *= A(2.4 * up, 0, 0.5 * up)
-		left.Transform *= A(2.4 * up, 0, -0.5 * up)
-	elseif kind == "spin" then
-		-- the whole body turns once, the sword arm held out
-		if root then
-			root.Transform *= A(0, -(1 - (1 - t) ^ 2) * math.pi * 2, 0)
-		end
-		local out = math.sin(math.min(1, t * 4) * math.pi / 2) * (t < 0.8 and 1 or (1 - t) * 5)
-		right.Transform *= A(1.5 * out, 0, 0.4 * out)
+	if layer == "react" then
+		st.react = { clip = clip, start = os.clock(), from = wrapped(st.reactPose), name = name }
+	else
+		st.action = { clip = clip, start = os.clock(), from = wrapped(st.actionPose), name = name }
+		st.lastMove = os.clock()
 	end
+end
+
+local function watchCharacter(player, character)
+	local st = stateOf(character)
+	st.player = player
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if not humanoid or states[character] ~= st then
+		return
+	end
+	local health = humanoid.Health
+	humanoid.HealthChanged:Connect(function(new)
+		if new < health - 0.5 and new > 0 and not st.dead then
+			play(st, "hurt", "react")
+		end
+		health = new
+	end)
+	humanoid.Died:Connect(function()
+		st.dead = true
+		st.react = nil
+		play(st, "death", "action")
+	end)
 end
 
 local function watch(player)
@@ -91,31 +235,225 @@ local function watch(player)
 		player:GetAttributeChangedSignal(attr):Connect(function()
 			local ready = player:GetAttribute(attr) or 0
 			if ready <= workspace:GetServerTimeNow() then
-				return -- a reset, not a new attack
+				return -- a reset, not a new move
 			end
-			local moves = MOVES[player:GetAttribute("HeroId") or "Swordmaster"] or MOVES.Swordmaster
-			local kind = moves[attr]
-			playing[player] = { kind = kind, start = os.clock(), duration = DURATION[kind] }
+			local character = player.Character
+			if not character then
+				return
+			end
+			local st = stateOf(character)
+			if st.dead then
+				return
+			end
+			local moves = HeroMoves.Moves[player:GetAttribute("HeroId") or "Swordmaster"] or HeroMoves.Moves.Swordmaster
+			local move = moves[attr]
+			if type(move) == "table" then
+				-- a combo: the next one if pressed soon after the last, otherwise the first again
+				local now = os.clock()
+				if st.lastCombo and now - st.lastCombo < HeroMoves.ComboWindow then
+					st.combo = st.combo % #move + 1
+				else
+					st.combo = 1
+				end
+				st.lastCombo = now
+				move = move[st.combo]
+			end
+			play(st, move, "action")
 		end)
 	end
+	if player.Character then
+		task.spawn(watchCharacter, player, player.Character)
+	end
+	player.CharacterAdded:Connect(function(character)
+		watchCharacter(player, character)
+	end)
 end
 for _, player in Players:GetPlayers() do
 	watch(player)
 end
 Players.PlayerAdded:Connect(watch)
-Players.PlayerRemoving:Connect(function(player)
-	playing[player] = nil
-end)
 
--- after the normal animations have been applied each frame, add the move on top
-RunService.Stepped:Connect(function()
-	for player, move in playing do
-		local t = (os.clock() - move.start) / move.duration
-		local character = player.Character
-		if t >= 1 or not character then
-			playing[player] = nil
-		else
-			apply(character, move.kind, t)
+-------------------------------------------------------------------------------
+-- writing to the joints, on top of whatever Roblox's animator put there this frame
+-------------------------------------------------------------------------------
+-- the joint's pose before our own change: if nothing reset it since last frame, take our change back out first
+local function baseOf(st, joint)
+	local rec = st.written[joint]
+	local t = joint.Transform
+	if rec and t:FuzzyEq(rec.value, 1e-5) then
+		return t * rec.delta:Inverse()
+	end
+	return t
+end
+
+local function write(st, joint, delta)
+	local base = baseOf(st, joint)
+	local value = base * delta
+	joint.Transform = value
+	local rec = st.written[joint]
+	if rec then
+		rec.value, rec.delta = value, delta
+	else
+		st.written[joint] = { value = value, delta = delta }
+	end
+end
+
+local function turn(v) -- degrees → rotation
+	return CFrame.fromEulerAnglesYXZ(v.X * RAD, v.Y * RAD, v.Z * RAD)
+end
+
+local function animate(st, dt, now)
+	local character = st.character
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	if now >= st.nextLook then
+		st.nextLook = now + 1
+		st.joints = findJoints(character)
+		st.legR = legLength(st.joints, "RHip", "RKnee", "RAnkle")
+		st.legL = legLength(st.joints, "LHip", "LKnee", "LAnkle")
+	end
+	local j = st.joints
+	if not j.Root then
+		return
+	end
+	local scale = character:GetScale()
+
+	-- the move and the flinch
+	if st.action then
+		local pose, done = sample(st.action.clip, st.action.from, now - st.action.start)
+		st.actionPose = pose
+		if done and not st.dead then
+			st.action = nil
 		end
+	else
+		st.actionPose = emptyPose()
+	end
+	if st.react then
+		local pose, done = sample(st.react.clip, st.react.from, now - st.react.start)
+		st.reactPose = pose
+		if done then
+			st.react = nil
+		end
+	else
+		st.reactPose = emptyPose()
+	end
+	local pose = emptyPose()
+	addPose(pose, st.actionPose, 1)
+	addPose(pose, st.reactPose, 1)
+
+	-- running: speed, lean and bank (springs), the ready stance after a fight
+	local v = root.AssemblyLinearVelocity
+	local look = root.CFrame.LookVector
+	local flat = Vector3.new(v.X, 0, v.Z)
+	local forward = flat:Dot(Vector3.new(look.X, 0, look.Z).Unit)
+	local accel = (forward - st.speed) / math.max(dt, 1 / 240)
+	st.speed = forward
+	local yaw = math.atan2(-look.X, -look.Z)
+	local yawRate = 0
+	if st.yaw then
+		yawRate = ((yaw - st.yaw + math.pi) % (2 * math.pi) - math.pi) / math.max(dt, 1 / 240)
+	end
+	st.yaw = yaw
+	local leanGoal = -math.clamp(forward * Life.LeanPerSpeed + math.clamp(accel, -60, 60) * Life.LeanPerAccel,
+		-Life.LeanMax * 0.5, Life.LeanMax)
+	local bankGoal = math.clamp(yawRate / RAD * Life.BankPerTurn, -Life.BankMax, Life.BankMax) * math.clamp(flat.Magnitude / 12, 0, 1)
+	if st.dead then
+		leanGoal, bankGoal = 0, 0
+	end
+	st.lean, st.leanVel = springStep(st.lean, st.leanVel, leanGoal, Life.LeanSpring.Hz, Life.LeanSpring.Damping, dt)
+	st.bank, st.bankVel = springStep(st.bank, st.bankVel, bankGoal, Life.LeanSpring.Hz, Life.LeanSpring.Damping, dt)
+	pose.Root += Vector3.new(st.lean, 0, st.bank)
+
+	local heroId = st.player and st.player:GetAttribute("HeroId") or "Swordmaster"
+	local stance = HeroMoves.Stance[heroId]
+	local moving = flat.Magnitude > 2
+	local fighting = now - st.lastMove < HeroMoves.CombatStance
+	local stanceGoal = (fighting and not st.action and not st.dead) and (moving and HeroMoves.StanceWhileWalking or 1) or 0
+	st.stance, st.stanceVel = springStep(st.stance, st.stanceVel, stanceGoal, 4, 0.8, dt)
+	if stance and math.abs(st.stance) > 1e-3 then
+		addPose(pose, poseFromKey(stance), st.stance)
+	end
+
+	-- shoulders against the stride (read from the walk's own hip swing), breathing when standing
+	if j.RHip and not st.dead then
+		local hipX = baseOf(st, j.RHip):ToEulerAnglesXYZ()
+		local counter = math.clamp(-hipX / RAD * Life.ShoulderCounter, -Life.ShoulderCounterMax, Life.ShoulderCounterMax)
+		pose.Waist += Vector3.new(0, counter, 0)
+	end
+	if not moving and not st.dead then
+		local breath = math.sin(now * 2 * math.pi * Life.BreathHz + st.phase) * Life.BreathDeg
+		pose.Waist += Vector3.new(breath, 0, 0)
+		pose.Neck += Vector3.new(-breath * 0.5, 0, 0)
+	end
+
+	-- the shudder on impact
+	local action = st.action
+	local shudder = action and action.clip.shudder
+	if shudder then
+		local t = now - action.start
+		if t >= shudder.From and t <= shudder.To then
+			local s = math.sin(t * HeroMoves.ShudderHz * 2 * math.pi) * shudder.Deg
+			pose[shudder.Joint] += Vector3.new(s, 0, s * 0.5)
+		end
+	end
+
+	-- overlap: the head and free arm follow what is asked of them on a loose spring
+	for _, name in Life.Follow.Joints do
+		local f = st.follow[name]
+		if not f then
+			f = { x = pose[name], v = ZERO }
+			st.follow[name] = f
+		end
+		f.x, f.v = springStep(f.x, f.v, pose[name], Life.Follow.Hz, Life.Follow.Damping, dt)
+		pose[name] = f.x
+	end
+
+	-- the body: crouch and lunge move the hips; the legs bend so the feet stay where they were
+	local drop = pose.Drop * scale
+	local push = pose.Push * scale
+	write(st, j.Root, CFrame.new(0, -drop, -push) * turn(pose.Root))
+	for _, name in { "Waist", "Neck", "RShoulder", "RElbow", "LShoulder", "LElbow" } do
+		if j[name] then
+			write(st, j[name], turn(pose[name]))
+		end
+	end
+	for _, side in { "R", "L" } do
+		local hip, knee, ankle = j[side .. "Hip"], j[side .. "Knee"], j[side .. "Ankle"]
+		if hip and knee then
+			local len = (side == "R" and st.legR or st.legL) * scale
+			-- a crouch of `drop`: thigh forward by a, shin back by 2a, foot level again by a
+			local a = math.acos(math.clamp(1 - math.max(drop, 0) / len, 0.2, 1))
+			-- the legs lean back against the body's lean and lunge, so the feet do not swing forward with it
+			local back = -pose.Root.X * RAD - math.atan2(push, len)
+			local hipTurn = pose[side .. "Hip"] * RAD
+			local kneeTurn = pose[side .. "Knee"] * RAD
+			write(st, hip, CFrame.fromEulerAnglesYXZ(hipTurn.X + a + back, hipTurn.Y, hipTurn.Z - pose.Root.Z * RAD))
+			write(st, knee, CFrame.fromEulerAnglesYXZ(kneeTurn.X - 2 * a, kneeTurn.Y, kneeTurn.Z))
+			if ankle then
+				write(st, ankle, CFrame.Angles(a, 0, 0))
+			end
+		end
+	end
+end
+
+-- after Roblox's animator has posed the body each frame, add ours on top
+local FAR = 180 -- beyond this a hero is not animated (too small to see on a phone)
+RunService.Stepped:Connect(function(_, dt)
+	dt = math.clamp(dt, 1 / 240, 1 / 15)
+	local now = os.clock()
+	local camera = workspace.CurrentCamera
+	local eye = camera and camera.CFrame.Position
+	for character, st in states do
+		if not character.Parent then
+			states[character] = nil
+			continue
+		end
+		local root = character.PrimaryPart
+		if eye and root and (root.Position - eye).Magnitude > FAR then
+			continue
+		end
+		animate(st, dt, now)
 	end
 end)

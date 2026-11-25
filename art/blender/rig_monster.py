@@ -129,6 +129,184 @@ if image:
     image.pack()
     log("texture", image.filepath_raw, tuple(image.size))
 
+
+# ---------------------------------------------------------------------------------------------------------------
+# the slime body plan: a blob has no limbs. A column of body bones (Root, Body1-3, Top) and four bulge bones
+# (Bulge F/B/L/R) at its widest: squash = the column sinks while the bulges push out (no scale, bones only)
+# ---------------------------------------------------------------------------------------------------------------
+if KIND == "slime":
+    import numpy as np
+    arm_data = bpy.data.armatures.new(NAME + "_rig")
+    rig = bpy.data.objects.new(NAME + "_rig", arm_data)
+    bpy.context.scene.collection.objects.link(rig)
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = arm_data.edit_bones
+
+    def sbone(name, head, tail, parent=None, connect=False):
+        b = eb.new(name)
+        b.head, b.tail = Vector(head), Vector(tail)
+        b.align_roll(Vector((0, -1, 0)) if abs((b.tail - b.head).normalized().z) > 0.9 else Vector((0, 0, 1)))
+        if parent:
+            b.parent = eb[parent]
+            b.use_connect = connect
+        return b
+
+    def centre(z):
+        ps = [p for p in P if abs(p.z - z) < 0.05 * H]
+        return Vector((sum(p.x for p in ps) / len(ps), sum(p.y for p in ps) / len(ps), z)) if ps else Vector((0, 0, z))
+
+    sbone("Root", (0, 0, 0), (0, 0, 0.1 * H))
+    levels = [0.05, 0.35, 0.65, 0.9]
+    names = ["Body1", "Body2", "Body3", "Top"]
+    parent = "Root"
+    for n in range(4):
+        head = centre(levels[n] * H)
+        tail = centre(levels[n + 1] * H) if n < 3 else Vector((head.x, head.y, H))
+        sbone(names[n], head, tail, parent, n > 0)
+        parent = names[n]
+    # the widest ring, and the four bulges from the middle of it out to its edge
+    best = None
+    for z in np.linspace(0.1, 0.6, 11):
+        ps = [p for p in P if abs(p.z - z * H) < 0.04 * H]
+        if ps:
+            w = max(abs(p.x) for p in ps)
+            if best is None or w > best[0]:
+                best = (w, z * H)
+    wz = best[1]
+    ring = [p for p in P if abs(p.z - wz) < 0.05 * H]
+    c = centre(wz)
+    for k, pick in (("F", lambda p: -p.y), ("B", lambda p: p.y), ("L", lambda p: p.x), ("R", lambda p: -p.x)):
+        tip = max(ring, key=pick)
+        sbone("Bulge." + k, c, Vector((tip.x, tip.y, wz)), "Body1")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    rig.select_set(True)
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    if "Root" in body.vertex_groups:
+        body.vertex_groups.remove(body.vertex_groups["Root"])
+    bpy.ops.object.mode_set(mode="WEIGHT_PAINT")
+    bpy.ops.object.vertex_group_smooth(group_select_mode="ALL", factor=0.5, repeat=2)
+    bpy.ops.object.vertex_group_limit_total(group_select_mode="ALL", limit=4)
+    bpy.ops.object.vertex_group_normalize_all(group_select_mode="ALL", lock_active=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    zero = sum(1 for v in me.vertices if sum(g.weight for g in v.groups) < 1e-4)
+    over = sum(1 for v in me.vertices if len([g for g in v.groups if g.weight > 1e-4]) > 4)
+    log("CHECK zero-weight vertices %d, over 4 bones %d" % (zero, over))
+    EDGES_S = [tuple(e.vertices) for e in me.edges]
+    REST_S = [(P[a] - P[b]).length for a, b in EDGES_S]
+    # the poses MonsterAnim uses: squash on landing, stretch at the top of a hop, a wobble
+    SQ = 0.22  # how far the column sinks in the squash (share of height)
+    POSES_S = {
+        "rest": {},
+        "squash": {"Body2": (0, 0, -SQ * 0.35), "Body3": (0, 0, -SQ * 0.3), "Top": (0, 0, -SQ * 0.35),
+                   "Bulge.F": "out", "Bulge.B": "out", "Bulge.L": "out", "Bulge.R": "out"},
+        "stretch": {"Body2": (0, 0, SQ * 0.25), "Body3": (0, 0, SQ * 0.2), "Top": (0, 0, SQ * 0.25),
+                    "Bulge.F": "in", "Bulge.B": "in", "Bulge.L": "in", "Bulge.R": "in"},
+        "wobble": {"Body3": ("rot", (0, 1, 0), 12), "Top": ("rot", (0, 1, 0), 12)},
+    }
+
+    def spose(spec):
+        for pb in rig.pose.bones:
+            pb.matrix_basis = Matrix.Identity(4)
+        bpy.context.view_layer.update()
+        for name, v in spec.items():
+            pb = rig.pose.bones[name]
+            if v in ("out", "in"):
+                d = (pb.tail - pb.head).normalized() * (0.12 if v == "out" else -0.06) * H
+                pb.matrix = Matrix.Translation(d) @ pb.matrix
+            elif v[0] == "rot":
+                head = pb.head.copy()
+                pb.matrix = (Matrix.Translation(head) @ Matrix.Rotation(math.radians(v[2]), 4, Vector(v[1]))
+                             @ Matrix.Translation(-head) @ pb.matrix)
+            else:
+                pb.matrix = Matrix.Translation(Vector(v) * H) @ pb.matrix
+            bpy.context.view_layer.update()
+
+    def sstretch():
+        dg = bpy.context.evaluated_depsgraph_get()
+        ev = body.evaluated_get(dg)
+        m = ev.to_mesh()
+        Q = [v.co.copy() for v in m.vertices]
+        ev.to_mesh_clear()
+        ratios = [((Q[a] - Q[b]).length / r0) for (a, b), r0 in zip(EDGES_S, REST_S) if r0 > 1e-6]
+        return (max(ratios), min(ratios), sum(1 for r in ratios if r > STRETCH_LIMIT),
+                sum(1 for r in ratios if r < 1 / STRETCH_LIMIT), min(q.z for q in Q))
+    for name, spec in POSES_S.items():
+        if name == "rest":
+            continue
+        spose(spec)
+        mx, mn, over_n, under_n, lowest = sstretch()
+        log("CHECK pose %-8s max edge stretch %.2fx (over %.1fx: %d), most squeezed %.2fx (under 1/%.1f: %d), lowest point %.3f" % (
+            name, mx, STRETCH_LIMIT, over_n, mn, STRETCH_LIMIT, under_n, lowest))
+    spose({})
+    log("BONES (rest, studs, front -Y, left +X):")
+    for b in arm_data.bones:
+        h, tl = b.head_local, b.tail_local
+        log("  %-8s parent %-6s head (%5.2f %5.2f %5.2f) tail (%5.2f %5.2f %5.2f)" % (
+            b.name, b.parent.name if b.parent else "-", h.x, h.y, h.z, tl.x, tl.y, tl.z))
+    if SHEETS:
+        os.makedirs(SHEETS, exist_ok=True)
+        sc = bpy.context.scene
+        sc.render.engine = "BLENDER_WORKBENCH"
+        sc.display.shading.light = "STUDIO"
+        sc.render.resolution_x = sc.render.resolution_y = 320
+        sc.world = bpy.data.worlds.new("w")
+        sc.world.color = (0.08, 0.08, 0.09)
+        cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
+        sc.collection.objects.link(cam)
+        sc.camera = cam
+        cam.data.type = "ORTHO"
+        wmax = max(max(abs(p.x), abs(p.y)) for p in P)
+        cam.data.ortho_scale = max(H, wmax * 2) * 1.35
+        rig.hide_render = True
+        R = 320
+        for name, spec in POSES_S.items():
+            spose(spec)
+            rows = []
+            for look in ("TEXTURE", "SINGLE"):
+                sc.display.shading.color_type = look
+                sc.display.shading.single_color = (0.6, 0.6, 0.6)
+                tiles = []
+                for kk in range(8):
+                    a = math.radians(-90 + kk * 45)
+                    cam.location = (3 * H * math.cos(a), 3 * H * math.sin(a), H * 0.55)
+                    d = Vector((0, 0, H * 0.5)) - cam.location
+                    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+                    path = os.path.join(SHEETS, "_f.png")
+                    sc.render.filepath = path
+                    bpy.ops.render.render(write_still=True)
+                    img = bpy.data.images.load(path)
+                    px = np.empty(R * R * 4, dtype=np.float32)
+                    img.pixels.foreach_get(px)
+                    tiles.append(px.reshape(R, R, 4))
+                    bpy.data.images.remove(img)
+                rows.append(np.concatenate(tiles, axis=1))
+            sheet = np.concatenate(rows[::-1], axis=0)
+            out = bpy.data.images.new("sheet_" + name, sheet.shape[1], sheet.shape[0])
+            out.pixels.foreach_set(sheet.ravel())
+            out.filepath_raw = os.path.join(SHEETS, "%s_%s.png" % (NAME, name))
+            out.file_format = "PNG"
+            out.save()
+        os.remove(os.path.join(SHEETS, "_f.png"))
+        log("sheets in", SHEETS)
+    spose({})
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    rig.select_set(True)
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    bpy.ops.export_scene.fbx(filepath=OUT, use_selection=True, apply_unit_scale=True, global_scale=1.0,
+                             axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", object_types={"ARMATURE", "MESH"},
+                             add_leaf_bones=False, use_armature_deform_only=True, bake_anim=False,
+                             path_mode="COPY", embed_textures=True)
+    log("EXPORTED", OUT, os.path.getsize(OUT), "bytes")
+    sys.exit(0)
+
 # neighbours, for weight smoothing and islands
 NEIGH = [[] for _ in range(NV)]
 for e in me.edges:

@@ -29,6 +29,12 @@ MonsterMoves.Walk = {
 	Settle = { Hz = 3, Damping = 0.8 }, -- how fast the walk fades in and out when the monster starts or stops
 }
 
+-- a slime hops (rig_monster.py "slime"): Length = one hop, in its heights; Ground = share of the hop on the ground;
+-- Squash / Stretch = how far the column sinks or rises (share of height); Bulge = how far the sides push out per
+-- unit of squash; Height = the arc (share of height). No scale anywhere: bones only.
+MonsterMoves.Hop = { Length = 1.4, Ground = 0.45, Squash = 0.2, Stretch = 0.12, Bulge = 0.45, Height = 0.35,
+	Breathe = 0.04, Wobble = 5, WobbleHz = 1.6, Lean = -6, Spring = { Hz = 6, Damping = 0.45 } }
+
 -- rigs without legs (ghosts, robes): a float. Bob = rise and fall (share of height), Trail = how far the hem swings
 -- back while gliding (degrees), Sway = the hem's side to side
 MonsterMoves.Float = { Bob = 0.035, BobHz = 0.8, Lean = -8, Roll = 3, Trail = 22, Sway = 7, SwayHz = 1.1,

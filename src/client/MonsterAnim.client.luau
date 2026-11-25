@@ -20,7 +20,7 @@ local ZERO = Vector3.zero
 -- the rig's bones, by the name used in MonsterMoves (the bone's own name without dots or underscores)
 local JOINTS = { "Root", "Hips", "Spine", "Chest", "Neck", "Head", "UpperArmL", "LowerArmL", "HandL", "UpperArmR",
 	"LowerArmR", "HandR", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR" }
-local NEEDED = { "Root", "Hips", "Chest", "Head", "UpperLegL", "LowerLegL", "UpperLegR", "LowerLegR" }
+local NEEDED = { "Root", "Hips", "Chest", "Head", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR" }
 
 -------------------------------------------------------------------------------
 -- poses: { [joint] = Vector3 degrees, Drop / Push / Lift = share of height }
@@ -141,8 +141,21 @@ local function rigOf(model)
 end
 
 local function newState(model, bones)
-	local pivot = model:GetPivot()
 	local _, size = model:FindFirstChild("Look"):GetBoundingBox()
+	for _, bone in bones do
+		bone.Transform = CFrame.identity
+	end
+	-- the rig's own frame, from its bones: left is where the left foot is, forward is left x up (the rig was
+	-- built facing its front, left +X in Blender); every turn below is given in this frame, whichever way the
+	-- model file happens to face inside the enemy model
+	local pivot = model:GetPivot()
+	local left = pivot:PointToObjectSpace(bones.FootL.WorldPosition) - pivot:PointToObjectSpace(bones.FootR.WorldPosition)
+	left = Vector3.new(left.X, 0, left.Z)
+	local frame = CFrame.identity
+	if left.Magnitude > 1e-3 then
+		frame = CFrame.fromMatrix(Vector3.zero, -left.Unit, Vector3.yAxis)
+	end
+	pivot = pivot * frame
 	local st = {
 		model = model,
 		joints = {},
@@ -157,13 +170,13 @@ local function newState(model, bones)
 		hitVel = 0,
 		hitAxis = Vector3.xAxis,
 		lastHitAt = model:GetAttribute("HitAt"),
+		frame = frame,
 		beat = math.random() * Moves.Attack.Every,
 		breath = math.random() * 10,
 	}
 	for name, bone in bones do
 		-- the bone's resting frame in the monster's frame (its Transform is still empty here): turns given in the
 		-- monster's frame are carried into the bone's own frame through it
-		bone.Transform = CFrame.identity
 		local rel = pivot:ToObjectSpace(bone.WorldCFrame)
 		local rot = rel.Rotation
 		-- sideways turns swing a limb OUT: the bone's side decides the sign
@@ -209,7 +222,7 @@ end
 -------------------------------------------------------------------------------
 local function animate(st, dt, now)
 	local model = st.model
-	local pivot = model:GetPivot()
+	local pivot = model:GetPivot() * st.frame
 	local h = st.height
 	local W = Moves.Walk
 	local pose = emptyPose()
@@ -226,24 +239,41 @@ local function animate(st, dt, now)
 	st.walk, st.walkVel = springStep(st.walk, st.walkVel, (speed > 0.3 and not dead) and 1 or 0, W.Settle.Hz, W.Settle.Damping, dt)
 	local w = math.clamp(st.walk, 0, 1.2)
 
-	-- the walk: phase from distance, one cycle = 4 x leg x sin(swing)
-	local cycle = 4 * st.leg * math.sin(W.Swing * RAD)
-	st.phase = (st.phase + moved / math.max(cycle, 0.05) * 2 * math.pi) % (2 * math.pi)
-	local s, c = math.sin(st.phase), math.cos(st.phase)
-	pose.UpperLegL = Vector3.new(W.Swing * s * w, 0, 0)
-	pose.UpperLegR = Vector3.new(-W.Swing * s * w, 0, 0)
-	pose.LowerLegL = Vector3.new(-W.Knee * math.max(0, c) * w, 0, 0)
-	pose.LowerLegR = Vector3.new(-W.Knee * math.max(0, -c) * w, 0, 0)
-	pose.FootL = Vector3.new(-W.Swing * s * w * 0.5, 0, 0)
-	pose.FootR = Vector3.new(W.Swing * s * w * 0.5, 0, 0)
+	-- the walk, from the distance really travelled. Each foot is planted for half the cycle and swung for the other
+	-- half. While planted, its leg angle is solved from where the foot must stay (asin of its offset from the hip),
+	-- so the foot does not slide; the hips sink by the straight-leg geometry of the planted leg. One cycle = two
+	-- steps of 2 x leg x sin(Swing).
+	local stride = 2 * st.leg * math.sin(W.Swing * RAD)
+	st.phase = (st.phase + moved / math.max(2 * stride, 0.05)) % 1
+	local function leg(p)
+		local x, knee, planted
+		if p < 0.5 then
+			x = stride * (0.5 - p / 0.5) -- planted: from in front of the hip to behind it
+			knee, planted = 0, true
+		else
+			local v = (p - 0.5) / 0.5
+			x = stride * (-0.5 + v * v * (3 - 2 * v)) -- swung forward again, lifting the knee
+			knee, planted = math.sin(v * math.pi), false
+		end
+		return math.asin(math.clamp(x / st.leg, -1, 1)), knee, planted
+	end
+	local aL, kL, pL = leg(st.phase)
+	local aR, kR = leg((st.phase + 0.5) % 1)
+	local s = math.sin(st.phase * 2 * math.pi)
+	pose.UpperLegL = Vector3.new(aL / RAD * w, 0, 0)
+	pose.UpperLegR = Vector3.new(aR / RAD * w, 0, 0)
+	pose.LowerLegL = Vector3.new(-W.Knee * kL * w, 0, 0)
+	pose.LowerLegR = Vector3.new(-W.Knee * kR * w, 0, 0)
+	pose.FootL = Vector3.new(-aL / RAD * w, 0, 0) -- (the sole stays flat)
+	pose.FootR = Vector3.new(-aR / RAD * w, 0, 0)
 	local out = W.ArmOut * w + Moves.Idle.ArmOut * (1 - math.min(w, 1))
 	pose.UpperArmL = Vector3.new(-W.ArmSwing * s * w, 0, out)
 	pose.UpperArmR = Vector3.new(W.ArmSwing * s * w, 0, out)
 	pose.Chest = Vector3.new(0, W.ChestTwist * s * w, 0)
 	pose.Root = Vector3.new(W.Lean * w, 0, 0)
-	-- a leg reaching out lowers the hips (straight legs): sink by exactly that so the planted foot stays put
-	local reach = math.abs(W.Swing * s * w) * RAD
-	pose.Drop = st.leg * (1 - math.cos(reach)) / h
+	-- the planted leg leaning out lowers the hips: sink by exactly that so the planted foot stays on the ground
+	local planted = (pL and aL or aR) * w
+	pose.Drop = st.leg * (1 - math.cos(planted)) / h
 
 	-- breathing when standing
 	local still = 1 - math.min(w, 1)

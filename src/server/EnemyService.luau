@@ -18,7 +18,9 @@ local LOOK_SCALE = 1.35 -- monsters are drawn this much bigger than their hit si
 -- the enemy each image-to-3D model was painted as: it keeps the model's own colours, its variants get a tint
 local PLAIN_KIND = { Goblin = true, ["Ember Imp"] = true, ["Obsidian Knight"] = true, ["Magma Slime"] = true, Shade = true }
 local function goblinMesh(model, body, stats)
-	local template = ArtService.Model(stats.Model or ("enemy_" .. string.lower(stats.Look or "Goblin")))
+	-- a rigged version (bones, art/blender/rig_monster.py) wins once it has loaded; the solid one stays the fallback
+	local base = stats.Model or ("enemy_" .. string.lower(stats.Look or "Goblin"))
+	local template = ArtService.Model(base .. "_rigged") or ArtService.Model(base)
 	if not template then
 		return nil
 	end

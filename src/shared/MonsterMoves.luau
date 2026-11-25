@@ -16,12 +16,12 @@ local MonsterMoves = {}
 -- monsters farther than this from the camera are not animated (too small to see on a phone)
 MonsterMoves.Far = 180
 
--- the walk: one full cycle (both feet) covers about 4 x leg length x sin(Swing), so the feet keep pace with the
--- ground instead of sliding; the body sinks as a leg reaches out (by the straight-leg geometry), so the planted
--- foot stays on the ground and the bob comes by itself
+-- the walk: each foot is planted for half the cycle, its leg angle solved so the foot stays where it was put
+-- (no sliding); a step is 2 x leg length x sin(Swing); the body sinks as the planted leg leans (straight-leg
+-- geometry), so the bob comes by itself
 MonsterMoves.Walk = {
-	Swing = 26, -- legs swing this far forward and back
-	Knee = 38, -- the swinging-forward knee lifts by this much
+	Swing = 32, -- legs swing this far forward and back (bigger = longer, slower steps)
+	Knee = 45, -- the swinging leg's knee lifts by this much at mid-swing
 	ArmSwing = 22, -- arms swing against the legs
 	ArmOut = 12, -- arms held a little away from the body
 	ChestTwist = 7, -- shoulders turn against the hips

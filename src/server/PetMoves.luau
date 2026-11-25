@@ -105,7 +105,7 @@ function MOVES.Power(player, pet, info, move, root)
 		if enemy.dead then
 			return
 		end
-		EnemyService.Damage(enemy, damage, player, true, false)
+		EnemyService.Damage(enemy, damage, player, true, false, root.Position)
 		EnemyService.Knockback(enemy, 0.8)
 		if info.MoveSlow then
 			EnemyService.Slow(enemy, 0.6, 1.5)

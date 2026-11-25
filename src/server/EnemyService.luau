@@ -497,7 +497,8 @@ end
 
 -- player is optional: who hit it (the hero), for xp.
 -- showNumber shows a floating damage number.
-function EnemyService.Damage(enemy, amount, player, showNumber, crit)
+-- from is optional: where the blow came from (the hero, the tower, the blast), so a rigged monster rocks away from it
+function EnemyService.Damage(enemy, amount, player, showNumber, crit, from)
 	if enemy.dead then
 		return
 	end
@@ -547,7 +548,11 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	if amount >= 1 then
 		enemy.flashUntil = Clock.now + 0.08 -- quick white flash
 		if enemy.rigged then
-			enemy.model:SetAttribute("HitAt", workspace:GetServerTimeNow()) -- MonsterAnim rocks it back
+			if from then
+				enemy.model:SetAttribute("HitFromX", from.X)
+				enemy.model:SetAttribute("HitFromZ", from.Z)
+			end
+			enemy.model:SetAttribute("HitAt", workspace:GetServerTimeNow()) -- MonsterAnim rocks it back, away from "from"
 		end
 	end
 	if showNumber then

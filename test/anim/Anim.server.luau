@@ -36,9 +36,21 @@ cue.OnServerEvent:Connect(function(player, step, arg)
 		local EnemyService = require(Server.EnemyService)
 		for _, e in EnemyService.GetActive() do
 			if e.model == arg then
-				EnemyService.Damage(e, 12, player, true)
+				local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				EnemyService.Damage(e, 12, player, true, false, r and r.Position)
 				EnemyService.HitStop(e, 0.06)
 				EnemyService.Knockback(e, 1.5)
+			end
+		end
+	elseif step == "SpawnGoblin" then
+		-- one goblin alone at the start of the path (as the dev panel's spawn does)
+		require(Server.EnemyService).Spawn("Goblin", 1, arg or 0)
+	elseif step == "KillEnemy" then
+		local EnemyService = require(Server.EnemyService)
+		for _, e in EnemyService.GetActive() do
+			if e.model == arg then
+				local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				EnemyService.Damage(e, 99999, player, true, false, r and r.Position)
 			end
 		end
 	elseif step == "Done" then

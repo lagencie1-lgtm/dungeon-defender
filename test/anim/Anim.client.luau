@@ -258,108 +258,44 @@ local function lowestParts()
 end
 -- the rigged goblin in a real run (test/anim-goblin.project.json): walking from 3/4 and side, bashing the
 -- hero, hit, knocked out; feet measured against the ground, frame time
+-- the rigged goblin alone (test/anim-goblin.project.json): one goblin spawned on an empty path, its run from the
+-- side and 3/4, two hits from the hero's side, then knocked out; feet, bob and step rate measured
 if cue:GetAttribute("Mode") == "goblin" then
 	cue:FireServer("StartRun", "CursedForest")
 	await("RunReady", 60)
-	task.wait(8) -- the models load
+	task.wait(10) -- the models load
 	local pts0 = Config.Path
-	-- stand beside the path, out of the goblins' way, then start the wave
-	local here = pts0[3] + Vector3.new(14, 0, 0)
-	walk(here, 12)
-	do
-		local n, sum = 0, 0
-		local t0 = os.clock()
-		while os.clock() - t0 < 4 do
-			sum += RunService.RenderStepped:Wait()
-			n += 1
-		end
-		say(string.format("frame time before the wave (no monsters): mean %.1f ms over %d frames", sum / n * 1000, n))
-	end
-	Remotes.StartWave:FireServer()
-	mark("wave")
 	local folder = workspace:WaitForChild("Enemies")
-	local function rigged()
-		local list = {}
-		for _, m in folder:GetChildren() do
-			if m:GetAttribute("Rigged") and not m:GetAttribute("Dead") then
-				table.insert(list, m)
+	walk(pts0[2] + (pts0[3] - pts0[2]) * 0.5 + Vector3.new(10, 0, 0), 12)
+	workspace:SetAttribute("MonsterAnimDebug", true)
+	cue:FireServer("SpawnGoblin", 0)
+	local m
+	local deadline = os.clock() + 10
+	while not m and os.clock() < deadline do
+		for _, x in folder:GetChildren() do
+			if x:GetAttribute("Rigged") then
+				m = x
 			end
 		end
-		return list
+		task.wait(0.1)
 	end
-	local deadline = os.clock() + 40
-	while #rigged() == 0 and os.clock() < deadline do
-		task.wait(0.2)
-	end
-	local all = folder:GetChildren()
-	say("enemies", #all, "rigged", #rigged())
-	local target = rigged()[1]
-	if not target then
+	if not m then
 		say("no rigged goblin appeared")
 		say("DONE")
 		cue:FireServer("Done")
 		return
 	end
-	-- frame time over the whole test
-	local frames, total, worst = 0, 0, 0
-	local fconn = RunService.RenderStepped:Connect(function(dt)
-		frames += 1
-		total += dt
-		worst = math.max(worst, dt)
-	end)
-	-- feet of the followed goblin: how far the planted (lower) foot slides along the ground
-	local function bone(m, name)
+	local function bone(name)
 		for _, d in m:GetDescendants() do
 			if d:IsA("Bone") and (string.gsub(d.Name, "[^%w]", "")) == name then
 				return d
 			end
 		end
 	end
-	local function follow(m, view_, seconds, label)
-		local fl, fr = bone(m, "FootL"), bone(m, "FootR")
-		local lastL, lastR, slide, planted, steps, lastPlanted, counted = nil, nil, 0, 0, 0, nil, 0
-		local footMinY, footMaxY = math.huge, -math.huge
-		local t0 = os.clock()
-		mark(label)
-		while os.clock() - t0 < seconds and m.Parent and not m:GetAttribute("Dead") do
-			local cf = m:GetPivot()
-			camera.CameraType = Enum.CameraType.Scriptable
-			camera.CFrame = view_(cf)
-			if fl and fr then
-				local pl, pr = fl.TransformedWorldCFrame.Position, fr.TransformedWorldCFrame.Position
-				local g = groundBelow((pl + pr) / 2) or cf.Position.Y
-				footMinY = math.min(footMinY, math.min(pl.Y, pr.Y) - g)
-				footMaxY = math.max(footMaxY, math.min(pl.Y, pr.Y) - g)
-				-- the planted foot changes only when the other is clearly lower (the feet are level when standing)
-				local low = lastPlanted or (pl.Y < pr.Y and "L" or "R")
-				if low == "L" and pr.Y < pl.Y - 0.05 then
-					low = "R"
-				elseif low == "R" and pl.Y < pr.Y - 0.05 then
-					low = "L"
-				end
-				if lastL then
-					local p, lastP = low == "L" and pl or pr, low == "L" and lastL or lastR
-					local other = low == "L" and pr or pl
-					if low == lastPlanted then
-						planted += 1
-						-- only well inside a step (the frame after a switch belongs to both feet at 15 fps)
-						if planted >= 2 and other.Y > p.Y + 0.08 then
-							slide += Vector3.new(p.X - lastP.X, 0, p.Z - lastP.Z).Magnitude
-							counted += 1
-						end
-					else
-						steps += 1
-						planted = 0
-					end
-				end
-				lastPlanted = low
-				lastL, lastR = pl, pr
-			end
-			RunService.RenderStepped:Wait()
-		end
-		say(string.format("%s: %d steps, planted foot slid %.2f studs over %d planted frames (%.3f per frame, %.3f per step); lowest ankle vs ground %.2f..%.2f",
-			label, steps, slide, counted, slide / math.max(counted, 1), slide / math.max(steps, 1), footMinY, footMaxY))
-	end
+	local fl, fr, hips = bone("FootL"), bone("FootR"), bone("Hips")
+	task.wait(0.3)
+	local rest = fl and (fl.TransformedWorldCFrame.Position.Y - (groundBelow(fl.TransformedWorldCFrame.Position) or 0)) or 0.27
+	say(string.format("ankle bone at rest %.2f above the ground", rest))
 	local function threeQ(dist, up)
 		return function(cf)
 			local at = cf.Position + Vector3.new(0, 1, 0)
@@ -372,88 +308,91 @@ if cue:GetAttribute("Mode") == "goblin" then
 			return CFrame.lookAt(at + cf.RightVector * dist + Vector3.new(0, up, 0), at)
 		end
 	end
-	do
-		local fl, fr = bone(target, "FootL"), bone(target, "FootR")
-		local cf = target:GetPivot()
-		if fl and fr then
-			local left = fl.TransformedWorldCFrame.Position - fr.TransformedWorldCFrame.Position
-			local fwd = Vector3.new(left.X, 0, left.Z).Unit:Cross(Vector3.yAxis)
-			local look = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z).Unit
-			local g = groundBelow(cf.Position) or 0
-			say(string.format("rig forward vs walking direction: %.0f degrees; pivot %.2f above ground, feet bones %.2f / %.2f above ground",
-				math.deg(math.acos(math.clamp(fwd:Dot(look), -1, 1))), cf.Position.Y - g,
-				fl.TransformedWorldCFrame.Position.Y - g, fr.TransformedWorldCFrame.Position.Y - g))
-		end
-	end
-	follow(target, threeQ(11, 4), 5, "walk 3/4")
-	follow(target, sideOf(10, 1.5), 5, "walk side")
-	-- into its way: it swings at the hero
-	local m = rigged()[1]
-	if m then
-		-- step into its path and keep in front of it until it swings
+	-- frame time, all through
+	local frames, total, worst = 0, 0, 0
+	local fconn = RunService.RenderStepped:Connect(function(dt)
+		frames += 1
+		total += dt
+		worst = math.max(worst, dt)
+	end)
+	local function follow(view_, seconds, label)
+		local lastL, lastR, lastPlanted = nil, nil, nil
+		local contacts, slide, slideFrames, worstContact = 0, 0, 0, 0
+		local contactSlide = 0
+		local bobMin, bobMax = math.huge, -math.huge
 		local t0 = os.clock()
-		local hum = humanoidOf()
-		while os.clock() - t0 < 10 and m.Parent and not m:GetAttribute("Bashing") do
+		mark(label)
+		while os.clock() - t0 < seconds and m.Parent and not m:GetAttribute("Dead") do
 			local cf = m:GetPivot()
-			local spot = cf.Position + cf.LookVector * 2
-			if hum then
-				hum:MoveTo(Vector3.new(spot.X, rootPart().Position.Y, spot.Z))
+			camera.CameraType = Enum.CameraType.Scriptable
+			camera.CFrame = view_(cf)
+			if fl and fr and hips then
+				local pl, pr = fl.TransformedWorldCFrame.Position, fr.TransformedWorldCFrame.Position
+				local gl, gr = groundBelow(pl) or cf.Position.Y, groundBelow(pr) or cf.Position.Y
+				local hl, hr = pl.Y - gl, pr.Y - gr
+				local bob = hips.TransformedWorldCFrame.Position.Y - cf.Position.Y
+				bobMin, bobMax = math.min(bobMin, bob), math.max(bobMax, bob)
+				-- which foot MonsterAnim has planted (its debug attribute)
+				local down = m:GetAttribute("FootDown")
+				local planted = (down == "L" or down == "R") and down or nil
+				if planted and planted == lastPlanted and lastL then
+					local p, lp = planted == "L" and pl or pr, planted == "L" and lastL or lastR
+					local d = Vector3.new(p.X - lp.X, 0, p.Z - lp.Z).Magnitude
+					contactSlide += d
+					slide += d
+					slideFrames += 1
+				elseif planted ~= lastPlanted then
+					if lastPlanted then
+						worstContact = math.max(worstContact, contactSlide)
+					end
+					contactSlide = 0
+					if planted then
+						contacts += 1
+					end
+				end
+				lastPlanted = planted
+				lastL, lastR = pl, pr
 			end
-			camera.CFrame = threeQ(11, 4)(cf)
 			RunService.RenderStepped:Wait()
 		end
-		if hum then
-			hum:MoveTo(rootPart().Position)
-		end
-		say("bashing:", tostring(m:GetAttribute("Bashing")))
-		mark("bash")
-		follow(m, threeQ(10, 3), 3, "bash 3/4")
-		-- hit it a few times, then finish it
-		mark("hit")
-		local function closeIn()
-			if m.Parent and hum then
-				local cf = m:GetPivot()
-				local spot = cf.Position + cf.LookVector * 3
-				hum:MoveTo(Vector3.new(spot.X, rootPart().Position.Y, spot.Z))
-				task.wait(0.25)
-				face(cf.Position - rootPart().Position)
-			end
-		end
-		for _ = 1, 2 do
-			cue:FireServer("HitEnemy", m)
-			for _ = 1, 10 do
-				if m.Parent then
-					camera.CFrame = sideOf(10, 2)(m:GetPivot())
-				end
-				RunService.RenderStepped:Wait()
-			end
-			task.wait(0.4)
-		end
-		say("hit at", tostring(m:GetAttribute("HitAt")), "dead", tostring(m:GetAttribute("Dead")), "distance",
-			m.Parent and math.floor((m:GetPivot().Position - rootPart().Position).Magnitude) or -1)
+		local secs = os.clock() - t0
+		local n0, s0 = m:GetAttribute("SlideContacts0") or 0, m:GetAttribute("SlideTotal0") or 0
+		local n1, s1 = m:GetAttribute("SlideContacts") or 0, m:GetAttribute("SlideTotal") or 0
+		m:SetAttribute("SlideContacts0", n1)
+		m:SetAttribute("SlideTotal0", s1)
+		say(string.format("%s, measured inside MonsterAnim right after posing: %d contacts, %.3f studs per contact, worst contact so far %.3f",
+			label, n1 - n0, (s1 - s0) / math.max(n1 - n0, 1), m:GetAttribute("SlideWorst") or 0))
+		m:SetAttribute("SlideWorst", 0)
+		say(string.format("%s: %d foot contacts in %.1f s (%.2f steps/s); planted foot slid %.3f studs per contact on average, worst contact %.3f (%d frames in contact); hips bob %.2f studs (%.2f..%.2f over the pivot)",
+			label, contacts, secs, contacts / secs, slide / math.max(contacts, 1), worstContact, slideFrames, bobMax - bobMin, bobMin, bobMax))
+	end
+	follow(sideOf(12, 1.5), 6, "run side")
+	follow(threeQ(12, 3.5), 5, "run 3/4")
+	-- two hits from the hero's side, then out
+	local cf = m:GetPivot()
+	local spot = cf.Position + cf.RightVector * 7 + cf.LookVector * 3
+	rootPart().CFrame = CFrame.new(Vector3.new(spot.X, rootPart().Position.Y, spot.Z))
+	mark("hit from the side")
+	for _ = 1, 2 do
+		cue:FireServer("HitEnemy", m)
 		local t1 = os.clock()
-		local fallCF = m:GetPivot()
-		while os.clock() - t1 < 8 and m.Parent do
-			if m:GetAttribute("Dead") then
-				mark("goblin falls")
-				local t2 = os.clock()
-				while os.clock() - t2 < 1 and m.Parent do
-					camera.CFrame = sideOf(9, 2)(fallCF)
-					RunService.RenderStepped:Wait()
-				end
-				say("removed after fall:", tostring(m.Parent == nil))
-				task.wait(1.5) -- (the film keeps rolling over the spot)
-				break
-			end
-			fallCF = m:GetPivot()
-			camera.CFrame = sideOf(10, 2)(fallCF)
-			cue:FireServer("HitEnemy", m)
-			task.wait(0.55)
+		while os.clock() - t1 < 0.6 and m.Parent do
+			camera.CFrame = sideOf(-10, 2)(m:GetPivot())
+			RunService.RenderStepped:Wait()
 		end
 	end
+	say("hit from", tostring(m:GetAttribute("HitFromX")), tostring(m:GetAttribute("HitFromZ")))
+	local fallCF = m:GetPivot()
+	mark("knock out alone")
+	cue:FireServer("KillEnemy", m)
+	local t2 = os.clock()
+	while os.clock() - t2 < 2.2 do
+		camera.CFrame = sideOf(-9, 1.5)(fallCF) -- (from the far side: the hero stands on the near one)
+		RunService.RenderStepped:Wait()
+	end
+	say("dead", tostring(m:GetAttribute("Dead")), "removed", tostring(m.Parent == nil))
 	fconn:Disconnect()
-	say(string.format("frame time: %d frames, mean %.1f ms, worst %.1f ms, rigged goblins at the end %d", frames,
-		total / math.max(frames, 1) * 1000, worst * 1000, #rigged()))
+	say(string.format("frame time: %d frames, mean %.1f ms, worst %.1f ms", frames, total / math.max(frames, 1) * 1000, worst * 1000))
 	camera.CameraType = Enum.CameraType.Custom
 	say("DONE")
 	mark("film end")

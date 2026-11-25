@@ -222,7 +222,8 @@ local function hit(player, enemy, base, knock)
 	if not enemy.stats.Dummy then
 		Telemetry.First(player, "FirstHeroHit")
 	end
-	EnemyService.Damage(enemy, damage, player, true, crit)
+	local root = rootOf(player)
+	EnemyService.Damage(enemy, damage, player, true, crit, root and root.Position)
 	EnemyService.HitStop(enemy, crit and 0.11 or 0.06)
 	EnemyService.Knockback(enemy, knock or 1.5)
 end

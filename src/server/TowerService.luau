@@ -654,7 +654,7 @@ local function runTurrets(now)
 				tur.head.CFrame = CFrame.lookAt(from, Vector3.new(to.X, from.Y, to.Z))
 				Effects.Bolt(from, to, Color3.fromRGB(255, 200, 90), 0.25, 0.1)
 				local command = tur.owner.Parent and (tur.owner:GetAttribute("BonusCommand") or 0) / 100 or 0
-				EnemyService.Damage(target, tur.info.Damage * (1 + command))
+				EnemyService.Damage(target, tur.info.Damage * (1 + command), nil, nil, nil, tur.position)
 			end
 		end
 	end
@@ -691,7 +691,7 @@ local function shoot(t, now, model)
 			end
 		end
 		Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-		EnemyService.Damage(first, stats.Damage)
+		EnemyService.Damage(first, stats.Damage, nil, nil, nil, t.position)
 	elseif t.type == "FlameCannon" then
 		Effects.Kick(t.kicker, 0.5)
 		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(255, 140, 40), 1, 0.2)
@@ -702,7 +702,7 @@ local function shoot(t, now, model)
 				Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
 			Sound.Play("Explosion", hitAt)
 			for _, e in EnemyService.InRange(hitAt, stats.Radius) do
-				EnemyService.Damage(e, stats.Damage)
+				EnemyService.Damage(e, stats.Damage, nil, nil, nil, hitAt)
 				EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
 			end
 		end)
@@ -711,7 +711,7 @@ local function shoot(t, now, model)
 		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
 		Sound.Play("Frost", t.position)
 		for _, e in targets do
-			EnemyService.Damage(e, stats.Damage)
+			EnemyService.Damage(e, stats.Damage, nil, nil, nil, t.position)
 			EnemyService.Slow(e, stats.Slow, stats.SlowTime)
 			if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
 				EnemyService.Freeze(e, 1)
@@ -728,7 +728,7 @@ local function shoot(t, now, model)
 			hit[current] = true
 			local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
 			Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
-			EnemyService.Damage(current, stats.Damage, nil, true)
+			EnemyService.Damage(current, stats.Damage, nil, true, nil, from)
 			from = to
 			local nextOne = nil
 			for _, e in EnemyService.InRange(current.position, 14) do
@@ -756,7 +756,7 @@ local function shoot(t, now, model)
 		Effects.Bolt(t.muzzle, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
 		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1)
 		task.delay(0.15, function()
-			EnemyService.Damage(target, damage, nil, true)
+			EnemyService.Damage(target, damage, nil, true, nil, t.position)
 			Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
 		end)
 	end

@@ -29,6 +29,26 @@ MonsterMoves.Walk = {
 	Settle = { Hz = 3, Damping = 0.8 }, -- how fast the walk fades in and out when the monster starts or stops
 }
 
+-- which gait each enemy uses (by its name in Config.Enemies): "walk" or "run"
+MonsterMoves.Gaits = {
+	Default = "walk",
+	Goblin = "run", -- Lemp 2026-11-25: the bouncy run
+}
+
+-- the bouncy run: fewer, longer steps with a short hop between them (both feet up), the body rising on the
+-- push-off and giving a little on landing, arms pumping
+MonsterMoves.Run = {
+	StepRate = 2.75, -- steps per second; the step length follows the monster's speed
+	MaxStep = 3, -- longest step, in leg lengths (a faster monster then takes more steps)
+	Contact = 0.55, -- share of each step with a foot on the ground (the rest is the hop)
+	Hop = 0.045, -- how high the body rises in the hop (share of height)
+	Squash = 34, -- how far the planted knee gives on landing (degrees, at mid-contact)
+	Knee = 95, -- how far the swinging knee folds up
+	ArmPump = 34,
+	Elbow = 55,
+	Lean = -10,
+}
+
 -- standing still: breathing
 MonsterMoves.Idle = {
 	BreathDeg = 2.2,
@@ -37,7 +57,7 @@ MonsterMoves.Idle = {
 }
 
 -- the head trails the body's bob and turns on a loose spring (overlap)
-MonsterMoves.HeadLag = { Hz = 4.5, Damping = 0.45, Pitch = 0.6 }
+MonsterMoves.HeadLag = { Hz = 4.5, Damping = 0.45, Pitch = 0.6, PerBob = -1.2 } -- PerBob: degrees per stud/s of bob
 
 -- the attack, played over and over while the server says the monster is bashing (attribute "Bashing"),
 -- each monster on its own beat

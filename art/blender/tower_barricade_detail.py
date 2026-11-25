@@ -348,6 +348,9 @@ for s in (-1, 1):
         POSTS.append((s * WX + side * 0.06, side * post_y(WR), WR, wing_h, "wing"))
 if CENTRE:
     POSTS = [p for p in POSTS if p[4] == "big"]
+if os.environ.get("HTD_PRINT_POSTS"):   # (scripts/tone_tips.py finds the pencil points with it)
+    print("POSTS " + json.dumps([[x, y, r, h, r * P["tip"]] for x, y, r, h, _ in POSTS]), flush=True)
+    os._exit(0)
 for k, (x, y, r, h, kind) in enumerate(POSTS):
     post(f"Post{k}", x, y, h, r)
     if stage == "l1" and kind == "big":

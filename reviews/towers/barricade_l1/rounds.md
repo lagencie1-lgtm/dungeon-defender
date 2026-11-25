@@ -40,3 +40,8 @@ From round 9 on, Level 1 is scored against art/ref3d/tower_barricade_l1_fit_cam.
   bands (dE, lightness picture/model): roof 1 (L 52/51)  lookout 9 (L 37/40)  wall 4 (L 43/45)  footing 15 (L 39/45)
   judge (blind Gemini, three tries on the same render): round 9: 8, 7, 7; round 10: 7, 6, 6; round 11: 6, 7, 7; round 12: 7, 7, 8
 - best: round 12 (all measured gates pass, judge 7-8)
+- round 13: round 12 with the pencil tips toned to a darker, warmer wood after the grade (tips only, x0.72/0.62/0.52)
+  IoU 96.4%  width profile off 3.6%  region colour dE 9.8  (pixel dE 43.0)  detail 16.2% vs picture 18.3% (ratio 0.89)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 52/47)  lookout 9 (L 37/40)  wall 4 (L 43/45)  footing 15 (L 39/45)
+  round 13 judge: 6, 8, 7
+- best: round 13 (round 12 with toned tips; all measured gates pass, judge median 7 like round 12)

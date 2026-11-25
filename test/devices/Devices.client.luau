@@ -156,7 +156,10 @@ local function measure(step)
 					local isPicture = (obj:IsA("ImageLabel") or obj:IsA("ImageButton")) and obj.Image ~= ""
 						and obj.ImageTransparency < 0.5
 					if isButton or hasText or isPicture then
-						local own0, own1 = obj.AbsolutePosition, obj.AbsolutePosition + obj.AbsoluteSize
+						-- (positions inside its own screen: a screen that reaches up into Roblox's top bar band,
+						-- DeviceSafeInsets, starts above the usual (0,0))
+						local own0 = obj.AbsolutePosition - screen.AbsolutePosition
+						local own1 = own0 + obj.AbsoluteSize
 						local a, b = rectOf(obj)
 						if not inScroll(obj) then
 							if own0.X < -2 or own0.Y < -2 or own1.X > area.X + 2 or own1.Y > area.Y + 2 then

@@ -13,3 +13,9 @@
 
 ## Target re-drawn (2026-11-25)
 From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn_fit_cam.png: Codex re-painted the Thornwall design (wall, shield, rail, the rising stakes, the lower row, plus the crest we keep on purpose) from the pipeline's camera after the stakes were rebuilt to rise above a low rail like the picture's. The original picture art/ref3d/tower_barricade_thorn.png is unchanged.
+- round 5: re-drawn target at our camera, stakes rising above a low rail; shape loop 94.1%; repaint, grade
+  IoU 89.0%  width profile off 6.0%  region colour dE 7.2  (pixel dE 48.5)  detail 20.4% vs picture 22.5% (ratio 0.91)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 45/44)  lookout 1 (L 40/39)  wall 8 (L 30/34)  footing 6 (L 32/37)
+- round 6: rounder stakes (14 sides); a fresh repaint
+  IoU 89.0%  width profile off 6.4%  region colour dE 7.3  (pixel dE 48.3)  detail 19.3% vs picture 22.5% (ratio 0.86)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/45)  lookout 1 (L 40/40)  wall 6 (L 30/34)  footing 5 (L 32/37)

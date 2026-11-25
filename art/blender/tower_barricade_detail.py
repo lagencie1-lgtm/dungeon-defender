@@ -375,7 +375,21 @@ if stage == "thorn":
     base_y = R + 0.6
     rail_y = R + 1.25
     rail_z = P["rail_h"]   # (round 4: the rail sits low, like the picture's, and the upper stakes rise well above it)
-    RACK = 2 * (BX + BR + R * P["overhang"]) / 0.86 if CENTRE else P["length"]   # (centre-only: the picture's rack)
+    RACK_C = 2 * (BX + BR + R * P["overhang"]) / 0.86   # the centre section's rack (the picture's)
+    RACK = RACK_C if CENTRE else P["length"]
+
+    def rack_xs(n, share):
+        """stake positions: the centre section's n, and on the full wall more at the same spacing out to the wings, so
+        the centre's stakes sit in the same places in both builds (the centre-only build takes the full wall's paint
+        by position: round 6's stakes did not line up and came out as flat cones)"""
+        step = RACK_C * share / n
+        xs = [((k + 0.5) / n - 0.5) * RACK_C * share for k in range(n)]
+        if not CENTRE:
+            x = xs[-1] + step
+            while x < P["length"] * share / 2:
+                xs += [x, -x]
+                x += step
+        return sorted(xs)
     rail = K.block("Rail", (0, rail_y, rail_z), (RACK * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
     # (one long box: a stake in front of a face's centre made the hidden-face cull drop the whole face, round 3)
     (rail if rail is not None else bpy.data.objects["Rail"])["htd_keep"] = True
@@ -394,12 +408,11 @@ if stage == "thorn":
     # (seen from the enemy side, a stake that points mostly at the enemies reads as a stub: they rise and lean to the
     # side, and point out only a little, stake_out)
     d_up = Vector((lean, P["stake_out"], 1.0)).normalized()
-    for k in range(int(P["upper"])):
-        xp = ((k + 0.5) / P["upper"] - 0.5) * RACK * 0.82
+    for k, xp in enumerate(rack_xs(int(P["upper"]), 0.82)):
         reach_t = (rail_z - 0.02) / d_up.z           # from the ground up to where it rests on the rail
         base = Vector((xp - d_up.x * reach_t, rail_y - d_up.y * reach_t, 0.02))
         ln = P["stake_len"] * (0.95 + 0.05 * rnd.random())
-        tip = stake(f"Stake{k}", base, d_up, ln, 0.27)
+        tip = stake(f"Stake{k}", base, d_up, ln, 0.27, verts=14)   # (rounder: 10 sides read as flat cones)
         front_y = max(front_y, tip.y)
         # an iron strap round the rail where each stake rests on it, two brass studs on its face
         K.block(f"Strap{k}", (xp, rail_y, rail_z), (0.3, 0.62, 0.7), IRON_T, key="iron", tile=1.0, bevel=0.04)
@@ -407,10 +420,9 @@ if stage == "thorn":
             K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.32, rail_z + dz), 0.09, STUD, seg=6)
     ft = rad(P["front_tilt"])
     d_low = Vector((lean, P["stake_out"] * 1.6, math.tan(ft))).normalized()
-    for k in range(int(P["front"])):
-        x = ((k + 0.5) / P["front"] - 0.5) * RACK * 0.74
+    for k, x in enumerate(rack_xs(int(P["front"]), 0.74)):
         base = Vector((x, R + 0.9, 0.02))
-        tip = stake(f"Low{k}", base, d_low, P["front_len"] * (0.95 + 0.05 * rnd.random()), 0.25, verts=10)
+        tip = stake(f"Low{k}", base, d_low, P["front_len"] * (0.95 + 0.05 * rnd.random()), 0.25, verts=14)
         front_y = max(front_y, tip.y)
     # the crest: red spikes driven into the top logs, leaning toward the enemies, seen from both sides
     for top, x_from, x_to, tag in ((top_c, -(BX - BR - 0.1), BX - BR - 0.1, "C"),

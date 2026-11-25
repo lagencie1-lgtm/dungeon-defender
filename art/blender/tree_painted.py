@@ -87,7 +87,8 @@ if kind in ("oak", "crown_test"):
             bark(limb(tuple(s), tuple(e), 0.22, 0.06, bend=0.4))
 elif kind == "bush":
     # a low bush of four lobed clumps, painted in the same bands, a few red berries on the light side
-    TOP, BOTTOM = (1.0, 1.08, 0.7), (0.5, 0.7, 0.64)
+    # (lighter than the oak's: a bush sits low, in the shade of walls, and read as a black blob in the first film)
+    TOP, BOTTOM = (1.3, 1.38, 0.88), (0.78, 1.0, 0.86)
     for k, (c, size, h) in enumerate((((0, 0, 1.5), (1.5, 1.4, 1.2), 1.0), ((1.2, 0.5, 0.95), (1.1, 1.0, 0.9), 0.6),
                                       ((-1.1, 0.7, 0.9), (1.1, 1.0, 0.85), 0.55), ((0.2, -1.2, 0.85), (1.05, 1.0, 0.8), 0.5))):
         leaves(clump(c, size, lobes=10, subdivisions=2, bump=0.3), h, TOP, BOTTOM)

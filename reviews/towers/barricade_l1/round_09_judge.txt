@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 8 (A was the model)
+  - Graphical fidelity: model uses low-polygon geometry with low-resolution pixelated textures, while painting is a high-definition, smooth 2D/3D render.
+  - Log end details: painting clearly displays concentric tree-ring end-grain on the right side of the horizontal logs, whereas model lacks this detail.
+  - Rope detail: painting has smoothly modeled, cleanly twisted rope strands, while model's ropes appear blocky and pixelated.
+  - Surface texture and shading: painting features clean, stylized hand-painted wood grain and soft shading, whereas model has noisy, stretched textures.

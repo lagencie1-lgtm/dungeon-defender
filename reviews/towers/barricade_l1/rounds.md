@@ -26,3 +26,17 @@
 
 ## Target re-drawn (2026-11-25)
 From round 9 on, Level 1 is scored against art/ref3d/tower_barricade_l1_fit_cam.png: Codex re-painted the same Level 1 design (posts, logs, rope) from the pipeline's own camera (azimuth 105, 15 degrees up), because the original picture's perspective is mirrored and steeper and capped the outline at about 85%. The original picture art/ref3d/tower_barricade_l1.png is unchanged.
+- round 9: re-drawn target at our camera (outline 96.4% after the shape loop); repaint, grade
+  IoU 96.4%  width profile off 3.6%  region colour dE 6.6  (pixel dE 36.7)  detail 14.2% vs picture 18.3% (ratio 0.78)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 52/52)  lookout 5 (L 37/39)  wall 2 (L 43/44)  footing 9 (L 39/43)
+- round 10: stronger sharpening after the grade (120%): round 9's detail was 0.78
+  IoU 96.4%  width profile off 3.6%  region colour dE 6.9  (pixel dE 40.7)  detail 18.0% vs picture 18.3% (ratio 0.98)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 52/51)  lookout 3 (L 37/37)  wall 2 (L 43/44)  footing 9 (L 39/43)
+- round 11: sharpening 90% (55% left detail at 0.78, 120% read as pixelated to the judge)
+  IoU 96.4%  width profile off 3.6%  region colour dE 8.5  (pixel dE 41.2)  detail 17.1% vs picture 18.3% (ratio 0.94)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 52/51)  lookout 8 (L 37/40)  wall 4 (L 43/44)  footing 14 (L 39/45)
+- round 12: same paintings as round 11, projected with bilinear sampling (nearest sampling gave blocky grain)
+  IoU 96.4%  width profile off 3.6%  region colour dE 8.6  (pixel dE 40.9)  detail 16.4% vs picture 18.3% (ratio 0.90)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 52/51)  lookout 9 (L 37/40)  wall 4 (L 43/45)  footing 15 (L 39/45)
+  judge (blind Gemini, three tries on the same render): round 9: 8, 7, 7; round 10: 7, 6, 6; round 11: 6, 7, 7; round 12: 7, 7, 8
+- best: round 12 (all measured gates pass, judge 7-8)

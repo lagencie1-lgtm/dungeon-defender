@@ -34,7 +34,10 @@ from mathutils import Matrix, Vector
 args = sys.argv[sys.argv.index("--") + 1:]
 SRC, OUT, NAME = os.path.abspath(args[0]), os.path.abspath(args[1]), args[2]
 HEIGHT = float(args[3]) if len(args) > 3 else 2.8
-SHEETS = os.path.abspath(args[4]) if len(args) > 4 else None
+SHEETS = os.path.abspath(args[4]) if len(args) > 4 and args[4] != "-" else None
+# the body plan: "humanoid" (legs), "robe" (no legs under a robe or dress: hem bones instead, ghosts and
+# sorceresses), "slime" (a blob: a column of body bones and four bulge bones for squash)
+KIND = args[5] if len(args) > 5 else "humanoid"
 MAX_TRIS = 20000
 STRETCH_LIMIT = 1.6
 DEBUG = os.environ.get("RIG_DEBUG") == "1"
@@ -344,7 +347,10 @@ for comp in islands:
     pts = [P[i] for i in comp]
     near = min((p - hr).length for p in pts)
     reach = max((p - hr).length for p in pts)
-    if near < 0.05 * H and reach > 0.3 * H:
+    # (and it must stick out of the body: a cloak piece next to the hand reaches far too, but stays inside the
+    # body's outline; a club or a sword leaves it)
+    outside = max(Vector((p.x, p.y - spine_y(p.z), 0)).length for p in pts) > abs(hr.x) + 0.15 * H
+    if near < 0.05 * H and reach > 0.3 * H and outside:
         weapon = comp
         log("weapon found: %d vertices, reaching %.2f from the right hand" % (len(comp), reach))
         break
@@ -392,6 +398,8 @@ for side, s in (("L", 1), ("R", -1)):
     bone("UpperArm." + side, sh, elbow, "Chest", roll_up=FWD)
     bone("LowerArm." + side, elbow, wrist, "UpperArm." + side, True, FWD)
     bone("Hand." + side, wrist, tip, "LowerArm." + side, True, FWD)
+    if KIND == "robe":
+        continue
     f = feet[side]
     # the middle of the leg halfway down (below skirts and tunics, above the boot's flare)
     mid_leg = slice_verts(crotch_z * 0.35, crotch_z * 0.65, lambda p: p.x * s > 0 and p.x * s < abs(hands[side]["c"].x) * 0.7)
@@ -403,6 +411,18 @@ for side, s in (("L", 1), ("R", -1)):
     bone("UpperLeg." + side, hip, knee, "Hips", roll_up=FWD)
     bone("LowerLeg." + side, knee, ankle, "UpperLeg." + side, True, FWD)
     bone("Foot." + side, ankle, toe, "LowerLeg." + side, True, Vector((0, 0, 1)))
+# a robe: four hem bones from the hips down to the hem's front, back and sides (it sways and trails)
+HEM = {}
+if KIND == "robe":
+    low = [p for p in P if p.z < hip_z * 0.4]
+    base = Vector((0, spine_y(hip_z), hip_z))
+    HEM = {"F": min(low, key=lambda p: p.y), "B": max(low, key=lambda p: p.y),
+           "L": max(low, key=lambda p: p.x), "R": min(low, key=lambda p: p.x)}
+    for k, tip in HEM.items():
+        bone("Hem." + k, base, Vector((tip.x, tip.y, max(tip.z, 0.02 * H))), "Hips", roll_up=Vector((0, 0, 1)) if k in "FB" else FWD)
+    log("robe: 4 hem bones from the hips (%.2f) to the hem" % hip_z)
+
+
 # a tail: mesh well behind the hips, low down (a devil's tail); a chain of 3 bones from the root out
 def behind_back(z):
     ps = [p for p in P if abs(p.z - z) < 0.04 * H and abs(p.x) < 0.12 * H]
@@ -474,6 +494,8 @@ for n in BONES:
         GROUP[n] = "weapon"
     elif n.startswith("Tail"):
         GROUP[n] = "tail"
+    elif n.startswith("Hem"):
+        GROUP[n] = "hem"
     elif n.startswith("Wing"):
         GROUP[n] = "wing" + n[-1]
     else:
@@ -616,6 +638,8 @@ def allowed(i):
         if p.z > armpit_z[s] - 0.05 * H:
             bones_.add("Chest")
         return bones_
+    if KIND == "robe" and p.z < hip_z + 0.03 * H:
+        return {"Hips", "Hem.F", "Hem.B", "Hem.L", "Hem.R"}
     if g.startswith("leg") and p.z < crotch_z + 0.03 * H:
         s = g[-1]
         bones_ = {"UpperLeg." + s, "LowerLeg." + s, "Foot." + s}
@@ -731,6 +755,11 @@ POSES = {
                  ("UpperLeg.R", (1, 0, 0), -25), ("LowerLeg.R", (1, 0, 0), 45)],
     "head_turn": [("Head", (0, 0, 1), HD)],
 }
+if KIND == "robe":
+    # no legs: the hem swings back as it glides forward, and sways to a side
+    del POSES["knees_45"]
+    POSES["hem_sway"] = [("Hem.F", (1, 0, 0), 25), ("Hem.B", (1, 0, 0), 25), ("Hem.L", (0, 1, 0), 15),
+                         ("Hem.R", (0, 1, 0), 15)]
 log("test poses: %s (arms %d, head %d, swing %d)" % ("stress" if STRESS else "real use", A, HD, SW))
 if weapon:
     POSES["swing"].append(("Hand.R", (1, 0, 0), -30))

@@ -26,8 +26,8 @@ local ZERO = Vector3.zero
 local JOINTS = { "Root", "Hips", "Spine", "Chest", "Neck", "Head", "UpperArmL", "LowerArmL", "HandL", "UpperArmR",
 	"LowerArmR", "HandR", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR",
 	-- optional (rig_monster.py adds them when the model has them): a tail of three and a pair of wings
-	"Tail1", "Tail2", "Tail3", "WingL", "WingR" }
-local NEEDED = { "Root", "Hips", "Chest", "Head", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR" }
+	"Tail1", "Tail2", "Tail3", "WingL", "WingR", "HemF", "HemB", "HemL", "HemR" }
+local NEEDED = { "Root", "Hips", "Chest", "Head" } -- (legs are optional: a robe or a ghost floats on hem bones)
 
 -------------------------------------------------------------------------------
 -- poses: { [joint] = Vector3 degrees, Drop / Push / Lift = share of height }
@@ -156,7 +156,9 @@ local function newState(model, bones)
 	-- built facing its front, left +X in Blender); every turn below is given in this frame, whichever way the
 	-- model file happens to face inside the enemy model
 	local pivot = model:GetPivot()
-	local left = pivot:PointToObjectSpace(bones.FootL.WorldPosition) - pivot:PointToObjectSpace(bones.FootR.WorldPosition)
+	local l, r = bones.FootL or bones.UpperArmL or bones.HemL, bones.FootR or bones.UpperArmR or bones.HemR
+	local left = (l and r) and (pivot:PointToObjectSpace(l.WorldPosition) - pivot:PointToObjectSpace(r.WorldPosition))
+		or Vector3.xAxis
 	left = Vector3.new(left.X, 0, left.Z)
 	local frame = CFrame.identity
 	if left.Magnitude > 1e-3 then
@@ -246,9 +248,24 @@ local function animate(st, dt, now)
 	st.walk, st.walkVel = springStep(st.walk, st.walkVel, (speed > 0.3 and not dead) and 1 or 0, W.Settle.Hz, W.Settle.Damping, dt)
 	local w = math.clamp(st.walk, 0, 1.2)
 
-	local gait = Moves.Gaits[model.Name] or Moves.Gaits.Default
+	local gait = st.joints.UpperLegL and (Moves.Gaits[model.Name] or Moves.Gaits.Default) or "float"
 	st.down = nil
-	if gait == "run" then
+	if gait == "float" then
+		-- no legs (a ghost, a robe): it bobs as it glides, leans into the glide, and the hem trails behind and sways
+		local F = Moves.Float
+		local bob = math.sin(now * 2 * math.pi * F.BobHz + st.breath)
+		pose.Lift = F.Bob * (bob + 1) * 0.5
+		pose.Root = Vector3.new(F.Lean * w, 0, F.Roll * math.sin(now * 2 * math.pi * F.BobHz * 0.5 + st.breath))
+		local trail = F.Trail * w
+		local sway = math.sin(now * 2 * math.pi * F.SwayHz + st.breath) * F.Sway
+		pose.HemF = Vector3.new(trail + sway * 0.5, 0, 0)
+		pose.HemB = Vector3.new(trail + sway * 0.5, 0, 0)
+		pose.HemL = Vector3.new(0, sway, 0)
+		pose.HemR = Vector3.new(0, sway, 0)
+		local out = Moves.Idle.ArmOut + F.ArmDrift * bob
+		pose.UpperArmL = Vector3.new(F.ArmForward * w, 0, out)
+		pose.UpperArmR = Vector3.new(F.ArmForward * w, 0, out)
+	elseif gait == "run" then
 		-- the bouncy run: fewer, longer steps with a short hop between them. Each step is a contact (one foot planted,
 		-- its leg solved so the foot stays put; the knee gives on landing and straightens to push off) and then a
 		-- flight (both feet up, the body on a little arc). The step rate is set in MonsterMoves; the step length

@@ -29,6 +29,11 @@ MonsterMoves.Walk = {
 	Settle = { Hz = 3, Damping = 0.8 }, -- how fast the walk fades in and out when the monster starts or stops
 }
 
+-- rigs without legs (ghosts, robes): a float. Bob = rise and fall (share of height), Trail = how far the hem swings
+-- back while gliding (degrees), Sway = the hem's side to side
+MonsterMoves.Float = { Bob = 0.035, BobHz = 0.8, Lean = -8, Roll = 3, Trail = 22, Sway = 7, SwayHz = 1.1,
+	ArmForward = 20, ArmDrift = 6 }
+
 -- which gait each enemy uses (by its name in Config.Enemies): "walk" or "run"
 MonsterMoves.Gaits = {
 	Default = "walk",

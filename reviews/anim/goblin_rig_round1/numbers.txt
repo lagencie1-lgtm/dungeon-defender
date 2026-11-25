@@ -1,0 +1,49 @@
+merged seams: 2548 -> 1701 vertices
+triangles 3334, vertices 1701, height 2.80
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\goblin_rigged_paint.png (1024, 1024)
+landmarks: crotch 0.68 hips 0.79 chest 1.22 shoulders 1.58 neck 1.66 top 2.80
+  L hand (1.06, 0.03, 0.69) shoulder (0.73, 0.18, 1.58) foot (0.42, 0.19, 0.08)
+  R hand (-1.06, 0.02, 0.69) shoulder (-0.73, 0.12, 1.58) foot (-0.42, 0.19, 0.08)
+no weapon: nothing reaches out of the right hand
+cut 0 welded edges (arms to legs or body well below the armpits)
+automatic weights: 0 vertices had no weight (given their nearest bone)
+stretch after binding: arms_up max 4.85x (84 edges over 1.6x, 82 of them visible), swing max 8.11x (49 edges over 1.6x, 47 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 5.97x (45 edges over 1.6x, 42 of them visible)
+round 1: arms_up max 4.78x (80 edges over 1.6x, 76 of them visible), swing max 8.22x (55 edges over 1.6x, 53 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 7.70x (49 edges over 1.6x, 48 of them visible)
+round 2: arms_up max 4.90x (76 edges over 1.6x, 73 of them visible), swing max 7.98x (54 edges over 1.6x, 52 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 7.25x (48 edges over 1.6x, 45 of them visible)
+round 3: arms_up max 5.07x (64 edges over 1.6x, 61 of them visible), swing max 7.76x (54 edges over 1.6x, 52 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 7.35x (45 edges over 1.6x, 43 of them visible)
+round 4: arms_up max 5.27x (56 edges over 1.6x, 53 of them visible), swing max 7.53x (49 edges over 1.6x, 47 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 7.65x (43 edges over 1.6x, 43 of them visible)
+round 5: arms_up max 5.48x (53 edges over 1.6x, 51 of them visible), swing max 7.30x (47 edges over 1.6x, 43 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 8.00x (40 edges over 1.6x, 40 of them visible)
+round 6: arms_up max 5.68x (51 edges over 1.6x, 49 of them visible), swing max 7.08x (47 edges over 1.6x, 43 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 8.32x (43 edges over 1.6x, 43 of them visible)
+round 7: arms_up max 5.86x (46 edges over 1.6x, 45 of them visible), swing max 6.80x (48 edges over 1.6x, 43 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 8.58x (43 edges over 1.6x, 43 of them visible)
+round 8: arms_up max 6.11x (44 edges over 1.6x, 43 of them visible), swing max 6.59x (47 edges over 1.6x, 42 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 8.79x (41 edges over 1.6x, 41 of them visible)
+round 9: arms_up max 6.21x (43 edges over 1.6x, 42 of them visible), swing max 6.41x (44 edges over 1.6x, 39 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 8.97x (41 edges over 1.6x, 41 of them visible)
+round 10: arms_up max 6.32x (41 edges over 1.6x, 40 of them visible), swing max 6.26x (45 edges over 1.6x, 39 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 9.12x (40 edges over 1.6x, 40 of them visible)
+round 11: arms_up max 6.42x (41 edges over 1.6x, 40 of them visible), swing max 6.11x (44 edges over 1.6x, 39 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 9.23x (40 edges over 1.6x, 40 of them visible)
+round 12: arms_up max 6.47x (38 edges over 1.6x, 37 of them visible), swing max 5.98x (44 edges over 1.6x, 39 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 9.31x (41 edges over 1.6x, 41 of them visible)
+final (best round): arms_up max 6.47x (38 edges over 1.6x, 37 of them visible), swing max 5.98x (44 edges over 1.6x, 39 of them visible), knees_45 max 1.45x (0 edges over 1.6x, 0 of them visible), head_40 max 9.31x (41 edges over 1.6x, 41 of them visible)
+CHECK zero-weight vertices 0, over 4 bones 0, head vertices on another bone 0 of 619, weapon vertices on another bone n/a (no weapon)
+CHECK pose arms_up   max edge stretch 6.47x, edges over 1.6x: 38, of them grown more than 0.03 studs: 37
+CHECK pose swing     max edge stretch 5.98x, edges over 1.6x: 44, of them grown more than 0.03 studs: 39
+CHECK pose knees_45  max edge stretch 1.45x, edges over 1.6x: 0, of them grown more than 0.03 studs: 0
+CHECK pose head_40   max edge stretch 9.31x, edges over 1.6x: 41, of them grown more than 0.03 studs: 41
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.34)
+  Hips        parent Root        head ( 0.00  0.15  0.79) tail ( 0.00  0.19  0.91)
+  Spine       parent Hips        head ( 0.00  0.19  0.91) tail ( 0.00 -0.11  1.22)
+  Chest       parent Spine       head ( 0.00 -0.11  1.22) tail ( 0.00  0.04  1.61)
+  Neck        parent Chest       head ( 0.00  0.04  1.61) tail ( 0.00  0.04  1.66)
+  Head        parent Neck        head ( 0.00  0.04  1.66) tail ( 0.00  0.04  2.80)
+  UpperArm.L  parent Chest       head ( 0.73  0.18  1.58) tail ( 0.88  0.19  1.19)
+  LowerArm.L  parent UpperArm.L  head ( 0.88  0.19  1.19) tail ( 1.03  0.03  0.81)
+  Hand.L      parent LowerArm.L  head ( 1.03  0.03  0.81) tail ( 1.06  0.03  0.60)
+  UpperArm.R  parent Chest       head (-0.73  0.12  1.58) tail (-0.88  0.15  1.20)
+  LowerArm.R  parent UpperArm.R  head (-0.88  0.15  1.20) tail (-1.04  0.02  0.81)
+  Hand.R      parent LowerArm.R  head (-1.04  0.02  0.81) tail (-1.06  0.02  0.60)
+  UpperLeg.L  parent Hips        head ( 0.37  0.15  0.68) tail ( 0.40  0.11  0.41)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.40  0.11  0.41) tail ( 0.42  0.25  0.15)
+  Foot.L      parent LowerLeg.L  head ( 0.42  0.25  0.15) tail ( 0.42 -0.16  0.03)
+  UpperLeg.R  parent Hips        head (-0.37  0.15  0.68) tail (-0.40  0.11  0.41)
+  LowerLeg.R  parent UpperLeg.R  head (-0.40  0.11  0.41) tail (-0.42  0.25  0.15)
+  Foot.R      parent LowerLeg.R  head (-0.42  0.25  0.15) tail (-0.42 -0.16  0.03)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\goblin_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\goblin_rigged.fbx 1946172 bytes

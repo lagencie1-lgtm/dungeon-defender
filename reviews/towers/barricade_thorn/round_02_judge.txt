@@ -1,0 +1,6 @@
+GEMINI gemini-3.5-flash: score 5 (A was the painting)
+  - model has four additional red-tipped spikes sticking out along the top edge of the wall, which are absent in painting.
+  - The front spike barricade in model is crudely rendered, lacking the clear horizontal beam of painting, with dark brown tips and overlapping/floating elements.
+  - In model, a front spike clips directly in front of and over the center shield, whereas in painting the shield is unobstructed behind the fence.
+  - model features gaps and broken wooden planks in the wall behind the shield, while painting has a solid, continuous log wall.
+  - painting has smooth, polished illustration quality, whereas model has visible texture distortion, clipping errors, and rough edges.

@@ -101,7 +101,7 @@ DEFAULTS = {
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
-                  stake_lean=-0.3, front_tilt=38),
+                  stake_lean=-0.3, front_tilt=38, rail_h=1.3, stake_out=0.3),
     "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0),
 }
 P = dict(DEFAULTS[stage])
@@ -374,9 +374,11 @@ if stage == "thorn":
     tilt = rad(P["stake_tilt"])
     base_y = R + 0.6
     rail_y = R + 1.25
-    rail_z = 0.02 + (rail_y - base_y) * math.tan(tilt)
+    rail_z = P["rail_h"]   # (round 4: the rail sits low, like the picture's, and the upper stakes rise well above it)
     RACK = 2 * (BX + BR + R * P["overhang"]) / 0.86 if CENTRE else P["length"]   # (centre-only: the picture's rack)
-    K.block("Rail", (0, rail_y, rail_z), (RACK * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
+    rail = K.block("Rail", (0, rail_y, rail_z), (RACK * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
+    # (one long box: a stake in front of a face's centre made the hidden-face cull drop the whole face, round 3)
+    (rail if rail is not None else bpy.data.objects["Rail"])["htd_keep"] = True
     front_y = 0.0
 
     def stake(name, base, d, ln, r0, verts=10):
@@ -389,11 +391,13 @@ if stage == "thorn":
     # side, all parallel, over the rail, and a lower row in front; the crossed pairs read as flat Vs, the dirt heaps
     # as floating stubs)
     lean = P["stake_lean"]
-    d_up = Vector((lean, math.cos(tilt), math.sin(tilt))).normalized()
+    # (seen from the enemy side, a stake that points mostly at the enemies reads as a stub: they rise and lean to the
+    # side, and point out only a little, stake_out)
+    d_up = Vector((lean, P["stake_out"], 1.0)).normalized()
     for k in range(int(P["upper"])):
         xp = ((k + 0.5) / P["upper"] - 0.5) * RACK * 0.82
-        reach_t = (rail_y - base_y) / d_up.y
-        base = Vector((xp - d_up.x * reach_t, base_y, 0.02))
+        reach_t = (rail_z - 0.02) / d_up.z           # from the ground up to where it rests on the rail
+        base = Vector((xp - d_up.x * reach_t, rail_y - d_up.y * reach_t, 0.02))
         ln = P["stake_len"] * (0.95 + 0.05 * rnd.random())
         tip = stake(f"Stake{k}", base, d_up, ln, 0.27)
         front_y = max(front_y, tip.y)
@@ -402,7 +406,7 @@ if stage == "thorn":
         for dz in (-0.16, 0.16):
             K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.32, rail_z + dz), 0.09, STUD, seg=6)
     ft = rad(P["front_tilt"])
-    d_low = Vector((lean, math.cos(ft), math.sin(ft))).normalized()
+    d_low = Vector((lean, P["stake_out"] * 1.6, math.tan(ft))).normalized()
     for k in range(int(P["front"])):
         x = ((k + 0.5) / P["front"] - 0.5) * RACK * 0.74
         base = Vector((x, R + 0.9, 0.02))

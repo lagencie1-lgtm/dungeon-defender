@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 4 (A was the painting)
+  - model includes floating dark grey rectangular blocks with golden studs across the middle section.
+  - model adds a row of red-tipped wooden spikes along the top edge of the rear wall.
+  - The foreground barricade spikes in model are detached, floating, and rendered with flat, low-detail graphics compared to painting.
+  - model suffers from severe visual clipping, missing wood framing, and graphical artifacts throughout the structure.

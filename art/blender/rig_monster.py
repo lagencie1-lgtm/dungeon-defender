@@ -513,7 +513,8 @@ if os.path.exists(_ov_path):
     for s in ("L", "R"):
         wr, tip = V("wrist_" + s), V("hand_tip_" + s)
         hands[s] = {"c": (wr + tip) / 2, "top": max(wr.z, tip.z), "bottom": min(wr.z, tip.z)}
-        feet[s] = V("ankle_" + s)
+        if "ankle_" + s in OV:
+            feet[s] = V("ankle_" + s)
     log("hand-marked key points from", _ov_path)
 VCOL = None
 if OV and OV.get("cloth_colors") and image:
@@ -902,8 +903,8 @@ for _pass in range(3):  # a cut changes the next binding a little: look again un
                 cut.append(e.index)
         # a wing welded to the arm next to it (a wing grows from the back, never from the arm), and a cape welded to
         # the arm it hangs beside (the cape flapped out with the raised arm)
-        elif arm and (other.startswith("wing") or other == "cloth"):
-            cut.append(e.index)
+        elif arm and (other.startswith("wing") or (other == "cloth" and (not OV or OV.get("cut_arm_cloth", True)))):
+            cut.append(e.index)  # (not for sleeves: they belong to the arm; "cut_arm_cloth": false in the file)
         # (cutting the arm from the cape by raw colour shredded the cape's front edge, 2026-11-25; see below)
     # a cape is its own garment: cut it off the body all along its edge (the cleaned colour mask), so arms and legs
     # move under it instead of dragging it
@@ -1106,7 +1107,8 @@ if OV and OV.get("chains"):
             continue  # (a separate cape: the body keeps everything that is not the cape)
         dc = min((seg_dist(P[i], *REST[b]), b) for b in chain_bones)
         db = min(seg_dist(P[i], *REST[b]) for b in body_bones)
-        if dc[0] < db * OV.get("cloth_bias", 1.0):
+        reach = OV["chains"][chain_bones[dc[1]]].get("radius")  # (a sleeve only takes cloth close to it)
+        if dc[0] < db * OV.get("cloth_bias", 1.0) and (reach is None or dc[0] < reach):
             CLOTH_OF[i] = chain_bones[dc[1]]
     log("cloth vertices: %d" % len(CLOTH_OF))
 ALLOWED = [(allowed(i) & set(BONES)) or {"Hips"} for i in range(NV)]  # (only bones this rig has)

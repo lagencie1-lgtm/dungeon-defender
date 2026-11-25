@@ -1,0 +1,119 @@
+{
+  "_note": "Shadow Queen (151735_purple_sorceress), 4.2 studs tall, read off front and side grid renders 2026-11-25. No legs under the dress: body plan robe.",
+  "crotch": [
+    0,
+    0.1,
+    1.85
+  ],
+  "hips": [
+    0,
+    0.1,
+    1.9
+  ],
+  "chest": [
+    0,
+    0.1,
+    2.55
+  ],
+  "neck": [
+    0,
+    0.05,
+    3.0
+  ],
+  "head_top": [
+    0,
+    0.1,
+    4.2
+  ],
+  "shoulder_L": [
+    0.4,
+    0.05,
+    2.85
+  ],
+  "elbow_L": [
+    0.95,
+    0.05,
+    2.5
+  ],
+  "wrist_L": [
+    1.33,
+    0.0,
+    2.1
+  ],
+  "hand_tip_L": [
+    1.5,
+    0.0,
+    1.98
+  ],
+  "shoulder_R": [
+    -0.4,
+    0.05,
+    2.85
+  ],
+  "elbow_R": [
+    -0.95,
+    0.05,
+    2.5
+  ],
+  "wrist_R": [
+    -1.38,
+    0.0,
+    2.07
+  ],
+  "hand_tip_R": [
+    -1.65,
+    0.0,
+    1.98
+  ],
+  "chains": {
+    "SleeveL": {
+      "parent": "LowerArm.L",
+      "points": [
+        [
+          1.0,
+          0.05,
+          2.45
+        ],
+        [
+          1.08,
+          0.05,
+          1.9
+        ],
+        [
+          1.05,
+          0.05,
+          1.4
+        ]
+      ],
+      "radius": 0.45
+    },
+    "SleeveR": {
+      "parent": "LowerArm.R",
+      "points": [
+        [
+          -1.0,
+          0.05,
+          2.45
+        ],
+        [
+          -1.08,
+          0.05,
+          1.9
+        ],
+        [
+          -1.05,
+          0.05,
+          1.4
+        ]
+      ],
+      "radius": 0.45
+    }
+  },
+  "cloth_bias": 1.3,
+  "test_angles": {
+    "arms": 60,
+    "swing": 80,
+    "head": 25
+  },
+  "cut_arm_cloth": false
+}

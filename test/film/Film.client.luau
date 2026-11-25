@@ -375,6 +375,16 @@ end
 -- a picture, then the tower alone in a flat colour (Highlight, AlwaysOnTop) for its outline, with the HUD hidden;
 -- at level 3 also at Roblox's lowest graphics level ("low effects"), when a LocalScript may set it
 local function runViewShots(kind, level, tower, base)
+	-- (2026-11-25: right after an upload the real look can take a while to load; the view and outline shots wait
+	-- until the stand-in is hidden, up to 15 s, and say so in the marks when it never was)
+	local standIn = tower:FindFirstChild("StandIn")
+	local waited = 0
+	while standIn and standIn:GetAttribute("Hidden") ~= true and waited < 15 do
+		waited += task.wait(0.25)
+	end
+	if standIn and standIn:GetAttribute("Hidden") ~= true then
+		mark(string.format("look not loaded %s %d", kind, level))
+	end
 	local rc = Config.RunCamera
 	local look = Vector3.new(0.6, 0, 0.8).Unit
 	local aim = base + Vector3.new(0, rc.AimHeight, 0)

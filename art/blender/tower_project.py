@@ -33,7 +33,7 @@ SLOT = {"pic": (0, 0), "right": (1, 0), "back": (0, 1), "left": (1, 1)}   # colu
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=fbx)
-meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+meshes = [o for o in bpy.context.scene.objects if o.type == "MESH" and len(o.data.vertices)]   # (an empty part, e.g. a gold sheet whose every face was culled as hidden, broke the projection)
 skins = [o for o in meshes if o.name.startswith(("Body", "Skin_"))] or meshes[:1]
 for o in meshes:
     bpy.ops.object.select_all(action="DESELECT")

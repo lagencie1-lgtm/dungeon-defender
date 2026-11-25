@@ -34,10 +34,13 @@ def main():
     os.makedirs(out, exist_ok=True)
     ff = glob.glob(os.path.join(ROOT, "tools", "ffmpeg", "*", "bin", "ffmpeg.exe"))[0]
     marks = []
+    notloaded = set()
     for ln in open(base + ".marks.txt", encoding="utf-8"):
         t, _, name = ln.strip().partition("\t")
         if name.startswith(("view ", "mask ", "low ")):
             marks.append((float(t), name))
+        elif name.startswith("look not loaded "):   # (the film saw only the stand-in: that level's shots don't count)
+            notloaded.add((name.split()[3], int(name.split()[4])))
     views, masks, lows = {}, {}, {}
     box = None
 
@@ -80,6 +83,10 @@ def main():
             lows[parts[1]] = " ".join(parts[2:])
             Image.fromarray(img).save(os.path.join(out, f"{parts[1]}_l3_low_effects.png"))
     res = {"levels": {}, "towers": {}, "stands_out": {}, "low_effects": lows, "fails": []}
+    for key in sorted(notloaded):
+        masks.pop(key, None)
+        views.pop(key, None)
+        res["fails"].append(f"{key[0]} level {key[1]}: the real look had not loaded in the film (stand-in), not measured")
 
     def iou(a, b):
         return float((a & b).sum() / max(1, (a | b).sum()))

@@ -424,6 +424,11 @@ if stage == "thorn":
         base = Vector((x, R + 0.9, 0.02))
         tip = stake(f"Low{k}", base, d_low, P["front_len"] * (0.95 + 0.05 * rnd.random()), 0.25, verts=14)
         front_y = max(front_y, tip.y)
+    # (the hidden-face cull judged the long stake faces by their centres behind the rail and cut the lower row into
+    # pieces, Thornwall round 7: keep every stake whole)
+    for o in bpy.data.objects:
+        if o.name.startswith(("Stake", "Low")):
+            o["htd_keep"] = True
     # the crest: red spikes driven into the top logs, leaning toward the enemies, seen from both sides
     for top, x_from, x_to, tag in ((top_c, -(BX - BR - 0.1), BX - BR - 0.1, "C"),
                                     (top_w, BX + BR + 0.25, WX - WR - 0.15, "R"), (top_w, -(WX - WR - 0.15), -(BX + BR + 0.25), "L")):

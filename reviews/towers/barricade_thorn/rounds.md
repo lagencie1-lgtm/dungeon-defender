@@ -19,3 +19,6 @@ From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn
 - round 6: rounder stakes (14 sides); a fresh repaint
   IoU 89.0%  width profile off 6.4%  region colour dE 7.3  (pixel dE 48.3)  detail 19.3% vs picture 22.5% (ratio 0.86)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 1 (L 45/45)  lookout 1 (L 40/40)  wall 6 (L 30/34)  footing 5 (L 32/37)
+- round 7: centre stakes now in the same places in the full wall (the scored centre took mismatched paint in rounds 5-6); fresh repaint
+  IoU 89.0%  width profile off 6.4%  region colour dE 6.9  (pixel dE 47.7)  detail 22.1% vs picture 22.5% (ratio 0.98)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/45)  lookout 3 (L 40/38)  wall 4 (L 30/32)  footing 8 (L 32/37)

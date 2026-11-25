@@ -511,7 +511,8 @@ if stage == "root":
         z = top_c - 0.6
         while z > 0.9:
             z = max(z - 0.75, 0.9)
-            pts.append((x0 * (0.5 + 0.5 * z / top_c) + g.uniform(-0.12, 0.12), y_face, z))
+            low = max(0.5, shield_low)   # (straight down beside the shield, then in toward the middle below it)
+            pts.append((x0 * (1.0 if z > low else 0.55 + 0.45 * z / low) + g.uniform(-0.12, 0.12), y_face, z))
             radii.append(r0 * (0.95 + 0.05 * g.random()))
         # the foot: out toward the viewer and in toward the middle, then the fan
         t = (k + 0.5) / n - 0.5                       # -0.5 .. 0.5 across the fan
@@ -526,10 +527,16 @@ if stage == "root":
             tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.4, r0 * 0.25, r0 * 0.06], ROOT_T,
                  "bark", 1.6, verts=8)
 
+    shield_low = (zs[0] + (zs[-1] - zs[0]) * P["shield_h"] - P["shield"] - 0.2) if P["shield"] > 0 else top_c * 0.4
     for s, tag in ((1, "F"), (-1, "B")):
         n = int(P["pour"])
+        # (they come down beside the shield, not over it: round 1 of the re-drawn target hid the shield under roots)
+        inner = min(P["shield"] + 0.25, BX - BR - 0.5)
+        outer = BX - BR - 0.2
         for k in range(n):
-            x0 = ((k + 0.5) / n - 0.5) * 2 * (BX - BR - 0.35)
+            side = -1 if k < n / 2 else 1
+            j = k if side < 0 else n - 1 - k
+            x0 = side * (outer - (outer - inner) * j / max(1, n / 2 - 1))
             pour(f"Pour{tag}{k}", x0, s, P["root_r"] * (0.9 if k in (0, n - 1) else 1.05), k, n)
 
     wing_mid = (BX + BR + WX - WR) / 2

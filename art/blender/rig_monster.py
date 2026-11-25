@@ -194,12 +194,33 @@ if KIND == "rigid":
     for f in bm.faces:
         c = f.calc_center_median()
         lab[f.index] = nearest(c)
+    forced = set()
+    # (a box takes whole mesh islands: those with most of their area inside it. Taking single faces left slivers of
+    # the shield behind on the leg, and took bits of leg armour along with the shield)
+    isl_of, isls = {}, []
+    for f in bm.faces:
+        if f.index in isl_of:
+            continue
+        comp, stack = [], [f]
+        isl_of[f.index] = len(isls)
+        while stack:
+            g = stack.pop()
+            comp.append(g)
+            for e in g.edges:
+                for h in e.link_faces:
+                    if h.index not in isl_of:
+                        isl_of[h.index] = len(isls)
+                        stack.append(h)
+        isls.append(comp)
     for rule in OVr.get("piece_rules", []):  # {"bone": "Hand.L", "box": [[x0,y0,z0],[x1,y1,z1]]}
         lo_, hi_ = Vector(rule["box"][0]), Vector(rule["box"][1])
-        for f in bm.faces:
-            c = f.calc_center_median()
-            if all(lo_[k] <= c[k] <= hi_[k] for k in range(3)):
-                lab[f.index] = rule["bone"]
+        for comp in isls:
+            inside = sum(g.calc_area() for g in comp
+                         if all(lo_[k] <= g.calc_center_median()[k] <= hi_[k] for k in range(3)))
+            if inside >= 0.6 * sum(g.calc_area() for g in comp):
+                for g in comp:
+                    lab[g.index] = rule["bone"]
+                    forced.add(g.index)
     # 2 smooth the labels (3 rounds of the majority of each face's neighbours), so cuts run straight
     for _ in range(3):
         new = {}
@@ -209,7 +230,8 @@ if KIND == "rigid":
                 for g in e.link_faces:
                     votes[lab[g.index]] = votes.get(lab[g.index], 0) + 1
             best = max(votes, key=votes.get)
-            new[f.index] = best if votes[best] > votes.get(lab[f.index], 0) else lab[f.index]
+            new[f.index] = lab[f.index] if f.index in forced else (
+                best if votes[best] > votes.get(lab[f.index], 0) else lab[f.index])
         lab = new
     # 3 a mesh island (one rock, one plate) stays whole when most of it is one bone's: pieces are not sliced
     seen = set()
@@ -238,7 +260,14 @@ if KIND == "rigid":
     names = sorted(set(lab.values()))
     for f in bm.faces:
         f[bl] = names.index(lab[f.index])
-    border = [e for e in bm.edges if len(e.link_faces) == 2 and e.link_faces[0][bl] != e.link_faces[1][bl]]
+    fl = bm.faces.layers.int.new("forced")
+    for f in bm.faces:
+        f[fl] = 1 if f.index in forced else 0
+    # (2026-11-26, round 2: cutting every seam left gaps of 0.6-1.6 studs behind the shoulders; the body's seams now
+    # stay joined and their vertices blend between the two bones, like a crack that stretches; only hand-marked
+    # pieces, a sword or a shield, are cut loose)
+    border = [e for e in bm.edges if len(e.link_faces) == 2 and e.link_faces[0][bl] != e.link_faces[1][bl]
+              and (not OVr.get("blend_seams", True) or e.link_faces[0][fl] != e.link_faces[1][fl])]
     bmesh.ops.split_edges(bm, edges=border)
     caps = 0
     for idx in range(len(names)):
@@ -256,12 +285,18 @@ if KIND == "rigid":
                     loop[uvl_].uv = src[uvl_].uv
         caps += len(filled)
     bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    # every piece is now closed: point all its faces outward (some caps came out facing in: black specks)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.verts.index_update()
     vbone = {}
+    vmix = {}  # vertex -> {bone: share of the faces around it}
     for f in bm.faces:
         for v in f.verts:
             vbone[v.index] = names[f[bl]]
+            m = vmix.setdefault(v.index, {})
+            m[names[f[bl]]] = m.get(names[f[bl]], 0) + 1
     bm.faces.layers.int.remove(bl)
+    bm.faces.layers.int.remove(fl)
     bm.to_mesh(me)
     bm.free()
     me.update()
@@ -274,13 +309,15 @@ if KIND == "rigid":
     for n in RB:
         if n != "Root":
             body.vertex_groups.new(name=n)
-    for i, n in vbone.items():
-        body.vertex_groups[n].add([i], 1.0, "REPLACE")
+    for i, m in vmix.items():
+        tot = sum(m.values())
+        for n, c in sorted(m.items(), key=lambda kv: -kv[1])[:4]:
+            body.vertex_groups[n].add([i], c / tot, "REPLACE")
     mod = body.modifiers.new("Armature", "ARMATURE")
     mod.object = rig
     body.parent = rig
     zero = sum(1 for v in me.vertices if sum(g.weight for g in v.groups) < 1e-4)
-    log("CHECK zero-weight vertices %d, vertices on more than one bone %d" % (
+    log("CHECK zero-weight vertices %d, vertices blended between bones (on joined seams) %d" % (
         zero, sum(1 for v in me.vertices if len([g for g in v.groups if g.weight > 1e-4]) > 1)))
     # 6 the gaps at the cuts: the same seam point on the two pieces, apart in a pose
     rest = [v.co.copy() for v in me.vertices]
@@ -288,6 +325,8 @@ if KIND == "rigid":
     for i, c in enumerate(rest):
         seam.setdefault((round(c.x, 4), round(c.y, 4), round(c.z, 4)), []).append(i)
     pairs = [g for g in seam.values() if len(g) > 1]
+    EDG = [tuple(e.vertices) for e in me.edges]
+    RL = [(rest[a] - rest[b]).length for a, b in EDG]
     TA = OVr.get("test_angles", {})
     POSES_R = {
         "rest": [],
@@ -316,20 +355,24 @@ if KIND == "rigid":
         m = ev.to_mesh()
         Q = [v.co.copy() for v in m.vertices]
         ev.to_mesh_clear()
+        ratios = [((Q[a] - Q[b]).length / r0) for (a, b), r0 in zip(EDG, RL) if r0 > 1e-6]
+        over = sum(1 for r in ratios if r > STRETCH_LIMIT)
+        log("CHECK pose %-9s joined seams: max edge stretch %.2fx, edges over %.1fx: %d" % (
+            pname, max(ratios), STRETCH_LIMIT, over))
         worst, wpair = 0.0, None
         open_ = 0
         for g in pairs:
             d = max((Q[a] - Q[b]).length for a in g for b in g)
             if d > worst:
                 worst, wpair = d, g
-            if d > 0.05 * H:
+            if d > 0.3:  # (studs: the target is no gap over 0.3 at the angles the monster uses)
                 open_ += 1
         where = ""
         if wpair:
             where = " (worst between %s, at %s)" % ("/".join(sorted({vbone[i] for i in wpair})),
                                                    tuple(round(c, 2) for c in rest[wpair[0]]))
-        log("CHECK pose %-9s widest gap at a cut %.3f studs; cut points opening more than %.2f studs: %d of %d%s" % (
-            pname, worst, 0.05 * H, open_, len(pairs), where))
+        log("CHECK pose %-9s widest gap at a cut %.3f studs; cut points opening more than 0.30 studs: %d of %d%s" % (
+            pname, worst, open_, len(pairs), where))
     rpose([])
     log("BONES (rest, studs, front -Y, left +X):")
     for b in arm_data.bones:

@@ -17,6 +17,8 @@ local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.la
 
 local player = Players.LocalPlayer
 local isTouch = Ui.isTouch
+-- touch: panel buttons at least 36 px on the smallest phone preset (this screen's scale there: 0.53)
+local TAP = isTouch and 68 or 44
 local PICKUP_RANGE = 6 -- walk right up to it
 local inventory, gear = {}, {} -- the backpack and what is worn (kept up to date by the server, below)
 
@@ -339,15 +341,15 @@ label({ Size = UDim2.fromOffset(200, 36), Position = UDim2.fromOffset(16, 10), T
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
 local countLabel = label({ Size = UDim2.fromOffset(90, 26), Position = UDim2.fromOffset(176, 16), Text = "0/60",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
-local goldLabel = label({ Size = UDim2.fromOffset(180, 28), Position = UDim2.fromOffset(300, 14), Text = "0 gold",
+local goldLabel = label({ Size = UDim2.fromOffset(isTouch and 120 or 180, 28), Position = UDim2.fromOffset(isTouch and 280 or 300, 14), Text = "0 gold",
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
-local scrapLabel = label({ Size = UDim2.fromOffset(120, 28), Position = UDim2.fromOffset(480, 14), Text = "0 scrap",
+local scrapLabel = label({ Size = UDim2.fromOffset(isTouch and 100 or 120, 28), Position = UDim2.fromOffset(isTouch and 404 or 480, 14), Text = "0 scrap",
 	TextColor3 = Ui.SCRAP, ZIndex = 31, Parent = panel })
-local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+local closeButton = button({ Size = UDim2.fromOffset(TAP, TAP), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
 
 -- equipped slots row
-local slotRow = make("Frame", { Size = UDim2.fromOffset(440, 74), Position = UDim2.fromOffset(16, 56),
+local slotRow = make("Frame", { Size = UDim2.fromOffset(440, 74), Position = UDim2.fromOffset(16, isTouch and 82 or 56),
 	BackgroundTransparency = 1, ZIndex = 31, Parent = panel },
 	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
 local slotBoxes = {}
@@ -363,13 +365,15 @@ for i, slot in Items.Slots do
 		ZIndex = 33, Parent = b })
 	slotBoxes[slot] = { button = b, name = name, picture = picture }
 end
-local totalsLabel = label({ Size = UDim2.fromOffset(222, 40), Position = UDim2.fromOffset(16, 134), Text = "",
+local totalsLabel = label({ Size = UDim2.fromOffset(isTouch and 152 or 222, isTouch and TAP or 40),
+	Position = UDim2.fromOffset(16, isTouch and 162 or 134), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Color3.fromRGB(200, 230, 200), TextWrapped = true,
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 31, Parent = panel })
 
 -- gear sets (Items.GearSets): tap a set to put it on; "Save" then a set stores what you wear now
 local saving = false
-local saveButton = button({ Size = UDim2.fromOffset(58, 40), Position = UDim2.fromOffset(244, 134), Text = "Save",
+local saveButton = button({ Size = isTouch and UDim2.fromOffset(TAP, TAP) or UDim2.fromOffset(58, 40),
+	Position = UDim2.fromOffset(isTouch and 172 or 244, isTouch and 162 or 134), Text = "Save",
 	BackgroundColor3 = Color3.fromRGB(70, 60, 50), ZIndex = 31, Parent = panel })
 local setButtons = {}
 local function paintSets()
@@ -381,7 +385,8 @@ local function paintSets()
 	end
 end
 for i = 1, Items.GearSets do
-	local b = button({ Size = UDim2.fromOffset(46, 40), Position = UDim2.fromOffset(306 + (i - 1) * 50, 134), Text = "Set " .. i,
+	local b = button({ Size = isTouch and UDim2.fromOffset(TAP, TAP) or UDim2.fromOffset(46, 40),
+		Position = isTouch and UDim2.fromOffset(172 + i * (TAP + 4), 162) or UDim2.fromOffset(306 + (i - 1) * 50, 134), Text = "Set " .. i,
 		ZIndex = 31, Parent = panel })
 	b.TextScaled = true
 	setButtons[i] = b
@@ -401,7 +406,8 @@ paintSets()
 
 -- auto-salvage: off, Common, Common and Uncommon (worse than what you wear only)
 local AUTO_TEXT = { [0] = "Auto-salvage: off", [1] = "Auto-salvage: Common", [2] = "Auto-salvage: Uncommon" }
-local autoButton = button({ Size = UDim2.fromOffset(150, 30), Position = UDim2.new(1, -64, 0, 15), AnchorPoint = Vector2.new(1, 0),
+local autoButton = button({ Size = UDim2.fromOffset(isTouch and 200 or 150, isTouch and TAP or 30),
+	Position = UDim2.new(1, isTouch and -12 - TAP - 8 or -64, 0, isTouch and 8 or 15), AnchorPoint = Vector2.new(1, 0),
 	Text = AUTO_TEXT[player:GetAttribute("AutoSalvage") or 0], BackgroundColor3 = Color3.fromRGB(70, 60, 50), ZIndex = 31, Parent = panel })
 autoButton.TextScaled = true
 player:GetAttributeChangedSignal("AutoSalvage"):Connect(function()
@@ -413,8 +419,8 @@ end)
 
 -- the grid of items
 local grid = make("ScrollingFrame", {
-	Size = UDim2.fromOffset(440, 306),
-	Position = UDim2.fromOffset(16, 180),
+	Size = UDim2.fromOffset(440, isTouch and 254 or 306),
+	Position = UDim2.fromOffset(16, isTouch and 236 or 180),
 	BackgroundColor3 = Color3.fromRGB(35, 28, 48),
 	BorderSizePixel = 0,
 	ScrollBarThickness = 6,
@@ -429,7 +435,7 @@ local grid = make("ScrollingFrame", {
 })
 
 -- details on the right
-local detail = make("Frame", { Size = UDim2.fromOffset(330, 420), Position = UDim2.new(1, -16, 0, 66), AnchorPoint = Vector2.new(1, 0),
+local detail = make("Frame", { Size = UDim2.fromOffset(330, isTouch and 404 or 420), Position = UDim2.new(1, -16, 0, isTouch and 84 or 66), AnchorPoint = Vector2.new(1, 0),
 	BackgroundColor3 = Ui.PANEL, ZIndex = 31, Parent = panel }, { corner(12) })
 local dSlot = make("Frame", { Size = UDim2.fromOffset(84, 84), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = Ui.DARK,
 	Visible = false, ZIndex = 32, Parent = detail }, { corner(10), stroke(Ui.GOLD, 3) })
@@ -439,14 +445,19 @@ local dName = label({ Size = UDim2.new(1, -114, 0, 52), Position = UDim2.fromOff
 	TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 32, Parent = detail })
 local dRarity = label({ Size = UDim2.new(1, -114, 0, 20), Position = UDim2.fromOffset(104, 66), Text = "",
 	Font = Enum.Font.Gotham, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 32, Parent = detail })
-local dStats = label({ Size = UDim2.new(1, -20, 0, 140), Position = UDim2.fromOffset(10, 104), Text = "",
-	Font = Enum.Font.Gotham, TextScaled = false, TextSize = 17, RichText = true, TextWrapped = true,
+-- (touch: 21 x 0.53 = 11 px text on the smallest phone)
+local dStats = label({ Size = UDim2.new(1, -20, 0, isTouch and 404 - 104 - 10 - TAP - 8 or 140), Position = UDim2.fromOffset(10, 104), Text = "",
+	Font = Enum.Font.Gotham, TextScaled = false, TextSize = isTouch and 21 or 17, RichText = true, TextWrapped = true,
 	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 32, Parent = detail })
-local equipButton = button({ Size = UDim2.new(1, -20, 0, 42), Position = UDim2.fromOffset(10, 252),
+-- (touch: the three side by side along the bottom, each TAP tall)
+local equipButton = button({ Size = isTouch and UDim2.new(1 / 3, -10, 0, TAP) or UDim2.new(1, -20, 0, 42),
+	Position = isTouch and UDim2.new(0, 10, 1, -10 - TAP) or UDim2.fromOffset(10, 252),
 	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Equip", ZIndex = 32, Parent = detail })
-local upgradeButton = button({ Size = UDim2.new(1, -20, 0, 42), Position = UDim2.fromOffset(10, 302),
+local upgradeButton = button({ Size = isTouch and UDim2.new(1 / 3, -10, 0, TAP) or UDim2.new(1, -20, 0, 42),
+	Position = isTouch and UDim2.new(1 / 3, 5, 1, -10 - TAP) or UDim2.fromOffset(10, 302),
 	BackgroundColor3 = Color3.fromRGB(150, 110, 40), Text = "Upgrade", ZIndex = 32, Parent = detail })
-local salvageButton = button({ Size = UDim2.new(1, -20, 0, 42), Position = UDim2.fromOffset(10, 352),
+local salvageButton = button({ Size = isTouch and UDim2.new(1 / 3, -10, 0, TAP) or UDim2.new(1, -20, 0, 42),
+	Position = isTouch and UDim2.new(2 / 3, 0, 1, -10 - TAP) or UDim2.fromOffset(10, 352),
 	BackgroundColor3 = Color3.fromRGB(110, 60, 60), Text = "Salvage", ZIndex = 32, Parent = detail })
 
 local selectedId = nil

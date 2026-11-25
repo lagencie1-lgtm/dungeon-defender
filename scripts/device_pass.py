@@ -27,7 +27,7 @@ OUT = os.path.join(ROOT, "reviews", "devices")
 TOOLS = os.path.join(ROOT, "tools")
 LOCK = os.path.join(TOOLS, "studio.lock")
 STEPS = ["Outpost", "Shop", "Pets", "Backpack", "Run", "Defender"]
-CHECKS = ["Cut", "TV safe", "Thumbs", "Tap", "Text", "Fits", "Overlap"]
+CHECKS = ["Cut", "TV safe", "Thumbs", "Tap", "Text", "Fits", "Overlap", "Road"]
 
 # key, label on the sheet, Studio emulator id (SIM), input, the screen it reports (landscape, UI pixels, measured 2026-11-25)
 # SIM ids are the ones Studio's StudioDeviceSimulatorService:GetDeviceListAsync() lists (Studio 0.748, 2026-11-25).

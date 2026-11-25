@@ -85,7 +85,7 @@ local ok, err = pcall(function()
 	local stand = Vector3.new(placedAt.X, y, placedAt.Z) + away * 11
 	rootPart.CFrame = CFrame.lookAt(stand, Vector3.new(placedAt.X, y, placedAt.Z))
 	rootPart.AssemblyLinearVelocity = Vector3.zero
-	task.wait(1)
+	task.wait(6) -- (on phones the next-goal chip shows for 5 s when a run starts, then leaves the road clear)
 	step("Run")
 	step("Defender")
 end)

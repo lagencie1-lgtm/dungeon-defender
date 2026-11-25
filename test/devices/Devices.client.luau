@@ -11,6 +11,7 @@
 --   Text     text at least 11 px tall on phones and tablets, 12 on PC, 18 per 1080 lines of TV
 --   Fits     no text cut off (TextFits)
 --   Overlap  no two buttons on top of each other (more than 20% of the smaller one) while no panel is open
+--   Road     in a run, at most 8% of the road ahead (middle 40% wide, 18-45% down) under our UI, chips and text too
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -225,12 +226,55 @@ local function measure(step)
 			end
 		end
 	end
+	-- Road: in a run, the road ahead (the middle 40% of the width, 18-45% down the screen: 30+ studs down the lane
+	-- on the run camera) stays at least 92% clear of our UI, counting see-through chips and text too
+	if step == "Run" or step == "Defender" then
+		local r0, r1 = viewport * Vector2.new(0.3, 0.18), viewport * Vector2.new(0.7, 0.45)
+		outline("RoadAhead", r0, r1, Color3.fromRGB(255, 190, 70))
+		local cols, rows, cells, covered = 40, 27, {}, 0
+		local cw, ch = (r1.X - r0.X) / cols, (r1.Y - r0.Y) / rows
+		for _, screen in gui:GetChildren() do
+			if screen:IsA("ScreenGui") and screen.Enabled and not NOT_OURS[screen.Name] then
+				for _, obj in screen:GetDescendants() do
+					if obj:IsA("GuiObject") and shown(obj) and obj.AbsoluteSize.X > 2 and obj.AbsoluteSize.Y > 2
+						and not (step == "Defender" and Gamepad.TopPanel() and obj:IsDescendantOf(Gamepad.TopPanel())) then
+						local seen = obj.BackgroundTransparency < 0.95
+							or ((obj:IsA("ImageLabel") or obj:IsA("ImageButton")) and obj.Image ~= "" and obj.ImageTransparency < 0.95)
+							or ((obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj.Text ~= "" and obj.TextTransparency < 0.95)
+						if seen then
+							local a, b = rectOf(obj)
+							for c = math.max(0, math.floor((a.X - r0.X) / cw)), math.min(cols - 1, math.floor((b.X - r0.X) / cw)) do
+								for r = math.max(0, math.floor((a.Y - r0.Y) / ch)), math.min(rows - 1, math.floor((b.Y - r0.Y) / ch)) do
+									if not cells[r * cols + c] then
+										cells[r * cols + c] = nameOf(obj)
+										covered += 1
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		local share = covered / (cols * rows)
+		if share > 0.08 then
+			local names = {}
+			for _, name in cells do
+				names[name] = true
+			end
+			local list = {}
+			for name in names do
+				table.insert(list, name)
+			end
+			add("Road", string.format("%.0f%% of the road ahead covered by %s", share * 100, table.concat(list, ", ")))
+		end
+	end
 	local scale = gui:FindFirstChild("RealmGuardiansHud") and gui.RealmGuardiansHud.Root:FindFirstChildOfClass("UIScale")
 	print(string.format("[DEVICES] SIZE %s %s viewport %dx%d inset %d,%d touch %s pad %s hud scale %.2f, %d buttons, %d texts",
 		DEVICE, step, viewport.X, viewport.Y, inset.X, inset.Y, tostring(Ui.isTouch), tostring(Gamepad.active),
 		scale and scale.Scale or 0, counts.buttons, counts.texts))
 	local total = 0
-	for _, check in { "Cut", "TV safe", "Thumbs", "Tap", "Text", "Fits", "Overlap" } do
+	for _, check in { "Cut", "TV safe", "Thumbs", "Tap", "Text", "Fits", "Overlap", "Road" } do
 		local list = problems[check]
 		local n = list and list.n or 0
 		total += n

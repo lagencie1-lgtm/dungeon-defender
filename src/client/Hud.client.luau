@@ -1088,6 +1088,8 @@ local lastKills = GameState:GetAttribute("Kills") or 0
 local combo, lastKillTime, comboStep = 0, 0, 0
 
 local clearedJson, clearedMaps
+local GOAL_SECONDS = 5
+local goalShownText, goalHideAt = nil, 0
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
 	goldLabel.Text = math.floor(gold) .. " mana"
@@ -1184,7 +1186,18 @@ local function refreshTop()
 	-- the weekly twist is announced when a run starts; on a phone its line only covered the hub
 	eventLabel.Visible = inLobby and not isTouch
 	goalLabel.Text = nextGoal()
-	goalLabel.Visible = goalLabel.Text ~= ""
+	local showGoal = goalLabel.Text ~= ""
+	-- phones in a run: the chip sits over the road ahead (a wall 30 studs down the road was hidden), so it shows
+	-- for GOAL_SECONDS when the goal changes, then leaves the road to the game (the wave bar still says the goal)
+	if isTouch and not inLobby and showGoal then
+		if goalLabel.Text ~= goalShownText then
+			goalShownText = goalLabel.Text
+			goalHideAt = os.clock() + GOAL_SECONDS
+			task.delay(GOAL_SECONDS + 0.1, refreshTop)
+		end
+		showGoal = os.clock() < goalHideAt
+	end
+	goalLabel.Visible = showGoal
 	-- (in a run on PC and controller: under the Start wave and Speed buttons, which sit at 80-124; it covered them)
 	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8) or UDim2.new(0.5, 0, 0, isTouch and 60 or 132)
 	towerBar.Visible = not inLobby

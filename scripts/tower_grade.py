@@ -72,8 +72,16 @@ def main():
     want = band_means(pic, lambda x, y: min(pp[x, y]) < 238)
     have = band_means(ren, lambda x, y: rp[x, y][3] > 200)
     gains = []
+    # HTD_GRADE_CHROMA: how far one colour channel's gain may stray from the band's mean gain (unset = free); the
+    # barricade's grade tinted the parts the picture never shows (log ends pink, bands purple, rope green) at 0.2
+    spread = float(os.environ["HTD_GRADE_CHROMA"]) if os.environ.get("HTD_GRADE_CHROMA") else None
     for wv, hv in zip(want, have):
-        gains.append([max(0.8, min(1.2, (wv[i] / max(1e-4, hv[i])) ** strength)) for i in range(3)])
+        lo, hi = (float(v) for v in os.environ.get("HTD_GRADE_RANGE", "0.8,1.2").split(","))
+        g = [max(lo, min(hi, (wv[i] / max(1e-4, hv[i])) ** strength)) for i in range(3)]
+        if spread is not None:
+            m = sum(g) / 3
+            g = [max(m - spread, min(m + spread, x)) for x in g]
+        gains.append(g)
     path = fbx[:-4] + "_gains.json"
     json.dump({"bands": gains}, open(path, "w"))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "tower_project.py"), "--", "grade", fbx, keep, path, paint],

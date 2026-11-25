@@ -67,17 +67,17 @@ ROOT_T = (1.6, 2.6, 3.0)        # bark.png -> living root brown (about 0.5, 0.33
 MOSS_T = (2.6, 2.0, 1.4)        # leaves.png -> yellow-green moss
 CROWN_T = (2.2, 2.1, 1.6)
 # flat parts: colours as they should look on screen
-TIP = (0.9, 0.72, 0.5)          # the pale sharpened post tips
+TIP = (0.8, 0.58, 0.36)         # the sharpened post tips: warm, not pale (on the phone pale tips were the brightest thing)
 CUT = (0.93, 0.74, 0.48)        # sawn log ends
 HEART = (0.78, 0.53, 0.3)       # the darker heart rings of a sawn end
 KNOT = (0.42, 0.25, 0.13)
-ROPE = (0.9, 0.8, 0.6)
+ROPE = (0.88, 0.7, 0.45)        # warm tan like the picture (round 2 of level 1 read white and frayed)
 STUD = (0.93, 0.68, 0.27)
 BOSS = (0.88, 0.62, 0.22)       # the shield boss: smooth brass, side lit (facet_light) so it reads as a dome
 RIM = (0.86, 0.62, 0.24)        # the shield rim: smooth brass (brass.png read knobbly at this size)
 PLATE = (0.7, 0.48, 0.18)
 GLINT = (1.0, 0.95, 0.74)       # one painted highlight on the boss
-ROPE_DARK = (0.76, 0.63, 0.42)  # the second strand of the twisted rope
+ROPE_DARK = (0.68, 0.5, 0.3)  # the second strand of the twisted rope
 RED = (0.72, 0.25, 0.13)        # fire-hardened stake (the Thornwall's colour)
 CHAR = (0.26, 0.1, 0.07)        # the charred point
 DIRT = (0.5, 0.36, 0.23)
@@ -87,7 +87,7 @@ CROWN_DARK = (1.4, 1.5, 1.2)    # leaves.png -> the shaded inside of a tuft
 
 BASE = dict(length=10.4, log_r=0.62, logs=4, wing_logs=3, big_r=0.7, big_x=2.05, wing_r=0.5, wing_x=4.35, shield=1.3,
             post_up=0.4, overhang=0.75, single=1, post_fwd=0.25, tip=1.92,
-            shield_h=0.5, band_lo=0.2, step=1.66)
+            shield_h=0.5, band_lo=0.2, step=1.66, lift=0.0, pair_y=1.0)
 DEFAULTS = {
     # length: logs end to end across the road (10 studs wide); logs/wing_logs: stacked in the centre and the wings;
     # big_*: the centre post pairs (radius, x; their points start 0.4 above the top log); wing_*: the small post
@@ -96,7 +96,8 @@ DEFAULTS = {
     # toward the enemies (post_fwd, in log radii), like the picture (0 = a post pair, one on each face); tip: the
     # pencil point's length in post radii; shield_h: the shield's centre, as a share of the log stack's height;
     # band_lo: the lower iron band's height as a share of the post shaft; step: log spacing in log radii (under 2:
-    # pressed into each other, no light between them)
+    # pressed into each other, no light between them); lift: the lowest log's gap above the road (level 1's picture
+    # has its logs held up on the posts)
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
@@ -122,7 +123,7 @@ LIGHT = Vector((0.55, 0.0, 0.83)).normalized()   # facet_light: from above and t
 
 
 def post_y(r):
-    return R + r * 0.85
+    return (R + r * 0.85) * P["pair_y"]   # pair_y: how far a post pair stands apart across the wall
 
 
 def moved(o, loc=(0, 0, 0), quat=None):
@@ -264,14 +265,14 @@ def post(name, x, y, h, r):
     shaft = h - r * (P["tip"] - 0.02)
     n = max(2, int(math.ceil(shaft / 0.55)))
     tube(name, [(x, y, shaft * k / n) for k in range(n + 1)], [r * (1 - 0.03 * k / n) for k in range(n + 1)], POST, "wood", 2.4,
-         verts=12)
+         verts=16)
     cone_to(name + "Tip", (x, y, h - r * P["tip"]), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
 
 
-def rope(name, x, y, z, r, thick=0.13, turns=2):
+def rope(name, x, y, z, r, thick=0.14, turns=2):
     """a twisted rope wound round a post: two strands, a light and a darker one, twisting round each other along a
     helix (round 6's single pale tube had no twist)"""
-    per_turn = 12
+    per_turn = 20
     n = turns * per_turn + 1
     rc, o = r + thick * 0.75, thick * 0.42
     for strand, color in ((0, ROPE), (1, ROPE_DARK)):
@@ -281,7 +282,7 @@ def rope(name, x, y, z, r, thick=0.13, turns=2):
             ph = k * 1.6 + strand * math.pi
             rr = rc + math.cos(ph) * o
             pts.append((x + math.cos(a) * rr, y + math.sin(a) * rr, z + k / per_turn * thick * 2.2 + math.sin(ph) * o))
-        tube(f"{name}S{strand}", pts, [thick * 0.62] * n, color, verts=5)
+        tube(f"{name}S{strand}", pts, [thick * 0.62] * n, color, verts=8)
 
 
 def iron_band(name, x, y, z, r, all_round=False):
@@ -316,7 +317,7 @@ def shield(name, z, facing, rr):
 # --- the wall: centre section and wings ----------------------------------------------------------------------------
 HALF = P["length"] / 2
 BX, BR, WX, WR = P["big_x"], P["big_r"], P["wing_x"], P["wing_r"]
-zs = [R * 0.95 + i * STEP for i in range(P["logs"])]
+zs = [R * 0.95 + P["lift"] + i * STEP for i in range(P["logs"])]
 for c, r in ((BX, BR), (WX, WR)):
     BREAKS += [sgn * c + d * (r + 0.08) for sgn in (-1, 1) for d in (-1, 1)]
 if P["shield"] > 0:
@@ -333,7 +334,7 @@ for i, z in enumerate(zs):
         reach_out = BX + BR + R * P["overhang"]
         log(f"Log{i}", z, -reach_out, reach_out, r, 100 + i)
 # a dark core between the faces: nothing behind the logs to see through, ever
-K.block("Core", (0, 0, (0.15 + top_w - 0.3) / 2), (2 * (BX + BR + R * P["overhang"]) - 0.1 if CENTRE else P["length"] * 0.92, R * 0.9, top_w - 0.45), K.WOOD_DARK, key="wood_dark", tile=2.0)
+K.block("Core", (0, 0, (0.15 + P["lift"] + top_w - 0.3) / 2), (2 * (BX + BR + R * P["overhang"]) - 0.1 if CENTRE else P["length"] * 0.92, R * 0.9, top_w - 0.45 - P["lift"]), K.WOOD_DARK, key="wood_dark", tile=2.0)
 K.block("CoreTop", (0, 0, (top_w - 0.4 + top_c - 0.3) / 2), (2 * (BX + BR + R * P["overhang"]) - 0.1, R * 0.9, top_c - top_w + 0.1), K.WOOD_DARK,
         key="wood_dark", tile=2.0)
 

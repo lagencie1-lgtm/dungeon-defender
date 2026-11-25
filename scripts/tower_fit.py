@@ -44,7 +44,7 @@ SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w"
           "ranger3": ["roof_r", "roof_z0", "roof_z1", "look_r", "wall_top", "band_z", "wall_r0", "wall_r1", "wall2_r", "foot_r", "post_top"],
           # the barricade's centre section (the picture's square gate): log size, post size and spacing, how far the
           # posts rise above the top log and the logs reach past them, the shield
-          "barricade_l1": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang"],
+          "barricade_l1": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "lift", "pair_y"],
           "barricade_l2": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield"],
           "barricade_thorn": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield"],
           "barricade_root": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield"]}
@@ -59,7 +59,7 @@ RULES["barricade_l1"] = [lambda p: p["big_r"] > p["log_r"] * 0.8]
 
 
 # sizes that sit near zero or go negative move by a fixed amount (studs) per step instead of a share of themselves
-ADDITIVE = {"post_up": 1.0}
+ADDITIVE = {"post_up": 1.0, "lift": 0.5}
 
 
 def widths(path, rows=100):

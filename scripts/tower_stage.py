@@ -16,7 +16,7 @@ def stage(kind, arg):
     look = arg if named else "l" + arg
     picture = os.path.join(ROOT, "art", "ref3d", f"tower_{kind}_{look}.png")
     fit = picture[:-4] + "_fit.png"
-    az = AZIMUTH.get(kind, -75.0)
+    az = float(os.environ["HTD_AZ"]) if os.environ.get("HTD_AZ") else AZIMUTH.get(kind, -75.0)   # (a one-off view to try)
     return {
         "look": look,
         "builder_arg": arg,

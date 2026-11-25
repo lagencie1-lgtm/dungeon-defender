@@ -1,0 +1,6 @@
+GEMINI gemini-3.5-flash: score 6 (A was the model)
+  - model is a low-poly 3D model with low-resolution textures, whereas painting is a smooth, high-resolution 2D digital illustration.
+  - painting clearly shows the rounded cut ends of the horizontal logs with wood ring details on the right side, which are missing or clipped in model.
+  - The rope bindings in model are blocky 3D geometry, while in painting they are smoothly shaded and braided.
+  - model features noticeable dark texture seam artifacts across the center log.
+  - painting has clean, hand-painted wood grain textures with soft shading, whereas model uses pixelated, noisy textures.

@@ -98,9 +98,15 @@ heroAt(wall)
 local d = wall:GetAttribute("PathDistance")
 local goblins = {}
 for i = 1, 6 do
-	table.insert(goblins, EnemyService.Spawn("Goblin", 400, math.max(0, d - 14 - i * 2)))
+	table.insert(goblins, EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5)))
 end
-task.wait(6)
+-- wait until they hit it (the health bar shows once it is hurt)
+for _ = 1, 40 do
+	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.85 then
+		break
+	end
+	task.wait(0.5)
+end
 print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
 shot("l1_goblins")
 task.wait(3)

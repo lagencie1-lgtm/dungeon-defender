@@ -1,0 +1,4 @@
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - painting is a smooth, hand-painted 2D graphic, whereas model is a low-poly 3D model with visible polygonal faceting.
+  - painting includes detailed tree-ring cross-sections on the right ends of the horizontal logs, which are absent or distorted in model.
+  - The ropes and pointed post tops in painting are cleanly rendered and rounded, while in model they show sharp low-poly edges and texture clipping artifacts.

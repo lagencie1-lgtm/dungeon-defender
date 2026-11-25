@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 5 (A was the painting)
+  - painting is a high-detail hand-painted illustration/render, whereas model is a low-poly 3D model with visible polygonal facets and lower-resolution textures.
+  - The rope lashings in painting are smoothly detailed and rounded, while in model they consist of blocky, coarse low-poly geometry.
+  - The ends of the horizontal logs on the right show detailed circular end-grain in painting, but are flatly cut off in model.
+  - The conical tops of the vertical posts have fine carved detail in painting, whereas in model they are simple flat-shaded geometry.

@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 6 (A was the model)
+  - Art and rendering style: model is a low-poly 3D model with pixelated textures, whereas painting is a smooth, high-resolution 2D hand-painted illustration.
+  - Horizontal log ends: painting features detailed round cross-sections showing tree rings on the right side, which are flat and missing in model.
+  - Rope detail: model uses blocky low-poly 3D geometry for the ropes, while painting has clean, smoothly shaded braided rope art.
+  - Post geometry: The vertical posts and sharp tops in model show visible polygon facets, whereas painting has organic, rounded shapes.

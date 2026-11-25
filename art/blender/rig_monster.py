@@ -494,6 +494,62 @@ def spine_y(z):
 hip_z = crotch_z + 0.04 * H
 chest_z = hip_z + (shoulder_z - hip_z) * 0.55
 spine_z = hip_z + (shoulder_z - hip_z) * 0.15
+
+# hand-marked key points (art/blender/rig_landmarks/<name>.json, studs, as this script places the model: front -Y,
+# left +X, standing on the ground) for models whose cape, club, crown or sleeves fool the automatic landmarks.
+# They replace the automatic ones; "chains" adds cloth chains (cape, sleeves) that trail and sway.
+OV = None
+_ov_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rig_landmarks", NAME + ".json")
+if os.path.exists(_ov_path):
+    import json
+    OV = json.load(open(_ov_path))
+    V = lambda k: Vector(OV[k])  # noqa: E731
+    crotch_z, hip_z, chest_z, neck_z = OV["crotch"][2], OV["hips"][2], OV["chest"][2], OV["neck"][2]
+    spine_z = hip_z + (chest_z - hip_z) * 0.4
+    shoulders = {"L": V("shoulder_L"), "R": V("shoulder_R")}
+    shoulder_z = (shoulders["L"].z + shoulders["R"].z) / 2
+    armpit_z = {s: shoulders[s].z - 0.06 * H for s in ("L", "R")}
+    arm_inner_pit = {s: abs(shoulders[s].x) - 0.05 * H for s in ("L", "R")}
+    for s in ("L", "R"):
+        wr, tip = V("wrist_" + s), V("hand_tip_" + s)
+        hands[s] = {"c": (wr + tip) / 2, "top": max(wr.z, tip.z), "bottom": min(wr.z, tip.z)}
+        feet[s] = V("ankle_" + s)
+    log("hand-marked key points from", _ov_path)
+VCOL = None
+if OV and OV.get("cloth_colors") and image:
+    # the colour of each vertex, from the texture (a red cape, its fur hem): cloth is told from arms by colour too
+    import numpy as np
+    wimg, himg = image.size
+    px = np.empty(wimg * himg * 4, dtype=np.float32)
+    image.pixels.foreach_get(px)
+    px = px.reshape(himg, wimg, 4)
+    uvl = me.uv_layers.active.data
+    acc = [[0.0, 0.0, 0.0, 0] for _ in range(NV)]
+    for loop in me.loops:
+        u, v = uvl[loop.index].uv
+        c = px[min(himg - 1, max(0, int(v * himg))), min(wimg - 1, max(0, int(u * wimg)))]
+        a = acc[loop.vertex_index]
+        a[0] += c[0]; a[1] += c[1]; a[2] += c[2]; a[3] += 1
+    VCOL = [(a[0] / a[3] * 255, a[1] / a[3] * 255, a[2] / a[3] * 255) if a[3] else (0, 0, 0) for a in acc]
+
+
+def cloth_color(i):
+    """True when vertex i has one of the hand-marked cloth colours (a red cape, its fur) and is below the neck."""
+    if not VCOL or i >= len(VCOL) or P[i].z >= OV["neck"][2]:
+        return False
+    tol = OV.get("cloth_color_tolerance", 60)
+    return any(sum((VCOL[i][k] - c[k]) ** 2 for k in range(3)) ** 0.5 < tol for c in OV.get("cloth_colors", []))
+
+
+# the cloth mask by colour, cleaned: a vertex is cloth when most of its neighbourhood is (paint noise made single
+# vertices flip, and a cut along a noisy edge shredded the cape)
+CLOTH_MASK = None
+if VCOL:
+    m = [cloth_color(i) for i in range(NV)]
+    for _ in range(3):
+        m = [(sum(m[j] for j in NEIGH[i]) + m[i]) * 2 > len(NEIGH[i]) + 1 for i in range(NV)]
+    CLOTH_MASK = m
+    log("cloth by colour: %d vertices" % sum(m))
 log("landmarks: crotch %.2f hips %.2f chest %.2f shoulders %.2f neck %.2f top %.2f" % (
     crotch_z, hip_z, chest_z, shoulder_z, neck_z, H))
 for side in ("L", "R"):
@@ -536,8 +592,23 @@ for comp in islands:
             log("weapon found: %d vertices, reaching %.2f from the %s hand" % (len(comp), reach,
                                                                             "right" if side == "R" else "left"))
             break
+if weapon:
+    # the spikes, studs and bands on a club are often separate little pieces: take every small piece that lies inside
+    # the weapon's box too (they stayed behind, floating, when only the main piece swung)
+    wpts = [P[i] for i in weapon]
+    blo = Vector([min(p[k] for p in wpts) - 0.03 * H for k in range(3)])
+    bhi = Vector([max(p[k] for p in wpts) + 0.03 * H for k in range(3)])
+    extra = 0
+    wset = set(weapon)
+    for comp in islands:
+        if len(comp) < NV * 0.05 and not (set(comp) & wset) and all(
+                blo.x <= P[i].x <= bhi.x and blo.y <= P[i].y <= bhi.y and blo.z <= P[i].z <= bhi.z for i in comp):
+            weapon = weapon + comp
+            extra += len(comp)
+    if extra:
+        log("weapon: %d more vertices in small pieces on it (spikes, bands)" % extra)
 if not weapon:
-    log("no weapon: nothing reaches out of the right hand")
+    log("no weapon: nothing reaches out of either hand")
 
 # ---------------------------------------------------------------------------------------------------------------
 # 3 armature
@@ -593,6 +664,39 @@ for side, s in (("L", 1), ("R", -1)):
     bone("UpperLeg." + side, hip, knee, "Hips", roll_up=FWD)
     bone("LowerLeg." + side, knee, ankle, "UpperLeg." + side, True, FWD)
     bone("Foot." + side, ankle, toe, "LowerLeg." + side, True, Vector((0, 0, 1)))
+if OV:
+    V = lambda k: Vector(OV[k])  # noqa: E731
+    spine_p = V("hips").lerp(V("chest"), 0.4)
+    place = {
+        "Hips": (V("hips"), spine_p), "Spine": (spine_p, V("chest")), "Chest": (V("chest"), V("neck") - Vector((0, 0, 0.05 * H))),
+        "Neck": (V("neck") - Vector((0, 0, 0.05 * H)), V("neck")), "Head": (V("neck"), V("head_top")),
+    }
+    for s in ("L", "R"):
+        place["UpperArm." + s] = (V("shoulder_" + s), V("elbow_" + s))
+        place["LowerArm." + s] = (V("elbow_" + s), V("wrist_" + s))
+        place["Hand." + s] = (V("wrist_" + s), V("hand_tip_" + s))
+        if "hip_" + s in OV:
+            place["UpperLeg." + s] = (V("hip_" + s), V("knee_" + s))
+            place["LowerLeg." + s] = (V("knee_" + s), V("ankle_" + s))
+            place["Foot." + s] = (V("ankle_" + s), V("toe_" + s))
+    for name, (hd, tl) in place.items():
+        if name in eb:
+            eb[name].use_connect = False
+            eb[name].head, eb[name].tail = hd, tl
+            eb[name].align_roll(Vector((0, 0, 1)) if name.startswith("Foot") else FWD)
+    # cloth chains: a list of joints each, hanging from the chest (a cape) or a forearm (a sleeve)
+    CHAINS = {}
+    for cname, spec in OV.get("chains", {}).items():
+        parent = spec.get("parent", "Chest")
+        pts = [Vector(q) for q in spec["points"]]
+        names = []
+        for n in range(len(pts) - 1):
+            bn = "%s%d" % (cname, n + 1)
+            bone(bn, pts[n], pts[n + 1], parent, n > 0, Vector((0, 0, 1)) if abs((pts[n + 1] - pts[n]).normalized().z) < 0.9 else FWD)
+            parent = bn
+            names.append(bn)
+        CHAINS[cname] = names
+        log("cloth chain %s: %d bones" % (cname, len(names)))
 # a robe: four hem bones from the hips down to the hem's front, back and sides (it sways and trails)
 HEM = {}
 if KIND == "robe":
@@ -615,14 +719,14 @@ TAIL_V, WING_V = [], {"L": [], "R": []}
 # (the back is measured at the chest, where no tail hangs; the tail lies low behind it)
 back_ref = behind_back(chest_z)
 for i, p in enumerate(P):
-    if p.z < chest_z and p.y > back_ref + 0.1 * H and abs(p.x) < 0.3 * H:
+    if not OV and p.z < chest_z and p.y > back_ref + 0.1 * H and abs(p.x) < 0.3 * H:
         TAIL_V.append(i)
 if len(TAIL_V) < 20:
     TAIL_V = []
 # wings: out past the shoulders, from the armpits up (arms hang below; wings spread out at shoulder height)
 for i, p in enumerate(P):
     s = "L" if p.x > 0 else "R"
-    if i not in TAIL_V and armpit_z[s] - 0.02 * H < p.z < neck_z + 0.15 * H             and abs(p.x) > abs(shoulders[s].x) + 0.06 * H and p.y > shoulders[s].y - 0.02 * H:
+    if not OV and i not in TAIL_V and armpit_z[s] - 0.02 * H < p.z < neck_z + 0.15 * H             and abs(p.x) > abs(shoulders[s].x) + 0.06 * H and p.y > shoulders[s].y - 0.02 * H:
         WING_V[s].append(i)
 for s in ("L", "R"):
     if len(WING_V[s]) < 20:
@@ -678,6 +782,8 @@ for n in BONES:
         GROUP[n] = "tail"
     elif n.startswith("Hem"):
         GROUP[n] = "hem"
+    elif OV and any(n.startswith(c) for c in OV.get("chains", {})):
+        GROUP[n] = "cloth"
     elif n.startswith("Wing"):
         GROUP[n] = "wing" + n[-1]
     else:
@@ -740,9 +846,18 @@ for _pass in range(3):  # a cut changes the next binding a little: look again un
         if arm and (other.startswith("leg") or other == "torso"):
             if max(P[a].z, P[b].z) < armpit_z[arm[-1]] - 0.15 * H:
                 cut.append(e.index)
-        # a wing welded to the arm next to it (a wing grows from the back, never from the arm)
-        elif arm and other.startswith("wing"):
+        # a wing welded to the arm next to it (a wing grows from the back, never from the arm), and a cape welded to
+        # the arm it hangs beside (the cape flapped out with the raised arm)
+        elif arm and (other.startswith("wing") or other == "cloth"):
             cut.append(e.index)
+        # (cutting the arm from the cape by raw colour shredded the cape's front edge, 2026-11-25; see below)
+    # a cape is its own garment: cut it off the body all along its edge (the cleaned colour mask), so arms and legs
+    # move under it instead of dragging it
+    if CLOTH_MASK and _pass == 0 and OV.get("cut_cloth_edge"):  # (off by default: on the King it shredded the cape)
+        for e in me.edges:
+            a, b = e.vertices
+            if a < NV and b < NV and CLOTH_MASK[a] != CLOTH_MASK[b] and e.index not in cut:
+                cut.append(e.index)
         # (the jaw welded to the shoulder pads is NOT cut: tried 2026-11-25, it opened holes between the pads and
         # the vest collar when the arms rose; the head mask in allowed() keeps the pads off the head instead)
     if not cut:
@@ -809,6 +924,8 @@ def allowed(i):
         return {"Weapon"}
     if i in TAIL_SET:
         return {"Hips", "Tail1", "Tail2", "Tail3"}
+    if i in CLOTH_OF:
+        return {"Chest", "Spine", "Hips"} | set(CHAINS[CLOTH_OF[i]])
     if i in WING_SET:
         return {"Chest", "Wing." + ("L" if P[i].x > 0 else "R")}
     if i in HEAD_V:
@@ -914,6 +1031,24 @@ GROUPS = [group_of(w) for w in W]
 # beside the jaw stay with the chest, or they were dragged up when the head turned)
 HEAD_V = set(i for i in HEAD_V if GROUPS[i] == "head")
 NECK_HALF = neck_half
+# cloth: vertices behind or beside the body that lie nearer a chain bone than any body bone (a cape, a sleeve)
+CLOTH_OF = {}
+if OV and OV.get("chains"):
+    chain_bones = {bn: c for c, names in CHAINS.items() for bn in names}
+    body_bones = [b for b in BONES if b not in chain_bones and b != "Root"]
+    cols = OV.get("cloth_colors", [])
+    tol = OV.get("cloth_color_tolerance", 60)
+    for i in range(NV):
+        if i in HEAD_V or i in WEAPON_V:
+            continue
+        if (CLOTH_MASK[i] if CLOTH_MASK and i < len(CLOTH_MASK) else cloth_color(i)):
+            CLOTH_OF[i] = chain_bones[min((seg_dist(P[i], *REST[b]), b) for b in chain_bones)[1]]
+            continue
+        dc = min((seg_dist(P[i], *REST[b]), b) for b in chain_bones)
+        db = min(seg_dist(P[i], *REST[b]) for b in body_bones)
+        if dc[0] < db * OV.get("cloth_bias", 1.0):
+            CLOTH_OF[i] = chain_bones[dc[1]]
+    log("cloth vertices: %d" % len(CLOTH_OF))
 ALLOWED = [(allowed(i) & set(BONES)) or {"Hips"} for i in range(NV)]  # (only bones this rig has)
 auto_zero = sum(1 for w in W if sum(w.values()) < 1e-4)
 W, zero = clean(W)

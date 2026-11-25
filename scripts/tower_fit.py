@@ -46,8 +46,8 @@ SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w"
           # posts rise above the top log and the logs reach past them, the shield
           "barricade_l1": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "lift", "pair_y"],
           "barricade_l2": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield"],
-          "barricade_thorn": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "stake_len", "front_len", "crest_len"],
-          "barricade_root": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "reach", "sapling"]}
+          "barricade_thorn": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "stake_len", "front_len"],   # (crest_len fixed: an intended difference from the picture)
+          "barricade_root": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "reach", "sapling", "root_r", "spread", "crown"]}
 RULES = {"ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half"] <= p["leg_half"] + 0.7],
          "ranger3": [lambda p: p["wall_r0"] >= p["wall_r1"] >= p["wall2_r"], lambda p: p["roof_r"] > p["look_r"],
                      lambda p: p["band_z"] < p["wall_top"] - 2, lambda p: p["post_top"] < p["roof_z0"] + 0.2],

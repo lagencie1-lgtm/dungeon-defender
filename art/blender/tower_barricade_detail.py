@@ -101,7 +101,7 @@ DEFAULTS = {
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
-    "root": dict(BASE, reach=3.0, sapling=1.0),
+    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=2.4, crown=1.4),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -406,7 +406,7 @@ if stage == "thorn":
     # the crest: red spikes driven into the top logs, leaning toward the enemies, seen from both sides
     for top, x_from, x_to, tag in ((top_c, -(BX - BR - 0.1), BX - BR - 0.1, "C"),
                                     (top_w, BX + BR + 0.25, WX - WR - 0.15, "R"), (top_w, -(WX - WR - 0.15), -(BX + BR + 0.25), "L")):
-        if CENTRE and tag != "C":
+        if (CENTRE and tag != "C") or P["crest_len"] <= 0:   # (crest_len 0: no crest, to measure what it costs)
             continue
         n = max(1, int(round((x_to - x_from) / P["crest"])) + 1)
         for k in range(n):
@@ -429,15 +429,18 @@ if stage == "root":
 
     def splay(name, pts, radii, x, s, r0, lean, dys=((0.6, 0.2, 0.62), (1.2, 0.1, 0.45), (1.8, 0.06, 0.3))):
         dys = tuple(dys) + ((reach - R, 0.04, 0.14),)
-        for (dy, dz, rr) in dys:
-            pts.append((x + (dy - 0.5) * 0.3 * lean, s * (R + dy), dz))
+        n_dys = len(dys)
+        for i, (dy, dz, rr) in enumerate(dys):
+            # (round 7 of the pipeline: the picture's roots run far out to the sides over the ground, not just forward)
+            side = P["spread"] * ((i + 1) / n_dys) ** 1.4
+            pts.append((x + (dy - 0.5) * 0.3 * lean + lean * side, s * (R + dy), dz))
             radii.append(r0 * rr)
-        tube(name, pts, radii, ROOT_T, "bark", 1.6, verts=10)
-        fork = Vector(pts[-len(dys)])
-        for f, sx in enumerate((-1, 1)):
-            tip = fork + Vector((sx * rnd.uniform(0.9, 1.3), s * rnd.uniform(0.6, 1.0), -0.12))
-            bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.07))
-            tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.42, r0 * 0.3, r0 * 0.08], ROOT_T, "bark", 1.6, verts=8)
+        tube(name, pts, radii, ROOT_T, "bark", 1.6, verts=12)
+        fork = Vector(pts[-n_dys])
+        for f, (sx, far) in enumerate(((-1, 1.0), (1, 1.0), (lean, 1.6))):
+            tip = fork + Vector((sx * rnd.uniform(1.2, 1.8) * far, s * rnd.uniform(0.7, 1.2), -0.12))
+            bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
+            tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.5, r0 * 0.34, r0 * 0.08], ROOT_T, "bark", 1.6, verts=8)
 
     def root(name, x0, s, phase, top, r0=0.5, w=0.14):
         pts = [(x0, -s * 0.2, top + 0.06), (x0 + w * 0.3, s * R * 0.5, top + 0.16), (x0 + w * 0.5, s * (R + 0.22), top - 0.45)]
@@ -451,7 +454,8 @@ if stage == "root":
             radii.append(r0 * (0.95 - 0.035 * k))
         splay(name, pts, radii, pts[-1][0], s, r0, 1 if x0 > 0 else -1)
 
-    def wind(name, px, s, r, turns=1.5, r0=0.42):
+    def wind(name, px, s, r, turns=1.5, r0=None):
+        r0 = r0 or P["root_r"]
         py, ra = s * post_y(r), r + 0.22
         a_end = rad(90) if s > 0 else rad(270)
         a0 = a_end - turns * 2 * math.pi
@@ -493,21 +497,24 @@ if stage == "root":
     h = P["sapling"]
     fork = Vector((sx + 0.06, 0.0, top_c + h))
     tube("Sapling", [(sx, 0.0, top_c - 0.15), (sx + 0.12, 0.04, top_c + h * 0.5), fork], [0.26, 0.2, 0.15], ROOT_T, "bark", 1.2, verts=8)
-    for k, (dx, dy, dz) in enumerate(((-1.0, 0.15, 0.45), (0.95, -0.1, 0.55), (0.1, 0.75, 0.65), (-0.1, -0.7, 0.75))):
+    crown = P["crown"]
+    for k, (dx, dy, dz) in enumerate(((-1.0, 0.15, 0.45), (0.95, -0.1, 0.55), (0.1, 0.75, 0.65), (-0.1, -0.7, 0.75),
+                                      (-0.6, -0.4, 1.05), (0.55, 0.35, 1.0))):
+        dx, dy, dz = dx * crown, dy * crown, dz * crown
         end = fork + Vector((dx, dy, dz))
         bend = fork.lerp(end, 0.5) + Vector((0, 0, 0.14))
         tube(f"Branch{k}", [fork, bend, end], [0.12, 0.09, 0.06], ROOT_T, "bark", 1.2, verts=6)
         # each tuft: a darker leafy core and a shell of single bright leaves all over its upper part (round 5's tufts
         # were textured balls with a few leaves and read as faceted blobs)
         centre = end + Vector((0, 0, 0.2))
-        K.ball(f"Tuft{k}", centre, 0.42, CROWN_DARK, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
+        K.ball(f"Tuft{k}", centre, 0.42 * crown, CROWN_DARK, (1.15, 1.15, 0.8), seg=14, key="leaves", tile=1.0)
         golden = math.pi * (3 - math.sqrt(5))
-        for j in range(14):     # fewer, bigger leaves: single leaf shapes must read at game distance
-            zz = 0.95 - 1.2 * (j + 0.5) / 14          # from the top down to a little below the middle
+        for j in range(18):     # big single leaves: they must read at game distance
+            zz = 0.95 - 1.2 * (j + 0.5) / 18          # from the top down to a little below the middle
             ring = math.sqrt(max(0.0, 1 - zz * zz))
             a = golden * j + k
             n = Vector((math.cos(a) * ring, math.sin(a) * ring, zz)).normalized()
-            K.leaf(f"Leaf{k}_{j}", centre + Vector((n.x * 0.6, n.y * 0.6, n.z * 0.42)), n, rnd.uniform(0.62, 0.74),
+            K.leaf(f"Leaf{k}_{j}", centre + Vector((n.x * 0.6, n.y * 0.6, n.z * 0.42)) * crown, n, rnd.uniform(0.62, 0.74) * crown ** 0.5,
                    LEAF if j % 3 else LEAF_LIGHT, turn=rnd.uniform(-0.8, 0.8))
 
 if not os.environ.get("HTD_FAST"):

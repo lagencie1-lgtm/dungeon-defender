@@ -32,6 +32,8 @@ try {
     }
     if (-not $log) { throw "no Studio log" }
     $seen = @{}
+    Start-Sleep 5
+    (New-Object -ComObject WScript.Shell).AppActivate($proc.Id) | Out-Null
     $deadline = (Get-Date).AddSeconds($Limit)
     while ((Get-Date) -lt $deadline) {
         Set-Content $Lock "barricade thread (screenshots, RealmGuardians-barricade) $(Get-Date -Format s)"
@@ -42,13 +44,17 @@ try {
             $seen[$name] = $true
             if ($name -eq "done") { continue }
             $title = (Get-Process -Id $proc.Id).MainWindowTitle
+            # Studio only redraws its viewport while it has the focus: an unfocused window gave the same stale frame
+            # for every shot (the wall's health bar never showed although the wall was being hit)
+            (New-Object -ComObject WScript.Shell).AppActivate($proc.Id) | Out-Null
+            Start-Sleep -Milliseconds 600
             & $FFmpeg -y -loglevel error -f gdigrab -i "title=$title" -frames:v 1 (Join-Path $out "$name.png")
             Write-Output "shot $name"
         }
         if ($seen.ContainsKey("done") -or ([string]$text -match "play test finished")) { break }
         Start-Sleep -Milliseconds 400
     }
-    Select-String -Path $log -Pattern "\[SHOT\]|Script '.*', Line|Error: " | ForEach-Object { $_.Line -replace '^[^\[]*\[FLog::\w+\] ', '' } | Select-Object -First 60
+    Select-String -Path $log -Pattern "\[SHOT\]|\[BARCHECK\]|Script '.*', Line|Error: " | ForEach-Object { $_.Line -replace '^[^\[]*\[FLog::\w+\] ', '' } | Select-Object -First 60
 } finally {
     if ($proc) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
     Remove-Item $Lock -Force -ErrorAction SilentlyContinue

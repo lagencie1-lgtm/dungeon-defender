@@ -891,6 +891,7 @@ local function wallBar(t)
 		gui.Name = "WallHealth"
 		gui.Size = UDim2.fromOffset(96, 12)
 		gui.MaxDistance = 140
+		gui.AlwaysOnTop = true -- (the wall's own posts and the units at it must not hide it)
 		gui.Adornee = model.PrimaryPart
 		gui.Parent = model
 		local back = Instance.new("Frame")
@@ -910,8 +911,16 @@ local function wallBar(t)
 		fill.Parent = back
 		Instance.new("UICorner", fill).CornerRadius = UDim.new(0.5, 0)
 	end
+	-- the bar sits on the player's side of the wall at about 55% of its height (above the wall it ended up under the
+	-- wave panel at the top of a phone screen whenever the wall was far up the road)
 	local _, height = lookFor(t.type, t.level, t.branch)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, (height or 3.4) + 1.3, 0)
+	local adornee = gui.Adornee
+	if adornee then
+		local dir = t.wall.Dir and Vector3.new(t.wall.Dir.X, 0, t.wall.Dir.Z) or Vector3.zero
+		dir = dir.Magnitude > 0 and dir.Unit or dir
+		local spot = t.position + Vector3.new(0, (height or 3.4) * 0.55, 0) + dir * (t.wall.Depth + 1.2)
+		gui.StudsOffsetWorldSpace = spot - adornee.Position
+	end
 	local share = math.clamp(t.wall.Health / t.wall.MaxHealth, 0, 1)
 	local fill = gui.Back.Fill
 	fill.Size = UDim2.fromScale(share, 1)

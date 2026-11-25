@@ -123,6 +123,13 @@ for _ = 1, 60 do
 	task.wait(0.5)
 end
 print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
+player:SetAttribute("CheckBar", true)
+task.wait(0.5)
 shot("l2_health")
+for k = 2, 3 do
+	task.wait(2)
+	print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
+	shot("l2_health" .. k)
+end
 task.wait(3)
 shot("done")

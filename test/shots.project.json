@@ -3,17 +3,30 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "../src/shared" }
+      "Shared": {
+        "$path": "../src/shared"
+      }
     },
     "ServerScriptService": {
-      "Server": { "$path": "../src/server" },
-      "BarricadeShots": { "$path": "shots/BarricadeShots.server.luau" }
+      "Server": {
+        "$path": "../src/server"
+      },
+      "BarricadeShots": {
+        "$path": "shots/BarricadeShots.server.luau"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "../src/client" }
+        "Client": {
+          "$path": "../src/client"
+        },
+        "BarCheck": {
+          "$path": "shots/BarCheck.client.luau"
+        }
       }
     },
-    "MaterialService": { "$path": "../src/materials" }
+    "MaterialService": {
+      "$path": "../src/materials"
+    }
   }
 }

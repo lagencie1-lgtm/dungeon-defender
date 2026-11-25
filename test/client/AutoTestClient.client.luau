@@ -96,6 +96,15 @@ local soundOk, soundError = pcall(function()
 end)
 log("sound check", soundOk and "OK" or ("FAILED: " .. tostring(soundError)))
 
+-- Roblox's own health bar and hotbar repeat our HUD (client/CoreUi): both stay off
+local coreOk, coreError = pcall(function()
+	local StarterGui = game:GetService("StarterGui")
+	for _, kind in { Enum.CoreGuiType.Health, Enum.CoreGuiType.Backpack } do
+		assert(not StarterGui:GetCoreGuiEnabled(kind), "Roblox's " .. kind.Name .. " is still on")
+	end
+end)
+log("core ui off", coreOk and "OK" or ("FAILED: " .. tostring(coreError)))
+
 local looksOk, looksError = pcall(verifyGearLooks)
 log("gear looks", looksOk and "OK" or ("FAILED: " .. tostring(looksError)))
 

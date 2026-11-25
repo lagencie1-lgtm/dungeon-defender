@@ -1,0 +1,23 @@
+{
+ "length": 10.4,
+ "log_r": 0.675,
+ "logs": 5,
+ "wing_logs": 3,
+ "big_r": 0.679,
+ "big_x": 2.085,
+ "wing_r": 0.5,
+ "wing_x": 4.35,
+ "shield": 1.156,
+ "post_up": -0.051,
+ "overhang": 0.511,
+ "single": 1,
+ "post_fwd": 0.25,
+ "tip": 1.181,
+ "shield_h": 0.66,
+ "band_lo": 0.42,
+ "step": 1.56,
+ "lift": 0.0,
+ "pair_y": 1.0,
+ "reach": 2.807,
+ "sapling": 0.996
+}

@@ -371,7 +371,8 @@ if stage == "thorn":
     base_y = R + 0.6
     rail_y = R + 1.25
     rail_z = 0.02 + (rail_y - base_y) * math.tan(tilt)
-    K.block("Rail", (0, rail_y, rail_z), (P["length"] * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
+    RACK = 2 * (BX + BR + R * P["overhang"]) / 0.86 if CENTRE else P["length"]   # (centre-only: the picture's rack)
+    K.block("Rail", (0, rail_y, rail_z), (RACK * 0.86, 0.56, 0.62), RAIL_LIGHT, key="wood_dark", tile=2.0, bevel=0.1)
     front_y = 0.0
 
     def stake(name, base, d, ln, r0, verts=10):
@@ -381,7 +382,7 @@ if stage == "thorn":
         return base + d * ln
 
     for k in range(P["pairs"]):
-        xp = ((k + 0.5) / P["pairs"] - 0.5) * P["length"] * 0.8
+        xp = ((k + 0.5) / P["pairs"] - 0.5) * RACK * 0.8
         for j, lean in enumerate((0.3, -0.3)):
             d = Vector((lean, math.cos(tilt), math.sin(tilt))).normalized()
             reach_t = (rail_y - base_y) / d.y
@@ -396,7 +397,7 @@ if stage == "thorn":
             K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.32, rail_z + dz), 0.09, STUD, seg=6)
     ft = rad(34)
     for k in range(P["front"]):
-        x = ((k + 0.5) / P["front"] - 0.5) * P["length"] * 0.74 + rnd.uniform(-0.12, 0.12)
+        x = ((k + 0.5) / P["front"] - 0.5) * RACK * 0.74 + rnd.uniform(-0.12, 0.12)
         base = Vector((x, R + 1.75, 0.02))
         d = Vector((rnd.uniform(-0.08, 0.08), math.cos(ft), math.sin(ft))).normalized()
         tip = stake(f"Low{k}", base, d, P["front_len"] * (0.92 + 0.08 * rnd.random()), 0.23, verts=8)
@@ -405,6 +406,8 @@ if stage == "thorn":
     # the crest: red spikes driven into the top logs, leaning toward the enemies, seen from both sides
     for top, x_from, x_to, tag in ((top_c, -(BX - BR - 0.1), BX - BR - 0.1, "C"),
                                     (top_w, BX + BR + 0.25, WX - WR - 0.15, "R"), (top_w, -(WX - WR - 0.15), -(BX + BR + 0.25), "L")):
+        if CENTRE and tag != "C":
+            continue
         n = max(1, int(round((x_to - x_from) / P["crest"])) + 1)
         for k in range(n):
             x = x_from + (x_to - x_from) * (k / (n - 1) if n > 1 else 0.5)
@@ -412,7 +415,7 @@ if stage == "thorn":
             d = Vector((rnd.uniform(-0.1, 0.1), math.sin(lean), math.cos(lean))).normalized()
             stake(f"Crest{tag}{k}", Vector((x, -0.08, top - 0.4)), d, P["crest_len"] * (0.9 + 0.1 * rnd.random()), 0.23, verts=8)
     # braces behind, so the wall leans into the hits (and the model's box stays centred on the wall line)
-    for k, x in enumerate((-(BX + WX) / 2, (BX + WX) / 2)):
+    for k, x in enumerate(() if CENTRE else (-(BX + WX) / 2, (BX + WX) / 2)):
         top_b = Vector((x, -R * 0.55, top_w * 0.72))
         foot = Vector((x, -(front_y - 0.5), 0.08))   # (its dirt heap then ends where the front stakes do)
         K.limb(f"Brace{k}", foot, top_b, 0.26, 0.23, STAKE, verts=10, end=False, key="wood", tile=2.4)
@@ -468,10 +471,13 @@ if stage == "root":
     for s, tag in ((1, "F"), (-1, "B")):
         wind(f"Wind{tag}0", BX + 0.06 * s, s, BR, turns=1.5 if s > 0 else 1.3)
         wind(f"Wind{tag}1", -BX + 0.06 * s, s, BR, turns=1.3 if s > 0 else 1.5)
-        root(f"Root{tag}0", -wing_mid, s, 0.7 if s > 0 else -0.6, top_w, r0=0.48 if s > 0 else 0.44)
-        root(f"Root{tag}1", wing_mid, s, 2.3 if s > 0 else -1.9, top_w, r0=0.48 if s > 0 else 0.44)
+        if not CENTRE:   # (the wings' roots)
+            root(f"Root{tag}0", -wing_mid, s, 0.7 if s > 0 else -0.6, top_w, r0=0.48 if s > 0 else 0.44)
+            root(f"Root{tag}1", wing_mid, s, 2.3 if s > 0 else -1.9, top_w, r0=0.48 if s > 0 else 0.44)
     # moss: a flat mat along the tops that hangs over both faces
     for top, xa, xb, n, tag in ((top_c, -(BX + BR), BX + BR, 7, "C"), (top_w, BX + BR, HALF * 0.92, 3, "R"), (top_w, -HALF * 0.92, -(BX + BR), 3, "L")):
+        if CENTRE and tag != "C":
+            continue
         for k in range(n):
             x = xa + (xb - xa) * (k + 0.5) / n + rnd.uniform(-0.15, 0.15)
             K.ball(f"Moss{tag}{k}", (x, rnd.uniform(-0.12, 0.12), top + 0.02), rnd.uniform(0.62, 0.78), MOSS_T, (1.45, 1.2, 0.55), seg=12,
@@ -483,7 +489,7 @@ if stage == "root":
                        seg=10, key="leaves", tile=1.2)
     # the sapling on top of the centre, right of the middle (like the picture): a crooked trunk that splits into four
     # branches, each with a big leafy tuft, about half the wall's height
-    sx = BX * 0.45
+    sx = -BX * 0.45   # (-X: the right of the picture, seen from the enemy side at azimuth 105)
     h = P["sapling"]
     fork = Vector((sx + 0.06, 0.0, top_c + h))
     tube("Sapling", [(sx, 0.0, top_c - 0.15), (sx + 0.12, 0.04, top_c + h * 0.5), fork], [0.26, 0.2, 0.15], ROOT_T, "bark", 1.2, verts=8)

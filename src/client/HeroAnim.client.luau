@@ -150,20 +150,37 @@ local function findJoints(character)
 	for name, spec in JOINTS do
 		local part = character:FindFirstChild(spec[1])
 		local joint = part and part:FindFirstChild(spec[2])
-		if joint and joint:IsA("Motor6D") then
+		-- Motor6D on classic bodies, AnimationConstraint on bodies with Roblox's upgraded joints (new places use
+		-- them by default: with Motor6D only, the hero did not move at all, 2026-11-25). Both have a Transform.
+		if joint and (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) then
 			found[name] = joint
 		end
 	end
 	return found
 end
 
--- leg lengths from the joints themselves (hip to knee, knee to ankle)
+-- where a joint sits on its parent part (C0) and on its own part (C1): Motor6D has them, an AnimationConstraint
+-- has them as its two attachments
+local function c0(joint)
+	if joint:IsA("Motor6D") then
+		return joint.C0
+	end
+	return joint.Attachment0 and joint.Attachment0.CFrame or CFrame.identity
+end
+local function c1(joint)
+	if joint:IsA("Motor6D") then
+		return joint.C1
+	end
+	return joint.Attachment1 and joint.Attachment1.CFrame or CFrame.identity
+end
+
+-- leg lengths from the joints themselves: thigh (hip to knee) and shin (knee to ankle)
 local function legLength(j, hip, knee, ankle)
 	local h, k, a = j[hip], j[knee], j[ankle]
 	if not (h and k and a) then
-		return 2
+		return { 1, 1 }
 	end
-	return (k.C0.Position - h.C1.Position).Magnitude + (a.C0.Position - k.C1.Position).Magnitude
+	return { (c0(k).Position - c1(h).Position).Magnitude, (c0(a).Position - c1(k).Position).Magnitude }
 end
 
 local function stateOf(character)
@@ -422,17 +439,38 @@ local function animate(st, dt, now)
 	for _, side in { "R", "L" } do
 		local hip, knee, ankle = j[side .. "Hip"], j[side .. "Knee"], j[side .. "Ankle"]
 		if hip and knee then
-			local len = (side == "R" and st.legR or st.legL) * scale
-			-- a crouch of `drop`: thigh forward by a, shin back by 2a, foot level again by a
-			local a = math.acos(math.clamp(1 - math.max(drop, 0) / len, 0.2, 1))
-			-- the legs lean back against the body's lean and lunge, so the feet do not swing forward with it
-			local back = -pose.Root.X * RAD - math.atan2(push, len)
+			local leg = side == "R" and st.legR or st.legL
+			local l1, l2 = leg[1] * scale, leg[2] * scale
+			local len = l1 + l2
 			local hipTurn = pose[side .. "Hip"] * RAD
 			local kneeTurn = pose[side .. "Knee"] * RAD
+			-- the legs lean back against the body's lean and lunge, so the feet do not swing forward with it
+			local lunge = math.atan2(push, len)
+			local back = -pose.Root.X * RAD - lunge
+			-- a crouch of `drop`: thigh forward by a, shin back by 2a, foot level again. a is solved on the leg as
+			-- the walk and idle already bent it (about 30 degrees at the knee): assuming a straight leg lifted the
+			-- feet off the ground in the ready stance, 2026-11-25
+			local thigh0 = baseOf(st, hip):ToEulerAnglesYXZ() + hipTurn.X
+			local bend0 = baseOf(st, knee):ToEulerAnglesYXZ() + kneeTurn.X
+			local function reach(add)
+				local th = thigh0 + add - lunge
+				return l1 * math.cos(th) + l2 * math.cos(th + bend0 - 2 * add)
+			end
+			local goal = l1 * math.cos(thigh0) + l2 * math.cos(thigh0 + bend0) - math.max(drop, 0)
+			local lo, hi = 0, 1.4
+			for _ = 1, 16 do
+				local mid = (lo + hi) / 2
+				if reach(mid) > goal then
+					lo = mid
+				else
+					hi = mid
+				end
+			end
+			local a = (lo + hi) / 2
 			write(st, hip, CFrame.fromEulerAnglesYXZ(hipTurn.X + a + back, hipTurn.Y, hipTurn.Z - pose.Root.Z * RAD))
 			write(st, knee, CFrame.fromEulerAnglesYXZ(kneeTurn.X - 2 * a, kneeTurn.Y, kneeTurn.Z))
 			if ankle then
-				write(st, ankle, CFrame.Angles(a, 0, 0))
+				write(st, ankle, CFrame.Angles(a + lunge, 0, 0))
 			end
 		end
 	end

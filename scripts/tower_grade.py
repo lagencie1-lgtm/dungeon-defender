@@ -12,6 +12,9 @@ import sys
 
 from PIL import Image
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tower_stage import AZIMUTH, kind_of  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 BANDS = 12
@@ -54,8 +57,14 @@ def main():
     Image.open(keep).convert("RGB").filter(ImageFilter.UnsharpMask(radius=2, percent=55, threshold=2)).save(keep)
     shutil.copy(keep, paint)
     render = fbx[:-4] + "_grade_render.png"
-    subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"],
-                   capture_output=True)
+    kind = kind_of(fbx)
+    scored = fbx
+    if kind == "barricade":   # graded on the centre section the picture shows (scripts/tower_round.py)
+        import tower_round
+        from tower_stage import stage
+        scored = tower_round.centre_model(stage(kind, os.path.basename(fbx)[:-4].split("_")[2]), fbx)
+    subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", scored, render,
+                    str(AZIMUTH.get(kind, -75.0)), "15", "512"], capture_output=True)
     pic = Image.open(picture).convert("RGB")
     pp = pic.load()
     ren = Image.open(render).convert("RGBA")

@@ -1,0 +1,19 @@
+{
+  "name": "htd-film-phone-barricade",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "../src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "../src/server" },
+      "BarricadeShots": { "$path": "shots/BarricadeShots.server.luau" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "../src/client" }
+      }
+    },
+    "MaterialService": { "$path": "../src/materials" }
+  }
+}

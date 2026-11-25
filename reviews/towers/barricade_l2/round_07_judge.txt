@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 8 (A was the model)
+  - model is a rough render cutout with jagged silhouette edges, while painting is a clean, smooth illustration.
+  - The exposed ends of the horizontal logs are visible on the right side in painting, whereas in model they appear on the left side.
+  - painting features cleaner, continuous wood grain and tighter log stacking compared to the rougher textures in model.
+  - Rivet counts and positions on the metal bands and shield rim differ slightly between the two versions.

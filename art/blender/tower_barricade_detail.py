@@ -85,11 +85,18 @@ LEAF = (0.45, 0.74, 0.3)
 LEAF_LIGHT = (0.62, 0.84, 0.34)
 CROWN_DARK = (1.4, 1.5, 1.2)    # leaves.png -> the shaded inside of a tuft
 
-BASE = dict(length=10.4, log_r=0.62, logs=4, wing_logs=3, big_r=0.7, big_x=2.05, wing_r=0.5, wing_x=4.35, shield=1.3)
+BASE = dict(length=10.4, log_r=0.62, logs=4, wing_logs=3, big_r=0.7, big_x=2.05, wing_r=0.5, wing_x=4.35, shield=1.3,
+            post_up=0.4, overhang=0.75, single=1, post_fwd=0.25, tip=1.92,
+            shield_h=0.5, band_lo=0.2, step=1.66)
 DEFAULTS = {
     # length: logs end to end across the road (10 studs wide); logs/wing_logs: stacked in the centre and the wings;
     # big_*: the centre post pairs (radius, x; their points start 0.4 above the top log); wing_*: the small post
-    # pairs; shield: its radius (0 = none)
+    # pairs; shield: its radius (0 = none); post_up: how far the big posts' shafts rise above the top log; overhang:
+    # how far the centre logs reach past the big posts (in log radii); single: one big post per side standing a little
+    # toward the enemies (post_fwd, in log radii), like the picture (0 = a post pair, one on each face); tip: the
+    # pencil point's length in post radii; shield_h: the shield's centre, as a share of the log stack's height;
+    # band_lo: the lower iron band's height as a share of the post shaft; step: log spacing in log radii (under 2:
+    # pressed into each other, no light between them)
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
@@ -104,9 +111,12 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     print("PARAMS " + json.dumps(P), flush=True)
     os._exit(0)
 S.start()
+# HTD_CENTRE_ONLY=1: only the picture's centre section (no wings), for the outline and colour scores against the target
+# picture (scripts/tower_fit.py, tower_round.py); the game model and the paint projection use the full wall
+CENTRE = bool(os.environ.get("HTD_CENTRE_ONLY"))
 
 R = P["log_r"]
-STEP = R * 1.66           # logs pressed into each other: the 16-sided tube is 0.981 R thick at a face centre
+STEP = R * P["step"]           # logs pressed into each other: the 16-sided tube is 0.981 R thick at a face centre
 FACE_Y = {1: Quaternion((1, 0, 0), rad(-90)), -1: Quaternion((1, 0, 0), rad(90))}   # turns a lathe's +Z to +Y / -Y
 LIGHT = Vector((0.55, 0.0, 0.83)).normalized()   # facet_light: from above and the +X side, the same on both faces
 
@@ -233,11 +243,12 @@ def log(name, z, x0, x1, r, seed):
     for x in kept:
         t = (x - x0) / length
         pts.append(Vector((x, 0.035 * math.sin(x * 0.9 + ph[0]), z + 0.022 * math.sin(x * 1.3 + ph[1]))))
-        radii.append(r * (1.0 - 0.05 * abs(t - 0.5) * 2) * (1 + 0.025 * math.sin(x * 2.1 + ph[2])))
+        radii.append(r * (1.0 - 0.015 * abs(t - 0.5) * 2) * (1 + 0.025 * math.sin(x * 2.1 + ph[2])))   # (a thinner end let light through)
     grain_x(tube(name, pts, radii, LOG, "wood", 3.2, verts=16))
     for p, q, rr, s in ((pts[0], pts[1], radii[0], 0), (pts[-1], pts[-2], radii[-1], 1)):
         d = (p - q).normalized()
-        K.limb(f"{name}Cut{s}", p - d * 0.08, p + d * 0.05, rr * 1.035, rr * 0.96, CUT, verts=16, end=False)
+        # (a cap wider than the log showed as a pale crescent round the far end, seen past the log: round 6)
+        K.limb(f"{name}Cut{s}", p - d * 0.08, p + d * 0.05, rr * 1.005, rr * 0.96, CUT, verts=16, end=False)
         K.limb(f"{name}Heart{s}", p + d * 0.04, p + d * 0.065, rr * 0.5, rr * 0.42, HEART, verts=10, end=False)
     for k in range(g.randint(1, 2)):
         x = x0 + g.uniform(0.12, 0.88) * length
@@ -250,11 +261,11 @@ def log(name, z, x0, x1, r, seed):
 def post(name, x, y, h, r):
     """an upright post with the grain running up it and a chunky faceted pale pencil point; the shaft has a ring every
     ~0.55, so a rope coil or a band hides only the faces it covers (see the notes above)"""
-    shaft = h - r * 1.9
+    shaft = h - r * (P["tip"] - 0.02)
     n = max(2, int(math.ceil(shaft / 0.55)))
     tube(name, [(x, y, shaft * k / n) for k in range(n + 1)], [r * (1 - 0.03 * k / n) for k in range(n + 1)], POST, "wood", 2.4,
          verts=12)
-    cone_to(name + "Tip", (x, y, h - r * 1.92), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
+    cone_to(name + "Tip", (x, y, h - r * P["tip"]), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
 
 
 def rope(name, x, y, z, r, thick=0.13, turns=2):
@@ -273,13 +284,13 @@ def rope(name, x, y, z, r, thick=0.13, turns=2):
         tube(f"{name}S{strand}", pts, [thick * 0.62] * n, color, verts=5)
 
 
-def iron_band(name, x, y, z, r):
+def iron_band(name, x, y, z, r, all_round=False):
     band = K.lathe(name, [(r + 0.05, z - 0.16), (r + 0.1, z - 0.11), (r + 0.1, z + 0.11), (r + 0.05, z + 0.16)], IRON_T, key="iron",
-                   verts=12, cap=False)
+                   verts=24, cap=False)
     moved(band, (x, y, 0))
-    for k in range(3):    # rivets on the outer half only (the inner half sits against the logs)
-        a = rad((k - 1) * 60 + 90 * (1 if y > 0 else -1))
-        K.ball(f"{name}Rivet{k}", (x + math.cos(a) * (r + 0.11), y + math.sin(a) * (r + 0.11), z), 0.07, STUD, seg=6)
+    for k in range(6 if all_round else 3):    # rivets on the outer half only (the inner half sits against the logs)
+        a = rad(k * 60 + 30) if all_round else rad((k - 1) * 60 + 90 * (1 if y > 0 else -1))
+        K.ball(f"{name}Rivet{k}", (x + math.cos(a) * (r + 0.11), y + math.sin(a) * (r + 0.11), z), 0.07, STUD, seg=10)
 
 
 def shield(name, z, facing, rr):
@@ -292,7 +303,7 @@ def shield(name, z, facing, rr):
     moved(rim, (0, 0, z), FACE_Y[facing])
     for k in range(14):
         a = 2 * math.pi * (k + 0.5) / 14
-        K.ball(f"{name}Stud{k}", (math.cos(a) * (rr - 0.03), facing * (y1 + 0.12), z + math.sin(a) * (rr - 0.03)), 0.085, STUD, seg=6)
+        K.ball(f"{name}Stud{k}", (math.cos(a) * (rr - 0.03), facing * (y1 + 0.12), z + math.sin(a) * (rr - 0.03)), 0.085, STUD, seg=10)
     disc_y(name + "Plate", y1 - 0.02, y1 + 0.06, z, 0.55, 0.5, facing, PLATE, verts=20)["htd_keep"] = True
     # the boss: a smooth lathed dome in plain polished brass (round 5's textured ball read as crumpled)
     dome = [(0.4, 0.0), (0.39, 0.06), (0.35, 0.14), (0.28, 0.21), (0.18, 0.26), (0.08, 0.285), (0.004, 0.29)]
@@ -312,25 +323,30 @@ if P["shield"] > 0:
     BREAKS += [-(P["shield"] + 0.18), P["shield"] + 0.18]
 top_c = zs[-1] + R                       # the centre section's top
 top_w = zs[P["wing_logs"] - 1] + R       # the wings' top
-wing_h = top_w + 0.35 + WR * 1.92
-big_h = top_c + 0.4 + BR * 1.92
+wing_h = top_w + 0.35 + WR * P["tip"]
+big_h = top_c + P["post_up"] + BR * P["tip"]
 for i, z in enumerate(zs):
     r = R * (1.0 - 0.02 * i)
-    if i < P["wing_logs"]:
+    if i < P["wing_logs"] and not CENTRE:
         log(f"Log{i}", z, -HALF * (1 - 0.012 * (i % 2)), HALF * (1 - 0.012 * (i % 2)), r, 100 + i)
     else:   # the centre logs: their sawn ends stick out past the big posts, like the picture
-        reach_out = BX + BR + R * 0.75
+        reach_out = BX + BR + R * P["overhang"]
         log(f"Log{i}", z, -reach_out, reach_out, r, 100 + i)
 # a dark core between the faces: nothing behind the logs to see through, ever
-K.block("Core", (0, 0, (0.15 + top_w - 0.3) / 2), (P["length"] * 0.92, R * 0.9, top_w - 0.45), K.WOOD_DARK, key="wood_dark", tile=2.0)
-K.block("CoreTop", (0, 0, (top_w - 0.4 + top_c - 0.3) / 2), (2 * (BX + BR), R * 0.9, top_c - top_w + 0.1), K.WOOD_DARK,
+K.block("Core", (0, 0, (0.15 + top_w - 0.3) / 2), (2 * (BX + BR + R * P["overhang"]) - 0.1 if CENTRE else P["length"] * 0.92, R * 0.9, top_w - 0.45), K.WOOD_DARK, key="wood_dark", tile=2.0)
+K.block("CoreTop", (0, 0, (top_w - 0.4 + top_c - 0.3) / 2), (2 * (BX + BR + R * P["overhang"]) - 0.1, R * 0.9, top_c - top_w + 0.1), K.WOOD_DARK,
         key="wood_dark", tile=2.0)
 
 POSTS = []   # (x, y, radius, height, kind)
 for s in (-1, 1):
+    if P["single"]:
+        POSTS.append((s * BX, R * P["post_fwd"], BR, big_h, "big"))
     for side in (-1, 1):
-        POSTS.append((s * BX + side * 0.06, side * post_y(BR), BR, big_h, "big"))
+        if not P["single"]:
+            POSTS.append((s * BX + side * 0.06, side * post_y(BR), BR, big_h, "big"))
         POSTS.append((s * WX + side * 0.06, side * post_y(WR), WR, wing_h, "wing"))
+if CENTRE:
+    POSTS = [p for p in POSTS if p[4] == "big"]
 for k, (x, y, r, h, kind) in enumerate(POSTS):
     post(f"Post{k}", x, y, h, r)
     if stage == "l1" and kind == "big":
@@ -339,10 +355,10 @@ for k, (x, y, r, h, kind) in enumerate(POSTS):
     elif stage == "l1":   # the small wing posts: one coil (round 4 had four or five turns on them: too busy)
         rope(f"Rope{k}", x, y, (zs[0] + top_w) / 2 - 0.25, r)
     else:
-        for z in (0.9, (h - r * 1.92) - 0.55):
-            iron_band(f"Band{k}_{z:.1f}", x, y, z, r)
+        for z in (max(0.9, (h - r * P["tip"]) * P["band_lo"]), (h - r * P["tip"]) - 0.55):
+            iron_band(f"Band{k}_{z:.1f}", x, y, z, r, all_round=(kind == "big" and P["single"]))
 if P["shield"] > 0:
-    shield_z = zs[1] + STEP * 0.95
+    shield_z = zs[0] + (zs[-1] - zs[0]) * P["shield_h"]
     shield("ShieldFront", shield_z, 1, P["shield"])
     shield("ShieldBack", shield_z, -1, P["shield"])
 

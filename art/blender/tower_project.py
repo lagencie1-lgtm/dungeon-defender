@@ -28,7 +28,8 @@ args = sys.argv[sys.argv.index("--") + 1:]
 mode, fbx, tex_path = args[0], os.path.abspath(args[1]), os.path.abspath(args[2])
 CELL = 512
 ELEVATION = 15
-VIEWS = [("pic", -75), ("right", 15), ("back", 105), ("left", -165)]
+AZ0 = float(os.environ.get("HTD_VIEW_AZ", "-75"))   # the picture's azimuth (the barricade's pictures show its +Y face: 105)
+VIEWS = [("pic", AZ0), ("right", AZ0 + 90), ("back", AZ0 + 180), ("left", AZ0 + 270)]
 SLOT = {"pic": (0, 0), "right": (1, 0), "back": (0, 1), "left": (1, 1)}   # column, row in the sheet
 
 bpy.ops.wm.read_factory_settings(use_empty=True)

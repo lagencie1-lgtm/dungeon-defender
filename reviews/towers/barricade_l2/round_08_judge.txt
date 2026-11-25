@@ -1,0 +1,4 @@
+(gemini-3.8-flash failed: <urlopen error [Errno 11001] getaddrinfo failed>)
+GEMINI gemini-3.5-flash: score 8 (A was the painting)
+  - model has noticeable pixelation, low texture resolution, and jagged cutout edges compared to painting.
+  - Viewing angle differs slightly: painting is angled to show log ends on the right, while model is seen from a flatter front perspective showing log ends on both sides.

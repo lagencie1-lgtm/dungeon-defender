@@ -63,7 +63,7 @@ All numbers are CIE Lab dE, at graphics level 1, for the skin pixels of the phon
 
 | file | what it shows |
 |---|---|
-| `phone_run_side.jpg`, `phone_run_34.jpg` | the bouncy run, 10 frames/s |
+| `phone_run_side.jpg`, `phone_run_34.jpg` | the bouncy run, 10 frames/s. `phone_run_side.jpg` was re-filmed from the open side: the first take looked see-through because MapFade faded the wall between the test camera and the hero, with the goblin behind it. Neither the goblin nor the capture was see-through. In play the camera follows the hero, so that fade is meant. |
 | `phone_hit_from_side.jpg` | the rock-back from the hero's side, then the fall |
 | `phone_knockout_alone.jpg` | the fall, 14 frames/s |
 | `clip_phone.mp4` | the whole run |

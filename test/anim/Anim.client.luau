@@ -366,7 +366,26 @@ if cue:GetAttribute("Mode") == "goblin" then
 		say(string.format("%s: %d foot contacts in %.1f s (%.2f steps/s); planted foot slid %.3f studs per contact on average, worst contact %.3f (%d frames in contact); hips bob %.2f studs (%.2f..%.2f over the pivot)",
 			label, contacts, secs, contacts / secs, slide / math.max(contacts, 1), worstContact, slideFrames, bobMax - bobMin, bobMin, bobMax))
 	end
-	follow(sideOf(12, 1.5), 6, "run side")
+	-- the side with nothing between the camera and the goblin (a wall in the way gets faded by MapFade, which
+	-- fades what stands between the camera and the HERO: in a test camera that is not on the hero, that ghosted
+	-- the wall over the goblin in round 2)
+	local function clearSide(dist, up)
+		return function(cf)
+			local at = cf.Position + Vector3.new(0, 1, 0)
+			local best = nil
+			for _, s in { 1, -1 } do
+				local eye = at + cf.RightVector * dist * s + Vector3.new(0, up, 0)
+				params.FilterDescendantsInstances = { character, folder }
+				if not workspace:Raycast(at, eye - at, params) then
+					best = eye
+					break
+				end
+			end
+			best = best or (at + cf.RightVector * dist + Vector3.new(0, up + 4, 0))
+			return CFrame.lookAt(best, at)
+		end
+	end
+	follow(clearSide(12, 1.5), 6, "run side")
 	follow(threeQ(12, 3.5), 5, "run 3/4")
 	-- two hits from the hero's side, then out
 	local cf = m:GetPivot()

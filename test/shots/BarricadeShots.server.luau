@@ -52,12 +52,12 @@ local a, b = pts[best], pts[best + 1]
 local spotAt = a:Lerp(b, 0.5)
 local walk = (b - a).Unit
 
-local function heroAt(wall)
-	-- on the player's side (further along the path), facing back at the wall
+local function heroAt(wall, away)
+	-- on the player's side (further along the path), facing back at the wall; `away` keeps the hero out of repair range
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if root then
 		local p = wall.PrimaryPart.Position
-		local stand = p + walk * 7 + Vector3.new(0, 3, 0)
+		local stand = p + walk * (away or 7) + Vector3.new(0, 3, 0)
 		root.CFrame = CFrame.lookAt(stand, Vector3.new(p.X, stand.Y, p.Z))
 	end
 end
@@ -96,46 +96,33 @@ heroAt(wall)
 task.wait(10) -- (the models and paints stream in)
 heroAt(wall)
 local d = wall:GetAttribute("PathDistance")
+-- the new level 2 look first, then its health bar: enemies only fight a wall once a wave runs, so wait for the
+-- first wave (the break counts down by itself) and send goblins straight at it
+TowerService.Upgrade(player, wall)
+task.wait(6) -- (the new look streams in)
+heroAt(wall)
+task.wait(2)
+report("l2")
+shot("l2_new")
+for _ = 1, 80 do
+	if State.Get("State") == "Wave" then
+		break
+	end
+	task.wait(0.5)
+end
+print("[SHOT] state", State.Get("State"))
+heroAt(wall, 18) -- (a hero next to the wall repairs it faster than goblins hurt it)
 local goblins = {}
 for i = 1, 6 do
 	table.insert(goblins, EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5)))
 end
--- wait until they hit it (the health bar shows once it is hurt)
-for _ = 1, 40 do
-	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.85 then
+for _ = 1, 60 do
+	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.8 then
 		break
 	end
 	task.wait(0.5)
 end
 print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
-shot("l1_goblins")
-task.wait(3)
-for _, e in goblins do
-	EnemyService.Damage(e, 1e9)
-end
-TowerService.Upgrade(player, wall)
-task.wait(2)
-heroAt(wall)
-task.wait(2)
-report("l2")
-shot("l2")
-task.wait(3)
-TowerService.Upgrade(player, wall, "Thornwall")
-task.wait(2)
-heroAt(wall)
-task.wait(2)
-shot("thornwall")
-task.wait(3)
-TowerService.Sell(player, wall)
-task.wait(1)
-State.Set("Gold", 100000)
-TowerService.Place(player, "Barricade", spotAt)
-wall = findWall()
-TowerService.Upgrade(player, wall)
-TowerService.Upgrade(player, wall, "Rootwall")
-task.wait(2)
-heroAt(wall)
-task.wait(2)
-shot("rootwall")
+shot("l2_health")
 task.wait(3)
 shot("done")

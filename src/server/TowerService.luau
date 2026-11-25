@@ -148,9 +148,9 @@ local LEVEL_LOOKS = {
 		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.70, 5.80, -2.28), Muzzles = { Vector3.new(-2.70, 5.80, -2.28), Vector3.new(-3.51, 5.80, 0.39) } },
 	},
 	FrostCrystal = {
-		{ Name = "tower_frost_l1", Height = 7.84, Muzzle = Vector3.new(0.00, 6.98, 0.00) },
-		{ Name = "tower_frost_l2", Height = 8.70, Muzzle = Vector3.new(0.00, 7.50, 0.00) },
-		{ Name = "tower_frost_l3", Height = 9.92, Muzzle = Vector3.new(0.00, 7.68, 0.00) },
+		{ Name = "tower_frost_l1", Height = 9.82, Muzzle = Vector3.new(0.00, 8.05, 0.00) },
+		{ Name = "tower_frost_l2", Height = 9.16, Muzzle = Vector3.new(0.00, 6.87, 0.00) },
+		{ Name = "tower_frost_l3", Height = 10.18, Muzzle = Vector3.new(0.00, 7.83, 0.00) },
 	},
 	StormObelisk = {
 		{ Name = "tower_storm_l1", Height = 5.43, Muzzle = Vector3.new(0.00, 4.32, 0.00) },

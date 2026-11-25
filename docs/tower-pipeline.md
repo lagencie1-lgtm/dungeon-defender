@@ -19,6 +19,38 @@ kid sees the level from across the lane on a phone. Glow only at the top level.
 Rules: same footprint at every level (it stands on the same plinth and keeps its spot), height grows about 15% per
 level, the turning head and the muzzle stay separate nodes on the game's pivots, feet on the ground (test/ground).
 
+### What the player sees change in the shot (2026-11-24, research brief: "each level looks different and fights visibly differently")
+
+Where a level adds a visible weapon, the shot comes from it. Damage per second stays exactly as it was: the damage of
+one shot is split across the visible weapons (src/server/TowerService.luau `shoot`). Nothing is rebalanced.
+
+| Tower | Level 1 | Level 2 | Level 3 |
+|---|---|---|---|
+| Ranger | one archer draws and looses an arrow | one archer, the same | both archers draw and loose, an arrow each, 0.12 s apart, half the damage each |
+| Flame Cannon | the mortar kicks and lobs a fire shell | the bronze cannon, the same shot | the two barrels fire in turn, half a cooldown apart, half the damage each; each blast still sets goblins burning |
+| Frost Crystal | a frost ring spreads from the tower and slows | the same ring, more slow | the same ring; the orb glows (no separate shot) |
+| Storm Obelisk | lightning leaps from the rune | from the rod's tip | from the orb between the horns, then goblin to goblin |
+| Ballista | one bolt | one heavier bolt | the two ballistae loose a bolt each, a quarter second apart, half the damage each |
+
+Each level's muzzles come from the builders' MUZZLE lines (`LEVEL_LOOKS[...].Muzzles` for the two-weapon levels).
+
+### Visible while art loads, and on low effects (2026-11-24)
+
+- **Preload:** as the models load on the server, ArtService writes each tower look's mesh and texture ids to
+  `ReplicatedStorage.TowerAssets`; `src/client/TowerStandIn.client.luau` fetches them all (ContentProvider:PreloadAsync)
+  as a run starts loading.
+- **Stand-in:** every placed tower carries a `StandIn` model (TowerService `setStandIn`): a body, a top and a weapon
+  block in the tower's own colours, its footprint and its look's height. Each client shows it until that look's meshes
+  and textures are fetched, then hides it (no pop: same footprint and height). Upgrades set a new one for the new look.
+  It gives way 0.8 s after the meshes are in even if a texture is still on its way, and 1.5 s after the look appears
+  at the latest (the film caught it standing beside a freshly uploaded ballista whose paint was still processing).
+- **Measured in the film** (Studio on Lemp's PC; its asset cache is warm, a phone's first run will be slower):
+  stand-in drawn 0.05-0.10 s after the tap, swapped for the real look 0.37-0.65 s after it (gates 0.3 s and 1 s).
+- **Low effects:** a LocalScript may not set Roblox's graphics level ("lacking capability RobloxScript"), so the
+  film's low-effects pictures are an approximation: shadows and every post effect (bloom, sun rays, colour grading,
+  depth of field) turned off on that client. Materials and draw distance, which graphics level 1 also lowers, cannot be
+  changed from a script.
+
 ## The pipeline, per tower (Blender from code, no Tripo; Lemp 2026-11-23)
 
 Lemp 2026-11-23: "you make a better workflow to make something amazing ... without the need of Tripo". Hub buildings
@@ -56,6 +88,23 @@ stay the Tripo models they are; every tower is built in Blender from code.
 8. **Judged** on the phone view in a real run (film rig, Gemini) and by Lemp.
 
 Pilot: the Ranger, all three levels, end to end, before the other four.
+
+### Pose against the object's layout (coordinator 2026-11-24, Ballista round 4)
+
+A pose fitted to one painting angle must also satisfy the object's physical layout, named per weapon type and checked
+by a gate in the builder; the outline search may change only what the layout leaves free (yaw, size, pitch within
+the weapon's range), never the layout itself. Round 3 rolled the Ballista's bow upright to match the painting's C
+shape: from that one angle it fitted, from every other side it read as a hoop.
+
+| Weapon | Layout the gate checks |
+|---|---|
+| Ballista | bow arms within 15 degrees of the stock's top plane, left and right mirror images (tips' offset < 0.02), span 0.8-1.0 of the stock, string from both tips to the notch, bolt on the stock (`LAYOUT` in `tower_ballista_detail.py`, the build stops on a fail) |
+| Flame Cannon | barrel bore along the barrel's axis, twin barrels mirror images |
+| Storm Obelisk | obelisk upright (axis within 5 degrees of vertical), rings level |
+| Frost Crystal | crystals grow upward from the base, none below the plinth's top |
+
+The weapon's own colours come from the painting's weapon region (gate: `scripts/weapon_colour.py`, median dE <= 10);
+the painter repaints only what the painting doesn't show, so the weapon atlas keeps its painting-measured colours.
 
 ## Tools
 

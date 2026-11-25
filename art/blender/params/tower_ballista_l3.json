@@ -1,14 +1,16 @@
 {
- "foot_r": 3.888,
+ "foot_r": 3.86,
  "foot_h": 0.8,
  "foot_n": 12,
- "wall_r": 2.99,
- "wall_h": 2.978,
- "bow_w": 4.494,
- "stock": 3.948,
- "aim": 40,
- "pitch": 10,
- "gap": 1.779,
+ "wall_r": 2.791,
+ "wall_h": 2.53,
+ "bow_w": 3.286,
+ "stock": 2.6,
+ "aim": 120.0,
+ "pitch": 0.0,
+ "gap": 2.81,
  "bend": 1.0,
- "thick": 1.0
+ "thick": 1.2,
+ "roll": 50.749,
+ "wscale": 2.1
 }

@@ -1,0 +1,71 @@
+{
+ "levels": {
+  "Ballista 1-2": 78.0,
+  "Ballista 1-3": 44.8,
+  "Ballista 2-3": 46.0,
+  "FlameCannon 1-2": 76.1,
+  "FlameCannon 1-3": 61.5,
+  "FlameCannon 2-3": 68.1,
+  "FrostCrystal 1-2": 75.6,
+  "FrostCrystal 1-3": 65.4,
+  "FrostCrystal 2-3": 57.9,
+  "StormObelisk 1-2": 57.2,
+  "StormObelisk 1-3": 44.7,
+  "StormObelisk 2-3": 68.7
+ },
+ "towers": {
+  "Ballista/FlameCannon level 1": 45.5,
+  "Ballista/FrostCrystal level 1": 8.4,
+  "Ballista/StormObelisk level 1": 30.6,
+  "FlameCannon/FrostCrystal level 1": 1.6,
+  "FlameCannon/StormObelisk level 1": 36.0,
+  "FrostCrystal/StormObelisk level 1": 0.0,
+  "Ballista/FlameCannon level 2": 38.8,
+  "Ballista/FrostCrystal level 2": 15.2,
+  "Ballista/StormObelisk level 2": 6.5,
+  "FlameCannon/FrostCrystal level 2": 13.7,
+  "FlameCannon/StormObelisk level 2": 1.4,
+  "FrostCrystal/StormObelisk level 2": 45.8,
+  "Ballista/FlameCannon level 3": 33.0,
+  "Ballista/FrostCrystal level 3": 6.9,
+  "Ballista/StormObelisk level 3": 7.5,
+  "FlameCannon/FrostCrystal level 3": 3.8,
+  "FlameCannon/StormObelisk level 3": 2.9,
+  "FrostCrystal/StormObelisk level 3": 43.4
+ },
+ "stands_out": {
+  "FlameCannon 1": 24.0,
+  "FlameCannon 2": 27.9,
+  "FlameCannon 3": 31.3,
+  "FrostCrystal 1": 39.0,
+  "FrostCrystal 2": 39.2,
+  "FrostCrystal 3": 41.2,
+  "StormObelisk 1": 40.4,
+  "StormObelisk 2": 30.6,
+  "StormObelisk 3": 35.0,
+  "Ballista 1": 30.9,
+  "Ballista 2": 31.2,
+  "Ballista 3": 30.1
+ },
+ "low_effects": {
+  "FlameCannon": "approximated (shadows and post effects off)",
+  "FrostCrystal": "approximated (shadows and post effects off)",
+  "StormObelisk": "approximated (shadows and post effects off)",
+  "Ballista": "approximated (shadows and post effects off)"
+ },
+ "fails": [],
+ "bright": {
+  "FlameCannon 1": 4.6,
+  "FlameCannon 2": 4.7,
+  "FlameCannon 3": 12.2,
+  "FrostCrystal 1": 3.0,
+  "FrostCrystal 2": 3.4,
+  "FrostCrystal 3": 3.1,
+  "StormObelisk 1": 3.4,
+  "StormObelisk 2": 8.1,
+  "StormObelisk 3": 10.5,
+  "Ballista 1": 4.9,
+  "Ballista 2": 8.7,
+  "Ballista 3": 3.9
+ }
+}

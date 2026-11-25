@@ -143,24 +143,24 @@ local LEVEL_LOOKS = {
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
-		{ Name = "tower_flame_l1", Height = 5.22, Muzzle = Vector3.new(-1.48, 4.23, -0.74) },
-		{ Name = "tower_flame_l2", Height = 6.42, Muzzle = Vector3.new(-2.61, 5.37, -0.25) },
-		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-3.31, 6.03, -1.09) },
+		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
+		{ Name = "tower_flame_l2", Height = 5.70, Muzzle = Vector3.new(-2.08, 4.53, 1.62) },
+		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.01, 5.76, -2.81), Muzzles = { Vector3.new(-2.01, 5.76, -2.81), Vector3.new(-3.44, 5.76, -0.33) } },
 	},
 	FrostCrystal = {
-		{ Name = "tower_frost_l1", Height = 7.84, Muzzle = Vector3.new(0.00, 6.98, 0.00) },
-		{ Name = "tower_frost_l2", Height = 8.70, Muzzle = Vector3.new(0.00, 7.50, 0.00) },
-		{ Name = "tower_frost_l3", Height = 9.92, Muzzle = Vector3.new(0.00, 7.68, 0.00) },
+		{ Name = "tower_frost_l1", Height = 9.82, Muzzle = Vector3.new(0.00, 8.05, 0.00) },
+		{ Name = "tower_frost_l2", Height = 9.16, Muzzle = Vector3.new(0.00, 6.87, 0.00) },
+		{ Name = "tower_frost_l3", Height = 11.81, Muzzle = Vector3.new(0.00, 8.04, 0.00) },
 	},
 	StormObelisk = {
-		{ Name = "tower_storm_l1", Height = 7.34, Muzzle = Vector3.new(0.00, 6.05, 0.00) },
-		{ Name = "tower_storm_l2", Height = 10.40, Muzzle = Vector3.new(0.00, 10.12, 0.00) },
-		{ Name = "tower_storm_l3", Height = 12.05, Muzzle = Vector3.new(0.00, 11.11, 0.00) },
+		{ Name = "tower_storm_l1", Height = 5.43, Muzzle = Vector3.new(0.00, 4.32, 0.00) },
+		{ Name = "tower_storm_l2", Height = 10.37, Muzzle = Vector3.new(0.00, 10.11, 0.00) },
+		{ Name = "tower_storm_l3", Height = 11.96, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
 	},
 	Ballista = {
-		{ Name = "tower_ballista_l1", Height = 5.85, Muzzle = Vector3.new(-3.31, 5.93, -1.71) },
-		{ Name = "tower_ballista_l2", Height = 6.38, Muzzle = Vector3.new(-3.65, 6.44, -2.34) },
-		{ Name = "tower_ballista_l3", Height = 8.05, Muzzle = Vector3.new(-1.36, 7.95, -2.40) },
+		{ Name = "tower_ballista_l1", Height = 5.45, Muzzle = Vector3.new(-0.73, 5.12, 2.71) },
+		{ Name = "tower_ballista_l2", Height = 5.95, Muzzle = Vector3.new(-0.62, 5.70, 2.32) },
+		{ Name = "tower_ballista_l3", Height = 6.26, Muzzle = Vector3.new(-4.77, 5.84, 0.79), Muzzles = { Vector3.new(-4.77, 5.84, 0.79), Vector3.new(-0.79, 5.84, 4.77) } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
@@ -239,6 +239,49 @@ local function useModel(model, towerType, at, drop, level, noArchers)
 	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55 + drop, 5), CFrame = at * CFrame.new(0, (0.55 - drop) / 2, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
 		CanCollide = false })
 	return true
+end
+
+-- a stand-in in the tower's own colours and rough shape (2026-11-24, research brief: "towers must be visible while
+-- art loads"): a body, a top and a weapon block, the look's own footprint and height. It is there from the first
+-- frame; each client hides it as soon as that look's meshes and textures are in (TowerStandIn.client.luau)
+local STAND_IN = {
+	Ranger = { body = Color3.fromRGB(205, 185, 150), top = Color3.fromRGB(150, 70, 50), weapon = Color3.fromRGB(70, 140, 60), taper = 0.85 },
+	FlameCannon = { body = Color3.fromRGB(120, 72, 40), top = Color3.fromRGB(200, 150, 60), weapon = Color3.fromRGB(150, 85, 45), taper = 0.75 },
+	FrostCrystal = { body = Color3.fromRGB(215, 200, 180), top = Color3.fromRGB(240, 245, 250), weapon = Color3.fromRGB(130, 200, 245), taper = 0.7 },
+	StormObelisk = { body = Color3.fromRGB(200, 185, 165), top = Color3.fromRGB(110, 95, 115), weapon = Color3.fromRGB(170, 120, 240), taper = 0.5 },
+	Ballista = { body = Color3.fromRGB(205, 190, 160), top = Color3.fromRGB(120, 70, 40), weapon = Color3.fromRGB(150, 90, 50), taper = 0.9 },
+}
+
+local function setStandIn(model, towerType, at, height)
+	local old = model:FindFirstChild("StandIn")
+	if old then
+		old:Destroy()
+	end
+	local c = STAND_IN[towerType]
+	if not c or not height then
+		return
+	end
+	local holder = Instance.new("Model")
+	holder.Name = "StandIn"
+	local function part(name, size, cf, color, shape)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color
+		p.Material = Enum.Material.SmoothPlastic
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		if shape then
+			p.Shape = shape
+		end
+		p.Parent = holder
+	end
+	local w = 4.6
+	local bodyH = height * 0.6
+	part("Body", Vector3.new(bodyH, w, w), at * CFrame.new(0, bodyH / 2, 0) * CFrame.Angles(0, 0, math.rad(90)), c.body, Enum.PartType.Cylinder)
+	part("Top", Vector3.new(height * 0.22, w * c.taper, w * c.taper), at * CFrame.new(0, bodyH + height * 0.11, 0) * CFrame.Angles(0, 0, math.rad(90)), c.top, Enum.PartType.Cylinder)
+	part("Weapon", Vector3.new(w * 0.45, height * 0.18, w * 0.75), at * CFrame.new(0, height * 0.91, 0), c.weapon)
+	holder.Parent = model
 end
 
 local function setLevelLabel(model, level)
@@ -359,6 +402,9 @@ function TowerService.Place(player, towerType, position)
 		muzzle, kicker, turners = BUILDERS[towerType](model, at, info.Color)
 	end
 	model.PrimaryPart = model:FindFirstChild("Base")
+	if model:FindFirstChild("Look") then
+		setStandIn(model, towerType, at, select(2, lookFor(towerType, 1)))
+	end
 	if typeof(player) == "Instance" then
 		StoreService.ApplyModelSkin(model, StoreService.SkinFor(player, towerType))
 	end
@@ -436,9 +482,19 @@ function TowerService.Upgrade(_player, model)
 		oldLook:Destroy()
 		local at = CFrame.new(t.position)
 		useModel(model, t.type, at, 0, t.level, true) -- (the archers step up after the settle, so they never stretch)
+		setStandIn(model, t.type, at, height)   -- (the new look may still be loading on a phone)
 		local look = model:FindFirstChild("Look")
 		if muzzle then
 			t.muzzle = t.position + muzzle
+		end
+		-- a level with two visible weapons shoots from both (2026-11-24): their muzzles, in turn
+		local entry = levelEntry(t.type, t.level)
+		t.muzzles = nil
+		if entry and entry.Muzzles then
+			t.muzzles = {}
+			for _, m in entry.Muzzles do
+				table.insert(t.muzzles, t.position + m)
+			end
 		end
 		t.kicker = look and look:FindFirstChild("Skin_barrel") or t.kicker
 		local label = model:FindFirstChild("LevelLabel")
@@ -676,36 +732,58 @@ local function shoot(t, now, model)
 	if t.type == "Ranger" then
 		faceTarget(t, first.position)
 		-- the archers turn to the target, draw and release (client: ArcherLife); the arrow leaves the first one's bow
+		-- (2026-11-24: every archer the player sees looses his own arrow; the damage is split between them, so the
+		-- tower's damage per second stays exactly what it was)
 		local look = model and model:FindFirstChild("Look")
-		local from = t.muzzle
+		local froms = {}
 		for _, archer in look and look:GetChildren() or {} do
 			if archer.Name == "Archer" then
 				archer:SetAttribute("AimX", hitAt.X)
 				archer:SetAttribute("AimZ", hitAt.Z)
 				archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
-				if from == t.muzzle then
-					local box, size = archer:GetBoundingBox()
-					local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
-					from = box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero)
-				end
+				local box, size = archer:GetBoundingBox()
+				local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
+				table.insert(froms, box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero))
 			end
 		end
-		Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-		EnemyService.Damage(first, stats.Damage)
+		if #froms == 0 then
+			froms = { t.muzzle }
+		end
+		local share = stats.Damage / #froms
+		for i, from in froms do
+			task.delay((i - 1) * 0.12, function()
+				Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
+				if first.health and first.health > 0 then
+					EnemyService.Damage(first, share)
+				end
+			end)
+		end
 	elseif t.type == "FlameCannon" then
-		Effects.Kick(t.kicker, 0.5)
-		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(255, 140, 40), 1, 0.2)
-		task.delay(0.2, function()
-			-- fire and sparks instead of a solid ball
-			Effects.Ring(hitAt - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
-			Effects.Particles(hitAt, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
-				Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
-			Sound.Play("Explosion", hitAt)
-			for _, e in EnemyService.InRange(hitAt, stats.Radius) do
-				EnemyService.Damage(e, stats.Damage)
-				EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
-			end
-		end)
+		-- (2026-11-24: level 3's two barrels fire in turn, half the damage each, the second half a cooldown later:
+		-- the same damage per second, and the burn is put on by each as before)
+		local muzzles = t.muzzles or { t.muzzle }
+		local share = stats.Damage / #muzzles
+		for i, from in muzzles do
+			task.delay((i - 1) * stats.Cooldown / #muzzles, function()
+				local aim = hitAt
+				if i > 1 and first.position then
+					aim = first.position + Vector3.new(0, first.stats.Size * 0.6, 0)
+				end
+				Effects.Kick(t.kicker, 0.5)
+				Effects.Bolt(from, aim, Color3.fromRGB(255, 140, 40), 1, 0.2)
+				task.delay(0.2, function()
+					-- fire and sparks instead of a solid ball
+					Effects.Ring(aim - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
+					Effects.Particles(aim, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
+						Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
+					Sound.Play("Explosion", aim)
+					for _, e in EnemyService.InRange(aim, stats.Radius) do
+						EnemyService.Damage(e, share)
+						EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
+					end
+				end)
+			end)
+		end
 	elseif t.type == "FrostCrystal" then
 		Effects.Kick(t.kicker, -0.4)
 		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
@@ -751,14 +829,22 @@ local function shoot(t, now, model)
 			end
 		end
 		faceTarget(t, target.position)
-		Effects.Kick(t.kicker, -0.6)
-		local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-		Effects.Bolt(t.muzzle, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
-		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1)
-		task.delay(0.15, function()
-			EnemyService.Damage(target, damage, nil, true)
-			Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
-		end)
+		-- (2026-11-24: level 3's two ballistae each loose a bolt, a quarter second apart, half the damage each)
+		local muzzles = t.muzzles or { t.muzzle }
+		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1) / #muzzles
+		for i, from in muzzles do
+			task.delay((i - 1) * 0.25, function()
+				Effects.Kick(t.kicker, -0.6)
+				local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
+				Effects.Bolt(from, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
+				task.delay(0.15, function()
+					if target.health and target.health > 0 then
+						EnemyService.Damage(target, damage, nil, true)
+					end
+					Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
+				end)
+			end)
+		end
 	end
 end
 

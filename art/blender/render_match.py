@@ -57,6 +57,7 @@ scene = bpy.context.scene
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "FLAT" # albedo only: the pictures carry their own painted light
 scene.display.shading.color_type = "TEXTURE"
+scene.display.shading.show_backface_culling = bool(os.environ.get("HTD_CULL"))   # (HTD_CULL=1: one-sided faces as the game draws them)
 scene.render.resolution_x = scene.render.resolution_y = size
 scene.render.film_transparent = True
 scene.view_settings.view_transform = "Standard"  # the paint as painted (the default AgX tone curve washes it grey)
@@ -67,6 +68,12 @@ cam.data.lens = 50
 d = radius * 3.0
 cam.location = center + Vector((math.cos(az) * math.cos(el) * d, math.sin(az) * math.cos(el) * d, math.sin(el) * d))
 cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
+# (HTD_ONLY_PART=Skin_barrel: the same camera, only that part drawn: its outline inside the whole model's picture)
+only = os.environ.get("HTD_ONLY_PART")
+if only:
+    import re   # ("re:<pattern>": every mesh whose name matches, e.g. the bow's parts in a fast build)
+    for o in meshes:
+        o.hide_render = not re.search(only[3:], o.name) if only.startswith("re:") else o.name.split(".")[0] != only
 scene.render.filepath = out
 bpy.ops.render.render(write_still=True)
 print("RENDERED", out)

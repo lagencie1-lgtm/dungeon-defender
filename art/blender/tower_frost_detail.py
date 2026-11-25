@@ -48,6 +48,7 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     print("PARAMS " + json.dumps(P), flush=True)
     os._exit(0)
 S.start()
+K.GOLD_SMOOTH = True   # (the gold-trim rule, coordinator 2026-11-25)
 
 
 def shard(name, base, h, r, tilt=(0, 0), color=ICE):
@@ -109,18 +110,22 @@ for i in range(14):
     K.cone(f"Icicle{i}", K.at(a, P["ped_r1"] + 0.45, top - 0.3 - ln / 2), 0.11, ln, (0.8, 0.93, 1.0), rot=(rad(180), 0, 0), verts=6)
 if level == 1:
     shard("Shard", (0, 0.25, top), P["shard_h"], P["shard_r"], (-P["lean"], 6))
-    shard("ShardS1", (0.55, -0.45, top), P["shard_h"] * 0.3, P["shard_r"] * 0.45, (18, 12))
-    shard("ShardS2", (-0.6, -0.3, top), P["shard_h"] * 0.25, P["shard_r"] * 0.4, (14, -16))
+    # (2026-11-25 review: the painting's small shards are about half the big one's height, not a quarter; at a
+    # quarter the crystal read as one thin spike)
+    shard("ShardS1", (0.6, -0.45, top), P["shard_h"] * 0.5, P["shard_r"] * 0.65, (18, 12))
+    shard("ShardS2", (-0.65, -0.3, top), P["shard_h"] * 0.42, P["shard_r"] * 0.6, (14, -16))
+    shard("ShardS3", (0.1, 0.75, top), P["shard_h"] * 0.35, P["shard_r"] * 0.55, (-22, -4))
 elif level == 2:
     K.lathe("Ring", [(P["ring_r"] - 0.2, top - 0.05), (P["ring_r"], top), (P["ring_r"], top + 0.5), (P["ring_r"] - 0.2, top + 0.55)], SILVER, key=None, verts=32)
     for k in range(3):
         a = FRONT + (k - 1) * 70
         gem(f"Gem{k}", K.at(rad(a), P["ring_r"] + 0.1, top + 0.3), 0.42, a)
-    shard("Shard", (0, 0, top), P["shard_h"], P["shard_r"] * 1.2, (-4, 3))
+    # (coordinator 2026-11-24: level 2's crystal cluster stands clearly taller above the rim than level 1's one shard)
+    shard("Shard", (0, 0, top), P["shard_h"] * 1.3, P["shard_r"] * 1.3, (-4, 3))
     for k in range(7):
         a = rad(k * 51 + 10)
         rr = P["ring_r"] * 0.55
-        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.45, 0.7), P["shard_r"] * 0.8,
+        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.6, 0.9), P["shard_r"] * 0.9,
               (math.degrees(math.sin(a)) * -0.35, math.degrees(math.cos(a)) * 0.35))
 else:
     K.lathe("Ring", [(P["crown_r"] - 0.25, top - 0.05), (P["crown_r"], top), (P["crown_r"], top + 0.45), (P["crown_r"] - 0.25, top + 0.5)], SILVER, key=None, verts=32)
@@ -130,24 +135,31 @@ else:
     pts = []
     for k in range(9):
         t = math.pi * k / 8
-        p = side * (math.cos(t) * P["crown_r"] * 0.85) + Vector((0, 0, top + 0.4 + math.sin(t) * P["crown_r"] * 1.6))   # (a tall arch)
+        # (2026-11-25: the arch sits higher and is thicker, as painted)
+        p = side * (math.cos(t) * P["crown_r"] * 0.85) + Vector((0, 0, top + 0.6 + math.sin(t) * P["crown_r"] * 1.9))
         pts.append(tuple(p))
-    K.chain("Arch", pts, [0.26] * 9, SILVER, seg=8)
+    K.chain("Arch", pts, [0.4] * 9, SILVER, seg=10)
     gem("GemTop", pts[4], 0.45, FRONT)
     for s in (-1, 1):
         base = side * (s * P["crown_r"] * 0.95) + Vector((0, 0, top + 0.3))
         horn = [tuple(base + side * (s * 0.35 * math.sin(t)) + Vector((0, 0, 0.9 * t))) for t in (0, 0.5, 1.0, 1.4)]
         K.chain(f"Horn{s}", horn, [0.18, 0.15, 0.12, 0.08], SILVER, seg=8)
-    for k in range(8):
-        a = rad(k * 45 + 22.5)
-        rr = P["crown_r"] * 0.92   # (round the arch, not in front of it: the orb shows through)
-        if abs(((math.degrees(a) - FRONT) + 180) % 360 - 180) < 30:
-            continue   # (no crystal right in front of the orb)
-        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.85, 1.15), P["shard_r"] * 1.1,
-              (math.degrees(math.sin(a)) * -0.3, math.degrees(math.cos(a)) * 0.3))   # (big crystals rising high)
+    # (2026-11-25: crystals fanned round the arch as painted: tall ones at the sides rising above the arch, leaning
+    # out; middling ones toward the back; small ones low at the front either side of the orb)
+    for k, (da, hk, rk, lean) in enumerate(((90, 1.75, 1.2, 16), (-90, 1.75, 1.2, 16), (62, 1.3, 1.05, 12), (-62, 1.3, 1.05, 12),
+                                            (125, 1.05, 1.0, 10), (-125, 1.05, 1.0, 10), (180, 0.95, 1.0, 6),
+                                            (36, 0.6, 0.8, 22), (-36, 0.6, 0.8, 22))):
+        a = rad(FRONT + da)
+        rr = P["crown_r"] * 0.9
+        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * hk * rnd.uniform(0.95, 1.05), P["shard_r"] * rk,
+              (math.degrees(math.sin(a)) * -lean / 45, math.degrees(math.cos(a)) * lean / 45))
     # the glowing orb, round, floating inside the arch, with a thin ring round it (Neon)
-    oz = top + P["crown_r"] * 0.95
-    S.glow_ball("Orb", (0, 0, oz), P["orb_r"], (0.6, 0.92, 1.0), seg=20)
+    # (2026-11-25: an all-Neon ball drew as a flat light-blue disc, like a mirror: the orb is a shaded pale ice sphere
+    # with a small brighter core showing at its front, floating inside the arch)
+    oz = top + 0.6 + P["crown_r"] * 1.0
+    K.ball("Orb", (0, 0, oz), P["orb_r"], (0.62, 0.86, 1.0), seg=20, key=None)
+    fw = Vector((math.cos(rad(FRONT)), math.sin(rad(FRONT)), 0))
+    S.glow_ball("OrbCore", tuple(Vector((0, 0, oz)) + fw * (P["orb_r"] * 0.62)), P["orb_r"] * 0.42, (0.85, 0.97, 1.0), seg=14)
     ring = [(math.cos(2 * math.pi * k / 24) * P["orb_r"] * 1.5, math.sin(2 * math.pi * k / 24) * P["orb_r"] * 1.5 * 0.35, oz + math.sin(2 * math.pi * k / 24) * P["orb_r"] * 0.3) for k in range(25)]
     K.chain("OrbRing", ring, [0.05] * 25, (0.85, 0.97, 1.0), seg=6)
     for o in [o for o in bpy.context.scene.objects if o.name.startswith("OrbRing")]:

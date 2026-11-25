@@ -25,9 +25,11 @@ BANDS = {
 # rules a tower must keep (a wall never grows toward the top, the roof stays wider than the lookout)
 # (ballista, 2026-11-24 rebuild: the bow's bend and the stock's thickness are drawn from the paintings and kept; the
 # loop once grew the stock to 2.3 times its thickness for outline, which hid the bow behind a beam)
-SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock"],
-          "ballista2": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w", "stock"],
-          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "bow_w", "stock", "gap"],
+# (round 4: the bow's plane, its span and the stock's length and pitch follow the paintings and the weapon's layout;
+# only the yaw and the base are searched)
+SEARCH = {"ballista1": ["aim", "foot_r", "leg_h", "leg_spread", "thick"],
+          "ballista2": ["aim", "foot_r", "leg_h", "leg_spread", "thick"],
+          "ballista3": ["aim", "foot_r", "wall_r", "wall_h", "stock", "gap"],
           "storm1": ["foot_r", "foot_h", "stone_w", "stone_h", "stone_d"],
           # (storm, 2026-11-24 rebuild: the obelisk's taper is drawn from the paintings and kept; the loop once
           # straightened it for outline)
@@ -43,7 +45,9 @@ SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w"
           "ranger1": ["view_turn", "foot_r", "leg_half", "box_z0", "box_h", "box_half", "eave", "ridge", "roof_len", "roof_span"],
           "ranger2": ["roof_r", "roof_z0", "bell", "look_r", "wall_top", "wall_r0", "wall_r1", "foot_r", "foot_h", "post_top", "post_r", "flag_len", "flag_h"],
           "ranger3": ["roof_r", "roof_z0", "roof_z1", "look_r", "wall_top", "band_z", "wall_r0", "wall_r1", "wall2_r", "foot_r", "post_top"]}
-RULES = {"ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half"] <= p["leg_half"] + 0.7],
+_BAL = [lambda p: 0.8 <= p.get("thick", 1) <= 1.6, lambda p: 30 <= p.get("roll", 65) <= 85]   # (the stock stays a stock, the bow stays upright)
+RULES = {"ballista1": _BAL, "ballista2": _BAL, "ballista3": _BAL,
+         "ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half"] <= p["leg_half"] + 0.7],
          "ranger3": [lambda p: p["wall_r0"] >= p["wall_r1"] >= p["wall2_r"], lambda p: p["roof_r"] > p["look_r"],
                      lambda p: p["band_z"] < p["wall_top"] - 2, lambda p: p["post_top"] < p["roof_z0"] + 0.2],
          "ranger2": [lambda p: p["wall_r0"] >= p["wall_r1"], lambda p: p["roof_r"] > p["look_r"],

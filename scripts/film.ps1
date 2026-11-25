@@ -10,6 +10,13 @@ while ((Test-Path $lockFile) -and ((Get-Date) - (Get-Item $lockFile).LastWriteTi
     Write-Output "waiting for the Studio lock: $(Get-Content $lockFile -Raw)"
     Start-Sleep 60
 }
+# (2026-11-24: films 7 and 8 recorded another thread's Studio playtest, which sat over this window: gdigrab
+# records the screen area of the window by title. Refuse to film while any other Studio window is open.)
+# (only Studios with a window on screen: a windowless leftover process cannot cover this one)
+$others = @(Get-Process RobloxStudioBeta -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle })
+if ($others.Count -gt 0) {
+    throw "another Roblox Studio is open (process $($others.Id -join ', ')): a film would record it; wait until it closes"
+}
 Set-Content $lockFile "hub thread (film/test) $(Get-Date -Format s)"
 try {
 $root = Split-Path $PSScriptRoot -Parent
@@ -23,15 +30,17 @@ if ($LASTEXITCODE -ne 0) { throw "rojo build failed" }
 
 $studio = (Get-ChildItem "$env:LOCALAPPDATA\Roblox\Versions\*\RobloxStudioBeta.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
 $logDir = "$env:LOCALAPPDATA\Roblox\logs"
-$before = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+# (2026-11-25: the newest-written log was another open Studio's, which writes all the time; the film's own log is a
+# file that did not exist before this Studio started)
+$before = @(Get-ChildItem "$logDir\*Studio*.log" | ForEach-Object { $_.FullName })
 $proc = Start-Process $studio -ArgumentList "`"$place`"" -PassThru
 
 # the new Studio log
 $log = $null
 for ($i = 0; $i -lt 90 -and -not $log; $i++) {
     Start-Sleep 1
-    $new = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($new -and (-not $before -or $new.FullName -ne $before.FullName)) { $log = $new.FullName }
+    $new = Get-ChildItem "$logDir\*Studio*.log" | Where-Object { $before -notcontains $_.FullName } | Sort-Object CreationTime | Select-Object -First 1
+    if ($new) { $log = $new.FullName }
 }
 if (-not $log) { throw "no Studio log" }
 

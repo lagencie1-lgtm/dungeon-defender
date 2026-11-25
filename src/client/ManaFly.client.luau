@@ -46,8 +46,8 @@ RunService.Heartbeat:Connect(function()
 end)
 
 local function manaLabel()
-	local hud = gui:FindFirstChild("RealmGuardiansHud")
-	local status = hud and hud:FindFirstChild("RunStatus", true)
+	-- (on phones the run bar has its own screen, RunBar)
+	local status = gui:FindFirstChild("RunStatus", true)
 	if not status then
 		return nil
 	end
@@ -65,6 +65,11 @@ local function fly(from2d, target, count)
 		return
 	end
 	local goal = target.AbsolutePosition + target.AbsoluteSize * Vector2.new(0.15, 0.5)
+	-- (a target on another screen with other insets, the phones' RunBar: into this screen's positions)
+	local targetGui = target:FindFirstAncestorWhichIsA("ScreenGui")
+	if targetGui and targetGui ~= hud then
+		goal += targetGui.AbsolutePosition - hud.AbsolutePosition
+	end
 	for i = 1, count do
 		local orb = Instance.new("Frame")
 		orb.Size = UDim2.fromOffset(12, 12)

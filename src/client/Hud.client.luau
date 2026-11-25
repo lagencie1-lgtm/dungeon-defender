@@ -66,7 +66,28 @@ local top = make("Frame", {
 if isTouch then
 	-- phones: the run bar at 80% size (the mobile test keeps 70% of the screen free for the game)
 	make("UIScale", { Scale = 0.8, Parent = top })
+	-- and up in the band of Roblox's top bar (its middle is free, Roblox's buttons sit at its left end): under it the
+	-- bar covered 22-33% of the road ahead on phones (scripts/device_pass.py "Road", 2026-11-25). Its own screen keeps
+	-- out of the notch and the home bar (DeviceSafeInsets), with the HUD's scale.
+	local barGui = make("ScreenGui", { Name = "RunBar", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets, Parent = player:WaitForChild("PlayerGui") })
+	local barRoot = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = barGui })
+	local barScale = make("UIScale", { Parent = barRoot })
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function follow()
+		local scale = hudScale.Scale > 0 and hudScale.Scale or 1
+		barScale.Scale = scale
+		barRoot.Size = UDim2.fromScale(1 / scale, 1 / scale)
+	end
+	hudScale:GetPropertyChangedSignal("Scale"):Connect(follow)
+	follow()
+	top.Parent = barRoot
 	top.Position = UDim2.new(0.5, 0, 0, 4)
+else
+	-- PC and controller: the run bar in the top-right corner, the Start wave and Speed buttons under it, so the
+	-- road ahead in the middle stays clear (scripts/device_pass.py "Road": 21-38% was covered, 2026-11-25)
+	top.Position = UDim2.new(1, -10, 0, 8)
+	top.AnchorPoint = Vector2.new(1, 0)
 end
 
 local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fromOffset(14, 6), Text = "Wave 0/10",
@@ -90,16 +111,16 @@ local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fro
 -- phones: a compact stack in the top-right corner, off the lane (it sat over the middle of the map before)
 local controls = make("Frame", {
 	Name = "WaveControls",
-	Size = isTouch and UDim2.fromOffset(160, HUD_TAP * 2 + 6) or UDim2.fromOffset(420, 44),
-	-- (left of the ability column, which reaches up the right edge)
-	Position = isTouch and UDim2.new(1, -118, 0, 8) or UDim2.new(0.5, 0, 0, 80),
-	AnchorPoint = isTouch and Vector2.new(1, 0) or Vector2.new(0.5, 0),
+	Size = isTouch and UDim2.fromOffset(160, HUD_TAP * 2 + 6) or UDim2.fromOffset(330, 44),
+	-- (phones: left of the ability column, which reaches up the right edge; PC and controller: under the run bar)
+	Position = isTouch and UDim2.new(1, -118, 0, 8) or UDim2.new(1, -10, 0, 86),
+	AnchorPoint = Vector2.new(1, 0),
 	BackgroundTransparency = 1,
 	Parent = root,
 }, { make("UIListLayout", { FillDirection = isTouch and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
 	Padding = UDim.new(0, isTouch and 6 or 10),
-	HorizontalAlignment = isTouch and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Center }) })
-local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 140 or 210, isTouch and HUD_TAP or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+	HorizontalAlignment = Enum.HorizontalAlignment.Right }) })
+local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 140 or 200, isTouch and HUD_TAP or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
 	Text = isTouch and "Start wave" or "Start wave now", LayoutOrder = 1, Parent = controls })
 local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 88 or 110, isTouch and HUD_TAP or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
@@ -1198,8 +1219,11 @@ local function refreshTop()
 		showGoal = os.clock() < goalHideAt
 	end
 	goalLabel.Visible = showGoal
-	-- (in a run on PC and controller: under the Start wave and Speed buttons, which sit at 80-124; it covered them)
-	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8) or UDim2.new(0.5, 0, 0, isTouch and 60 or 132)
+	-- (in a run on PC and controller: at the top, just left of the run bar in the corner; under it the chip lay on the
+	-- road ahead)
+	goalLabel.AnchorPoint = (inLobby or isTouch) and Vector2.new(0.5, 0) or Vector2.new(1, 0)
+	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8)
+		or (isTouch and UDim2.new(0.5, 0, 0, 60) or UDim2.new(1, -10 - 600 - 10, 0, 8))
 	towerBar.Visible = not inLobby
 	top.Visible = not inLobby
 	portalBack.Visible = not inLobby
@@ -2164,13 +2188,26 @@ if isTouch then
 			local size = tap(72)
 			b.Size = UDim2.fromOffset(size, size)
 		end
-		infoPanel.Position = UDim2.new(1, -170, 0, 8 + controls.Size.Y.Offset + 8)
+		-- (a phone: 170 from the right edge, clear of its jump button. A tablet: under the road ahead, the middle 18-45%
+		-- of the screen's height, where it covered 18-22% of the road on the iPads, and still left of the jump button)
+		local viewport = workspace.CurrentCamera.ViewportSize
+		local small = math.min(viewport.X, viewport.Y) <= 500
+		if small then
+			infoPanel.AnchorPoint = Vector2.new(1, 0)
+			infoPanel.Position = UDim2.new(1, -170, 0, 8 + controls.Size.Y.Offset + 8)
+		else
+			-- (just above the defender cards, which reach 114 up)
+			infoPanel.AnchorPoint = Vector2.new(1, 1)
+			infoPanel.Position = UDim2.new(1, -160, 1, -130)
+		end
 		goalLabel.TextSize = math.max(15, math.ceil(11 / scale))
 		goalLabel.Size = UDim2.fromOffset(0, goalLabel.TextSize + 7)
 	end
 	if hudScale then
 		hudScale:GetPropertyChangedSignal("Scale"):Connect(fitTaps)
 	end
+	-- (a turn or resize can leave the scale at its 1.3 cap and still change phone/tablet)
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitTaps)
 	fitTaps()
 end
 

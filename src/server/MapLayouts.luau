@@ -8,7 +8,11 @@
 --             top of the walls of the sides named, and Stairs: flights that run along a wall ({ Side, At = where
 --             along that side, 0 = its start, 1 = its end })
 --   Channels  a river, a lava stream or a glowing canal: nothing builds there, the lane crosses on a bridge
---   Masses    solid rock or wood that fills the corners no lane uses, so the field is not a rectangle
+--   Border    the field's real outline: a closed line of points about 24 studs behind the lanes and round the set
+--             pieces. Outside it the ground rises away in rock steps (MapLayouts.Rise): the forest is a valley, the
+--             fortress a crater, the caves have cave walls. The rivers and the lava come out of gorges in it.
+--             (Before: a rectangle of open floor inside a ring of trees, with the lanes in its middle.)
+--   Masses    (cycles 1 to 5: rock mounds that filled the unused corners. The Border does that now.)
 --   Bridges   where a channel is crossed: a stone abutment with a plank deck and parapets (the lane's, or a hero's)
 --   Paths     footpaths painted on the ground from a set piece to the road (flat: they block nothing)
 --   Sets      everything else that stands on the field, as a few named compositions (reviews/maps/placement-rules.md:
@@ -23,6 +27,7 @@
 -- sits 14 studs up and 15 back and a taller cliff behind the hero would push it in (phone first).
 local MapLayouts = {}
 
+local MapOutline = require(game:GetService("ReplicatedStorage").Shared.MapOutline)
 local v = Vector3.new
 
 MapLayouts.Forest = {
@@ -39,47 +44,49 @@ MapLayouts.Forest = {
 		{ Name = "South Bank", X0 = -84, X1 = -42, Z0 = -34, Z1 = -14, H = 5, Round = 7, Walls = "N",
 			Stairs = { { Side = "N", At = 0 } } },
 		-- the shrine the portal stands on: the last stretch climbs to it through the gate in its west wall
-		{ Name = "Portal Rise", X0 = 72, X1 = 116, Z0 = 30, Z1 = 54, H = 4, Walls = "NSE", Parapet = "NS" },
+		-- (its east end is the valley side itself: no wall there)
+		{ Name = "Portal Rise", X0 = 72, X1 = 116, Z0 = 30, Z1 = 54, H = 4, Walls = "NS", Parapet = "NS" },
 	},
+	-- the field's outline (src/shared/MapOutline.luau, shared with the build ghost)
+	Border = MapOutline.Forest,
 	Channels = {
 		-- the Witchwater: comes down from the north, the road crosses it twice
 		{ Name = "Witchwater", Width = 7, Points = { v(36, 0, -100), v(33, 0, -62), v(32, 0, -34), v(36, 0, -16), v(52, 0, -6),
 			v(72, 0, 2), v(98, 0, -4), v(130, 0, 6) } },
 	},
-	Masses = {
-		-- the south-west is deep wood on a rocky rise: no lane goes there
-		{ At = v(-92, 0, 62), Radius = 26, H = 16 }, { At = v(-60, 0, 78), Radius = 20, H = 13 },
-		{ At = v(-112, 0, 22), Radius = 16, H = 12 },
-		-- the north-east corner behind the river
-		{ At = v(100, 0, -70), Radius = 24, H = 15 }, { At = v(66, 0, -84), Radius = 14, H = 10 },
-		-- north, between the banks and the river
-		{ At = v(-6, 0, -84), Radius = 16, H = 11 },
-		-- south-east below the rise
-		{ At = v(20, 0, 82), Radius = 18, H = 12 },
-	},
+	Masses = {},
 	Bridges = {
 		{ At = v(32, 0, -34), Along = v(1, 0, 0) }, -- the first ford
 		{ At = v(52, 0, -6), Along = v(0, 0, 1) }, -- the second ford
 	},
 	Sets = {
-		{ Name = "The keep", Why = "the hill you start on is the old keep: its broken tower at the north end, parapet and stairs at the south end",
-			Props = { { Model = "keep_field_ruin", At = v(-6, 0, -26.5), Height = 9, Turn = 0, Block = 6 } } },
+		-- Lemp's map audit (2026-11-24), "Keep lookout": the landmark that frames the first view, and one clear build
+		-- spot. The heroes arrive facing north-east (MapOutline.Start): the tower at the left of the view, the first
+		-- ford ahead, the build spot just behind them on the right. A Ranger on it covers the road on three sides of
+		-- the hill (the hill is narrow: its middle strip is all that is free of the walls' flagstone rims)
+		{ Name = "The keep", Why = "the hill you start on is the old keep: its tower (an old tree grown up through it) at the north end, the first build spot where you arrive, parapet and stairs at the south end",
+			Kit = {
+				{ Piece = "tower", At = v(-6, 0, -25), Look = v(0, 0, 1) },
+				{ Piece = "pad", At = v(-6, 0, -8.5), Look = v(0, 0, 1), Sink = -0.02 },
+			} },
 		{ Name = "The Hollow Gate", Why = "a gate IN the canyon wall: its two piers are the ends of the banks' retaining walls",
 			Kit = { { Piece = "arch", At = v(-49, 0, -44), Look = v(1, 0, 0), Sink = 0.3 } } },
-		{ Name = "The chapel", Why = "one ruin in the pocket between the last two lanes: three walls, the two columns of its door, the well before the door, trees behind",
+		-- "Chapel yard": a wide flat yard before the door (Paths), the well in it, one build spot beside the road
+		{ Name = "The chapel", Why = "one ruin in the pocket between the last two lanes: three walls, the two columns of its door, a yard with the well and a build spot before the door, trees behind",
 			Kit = {
 				{ Piece = "wall", At = v(32, 0, 8), Look = v(0, 0, 1) }, -- the back wall (tall at its west corner)
 				{ Piece = "wall", At = v(26.6, 0, 16.5), Look = v(-1, 0, 0) }, -- the west wall, tall where it meets the back wall
 				{ Piece = "low", At = v(37.4, 0, 15), Look = v(1, 0, 0) }, -- what is left of the east wall
 				{ Piece = "pillar", At = v(28, 0, 27), Look = v(0, 0, 1) },
 				{ Piece = "pillar", At = v(36, 0, 27), Look = v(0, 0, 1) },
+				{ Piece = "pad", At = v(40, 0, 33), Look = v(0, 0, -1), Sink = -0.02 },
 			},
 			Props = {
 				{ Model = "keep_well", At = v(32, 0, 34.5), Height = 6.5, Block = 3 },
 				{ Model = "keep_field_bush", At = v(25.5, 0, 4.8), Height = 3.2, Block = 2.6, Turn = 1 },
 				{ Model = "keep_field_bush", At = v(38.5, 0, 4.6), Height = 2.8, Block = 2.4, Turn = 4 },
 			},
-			Grove = { { At = v(29, 0, -1.5), H = 19 }, { At = v(35.5, 0, 0.5), H = 15 }, { At = v(23.5, 0, -4), H = 13 } } },
+			Grove = { { At = v(29, 0, -1.5), H = 19 }, { At = v(35.5, 0, 0.5), H = 15 }, { At = v(31, 0, -7), H = 13 } } },
 		{ Name = "The standing stones", Why = "a ring of three trilithons round a mushroom ring, with its own trees, in the pocket west of the road",
 			Kit = {
 				{ Piece = "set", At = v(-49.6, 0, 22.9), Look = v(0.17, 0, -0.98) },
@@ -109,9 +116,11 @@ MapLayouts.Forest = {
 			Grove = { { At = v(-103, 0, -22), H = 17 }, { At = v(-108, 0, -14.5), H = 14 }, { At = v(-99, 0, -12), H = 19 } } },
 		-- two lane sides had no edge at all (the judge on cycle 4: "lane edges remain bare"): a wood closes each,
 		-- 20 studs back from the road so the building ground beside the lane stays clear
-		{ Name = "The east wood", Why = "closes the east side of the last turn, between the river and the shrine",
-			Grove = { { At = v(70, 0, 14), H = 18 }, { At = v(76.5, 0, 19.5), H = 15 }, { At = v(69, 0, 23), H = 13 },
-				{ At = v(79, 0, 12.5), H = 16 } } },
+		-- "Shrine bridge": the second ford is the last place to cut off a wave before the portal. A build spot at its
+		-- near landing; its far side (where the east wood stood) is open ground for the fight near the portal, closed
+		-- by the valley side behind it
+		{ Name = "The shrine bridge", Why = "a build spot at the near landing of the last bridge before the shrine",
+			Kit = { { Piece = "pad", At = v(61, 0, -15), Look = v(-1, 0, 0), Sink = -0.02 } } },
 		{ Name = "The south wood", Why = "closes the south side of the road below the keep",
 			Grove = { { At = v(-16, 0, 31), H = 17 }, { At = v(-8, 0, 34.5), H = 19 }, { At = v(0, 0, 30.5), H = 14 },
 				{ At = v(6.5, 0, 35), H = 16 } } },
@@ -119,8 +128,19 @@ MapLayouts.Forest = {
 	-- footpaths of trodden earth: flat (they block nothing), they tie a set piece to the road so it does not sit
 	-- on the lawn like a dropped object. Width is what TerrainBuilder writes, and 4 is the least that shows (as a
 	-- track about 7 studs wide); a line must lie on 4k + 2 and run along X or Z (the terrain's 4-stud cells).
+	-- (a strip's ends lie on multiples of 4 too: a half-covered cell keeps its old ground)
+	-- `Stones = true`: a line of flat stepping stones (kit piece `flags`) instead of painted earth, for a route that
+	-- runs beside the road (painted earth there merged with the road's own verge: cycle 6's first film)
 	Paths = {
-		{ Name = "from the chapel's well to the road", Width = 4, Points = { v(32, 0, 38), v(44, 0, 38) } },
+		-- the hero's shortcut (Lemp's map audit: "connect the keep and chapel with a short hero footpath so a player
+		-- can see a wave advance and get ahead of it"): stepping stones from the foot of the keep's east stairs (its
+		-- north end) across the road, down between the road and the chapel's west wall, into its yard, which opens
+		-- onto the road before the shrine bridge. The goblins go the long way round by both fords (about 130
+		-- studs), the hero's way is about 70
+		{ Name = "the hero's shortcut from the keep to the chapel yard", Stones = true,
+			Points = { v(5.5, 0, -9.5), v(20.5, 0, -9.5), v(22.5, 0, -5), v(22.5, 0, 24), v(26, 0, 29) } },
+		-- the yard: trodden earth before the door, a grass gap from the road on its east
+		{ Name = "the chapel yard", Width = 16, Points = { v(24, 0, 36), v(40, 0, 36) } },
 		{ Name = "from the standing stones to the road", Width = 4, Points = { v(-44, 0, 14), v(-32, 0, 14) } },
 	},
 }
@@ -138,19 +158,17 @@ MapLayouts.Magma = {
 		{ Name = "Gate Yard", X0 = -50, X1 = -20, Z0 = 6, Z1 = 40, H = 4, Parapet = "N",
 			Stairs = { { Side = "E", At = 0.5 }, { Side = "W", At = 0.5 } } },
 		-- the portal's keep: the last stretch climbs to it through the gate that is its whole west side
-		{ Name = "Portal Keep", X0 = 90, X1 = 116, Z0 = 10, Z1 = 30, H = 4, Walls = "NSE", Parapet = "NSE" },
+		-- (built against the crater wall: no wall of its own on the east)
+		{ Name = "Portal Keep", X0 = 90, X1 = 116, Z0 = 10, Z1 = 30, H = 4, Walls = "NS", Parapet = "NS" },
 	},
+	-- the field's outline (src/shared/MapOutline.luau, shared with the build ghost)
+	Border = MapOutline.Magma,
 	Channels = {
 		-- the lava river cuts the whole fortress in two: four bridges
 		{ Name = "Lava River", Width = 11, Points = { v(-132, 0, -14), v(-85, 0, -10), v(-60, 0, -12), v(-35, 0, -18), v(-10, 0, -16),
 			v(14, 0, -24), v(40, 0, -22), v(60, 0, -16), v(80, 0, -18), v(132, 0, -12) } },
 	},
-	Masses = {
-		{ At = v(-100, 0, -60), Radius = 24, H = 18 }, { At = v(-104, 0, 16), Radius = 16, H = 13 },
-		{ At = v(-20, 0, 80), Radius = 20, H = 14 }, { At = v(60, 0, 78), Radius = 22, H = 16 },
-		{ At = v(110, 0, -62), Radius = 16, H = 14 }, { At = v(108, 0, 70), Radius = 16, H = 12 },
-		{ At = v(12, 0, -84), Radius = 14, H = 11 },
-	},
+	Masses = {},
 	Bridges = {
 		{ At = v(-60, 0, -12), Along = v(0, 0, 1) }, { At = v(-10, 0, -16), Along = v(0, 0, 1) },
 		{ At = v(40, 0, -22), Along = v(0, 0, 1) }, { At = v(80, 0, -18), Along = v(0, 0, 1) },
@@ -185,8 +203,13 @@ MapLayouts.Crystal = {
 			Stairs = { { Side = "W", At = 0.3 }, { Side = "E", At = 0.7 } } },
 		{ Name = "East Terrace", X0 = 27, X1 = 43, Z0 = -22, Z1 = 50, H = 4, Parapet = "NS",
 			Stairs = { { Side = "W", At = 0.7 }, { Side = "E", At = 0.3 } } },
-		{ Name = "Portal Ledge", X0 = 84, X1 = 112, Z0 = 30, Z1 = 50, H = 4, Walls = "NSE", Parapet = "NSE" },
+		-- (cut into the cave wall: no wall of its own on the east)
+		{ Name = "Portal Ledge", X0 = 84, X1 = 112, Z0 = 30, Z1 = 50, H = 4, Walls = "NS", Parapet = "NS" },
 	},
+	-- a cave wall, so beyond the camera's reach it climbs steeply, to 50 studs
+	Rise = { { 0, 5 }, { 8, 10 }, { 18, 16 }, { 30, 26 }, { 38, 38 }, { 46, 50 } },
+	-- the field's outline (src/shared/MapOutline.luau, shared with the build ghost)
+	Border = MapOutline.Crystal,
 	Channels = {
 		-- two glowing canals between the tunnels: one row of defenders fits on each bank
 		{ Name = "West Canal", Width = 7, Points = { v(-85, 0, -100), v(-86, 0, -40), v(-84, 0, 0), v(-85, 0, 32) } },
@@ -194,11 +217,7 @@ MapLayouts.Crystal = {
 		-- and one across the great hall in the east
 		{ Name = "Hall Stream", Width = 6, Points = { v(132, 0, 2), v(100, 0, 6), v(78, 0, 4), v(68, 0, 12) } },
 	},
-	Masses = {
-		{ At = v(-85, 0, 84), Radius = 14, H = 16 }, { At = v(-45, 0, -84), Radius = 14, H = 16 },
-		{ At = v(-5, 0, 86), Radius = 12, H = 14 }, { At = v(35, 0, -86), Radius = 14, H = 16 },
-		{ At = v(104, 0, -70), Radius = 20, H = 18 }, { At = v(84, 0, 78), Radius = 16, H = 14 },
-	},
+	Masses = {},
 	Bridges = {
 		-- a hero's crossing over each canal (the monsters keep to the road)
 		{ At = v(-84.6, 0, -10), Along = v(1, 0, 0) },
@@ -339,9 +358,57 @@ local function distanceToPolyline(points, pos)
 	return best
 end
 
+-- How far (x, z) lies outside the field's outline, in studs: negative inside, and far inside for a layout
+-- without a Border.
+function MapLayouts.Outside(layout, x, z)
+	return MapOutline.Outside(layout.Border, x, z)
+end
+
+-- The rise outside the outline: { how far outside it starts, how high the ground is from there }. The rule behind
+-- the numbers is the camera: in a run it looks down at the hero at 32 to 42 degrees from 20.5 studs away
+-- (Config.RunCamera), and heroes are stopped MapOutline.HeroStop studs inside the outline. The line from the
+-- camera's focus (3 studs over the hero's feet) going up and away at 32 degrees stays over every step out to 30
+-- studs (the camera pulled back to 1.7 times its run distance), so the rise never pushes the camera in. Steeper
+-- would look more like a wall, and would do exactly that on a phone. Beyond 30 studs a layout may climb as it likes
+-- (`Rise` in the layout: the caves' wall does).
+MapLayouts.Rise = { { 0, 5 }, { 8, 10 }, { 18, 16 }, { 32, 22 }, { 44, 30 } } -- (the crater's rough rock stood 0.4 into the line at 28 with 24 from 30)
+MapLayouts.CameraLine = { Degrees = 32, Focus = 3, Clear = 0.5, Reach = 30 }
+-- the first studs of every step are its face: rock (TerrainBuilder), the rest its tread (grass, ash, cave floor)
+MapLayouts.Face = 4
+-- how far a channel's gorge reaches either side of its line, beyond the channel itself
+MapLayouts.Gorge = 5
+
+-- The designed height of the rise at (x, z), how far outside the outline that is, and whether it is a step's
+-- face (its first MapLayouts.Face studs). 0 inside, and 0 in the gorges the channels come through. The first step starts exactly on the outline; the edges of the higher steps
+-- wander up to 6 studs further out (never in), so the terraces are not parallel copies of the outline.
+function MapLayouts.RiseAt(layout, x, z)
+	local d = MapLayouts.Outside(layout, x, z)
+	if d <= 0 then
+		return 0, d, false
+	end
+	for _, c in layout.Channels do
+		if distanceToPolyline(c.Points, v(x, 0, z)) < c.Width / 2 + MapLayouts.Gorge then
+			return 0, d, false
+		end
+	end
+	local wander = math.clamp((math.noise(x / 34, z / 34, 4.7) + 0.5) * 6, 0, 6)
+	local steps = layout.Rise or MapLayouts.Rise
+	local h, from = steps[1][2], 0
+	for i = 2, #steps do
+		if d - wander >= steps[i][1] then
+			h, from = steps[i][2], steps[i][1] + wander
+		end
+	end
+	return h, d, d - from < MapLayouts.Face
+end
+
 -- is this spot plain open ground: not on a slope, in a channel or inside a mass? (for anything scattered)
 function MapLayouts.Open(layout, pos, margin)
 	margin = margin or 0
+	-- (the rise outside the outline, and the 8 studs of floor at its foot, are never open ground)
+	if MapLayouts.Outside(layout, pos.X, pos.Z) > -8 - margin then
+		return false
+	end
 	for _, p in layout.Plateaus do
 		-- the slope band round each plateau (4 studs either side of its edge)
 		local dx = math.max(p.X0 - pos.X, 0, pos.X - p.X1)

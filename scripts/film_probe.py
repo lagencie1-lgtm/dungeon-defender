@@ -39,31 +39,41 @@ def main():
     os.makedirs(work, exist_ok=True)
     res, thumbs = {}, []
     for t, name in marks:
-        _, ang, mode = name.split()
-        im = frame_at(base + ".mp4", t + 0.15, os.path.join(work, f"{ang}_{mode}.png"))
+        parts = name.split()
+        ang, mode = (parts[1] + " " + parts[2], parts[3]) if len(parts) == 4 else (parts[1], parts[2])   # (round C: "probe <studs> <angle> <mode>")
+        im = frame_at(base + ".mp4", t + 0.15, os.path.join(work, f"{ang.replace(' ', '_')}_{mode}.png"))
         res.setdefault(ang, {})[mode] = {c: count(im, rgb) for c, rgb in COLOURS.items()}
         if mode == "Occluded":
             thumbs.append((ang, im))
     both = one = 0
+    per = {}
     out = {}
-    for ang in sorted(res, key=int):
+    for ang in sorted(res, key=lambda a: [int(v) for v in a.split()]):
         occ, full = res[ang].get("Occluded", {}), res[ang].get("AlwaysOnTop", {})
         shares = {c: (occ.get(c, 0) / full[c] if full.get(c) else None) for c in COLOURS}
         seen = [s is not None and s >= 0.5 for s in shares.values()]
         both += all(seen)
         one += any(seen)
+        if " " in ang:
+            per.setdefault(ang.split()[0], [0, 0])
+            per[ang.split()[0]][0] += any(seen)
+            per[ang.split()[0]][1] += all(seen)
         out[ang] = {"shares": shares, "occluded": occ, "whole": full}
         print(f"{ang:>3}: " + "  ".join(f"{c} {s * 100:.0f}% ({occ.get(c, 0)}/{full.get(c, 0)} px)" if s is not None else f"{c} -" for c, s in shares.items()))
-    print(f"PROBE both archers seen in {both} of 8 directions, at least one in {one} of 8")
-    json.dump({"directions": out, "both": both, "one": one}, open(base + ".probe.json", "w"), indent=1)
+    for dist, (o, b) in sorted(per.items(), key=lambda kv: int(kv[0])):
+        print(f"PROBE {dist} studs: at least one archer seen in {o} of 8 directions, both in {b} of 8")
+    if not per:
+        print(f"PROBE both archers seen in {both} of 8 directions, at least one in {one} of 8")
+    json.dump({"directions": out, "per_distance": per, "both": both, "one": one}, open(base + ".probe.json", "w"), indent=1)
     if thumbs:
         h, w = thumbs[0][1].shape[:2]
         sc = 400 / w
-        sheet = Image.new("RGB", (int(w * sc) * 4, int(h * sc) * 2), "white")
-        for i, (ang, im) in enumerate(thumbs[:8]):
+        rows = (len(thumbs) + 7) // 8
+        sheet = Image.new("RGB", (int(w * sc) * 8, int(h * sc) * rows), "white")
+        for i, (ang, im) in enumerate(thumbs):
             t = Image.fromarray(im.astype(np.uint8)).resize((int(w * sc), int(h * sc)))
             ImageDraw.Draw(t).text((6, 6), f"{ang} deg", fill=(255, 255, 255))
-            sheet.paste(t, ((i % 4) * int(w * sc), (i // 4) * int(h * sc)))
+            sheet.paste(t, ((i % 8) * int(w * sc), (i // 8) * int(h * sc)))
         sheet.save(base + ".probe.png")
 
 

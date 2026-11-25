@@ -13,8 +13,8 @@ ANGLES = [(0, "front"), (-45, "3/4 left of viewer"), (45, "3/4 right of viewer")
 FRAME = "0,0.1,1.93,1.25"   # the head's middle and the view's width (the hood is 1.04 wide, 2.41 is its top)
 
 
-def render(fbx, deg, out, size):
-    env = dict(os.environ, HTD_FRAME=FRAME)
+def render(fbx, deg, out, size, frame=FRAME):
+    env = dict(os.environ, HTD_FRAME=frame)
     subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "parts_render.py"), "--", fbx, out,
                     str(-90 + deg), "0", str(size), "ortho"], env=env, capture_output=True)
     return Image.open(out).convert("RGBA")
@@ -23,7 +23,9 @@ def render(fbx, deg, out, size):
 def main():
     out = sys.argv[1]
     size = int(next((a[5:] for a in sys.argv[2:] if a.startswith("size=")), 768))
-    rows = [a.split("=", 1) for a in sys.argv[2:] if "=" in a and not a.startswith("size=")]
+    frame = next((a[6:] for a in sys.argv[2:] if a.startswith("frame=")), FRAME)   # (frame=body: the torso and legs)
+    frame = "0,0,0.9,1.9" if frame == "body" else frame
+    rows = [a.split("=", 1) for a in sys.argv[2:] if "=" in a and not a.startswith(("size=", "frame="))]
     work = os.path.join(os.path.dirname(os.path.abspath(out)), "_closeups")
     os.makedirs(work, exist_ok=True)
     pad = 34
@@ -32,7 +34,7 @@ def main():
     for r, (label, build) in enumerate(rows):
         fbx = os.path.join(ROOT, build, "ranger_archer.fbx")
         for c, (deg, name) in enumerate(ANGLES):
-            im = render(fbx, deg, os.path.join(work, f"{r}_{c}.png"), size)
+            im = render(fbx, deg, os.path.join(work, f"{r}_{c}.png"), size, frame)
             sheet.paste(im, (c * size, r * (size + pad) + pad), im)
             d.text((c * size + 8, r * (size + pad) + 8), f"{label}: {name} ({deg:+d} deg)", fill="black")
     sheet.save(out)

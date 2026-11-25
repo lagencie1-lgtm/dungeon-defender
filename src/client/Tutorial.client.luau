@@ -41,6 +41,23 @@ local box = make("Frame", { Size = UDim2.new(isTouch and 0.2 or 0.6, 0, 0, isTou
 	AnchorPoint = isTouch and Vector2.zero or Vector2.new(0.5, 1),
 	BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1, Parent = gui }, { corner(14), stroke(Ui.GOLD, 3) })
 local hint = label({ Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromOffset(12, 6), Text = "", TextWrapped = true, Parent = box })
+-- with a controller the box sits higher: the HUD keeps to the TV-safe middle 90% then, so the defender cards
+-- reach further up (the box lay on their tops, scripts/device_pass.py 2026-11-25)
+local function placeBox()
+	if not isTouch then
+		box.Position = Gamepad.active and UDim2.new(0.5, 0, 0.75, 0) or UDim2.new(0.5, 0, 1, -150) -- (over the hero panel too)
+	end
+end
+Gamepad.OnChanged(placeBox)
+placeBox()
+-- an open screen (Shop, Pets, Backpack...) hides the hint: it lay across the middle of the panel
+-- (scripts/device_pass.py sheets, every device, 2026-11-25); it comes back when the screen closes
+task.spawn(function()
+	while gui.Parent do
+		gui.Enabled = Gamepad.TopPanel() == nil
+		task.wait(0.25)
+	end
+end)
 
 -- the arrow floating over the place to go
 -- (a calm painted-gold marker: the old spinning neon-yellow block read as a placeholder on the phone)
@@ -72,8 +89,15 @@ local animateArrow = RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- a good first spot for a Ranger: next to the first bend of the path
+-- a good first spot for a Ranger: the map's designed one (MapOutline.Start: on clearly free ground beside the
+-- landmark, in the first view), else next to the first bend of the path
+local MapOutline = require(game:GetService("ReplicatedStorage").Shared.MapOutline)
 local function goodSpot()
+	local map = Config.Maps[Config.CurrentMap]
+	local start = map and MapOutline.Start[map.Theme]
+	if start and start.FirstSpot then
+		return start.FirstSpot
+	end
 	local a, b = Config.Path[2], Config.Path[3]
 	local dir = (b - a).Unit
 	return a:Lerp(b, 0.3) + Vector3.new(-dir.Z, 0, dir.X) * 11

@@ -1,0 +1,356 @@
+{
+ "directions": {
+  "15 0": {
+   "shares": {
+    "magenta": 1.073394495412844,
+    "cyan": 0.7672413793103449
+   },
+   "occluded": {
+    "magenta": 117,
+    "cyan": 89
+   },
+   "whole": {
+    "magenta": 109,
+    "cyan": 116
+   }
+  },
+  "15 45": {
+   "shares": {
+    "magenta": 0.5271317829457365,
+    "cyan": 0.990990990990991
+   },
+   "occluded": {
+    "magenta": 68,
+    "cyan": 110
+   },
+   "whole": {
+    "magenta": 129,
+    "cyan": 111
+   }
+  },
+  "15 90": {
+   "shares": {
+    "magenta": 0.25,
+    "cyan": 0.5849056603773585
+   },
+   "occluded": {
+    "magenta": 7,
+    "cyan": 62
+   },
+   "whole": {
+    "magenta": 28,
+    "cyan": 106
+   }
+  },
+  "15 135": {
+   "shares": {
+    "magenta": 0.23404255319148937,
+    "cyan": 0.6021505376344086
+   },
+   "occluded": {
+    "magenta": 22,
+    "cyan": 56
+   },
+   "whole": {
+    "magenta": 94,
+    "cyan": 93
+   }
+  },
+  "15 180": {
+   "shares": {
+    "magenta": 0.5111111111111111,
+    "cyan": 0.14457831325301204
+   },
+   "occluded": {
+    "magenta": 46,
+    "cyan": 12
+   },
+   "whole": {
+    "magenta": 90,
+    "cyan": 83
+   }
+  },
+  "15 225": {
+   "shares": {
+    "magenta": 0.7111111111111111,
+    "cyan": 0.5151515151515151
+   },
+   "occluded": {
+    "magenta": 64,
+    "cyan": 34
+   },
+   "whole": {
+    "magenta": 90,
+    "cyan": 66
+   }
+  },
+  "15 270": {
+   "shares": {
+    "magenta": 0.9791666666666666,
+    "cyan": 0.9705882352941176
+   },
+   "occluded": {
+    "magenta": 94,
+    "cyan": 66
+   },
+   "whole": {
+    "magenta": 96,
+    "cyan": 68
+   }
+  },
+  "15 315": {
+   "shares": {
+    "magenta": 0.9385964912280702,
+    "cyan": 0.35064935064935066
+   },
+   "occluded": {
+    "magenta": 107,
+    "cyan": 27
+   },
+   "whole": {
+    "magenta": 114,
+    "cyan": 77
+   }
+  },
+  "25 0": {
+   "shares": {
+    "magenta": 1.054054054054054,
+    "cyan": 0.9830508474576272
+   },
+   "occluded": {
+    "magenta": 78,
+    "cyan": 58
+   },
+   "whole": {
+    "magenta": 74,
+    "cyan": 59
+   }
+  },
+  "25 45": {
+   "shares": {
+    "magenta": 0.746268656716418,
+    "cyan": 1.0153846153846153
+   },
+   "occluded": {
+    "magenta": 50,
+    "cyan": 66
+   },
+   "whole": {
+    "magenta": 67,
+    "cyan": 65
+   }
+  },
+  "25 90": {
+   "shares": {
+    "magenta": 0.14285714285714285,
+    "cyan": 0.576271186440678
+   },
+   "occluded": {
+    "magenta": 4,
+    "cyan": 34
+   },
+   "whole": {
+    "magenta": 28,
+    "cyan": 59
+   }
+  },
+  "25 135": {
+   "shares": {
+    "magenta": 0.24074074074074073,
+    "cyan": 0.53125
+   },
+   "occluded": {
+    "magenta": 13,
+    "cyan": 34
+   },
+   "whole": {
+    "magenta": 54,
+    "cyan": 64
+   }
+  },
+  "25 180": {
+   "shares": {
+    "magenta": 0.46938775510204084,
+    "cyan": 0.06896551724137931
+   },
+   "occluded": {
+    "magenta": 23,
+    "cyan": 4
+   },
+   "whole": {
+    "magenta": 49,
+    "cyan": 58
+   }
+  },
+  "25 225": {
+   "shares": {
+    "magenta": 0.8775510204081632,
+    "cyan": 0.7368421052631579
+   },
+   "occluded": {
+    "magenta": 43,
+    "cyan": 28
+   },
+   "whole": {
+    "magenta": 49,
+    "cyan": 38
+   }
+  },
+  "25 270": {
+   "shares": {
+    "magenta": 0.23529411764705882,
+    "cyan": 0.7027027027027027
+   },
+   "occluded": {
+    "magenta": 16,
+    "cyan": 26
+   },
+   "whole": {
+    "magenta": 68,
+    "cyan": 37
+   }
+  },
+  "25 315": {
+   "shares": {
+    "magenta": 0.5942028985507246,
+    "cyan": 0.1346153846153846
+   },
+   "occluded": {
+    "magenta": 41,
+    "cyan": 7
+   },
+   "whole": {
+    "magenta": 69,
+    "cyan": 52
+   }
+  },
+  "40 0": {
+   "shares": {
+    "magenta": 0.9772727272727273,
+    "cyan": 0.9767441860465116
+   },
+   "occluded": {
+    "magenta": 43,
+    "cyan": 42
+   },
+   "whole": {
+    "magenta": 44,
+    "cyan": 43
+   }
+  },
+  "40 45": {
+   "shares": {
+    "magenta": 0.782608695652174,
+    "cyan": 0.8913043478260869
+   },
+   "occluded": {
+    "magenta": 36,
+    "cyan": 41
+   },
+   "whole": {
+    "magenta": 46,
+    "cyan": 46
+   }
+  },
+  "40 90": {
+   "shares": {
+    "magenta": 0.0,
+    "cyan": 0.7631578947368421
+   },
+   "occluded": {
+    "magenta": 0,
+    "cyan": 29
+   },
+   "whole": {
+    "magenta": 15,
+    "cyan": 38
+   }
+  },
+  "40 135": {
+   "shares": {
+    "magenta": 0.0,
+    "cyan": 0.6785714285714286
+   },
+   "occluded": {
+    "magenta": 0,
+    "cyan": 19
+   },
+   "whole": {
+    "magenta": 29,
+    "cyan": 28
+   }
+  },
+  "40 180": {
+   "shares": {
+    "magenta": 0.3958333333333333,
+    "cyan": 0.2894736842105263
+   },
+   "occluded": {
+    "magenta": 19,
+    "cyan": 11
+   },
+   "whole": {
+    "magenta": 48,
+    "cyan": 38
+   }
+  },
+  "40 225": {
+   "shares": {
+    "magenta": 0.5833333333333334,
+    "cyan": 0.6
+   },
+   "occluded": {
+    "magenta": 28,
+    "cyan": 21
+   },
+   "whole": {
+    "magenta": 48,
+    "cyan": 35
+   }
+  },
+  "40 270": {
+   "shares": {
+    "magenta": 0.2222222222222222,
+    "cyan": 0.7037037037037037
+   },
+   "occluded": {
+    "magenta": 8,
+    "cyan": 19
+   },
+   "whole": {
+    "magenta": 36,
+    "cyan": 27
+   }
+  },
+  "40 315": {
+   "shares": {
+    "magenta": 1.0681818181818181,
+    "cyan": 0.30303030303030304
+   },
+   "occluded": {
+    "magenta": 47,
+    "cyan": 10
+   },
+   "whole": {
+    "magenta": 44,
+    "cyan": 33
+   }
+  }
+ },
+ "per_distance": {
+  "15": [
+   8,
+   4
+  ],
+  "25": [
+   7,
+   3
+  ],
+  "40": [
+   7,
+   3
+  ]
+ },
+ "both": 10,
+ "one": 22
+}

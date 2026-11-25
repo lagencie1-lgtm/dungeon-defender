@@ -18,7 +18,13 @@ local MapBuilder = require(script.Parent.MapBuilder)
 local QuestService = require(script.Parent.QuestService)
 local PetService = require(script.Parent.PetService)
 local SeasonService = require(script.Parent.SeasonService)
+local RescueService = require(script.Parent.RescueService)
+local Telemetry = require(script.Parent.Telemetry)
+local BossService = require(script.Parent.BossService)
 local Store = require(ReplicatedStorage.Shared.Store)
+local Items = require(ReplicatedStorage.Shared.Items)
+local HubLayout = require(ReplicatedStorage.Shared.HubLayout)
+local Ground = require(ReplicatedStorage.Shared.Ground)
 local DataStoreService = game:GetService("DataStoreService")
 
 -- the global Endless leaderboard (only works in the real game or with API access on)
@@ -32,6 +38,7 @@ local Sound = require(script.Parent.Sound)
 local GameService = {}
 
 local runId = 0 -- goes up on every new game, so an old game's loop knows to stop
+local runStartedAt, lastRunEndedAt = nil, nil -- (os.clock, for Telemetry)
 local skipBreak = false
 
 local function notify(text, color)
@@ -48,6 +55,7 @@ local function difficulty()
 end
 
 local function onKilled(enemy, player)
+	RescueService.Killed(enemy, player)
 	local stats = enemy.stats
 	local event = Config.WeeklyEvent()
 	State.AddGold(math.floor(stats.Gold * (event.Mana or 1) + 0.5))
@@ -78,6 +86,11 @@ local function onKilled(enemy, player)
 	if stats.Boss then
 		notify("The " .. stats.DisplayName .. " has been absolutely bonked!", Color3.fromRGB(255, 220, 90))
 		ItemService.VictoryChest(State.Get("Difficulty"))
+		if Config.BossRewards[enemy.name] then
+			for _, p in Players:GetPlayers() do
+				ItemService.BossReward(p, enemy.name, State.Get("Difficulty"))
+			end
+		end
 	elseif stats.Loot then
 		notify("Loot Goblin caught! Grab the gems!", Color3.fromRGB(120, 230, 255))
 	end
@@ -87,6 +100,7 @@ local function onLeaked(enemy)
 	if isOver() then
 		return
 	end
+	RescueService.Leaked(enemy)
 	if enemy.stats.Loot then
 		notify("The Loot Goblin escaped with the gems...", Color3.fromRGB(255, 200, 80))
 		return
@@ -111,9 +125,12 @@ function GameService.EndGame(won)
 		return
 	end
 	State.Set("State", won and "Won" or "Lost")
+	lastRunEndedAt = os.clock()
 	State.Set("Speed", 1)
 	Clock.scale = 1
 	EnemyService.Clear()
+	RescueService.Clear()
+	BossService.Clear()
 	local wave = State.Get("Wave") or 0
 	local cleared = won and wave or math.max(0, wave - 1)
 	local diff = difficulty()
@@ -139,6 +156,12 @@ function GameService.EndGame(won)
 		DataService.AddGold(player, gold)
 		player:SetAttribute("LastGold", gold)
 		DataService.RecordGame(player, cleared, won, State.Get("Kills") or 0)
+		-- reward per minute of this run (research report: a win, an honest loss and leaving early compared)
+		local minutes = math.max((os.clock() - (runStartedAt or os.clock())) / 60, 0.25)
+		Telemetry.Value(player, "GoldPerMinute", math.floor(gold / minutes + 0.5), State.Get("Map"), State.Get("Mode"),
+			won and "won" or ("lost at wave " .. wave))
+		Telemetry.Value(player, "GemsPerMinute", math.floor(reward / minutes * 10 + 0.5) / 10, State.Get("Map"), State.Get("Mode"),
+			won and "won" or ("lost at wave " .. wave))
 		player:SetAttribute("LastReward", reward)
 	end
 	local mode = State.Get("Mode") or "Campaign"
@@ -264,15 +287,31 @@ local function runGame(myRun)
 			if enemyStats.Boss then
 				State.Set("BossAlert", (State.Get("BossAlert") or 0) + 1)
 				notify("The " .. enemyStats.DisplayName .. " is coming! Protect the portal!", Color3.fromRGB(220, 120, 255))
+				-- what it carries, and how close each player is to it (Config.BossRewards)
+				local reward = Config.BossRewards[group.Enemy]
+				if reward then
+					local weapon = Items.WeaponTypes[reward.Item]
+					for _, p in Players:GetPlayers() do
+						local first = not p:GetAttribute("BossFirst_" .. group.Enemy)
+						Remotes.Notify:FireClient(p, first and ("He carries the " .. weapon.Name .. ". Beat him to take it")
+							or string.format("He carries the %s · your meter %d/%d", weapon.Name,
+								p:GetAttribute("BossMeter_" .. group.Enemy) or 0, reward.Meter), Color3.fromRGB(255, 200, 90))
+					end
+				end
 			elseif enemyStats.Loot then
 				notify("A Loot Goblin appeared! Catch it for gems!", Color3.fromRGB(255, 210, 60))
+			end
+			if group.Delay then
+				Clock.Wait(group.Delay)
 			end
 			for _ = 1, group.Count do
 				if myRun ~= runId or isOver() then
 					return
 				end
-				local spawned = EnemyService.Spawn(group.Enemy, healthMultiplier)
+				local spawned = EnemyService.Spawn(group.Enemy, healthMultiplier,
+					group.StartCorner and EnemyService.CornerDistance(group.StartCorner) or nil)
 				spawned.speedMult = Config.WeeklyEvent().Speed or 1
+				RescueService.Spawned(spawned)
 				Clock.Wait(group.Gap)
 			end
 		end
@@ -302,6 +341,8 @@ end
 local function cleanUp()
 	runId += 1
 	EnemyService.Clear()
+	RescueService.Clear()
+	BossService.Clear()
 	TowerService.Clear()
 	LootService.Clear()
 	ItemService.LeaveBehindAll() -- loot you didn't pick up stays on the battlefield
@@ -367,6 +408,18 @@ function GameService.ToOutpost()
 		MapBuilder.Teleport(player, "Outpost")
 	end
 	GameService.UpdateTrophies()
+	GameService.PlaceTrainingKnight()
+end
+
+-- the training knight by the forge (HubLayout.Dummy): try new gear on it in the Outpost
+function GameService.PlaceTrainingKnight()
+	if not HubLayout.Dummy then
+		return
+	end
+	local at = Config.OutpostCenter + HubLayout.Dummy
+	at = Vector3.new(at.X, (Ground.At(at.X, at.Z)), at.Z)
+	-- it faces the plaza, where the heroes come from
+	EnemyService.SpawnDummy(at, (Config.OutpostCenter - at) * Vector3.new(1, 0, 1))
 end
 
 -- a new run on the chosen map
@@ -375,6 +428,14 @@ function GameService.StartRun()
 		return
 	end
 	State.Set("LoadingRun", true)
+	-- time from the end of the last run to this one (research report: "time to next run")
+	if lastRunEndedAt then
+		for _, player in Players:GetPlayers() do
+			Telemetry.Value(player, "TimeToNextRun", math.floor(os.clock() - lastRunEndedAt))
+		end
+		lastRunEndedAt = nil
+	end
+	runStartedAt = os.clock()
 	cleanUp()
 	local mapId = State.Get("Map") or "CursedForest"
 	local ok, err = pcall(MapBuilder.BuildBattlefield, mapId)

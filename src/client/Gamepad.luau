@@ -73,7 +73,7 @@ local XBOX = {
 	ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y",
 	ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",
 	DPadUp = "Up", DPadDown = "Down", DPadLeft = "Left", DPadRight = "Right",
-	ButtonSelect = "View", ButtonStart = "Menu",
+	ButtonSelect = "View", ButtonStart = "Menu", ButtonL3 = "LS", ButtonR3 = "RS",
 }
 -- what Roblox reports for a PlayStation controller, made short enough for a badge
 local PLAYSTATION = {
@@ -157,6 +157,8 @@ end)
 -- panels: the highlight jumps into a panel when it opens, B closes it
 -------------------------------------------------------------------------------
 local open = {} -- open panels, the newest last
+local registered = {} -- every panel frame -> its entry (open or not)
+local areas = {} -- frames a controller button jumps into (the side menu...) -> that button's name
 local backHandlers = {}
 
 local function shownIn(obj, panel)
@@ -235,6 +237,10 @@ function Gamepad.Panel(frame, options)
 	options = options or {}
 	local entry = { frame = frame, default = options.default, close = options.close, closeButton = options.closeButton,
 		closable = options.closable ~= false }
+	registered[frame] = entry
+	frame.Destroying:Connect(function()
+		registered[frame] = nil
+	end)
 	-- the d-pad stays inside this panel while it has the highlight
 	frame.SelectionGroup = true
 	if entry.closeButton then
@@ -297,6 +303,50 @@ function Gamepad.Back()
 	end
 	return false
 end
+
+-- marks a row of buttons that one controller button puts the highlight into (d-pad up: the side menu)
+function Gamepad.Area(frame, keyCode)
+	frame.SelectionGroup = true
+	areas[frame] = Gamepad.Name(keyCode)
+end
+
+-- how a controller player gets to `button`, as a short text, or nil when they can't (the gamepad test fails then):
+--   its own badge (a controller button does the same thing), inside a panel (the highlight jumps in when it
+--   opens), inside an area (a controller button jumps into it), or a "PadReach" attribute that says how
+function Gamepad.Reach(button)
+	local reason = button:GetAttribute("PadReach")
+	if type(reason) == "string" and reason ~= "" then
+		return reason
+	end
+	local badge = button:FindFirstChild("PadHint")
+	if badge then
+		return "button " .. Gamepad.Name(Enum.KeyCode[badge:GetAttribute("Key")])
+	end
+	local node = button
+	while node and node:IsA("GuiObject") do
+		if registered[node] then
+			return button.Selectable and ("in panel " .. node.Name) or nil
+		end
+		if areas[node] then
+			return button.Selectable and ("in " .. node.Name .. " (" .. areas[node] .. ")") or nil
+		end
+		node = node.Parent
+	end
+	return nil
+end
+
+-- Every keyboard key the game listens to, and what does the same on a controller. scripts/pad_parity.py fails
+-- when a script listens to a key that is missing here, so a PC shortcut can never be the only way to do something.
+Gamepad.KEYBOARD = {
+	One = "d-pad left/right picks the card, X builds", Two = "d-pad left/right, X", Three = "d-pad left/right, X",
+	Four = "d-pad left/right, X", Five = "d-pad left/right, X",
+	Q = "B (cancel, close)",
+	F = "RT (hero attack)", E = "RB (second ability)", R = "LB (third ability)",
+	B = "d-pad up, Shop", I = "d-pad up, Backpack", P = "d-pad up, Pets", K = "d-pad up, Season",
+	J = "d-pad up, Quests", H = "d-pad up, Heroes",
+	G = "LS click (ping)",
+	LeftShift = "keeps building on PC; a controller presses X again",
+}
 
 -------------------------------------------------------------------------------
 -- button bindings

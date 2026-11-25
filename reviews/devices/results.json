@@ -1,0 +1,3292 @@
+{
+ "iphone_se": {
+  "label": "iPhone 7 / SE 2nd gen - oldest small iPhone preset",
+  "sim": "iphone_7",
+  "input": "touch",
+  "expect": [
+   666,
+   374
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Outpost viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Shop viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Pets viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      1,
+      "PetHud.Frame.ScrollingFrame.Frame.TextButton on the Thumbstick"
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Backpack viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Run viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     666,
+     374
+    ],
+    "size_line": "[DEVICES] SIZE iphone_se Defender viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator iphone_7 set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready iphone_se touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE iphone_se Outpost viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 3 buttons, 7 texts",
+   "[DEVICES] CHECK iphone_se Outpost Cut 0",
+   "[DEVICES] CHECK iphone_se Outpost TV safe 0",
+   "[DEVICES] CHECK iphone_se Outpost Thumbs 0",
+   "[DEVICES] CHECK iphone_se Outpost Tap 0",
+   "[DEVICES] CHECK iphone_se Outpost Text 0",
+   "[DEVICES] CHECK iphone_se Outpost Fits 0",
+   "[DEVICES] CHECK iphone_se Outpost Overlap 0",
+   "[DEVICES] CHECK iphone_se Outpost Road 0",
+   "[DEVICES] SHOT iphone_se Outpost",
+   "[DEVICES] SIZE iphone_se Shop viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 12 buttons, 22 texts",
+   "[DEVICES] CHECK iphone_se Shop Cut 0",
+   "[DEVICES] CHECK iphone_se Shop TV safe 0",
+   "[DEVICES] CHECK iphone_se Shop Thumbs 0",
+   "[DEVICES] CHECK iphone_se Shop Tap 0",
+   "[DEVICES] CHECK iphone_se Shop Text 0",
+   "[DEVICES] CHECK iphone_se Shop Fits 0",
+   "[DEVICES] CHECK iphone_se Shop Overlap 0",
+   "[DEVICES] CHECK iphone_se Shop Road 0",
+   "[DEVICES] SHOT iphone_se Shop",
+   "[DEVICES] SIZE iphone_se Pets viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 10 buttons, 68 texts",
+   "[DEVICES] CHECK iphone_se Pets Cut 0",
+   "[DEVICES] CHECK iphone_se Pets TV safe 0",
+   "[DEVICES] CHECK iphone_se Pets Thumbs 1: PetHud.Frame.ScrollingFrame.Frame.TextButton on the Thumbstick",
+   "[DEVICES] CHECK iphone_se Pets Tap 0",
+   "[DEVICES] CHECK iphone_se Pets Text 0",
+   "[DEVICES] CHECK iphone_se Pets Fits 0",
+   "[DEVICES] CHECK iphone_se Pets Overlap 0",
+   "[DEVICES] CHECK iphone_se Pets Road 0",
+   "[DEVICES] SHOT iphone_se Pets",
+   "[DEVICES] SIZE iphone_se Backpack viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 14 buttons, 30 texts",
+   "[DEVICES] CHECK iphone_se Backpack Cut 0",
+   "[DEVICES] CHECK iphone_se Backpack TV safe 0",
+   "[DEVICES] CHECK iphone_se Backpack Thumbs 0",
+   "[DEVICES] CHECK iphone_se Backpack Tap 0",
+   "[DEVICES] CHECK iphone_se Backpack Text 0",
+   "[DEVICES] CHECK iphone_se Backpack Fits 0",
+   "[DEVICES] CHECK iphone_se Backpack Overlap 0",
+   "[DEVICES] CHECK iphone_se Backpack Road 0",
+   "[DEVICES] SHOT iphone_se Backpack",
+   "[DEVICES] SIZE iphone_se Run viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 11 buttons, 26 texts",
+   "[DEVICES] CHECK iphone_se Run Cut 0",
+   "[DEVICES] CHECK iphone_se Run TV safe 0",
+   "[DEVICES] CHECK iphone_se Run Thumbs 0",
+   "[DEVICES] CHECK iphone_se Run Tap 0",
+   "[DEVICES] CHECK iphone_se Run Text 0",
+   "[DEVICES] CHECK iphone_se Run Fits 0",
+   "[DEVICES] CHECK iphone_se Run Overlap 0",
+   "[DEVICES] CHECK iphone_se Run Road 0",
+   "[DEVICES] SHOT iphone_se Run",
+   "[DEVICES] SIZE iphone_se Defender viewport 666x374 inset 0,58 touch true pad false hud scale 0.66, 13 buttons, 30 texts",
+   "[DEVICES] CHECK iphone_se Defender Cut 0",
+   "[DEVICES] CHECK iphone_se Defender TV safe 0",
+   "[DEVICES] CHECK iphone_se Defender Thumbs 0",
+   "[DEVICES] CHECK iphone_se Defender Tap 0",
+   "[DEVICES] CHECK iphone_se Defender Text 0",
+   "[DEVICES] CHECK iphone_se Defender Fits 0",
+   "[DEVICES] CHECK iphone_se Defender Overlap 0",
+   "[DEVICES] CHECK iphone_se Defender Road 0",
+   "[DEVICES] SHOT iphone_se Defender",
+   "[DEVICES] DONE iphone_se 9 steps, 1 problems"
+  ]
+ },
+ "iphone_new": {
+  "label": "iPhone 16 Pro Max - newest big iPhone (notch side)",
+  "sim": "iphone_16_pro_max",
+  "input": "touch",
+  "expect": [
+   830,
+   439
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Outpost viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Shop viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Pets viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      1,
+      "PetHud.Frame.ScrollingFrame.Frame.TextButton on the Thumbstick"
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Backpack viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Run viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     830,
+     439
+    ],
+    "size_line": "[DEVICES] SIZE iphone_new Defender viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator iphone_16_pro_max set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready iphone_new touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE iphone_new Outpost viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 3 buttons, 7 texts",
+   "[DEVICES] CHECK iphone_new Outpost Cut 0",
+   "[DEVICES] CHECK iphone_new Outpost TV safe 0",
+   "[DEVICES] CHECK iphone_new Outpost Thumbs 0",
+   "[DEVICES] CHECK iphone_new Outpost Tap 0",
+   "[DEVICES] CHECK iphone_new Outpost Text 0",
+   "[DEVICES] CHECK iphone_new Outpost Fits 0",
+   "[DEVICES] CHECK iphone_new Outpost Overlap 0",
+   "[DEVICES] CHECK iphone_new Outpost Road 0",
+   "[DEVICES] SHOT iphone_new Outpost",
+   "[DEVICES] SIZE iphone_new Shop viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 12 buttons, 22 texts",
+   "[DEVICES] CHECK iphone_new Shop Cut 0",
+   "[DEVICES] CHECK iphone_new Shop TV safe 0",
+   "[DEVICES] CHECK iphone_new Shop Thumbs 0",
+   "[DEVICES] CHECK iphone_new Shop Tap 0",
+   "[DEVICES] CHECK iphone_new Shop Text 0",
+   "[DEVICES] CHECK iphone_new Shop Fits 0",
+   "[DEVICES] CHECK iphone_new Shop Overlap 0",
+   "[DEVICES] CHECK iphone_new Shop Road 0",
+   "[DEVICES] SHOT iphone_new Shop",
+   "[DEVICES] SIZE iphone_new Pets viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 10 buttons, 68 texts",
+   "[DEVICES] CHECK iphone_new Pets Cut 0",
+   "[DEVICES] CHECK iphone_new Pets TV safe 0",
+   "[DEVICES] CHECK iphone_new Pets Thumbs 1: PetHud.Frame.ScrollingFrame.Frame.TextButton on the Thumbstick",
+   "[DEVICES] CHECK iphone_new Pets Tap 0",
+   "[DEVICES] CHECK iphone_new Pets Text 0",
+   "[DEVICES] CHECK iphone_new Pets Fits 0",
+   "[DEVICES] CHECK iphone_new Pets Overlap 0",
+   "[DEVICES] CHECK iphone_new Pets Road 0",
+   "[DEVICES] SHOT iphone_new Pets",
+   "[DEVICES] SIZE iphone_new Backpack viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 14 buttons, 30 texts",
+   "[DEVICES] CHECK iphone_new Backpack Cut 0",
+   "[DEVICES] CHECK iphone_new Backpack TV safe 0",
+   "[DEVICES] CHECK iphone_new Backpack Thumbs 0",
+   "[DEVICES] CHECK iphone_new Backpack Tap 0",
+   "[DEVICES] CHECK iphone_new Backpack Text 0",
+   "[DEVICES] CHECK iphone_new Backpack Fits 0",
+   "[DEVICES] CHECK iphone_new Backpack Overlap 0",
+   "[DEVICES] CHECK iphone_new Backpack Road 0",
+   "[DEVICES] SHOT iphone_new Backpack",
+   "[DEVICES] SIZE iphone_new Run viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 11 buttons, 26 texts",
+   "[DEVICES] CHECK iphone_new Run Cut 0",
+   "[DEVICES] CHECK iphone_new Run TV safe 0",
+   "[DEVICES] CHECK iphone_new Run Thumbs 0",
+   "[DEVICES] CHECK iphone_new Run Tap 0",
+   "[DEVICES] CHECK iphone_new Run Text 0",
+   "[DEVICES] CHECK iphone_new Run Fits 0",
+   "[DEVICES] CHECK iphone_new Run Overlap 0",
+   "[DEVICES] CHECK iphone_new Run Road 0",
+   "[DEVICES] SHOT iphone_new Run",
+   "[DEVICES] SIZE iphone_new Defender viewport 830x439 inset 0,58 touch true pad false hud scale 0.79, 13 buttons, 30 texts",
+   "[DEVICES] CHECK iphone_new Defender Cut 0",
+   "[DEVICES] CHECK iphone_new Defender TV safe 0",
+   "[DEVICES] CHECK iphone_new Defender Thumbs 0",
+   "[DEVICES] CHECK iphone_new Defender Tap 0",
+   "[DEVICES] CHECK iphone_new Defender Text 0",
+   "[DEVICES] CHECK iphone_new Defender Fits 0",
+   "[DEVICES] CHECK iphone_new Defender Overlap 0",
+   "[DEVICES] CHECK iphone_new Defender Road 0",
+   "[DEVICES] SHOT iphone_new Defender",
+   "[DEVICES] DONE iphone_new 9 steps, 1 problems"
+  ]
+ },
+ "android_old": {
+  "label": "Galaxy A06 - cheap small Android (smallest Android preset)",
+  "sim": "samsung_galaxy_a06",
+  "input": "touch",
+  "expect": [
+   705,
+   338
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Outpost viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Shop viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Pets viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Backpack viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Run viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     705,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_old Defender viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator samsung_galaxy_a06 set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready android_old touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE android_old Outpost viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 3 buttons, 7 texts",
+   "[DEVICES] CHECK android_old Outpost Cut 0",
+   "[DEVICES] CHECK android_old Outpost TV safe 0",
+   "[DEVICES] CHECK android_old Outpost Thumbs 0",
+   "[DEVICES] CHECK android_old Outpost Tap 0",
+   "[DEVICES] CHECK android_old Outpost Text 0",
+   "[DEVICES] CHECK android_old Outpost Fits 0",
+   "[DEVICES] CHECK android_old Outpost Overlap 0",
+   "[DEVICES] CHECK android_old Outpost Road 0",
+   "[DEVICES] SHOT android_old Outpost",
+   "[DEVICES] SIZE android_old Shop viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 12 buttons, 22 texts",
+   "[DEVICES] CHECK android_old Shop Cut 0",
+   "[DEVICES] CHECK android_old Shop TV safe 0",
+   "[DEVICES] CHECK android_old Shop Thumbs 0",
+   "[DEVICES] CHECK android_old Shop Tap 0",
+   "[DEVICES] CHECK android_old Shop Text 0",
+   "[DEVICES] CHECK android_old Shop Fits 0",
+   "[DEVICES] CHECK android_old Shop Overlap 0",
+   "[DEVICES] CHECK android_old Shop Road 0",
+   "[DEVICES] SHOT android_old Shop",
+   "[DEVICES] SIZE android_old Pets viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 10 buttons, 68 texts",
+   "[DEVICES] CHECK android_old Pets Cut 0",
+   "[DEVICES] CHECK android_old Pets TV safe 0",
+   "[DEVICES] CHECK android_old Pets Thumbs 0",
+   "[DEVICES] CHECK android_old Pets Tap 0",
+   "[DEVICES] CHECK android_old Pets Text 0",
+   "[DEVICES] CHECK android_old Pets Fits 0",
+   "[DEVICES] CHECK android_old Pets Overlap 0",
+   "[DEVICES] CHECK android_old Pets Road 0",
+   "[DEVICES] SHOT android_old Pets",
+   "[DEVICES] SIZE android_old Backpack viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 14 buttons, 30 texts",
+   "[DEVICES] CHECK android_old Backpack Cut 0",
+   "[DEVICES] CHECK android_old Backpack TV safe 0",
+   "[DEVICES] CHECK android_old Backpack Thumbs 0",
+   "[DEVICES] CHECK android_old Backpack Tap 0",
+   "[DEVICES] CHECK android_old Backpack Text 0",
+   "[DEVICES] CHECK android_old Backpack Fits 0",
+   "[DEVICES] CHECK android_old Backpack Overlap 0",
+   "[DEVICES] CHECK android_old Backpack Road 0",
+   "[DEVICES] SHOT android_old Backpack",
+   "[DEVICES] SIZE android_old Run viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 11 buttons, 26 texts",
+   "[DEVICES] CHECK android_old Run Cut 0",
+   "[DEVICES] CHECK android_old Run TV safe 0",
+   "[DEVICES] CHECK android_old Run Thumbs 0",
+   "[DEVICES] CHECK android_old Run Tap 0",
+   "[DEVICES] CHECK android_old Run Text 0",
+   "[DEVICES] CHECK android_old Run Fits 0",
+   "[DEVICES] CHECK android_old Run Overlap 0",
+   "[DEVICES] CHECK android_old Run Road 0",
+   "[DEVICES] SHOT android_old Run",
+   "[DEVICES] SIZE android_old Defender viewport 705x338 inset 0,58 touch true pad false hud scale 0.58, 13 buttons, 30 texts",
+   "[DEVICES] CHECK android_old Defender Cut 0",
+   "[DEVICES] CHECK android_old Defender TV safe 0",
+   "[DEVICES] CHECK android_old Defender Thumbs 0",
+   "[DEVICES] CHECK android_old Defender Tap 0",
+   "[DEVICES] CHECK android_old Defender Text 0",
+   "[DEVICES] CHECK android_old Defender Fits 0",
+   "[DEVICES] CHECK android_old Defender Overlap 0",
+   "[DEVICES] CHECK android_old Defender Road 0",
+   "[DEVICES] SHOT android_old Defender",
+   "[DEVICES] DONE android_old 9 steps, 0 problems"
+  ]
+ },
+ "android_new": {
+  "label": "Galaxy S25 Ultra - new big Android",
+  "sim": "samsung_galaxy_s25_ultra",
+  "input": "touch",
+  "expect": [
+   685,
+   338
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Outpost viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Shop viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Pets viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Backpack viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Run viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     685,
+     338
+    ],
+    "size_line": "[DEVICES] SIZE android_new Defender viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator samsung_galaxy_s25_ultra set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready android_new touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE android_new Outpost viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 3 buttons, 7 texts",
+   "[DEVICES] CHECK android_new Outpost Cut 0",
+   "[DEVICES] CHECK android_new Outpost TV safe 0",
+   "[DEVICES] CHECK android_new Outpost Thumbs 0",
+   "[DEVICES] CHECK android_new Outpost Tap 0",
+   "[DEVICES] CHECK android_new Outpost Text 0",
+   "[DEVICES] CHECK android_new Outpost Fits 0",
+   "[DEVICES] CHECK android_new Outpost Overlap 0",
+   "[DEVICES] CHECK android_new Outpost Road 0",
+   "[DEVICES] SHOT android_new Outpost",
+   "[DEVICES] SIZE android_new Shop viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 12 buttons, 22 texts",
+   "[DEVICES] CHECK android_new Shop Cut 0",
+   "[DEVICES] CHECK android_new Shop TV safe 0",
+   "[DEVICES] CHECK android_new Shop Thumbs 0",
+   "[DEVICES] CHECK android_new Shop Tap 0",
+   "[DEVICES] CHECK android_new Shop Text 0",
+   "[DEVICES] CHECK android_new Shop Fits 0",
+   "[DEVICES] CHECK android_new Shop Overlap 0",
+   "[DEVICES] CHECK android_new Shop Road 0",
+   "[DEVICES] SHOT android_new Shop",
+   "[DEVICES] SIZE android_new Pets viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 10 buttons, 68 texts",
+   "[DEVICES] CHECK android_new Pets Cut 0",
+   "[DEVICES] CHECK android_new Pets TV safe 0",
+   "[DEVICES] CHECK android_new Pets Thumbs 0",
+   "[DEVICES] CHECK android_new Pets Tap 0",
+   "[DEVICES] CHECK android_new Pets Text 0",
+   "[DEVICES] CHECK android_new Pets Fits 0",
+   "[DEVICES] CHECK android_new Pets Overlap 0",
+   "[DEVICES] CHECK android_new Pets Road 0",
+   "[DEVICES] SHOT android_new Pets",
+   "[DEVICES] SIZE android_new Backpack viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 14 buttons, 30 texts",
+   "[DEVICES] CHECK android_new Backpack Cut 0",
+   "[DEVICES] CHECK android_new Backpack TV safe 0",
+   "[DEVICES] CHECK android_new Backpack Thumbs 0",
+   "[DEVICES] CHECK android_new Backpack Tap 0",
+   "[DEVICES] CHECK android_new Backpack Text 0",
+   "[DEVICES] CHECK android_new Backpack Fits 0",
+   "[DEVICES] CHECK android_new Backpack Overlap 0",
+   "[DEVICES] CHECK android_new Backpack Road 0",
+   "[DEVICES] SHOT android_new Backpack",
+   "[DEVICES] SIZE android_new Run viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 11 buttons, 26 texts",
+   "[DEVICES] CHECK android_new Run Cut 0",
+   "[DEVICES] CHECK android_new Run TV safe 0",
+   "[DEVICES] CHECK android_new Run Thumbs 0",
+   "[DEVICES] CHECK android_new Run Tap 0",
+   "[DEVICES] CHECK android_new Run Text 0",
+   "[DEVICES] CHECK android_new Run Fits 0",
+   "[DEVICES] CHECK android_new Run Overlap 0",
+   "[DEVICES] CHECK android_new Run Road 0",
+   "[DEVICES] SHOT android_new Run",
+   "[DEVICES] SIZE android_new Defender viewport 685x338 inset 0,58 touch true pad false hud scale 0.58, 13 buttons, 30 texts",
+   "[DEVICES] CHECK android_new Defender Cut 0",
+   "[DEVICES] CHECK android_new Defender TV safe 0",
+   "[DEVICES] CHECK android_new Defender Thumbs 0",
+   "[DEVICES] CHECK android_new Defender Tap 0",
+   "[DEVICES] CHECK android_new Defender Text 0",
+   "[DEVICES] CHECK android_new Defender Fits 0",
+   "[DEVICES] CHECK android_new Defender Overlap 0",
+   "[DEVICES] CHECK android_new Defender Road 0",
+   "[DEVICES] SHOT android_new Defender",
+   "[DEVICES] DONE android_new 9 steps, 0 problems"
+  ]
+ },
+ "ipad_old": {
+  "label": "iPad 6th gen (2018) - old iPad",
+  "sim": "ipad_6th_generation",
+  "input": "touch",
+  "expect": [
+   1023,
+   768
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Outpost viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Shop viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Pets viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Backpack viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Run viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1023,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE ipad_old Defender viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator ipad_6th_generation set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready ipad_old touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE ipad_old Outpost viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 3 buttons, 7 texts",
+   "[DEVICES] CHECK ipad_old Outpost Cut 0",
+   "[DEVICES] CHECK ipad_old Outpost TV safe 0",
+   "[DEVICES] CHECK ipad_old Outpost Thumbs 0",
+   "[DEVICES] CHECK ipad_old Outpost Tap 0",
+   "[DEVICES] CHECK ipad_old Outpost Text 0",
+   "[DEVICES] CHECK ipad_old Outpost Fits 0",
+   "[DEVICES] CHECK ipad_old Outpost Overlap 0",
+   "[DEVICES] CHECK ipad_old Outpost Road 0",
+   "[DEVICES] SHOT ipad_old Outpost",
+   "[DEVICES] SIZE ipad_old Shop viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 12 buttons, 22 texts",
+   "[DEVICES] CHECK ipad_old Shop Cut 0",
+   "[DEVICES] CHECK ipad_old Shop TV safe 0",
+   "[DEVICES] CHECK ipad_old Shop Thumbs 0",
+   "[DEVICES] CHECK ipad_old Shop Tap 0",
+   "[DEVICES] CHECK ipad_old Shop Text 0",
+   "[DEVICES] CHECK ipad_old Shop Fits 0",
+   "[DEVICES] CHECK ipad_old Shop Overlap 0",
+   "[DEVICES] CHECK ipad_old Shop Road 0",
+   "[DEVICES] SHOT ipad_old Shop",
+   "[DEVICES] SIZE ipad_old Pets viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 10 buttons, 68 texts",
+   "[DEVICES] CHECK ipad_old Pets Cut 0",
+   "[DEVICES] CHECK ipad_old Pets TV safe 0",
+   "[DEVICES] CHECK ipad_old Pets Thumbs 0",
+   "[DEVICES] CHECK ipad_old Pets Tap 0",
+   "[DEVICES] CHECK ipad_old Pets Text 0",
+   "[DEVICES] CHECK ipad_old Pets Fits 0",
+   "[DEVICES] CHECK ipad_old Pets Overlap 0",
+   "[DEVICES] CHECK ipad_old Pets Road 0",
+   "[DEVICES] SHOT ipad_old Pets",
+   "[DEVICES] SIZE ipad_old Backpack viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 14 buttons, 30 texts",
+   "[DEVICES] CHECK ipad_old Backpack Cut 0",
+   "[DEVICES] CHECK ipad_old Backpack TV safe 0",
+   "[DEVICES] CHECK ipad_old Backpack Thumbs 0",
+   "[DEVICES] CHECK ipad_old Backpack Tap 0",
+   "[DEVICES] CHECK ipad_old Backpack Text 0",
+   "[DEVICES] CHECK ipad_old Backpack Fits 0",
+   "[DEVICES] CHECK ipad_old Backpack Overlap 0",
+   "[DEVICES] CHECK ipad_old Backpack Road 0",
+   "[DEVICES] SHOT ipad_old Backpack",
+   "[DEVICES] SIZE ipad_old Run viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 11 buttons, 26 texts",
+   "[DEVICES] CHECK ipad_old Run Cut 0",
+   "[DEVICES] CHECK ipad_old Run TV safe 0",
+   "[DEVICES] CHECK ipad_old Run Thumbs 0",
+   "[DEVICES] CHECK ipad_old Run Tap 0",
+   "[DEVICES] CHECK ipad_old Run Text 0",
+   "[DEVICES] CHECK ipad_old Run Fits 0",
+   "[DEVICES] CHECK ipad_old Run Overlap 0",
+   "[DEVICES] CHECK ipad_old Run Road 0",
+   "[DEVICES] SHOT ipad_old Run",
+   "[DEVICES] SIZE ipad_old Defender viewport 1023x768 inset 0,58 touch true pad false hud scale 1.10, 13 buttons, 30 texts",
+   "[DEVICES] CHECK ipad_old Defender Cut 0",
+   "[DEVICES] CHECK ipad_old Defender TV safe 0",
+   "[DEVICES] CHECK ipad_old Defender Thumbs 0",
+   "[DEVICES] CHECK ipad_old Defender Tap 0",
+   "[DEVICES] CHECK ipad_old Defender Text 0",
+   "[DEVICES] CHECK ipad_old Defender Fits 0",
+   "[DEVICES] CHECK ipad_old Defender Overlap 0",
+   "[DEVICES] CHECK ipad_old Defender Road 0",
+   "[DEVICES] SHOT ipad_old Defender",
+   "[DEVICES] DONE ipad_old 9 steps, 0 problems"
+  ]
+ },
+ "ipad_pro": {
+  "label": "iPad Pro 13 (M5) - newest iPad",
+  "sim": "ipad_pro_M5_13in",
+  "input": "touch",
+  "expect": [
+   1375,
+   1032
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Outpost viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Shop viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Pets viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Backpack viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Run viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1375,
+     1032
+    ],
+    "size_line": "[DEVICES] SIZE ipad_pro Defender viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator ipad_pro_M5_13in set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready ipad_pro touch touch enabled true preferred Enum.PreferredInput.Touch",
+   "[DEVICES] SIZE ipad_pro Outpost viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 3 buttons, 7 texts",
+   "[DEVICES] CHECK ipad_pro Outpost Cut 0",
+   "[DEVICES] CHECK ipad_pro Outpost TV safe 0",
+   "[DEVICES] CHECK ipad_pro Outpost Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Outpost Tap 0",
+   "[DEVICES] CHECK ipad_pro Outpost Text 0",
+   "[DEVICES] CHECK ipad_pro Outpost Fits 0",
+   "[DEVICES] CHECK ipad_pro Outpost Overlap 0",
+   "[DEVICES] CHECK ipad_pro Outpost Road 0",
+   "[DEVICES] SHOT ipad_pro Outpost",
+   "[DEVICES] SIZE ipad_pro Shop viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 12 buttons, 22 texts",
+   "[DEVICES] CHECK ipad_pro Shop Cut 0",
+   "[DEVICES] CHECK ipad_pro Shop TV safe 0",
+   "[DEVICES] CHECK ipad_pro Shop Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Shop Tap 0",
+   "[DEVICES] CHECK ipad_pro Shop Text 0",
+   "[DEVICES] CHECK ipad_pro Shop Fits 0",
+   "[DEVICES] CHECK ipad_pro Shop Overlap 0",
+   "[DEVICES] CHECK ipad_pro Shop Road 0",
+   "[DEVICES] SHOT ipad_pro Shop",
+   "[DEVICES] SIZE ipad_pro Pets viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 10 buttons, 68 texts",
+   "[DEVICES] CHECK ipad_pro Pets Cut 0",
+   "[DEVICES] CHECK ipad_pro Pets TV safe 0",
+   "[DEVICES] CHECK ipad_pro Pets Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Pets Tap 0",
+   "[DEVICES] CHECK ipad_pro Pets Text 0",
+   "[DEVICES] CHECK ipad_pro Pets Fits 0",
+   "[DEVICES] CHECK ipad_pro Pets Overlap 0",
+   "[DEVICES] CHECK ipad_pro Pets Road 0",
+   "[DEVICES] SHOT ipad_pro Pets",
+   "[DEVICES] SIZE ipad_pro Backpack viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 14 buttons, 30 texts",
+   "[DEVICES] CHECK ipad_pro Backpack Cut 0",
+   "[DEVICES] CHECK ipad_pro Backpack TV safe 0",
+   "[DEVICES] CHECK ipad_pro Backpack Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Backpack Tap 0",
+   "[DEVICES] CHECK ipad_pro Backpack Text 0",
+   "[DEVICES] CHECK ipad_pro Backpack Fits 0",
+   "[DEVICES] CHECK ipad_pro Backpack Overlap 0",
+   "[DEVICES] CHECK ipad_pro Backpack Road 0",
+   "[DEVICES] SHOT ipad_pro Backpack",
+   "[DEVICES] SIZE ipad_pro Run viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 11 buttons, 26 texts",
+   "[DEVICES] CHECK ipad_pro Run Cut 0",
+   "[DEVICES] CHECK ipad_pro Run TV safe 0",
+   "[DEVICES] CHECK ipad_pro Run Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Run Tap 0",
+   "[DEVICES] CHECK ipad_pro Run Text 0",
+   "[DEVICES] CHECK ipad_pro Run Fits 0",
+   "[DEVICES] CHECK ipad_pro Run Overlap 0",
+   "[DEVICES] CHECK ipad_pro Run Road 0",
+   "[DEVICES] SHOT ipad_pro Run",
+   "[DEVICES] SIZE ipad_pro Defender viewport 1375x1032 inset 0,58 touch true pad false hud scale 1.30, 13 buttons, 30 texts",
+   "[DEVICES] CHECK ipad_pro Defender Cut 0",
+   "[DEVICES] CHECK ipad_pro Defender TV safe 0",
+   "[DEVICES] CHECK ipad_pro Defender Thumbs 0",
+   "[DEVICES] CHECK ipad_pro Defender Tap 0",
+   "[DEVICES] CHECK ipad_pro Defender Text 0",
+   "[DEVICES] CHECK ipad_pro Defender Fits 0",
+   "[DEVICES] CHECK ipad_pro Defender Overlap 0",
+   "[DEVICES] CHECK ipad_pro Defender Road 0",
+   "[DEVICES] SHOT ipad_pro Defender",
+   "[DEVICES] DONE ipad_pro 9 steps, 0 problems"
+  ]
+ },
+ "xbox_1080": {
+  "label": "Xbox, 1080p TV, controller",
+  "sim": "xbox",
+  "input": "pad",
+  "expect": [
+   1919,
+   1079
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Outpost viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 12 buttons, 23 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Shop viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 21 buttons, 38 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Pets viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 84 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Backpack viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 23 buttons, 46 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Run viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 17 buttons, 41 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_1080 Defender viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 46 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator xbox set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready xbox_1080 pad touch enabled false preferred Enum.PreferredInput.Gamepad",
+   "[DEVICES] SIZE xbox_1080 Outpost viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 12 buttons, 23 texts",
+   "[DEVICES] CHECK xbox_1080 Outpost Cut 0",
+   "[DEVICES] CHECK xbox_1080 Outpost TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Tap 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Text 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Fits 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Outpost Road 0",
+   "[DEVICES] SHOT xbox_1080 Outpost",
+   "[DEVICES] SIZE xbox_1080 Shop viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 21 buttons, 38 texts",
+   "[DEVICES] CHECK xbox_1080 Shop Cut 0",
+   "[DEVICES] CHECK xbox_1080 Shop TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Shop Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Shop Tap 0",
+   "[DEVICES] CHECK xbox_1080 Shop Text 0",
+   "[DEVICES] CHECK xbox_1080 Shop Fits 0",
+   "[DEVICES] CHECK xbox_1080 Shop Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Shop Road 0",
+   "[DEVICES] SHOT xbox_1080 Shop",
+   "[DEVICES] SIZE xbox_1080 Pets viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 84 texts",
+   "[DEVICES] CHECK xbox_1080 Pets Cut 0",
+   "[DEVICES] CHECK xbox_1080 Pets TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Pets Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Pets Tap 0",
+   "[DEVICES] CHECK xbox_1080 Pets Text 0",
+   "[DEVICES] CHECK xbox_1080 Pets Fits 0",
+   "[DEVICES] CHECK xbox_1080 Pets Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Pets Road 0",
+   "[DEVICES] SHOT xbox_1080 Pets",
+   "[DEVICES] SIZE xbox_1080 Backpack viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 23 buttons, 46 texts",
+   "[DEVICES] CHECK xbox_1080 Backpack Cut 0",
+   "[DEVICES] CHECK xbox_1080 Backpack TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Tap 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Text 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Fits 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Backpack Road 0",
+   "[DEVICES] SHOT xbox_1080 Backpack",
+   "[DEVICES] SIZE xbox_1080 Run viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 17 buttons, 41 texts",
+   "[DEVICES] CHECK xbox_1080 Run Cut 0",
+   "[DEVICES] CHECK xbox_1080 Run TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Run Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Run Tap 0",
+   "[DEVICES] CHECK xbox_1080 Run Text 0",
+   "[DEVICES] CHECK xbox_1080 Run Fits 0",
+   "[DEVICES] CHECK xbox_1080 Run Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Run Road 0",
+   "[DEVICES] SHOT xbox_1080 Run",
+   "[DEVICES] SIZE xbox_1080 Defender viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 46 texts",
+   "[DEVICES] CHECK xbox_1080 Defender Cut 0",
+   "[DEVICES] CHECK xbox_1080 Defender TV safe 0",
+   "[DEVICES] CHECK xbox_1080 Defender Thumbs 0",
+   "[DEVICES] CHECK xbox_1080 Defender Tap 0",
+   "[DEVICES] CHECK xbox_1080 Defender Text 0",
+   "[DEVICES] CHECK xbox_1080 Defender Fits 0",
+   "[DEVICES] CHECK xbox_1080 Defender Overlap 0",
+   "[DEVICES] CHECK xbox_1080 Defender Road 0",
+   "[DEVICES] SHOT xbox_1080 Defender",
+   "[DEVICES] DONE xbox_1080 9 steps, 0 problems"
+  ]
+ },
+ "xbox_4k": {
+  "label": "PS5 preset, TV, controller (Studio has no 4K preset)",
+  "sim": "ps5",
+  "input": "pad",
+  "expect": [
+   1919,
+   1079
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Outpost viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 12 buttons, 23 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Shop viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 21 buttons, 38 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Pets viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 84 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Backpack viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 23 buttons, 46 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Run viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 17 buttons, 41 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE xbox_4k Defender viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 46 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator ps5 set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready xbox_4k pad touch enabled false preferred Enum.PreferredInput.Gamepad",
+   "[DEVICES] SIZE xbox_4k Outpost viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 12 buttons, 23 texts",
+   "[DEVICES] CHECK xbox_4k Outpost Cut 0",
+   "[DEVICES] CHECK xbox_4k Outpost TV safe 0",
+   "[DEVICES] CHECK xbox_4k Outpost Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Outpost Tap 0",
+   "[DEVICES] CHECK xbox_4k Outpost Text 0",
+   "[DEVICES] CHECK xbox_4k Outpost Fits 0",
+   "[DEVICES] CHECK xbox_4k Outpost Overlap 0",
+   "[DEVICES] CHECK xbox_4k Outpost Road 0",
+   "[DEVICES] SHOT xbox_4k Outpost",
+   "[DEVICES] SIZE xbox_4k Shop viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 21 buttons, 38 texts",
+   "[DEVICES] CHECK xbox_4k Shop Cut 0",
+   "[DEVICES] CHECK xbox_4k Shop TV safe 0",
+   "[DEVICES] CHECK xbox_4k Shop Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Shop Tap 0",
+   "[DEVICES] CHECK xbox_4k Shop Text 0",
+   "[DEVICES] CHECK xbox_4k Shop Fits 0",
+   "[DEVICES] CHECK xbox_4k Shop Overlap 0",
+   "[DEVICES] CHECK xbox_4k Shop Road 0",
+   "[DEVICES] SHOT xbox_4k Shop",
+   "[DEVICES] SIZE xbox_4k Pets viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 84 texts",
+   "[DEVICES] CHECK xbox_4k Pets Cut 0",
+   "[DEVICES] CHECK xbox_4k Pets TV safe 0",
+   "[DEVICES] CHECK xbox_4k Pets Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Pets Tap 0",
+   "[DEVICES] CHECK xbox_4k Pets Text 0",
+   "[DEVICES] CHECK xbox_4k Pets Fits 0",
+   "[DEVICES] CHECK xbox_4k Pets Overlap 0",
+   "[DEVICES] CHECK xbox_4k Pets Road 0",
+   "[DEVICES] SHOT xbox_4k Pets",
+   "[DEVICES] SIZE xbox_4k Backpack viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 23 buttons, 46 texts",
+   "[DEVICES] CHECK xbox_4k Backpack Cut 0",
+   "[DEVICES] CHECK xbox_4k Backpack TV safe 0",
+   "[DEVICES] CHECK xbox_4k Backpack Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Backpack Tap 0",
+   "[DEVICES] CHECK xbox_4k Backpack Text 0",
+   "[DEVICES] CHECK xbox_4k Backpack Fits 0",
+   "[DEVICES] CHECK xbox_4k Backpack Overlap 0",
+   "[DEVICES] CHECK xbox_4k Backpack Road 0",
+   "[DEVICES] SHOT xbox_4k Backpack",
+   "[DEVICES] SIZE xbox_4k Run viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 17 buttons, 41 texts",
+   "[DEVICES] CHECK xbox_4k Run Cut 0",
+   "[DEVICES] CHECK xbox_4k Run TV safe 0",
+   "[DEVICES] CHECK xbox_4k Run Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Run Tap 0",
+   "[DEVICES] CHECK xbox_4k Run Text 0",
+   "[DEVICES] CHECK xbox_4k Run Fits 0",
+   "[DEVICES] CHECK xbox_4k Run Overlap 0",
+   "[DEVICES] CHECK xbox_4k Run Road 0",
+   "[DEVICES] SHOT xbox_4k Run",
+   "[DEVICES] SIZE xbox_4k Defender viewport 1919x1079 inset 0,87 touch false pad true hud scale 1.38, 19 buttons, 46 texts",
+   "[DEVICES] CHECK xbox_4k Defender Cut 0",
+   "[DEVICES] CHECK xbox_4k Defender TV safe 0",
+   "[DEVICES] CHECK xbox_4k Defender Thumbs 0",
+   "[DEVICES] CHECK xbox_4k Defender Tap 0",
+   "[DEVICES] CHECK xbox_4k Defender Text 0",
+   "[DEVICES] CHECK xbox_4k Defender Fits 0",
+   "[DEVICES] CHECK xbox_4k Defender Overlap 0",
+   "[DEVICES] CHECK xbox_4k Defender Road 0",
+   "[DEVICES] SHOT xbox_4k Defender",
+   "[DEVICES] DONE xbox_4k 9 steps, 0 problems"
+  ]
+ },
+ "tv_touch": {
+  "label": "Touch screen TV, 1080p",
+  "sim": "hd_1080",
+  "input": "touch",
+  "expect": [
+   1919,
+   1079
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Outpost viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 3 buttons, 7 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Shop viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 12 buttons, 22 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Pets viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 10 buttons, 68 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Backpack viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 14 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Run viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 11 buttons, 26 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1919,
+     1079
+    ],
+    "size_line": "[DEVICES] SIZE tv_touch Defender viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 13 buttons, 30 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator hd_1080 set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready tv_touch touch touch enabled false preferred Enum.PreferredInput.KeyboardAndMouse",
+   "[DEVICES] SIZE tv_touch Outpost viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 3 buttons, 7 texts",
+   "[DEVICES] CHECK tv_touch Outpost Cut 0",
+   "[DEVICES] CHECK tv_touch Outpost TV safe 0",
+   "[DEVICES] CHECK tv_touch Outpost Thumbs 0",
+   "[DEVICES] CHECK tv_touch Outpost Tap 0",
+   "[DEVICES] CHECK tv_touch Outpost Text 0",
+   "[DEVICES] CHECK tv_touch Outpost Fits 0",
+   "[DEVICES] CHECK tv_touch Outpost Overlap 0",
+   "[DEVICES] CHECK tv_touch Outpost Road 0",
+   "[DEVICES] SHOT tv_touch Outpost",
+   "[DEVICES] SIZE tv_touch Shop viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 12 buttons, 22 texts",
+   "[DEVICES] CHECK tv_touch Shop Cut 0",
+   "[DEVICES] CHECK tv_touch Shop TV safe 0",
+   "[DEVICES] CHECK tv_touch Shop Thumbs 0",
+   "[DEVICES] CHECK tv_touch Shop Tap 0",
+   "[DEVICES] CHECK tv_touch Shop Text 0",
+   "[DEVICES] CHECK tv_touch Shop Fits 0",
+   "[DEVICES] CHECK tv_touch Shop Overlap 0",
+   "[DEVICES] CHECK tv_touch Shop Road 0",
+   "[DEVICES] SHOT tv_touch Shop",
+   "[DEVICES] SIZE tv_touch Pets viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 10 buttons, 68 texts",
+   "[DEVICES] CHECK tv_touch Pets Cut 0",
+   "[DEVICES] CHECK tv_touch Pets TV safe 0",
+   "[DEVICES] CHECK tv_touch Pets Thumbs 0",
+   "[DEVICES] CHECK tv_touch Pets Tap 0",
+   "[DEVICES] CHECK tv_touch Pets Text 0",
+   "[DEVICES] CHECK tv_touch Pets Fits 0",
+   "[DEVICES] CHECK tv_touch Pets Overlap 0",
+   "[DEVICES] CHECK tv_touch Pets Road 0",
+   "[DEVICES] SHOT tv_touch Pets",
+   "[DEVICES] SIZE tv_touch Backpack viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 14 buttons, 30 texts",
+   "[DEVICES] CHECK tv_touch Backpack Cut 0",
+   "[DEVICES] CHECK tv_touch Backpack TV safe 0",
+   "[DEVICES] CHECK tv_touch Backpack Thumbs 0",
+   "[DEVICES] CHECK tv_touch Backpack Tap 0",
+   "[DEVICES] CHECK tv_touch Backpack Text 0",
+   "[DEVICES] CHECK tv_touch Backpack Fits 0",
+   "[DEVICES] CHECK tv_touch Backpack Overlap 0",
+   "[DEVICES] CHECK tv_touch Backpack Road 0",
+   "[DEVICES] SHOT tv_touch Backpack",
+   "[DEVICES] SIZE tv_touch Run viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 11 buttons, 26 texts",
+   "[DEVICES] CHECK tv_touch Run Cut 0",
+   "[DEVICES] CHECK tv_touch Run TV safe 0",
+   "[DEVICES] CHECK tv_touch Run Thumbs 0",
+   "[DEVICES] CHECK tv_touch Run Tap 0",
+   "[DEVICES] CHECK tv_touch Run Text 0",
+   "[DEVICES] CHECK tv_touch Run Fits 0",
+   "[DEVICES] CHECK tv_touch Run Overlap 0",
+   "[DEVICES] CHECK tv_touch Run Road 0",
+   "[DEVICES] SHOT tv_touch Run",
+   "[DEVICES] SIZE tv_touch Defender viewport 1919x1079 inset 0,58 touch true pad false hud scale 1.30, 13 buttons, 30 texts",
+   "[DEVICES] CHECK tv_touch Defender Cut 0",
+   "[DEVICES] CHECK tv_touch Defender TV safe 0",
+   "[DEVICES] CHECK tv_touch Defender Thumbs 0",
+   "[DEVICES] CHECK tv_touch Defender Tap 0",
+   "[DEVICES] CHECK tv_touch Defender Text 0",
+   "[DEVICES] CHECK tv_touch Defender Fits 0",
+   "[DEVICES] CHECK tv_touch Defender Overlap 0",
+   "[DEVICES] CHECK tv_touch Defender Road 0",
+   "[DEVICES] SHOT tv_touch Defender",
+   "[DEVICES] DONE tv_touch 9 steps, 0 problems"
+  ]
+ },
+ "pc_laptop": {
+  "label": "PC laptop (Studio's average Windows preset), mouse",
+  "sim": "average_windows",
+  "input": "mouse",
+  "expect": [
+   1365,
+   768
+  ],
+  "steps": {
+   "Outpost": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Outpost viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 12 buttons, 21 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Shop": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Shop viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 21 buttons, 35 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Pets": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Pets viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 19 buttons, 81 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Backpack": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Backpack viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 23 buttons, 43 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Run": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Run viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 17 buttons, 42 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   },
+   "Defender": {
+    "viewport": [
+     1365,
+     768
+    ],
+    "size_line": "[DEVICES] SIZE pc_laptop Defender viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 19 buttons, 46 texts",
+    "checks": {
+     "Cut": [
+      0,
+      ""
+     ],
+     "TV safe": [
+      0,
+      ""
+     ],
+     "Thumbs": [
+      0,
+      ""
+     ],
+     "Tap": [
+      0,
+      ""
+     ],
+     "Text": [
+      0,
+      ""
+     ],
+     "Fits": [
+      0,
+      ""
+     ],
+     "Overlap": [
+      0,
+      ""
+     ],
+     "Road": [
+      0,
+      ""
+     ]
+    },
+    "shot": "connector"
+   }
+  },
+  "lines": [
+   "[DEVICES] plugin emulator average_windows set",
+   "[DEVICES] plugin devices xbox, ps4, ps5, android_tv_1080, average_windows, average_macbook, hd_720, hd_1080, vga, meta_quest_2, meta_quest_3, generic_handheld_720, generic_handheld_1080, iphone_6_Plus, iphone_7, iphone_XR, iphone_11, samsung_galaxy_a06, iphone_13, iphone_13_pro, iphone_13_pro_max, iphone_14, samsung_galaxy_a16, iphone_16, iphone_16_pro, iphone_16_pro_max, iphone_17_pro, samsung_galaxy_s22_ultra, samsung_galaxy_s25_ultra, ipad_6th_generation, ipad_8th_generation, ipad_9th_generation, xiaomi_redmi_pad_se, amazon_fire_hd10_2023, ipad_10th_generation, ipad_a16, samsung_galaxy_tab_a8, samsung_galaxy_tab_a9, ipad_air_5th_generation, ipad_pro_M4_11in, ipad_pro_M5_13in, samsung_galaxy_tab_a9+, samsung_galaxy_tab_S11",
+   "[DEVICES] client ready pc_laptop mouse touch enabled false preferred Enum.PreferredInput.KeyboardAndMouse",
+   "[DEVICES] SIZE pc_laptop Outpost viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 12 buttons, 21 texts",
+   "[DEVICES] CHECK pc_laptop Outpost Cut 0",
+   "[DEVICES] CHECK pc_laptop Outpost TV safe 0",
+   "[DEVICES] CHECK pc_laptop Outpost Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Outpost Tap 0",
+   "[DEVICES] CHECK pc_laptop Outpost Text 0",
+   "[DEVICES] CHECK pc_laptop Outpost Fits 0",
+   "[DEVICES] CHECK pc_laptop Outpost Overlap 0",
+   "[DEVICES] CHECK pc_laptop Outpost Road 0",
+   "[DEVICES] SHOT pc_laptop Outpost",
+   "[DEVICES] SIZE pc_laptop Shop viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 21 buttons, 35 texts",
+   "[DEVICES] CHECK pc_laptop Shop Cut 0",
+   "[DEVICES] CHECK pc_laptop Shop TV safe 0",
+   "[DEVICES] CHECK pc_laptop Shop Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Shop Tap 0",
+   "[DEVICES] CHECK pc_laptop Shop Text 0",
+   "[DEVICES] CHECK pc_laptop Shop Fits 0",
+   "[DEVICES] CHECK pc_laptop Shop Overlap 0",
+   "[DEVICES] CHECK pc_laptop Shop Road 0",
+   "[DEVICES] SHOT pc_laptop Shop",
+   "[DEVICES] SIZE pc_laptop Pets viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 19 buttons, 81 texts",
+   "[DEVICES] CHECK pc_laptop Pets Cut 0",
+   "[DEVICES] CHECK pc_laptop Pets TV safe 0",
+   "[DEVICES] CHECK pc_laptop Pets Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Pets Tap 0",
+   "[DEVICES] CHECK pc_laptop Pets Text 0",
+   "[DEVICES] CHECK pc_laptop Pets Fits 0",
+   "[DEVICES] CHECK pc_laptop Pets Overlap 0",
+   "[DEVICES] CHECK pc_laptop Pets Road 0",
+   "[DEVICES] SHOT pc_laptop Pets",
+   "[DEVICES] SIZE pc_laptop Backpack viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 23 buttons, 43 texts",
+   "[DEVICES] CHECK pc_laptop Backpack Cut 0",
+   "[DEVICES] CHECK pc_laptop Backpack TV safe 0",
+   "[DEVICES] CHECK pc_laptop Backpack Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Backpack Tap 0",
+   "[DEVICES] CHECK pc_laptop Backpack Text 0",
+   "[DEVICES] CHECK pc_laptop Backpack Fits 0",
+   "[DEVICES] CHECK pc_laptop Backpack Overlap 0",
+   "[DEVICES] CHECK pc_laptop Backpack Road 0",
+   "[DEVICES] SHOT pc_laptop Backpack",
+   "[DEVICES] SIZE pc_laptop Run viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 17 buttons, 42 texts",
+   "[DEVICES] CHECK pc_laptop Run Cut 0",
+   "[DEVICES] CHECK pc_laptop Run TV safe 0",
+   "[DEVICES] CHECK pc_laptop Run Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Run Tap 0",
+   "[DEVICES] CHECK pc_laptop Run Text 0",
+   "[DEVICES] CHECK pc_laptop Run Fits 0",
+   "[DEVICES] CHECK pc_laptop Run Overlap 0",
+   "[DEVICES] CHECK pc_laptop Run Road 0",
+   "[DEVICES] SHOT pc_laptop Run",
+   "[DEVICES] SIZE pc_laptop Defender viewport 1365x768 inset 0,58 touch false pad false hud scale 0.99, 19 buttons, 46 texts",
+   "[DEVICES] CHECK pc_laptop Defender Cut 0",
+   "[DEVICES] CHECK pc_laptop Defender TV safe 0",
+   "[DEVICES] CHECK pc_laptop Defender Thumbs 0",
+   "[DEVICES] CHECK pc_laptop Defender Tap 0",
+   "[DEVICES] CHECK pc_laptop Defender Text 0",
+   "[DEVICES] CHECK pc_laptop Defender Fits 0",
+   "[DEVICES] CHECK pc_laptop Defender Overlap 0",
+   "[DEVICES] CHECK pc_laptop Defender Road 0",
+   "[DEVICES] SHOT pc_laptop Defender",
+   "[DEVICES] DONE pc_laptop 9 steps, 0 problems"
+  ]
+ }
+}

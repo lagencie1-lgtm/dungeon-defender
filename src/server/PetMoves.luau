@@ -244,6 +244,7 @@ local function fetchStep(player, pet, root)
 	task.delay(there, function()
 		-- grab: whatever is still lying there (someone may have walked over it) goes into the backpack now
 		local best = nil
+		local carriesGear = false
 		for _, piece in load do
 			claimed[piece.gem or piece.dropId] = nil
 			if not player.Parent then
@@ -253,13 +254,12 @@ local function fetchStep(player, pet, root)
 				if LootService.TakeGem(piece.gem, player) then
 					best = best or GEM_COLOR
 				end
-			elseif ItemService.TakeDrop(player, piece.dropId) then
-				local r = Items.Rarities[piece.rarity]
-				best = r and r.Color or best
+			elseif ItemService.TakeDrop(player, piece.dropId, modelOf(player, pet.id)) then
+				carriesGear = true -- (the item itself rides on the pet: Loot.client.luau)
 			end
 		end
 		local model = modelOf(player, pet.id)
-		if best and model and model.Parent then
+		if (best or carriesGear) and model and model.Parent then
 			model:SetAttribute("PetFetched", (model:GetAttribute("PetFetched") or 0) + 1) -- read by the autotest
 		end
 		local hero = rootOf(player)

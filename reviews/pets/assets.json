@@ -1,0 +1,78 @@
+{
+ "slimey": {
+  "model": "79825130788479",
+  "model_hash": "5f3844e25243769a",
+  "paint": "103305678739779",
+  "paint_hash": "b29d0fd2439492d9"
+ },
+ "leafling": {
+  "model": "89402214767082",
+  "model_hash": "eb1aaba8060b4af7",
+  "paint": "109443573832961",
+  "paint_hash": "a758d3d860f14701"
+ },
+ "stonepup": {
+  "model": "109215739941938",
+  "model_hash": "a4cf86f77c612665",
+  "paint": "77614455748986",
+  "paint_hash": "fc6150d47c3b63e8"
+ },
+ "mosskitten": {
+  "model": "115894895878085",
+  "model_hash": "d636f13d5d491d76",
+  "paint": "118099079651366",
+  "paint_hash": "52ace389ec5c5f42"
+ },
+ "glowbug": {
+  "model": "80503139540435",
+  "model_hash": "4980b5de1c05315e",
+  "paint": "84480281931592",
+  "paint_hash": "a0cd0c54a1cf6d60"
+ },
+ "emberfox": {
+  "model": "115020015206467",
+  "model_hash": "3ed29001a9062fbd",
+  "paint": "83238530701506",
+  "paint_hash": "b343772883e536a2"
+ },
+ "crystalowl": {
+  "model": "98039852815254",
+  "model_hash": "512a843e21b1a328",
+  "paint": "132699130365812",
+  "paint_hash": "79149fd96eea879b"
+ },
+ "minigolem": {
+  "model": "80971041393850",
+  "model_hash": "6affc01b9e178088",
+  "paint": "107468272695126",
+  "paint_hash": "66e50ae125c781a2"
+ },
+ "babydragon": {
+  "model": "137353963854656",
+  "model_hash": "ce0f1b6e8c39e8b9",
+  "paint": "113349370019796",
+  "paint_hash": "93eaefe220939bcb"
+ },
+ "starunicorn": {
+  "model": "74603858276108",
+  "model_hash": "c95654a788dce69b",
+  "paint": "126627651013370",
+  "paint_hash": "12e72f8d6c64ea87"
+ },
+ "phoenix": {
+  "model": "133538177805864",
+  "model_hash": "5fc4eda1a51d9d9b",
+  "paint": "128748039078737",
+  "paint_hash": "50ea6a5c4032cda2"
+ },
+ "voiddrake": {
+  "model": "98269270866498",
+  "model_hash": "d8bacfc7db8a5720",
+  "paint": "127745780362259",
+  "paint_hash": "d4dd42b91e128021"
+ },
+ "_white": {
+  "decal": "81526636701074",
+  "image": "81526636701074"
+ }
+}

@@ -1,0 +1,112 @@
+{
+ "hair": {
+  "dE": 4.7,
+  "dE_mid": 3.2,
+  "pixels": 13110,
+  "stroke": 4.07,
+  "stroke_painting": 4.75
+ },
+ "face": {
+  "dE": 1.6,
+  "dE_mid": 0.4,
+  "pixels": 12292,
+  "stroke": 2.02,
+  "stroke_painting": 1.72
+ },
+ "hood": {
+  "dE": 20.1,
+  "dE_mid": 8.0,
+  "pixels": 21966,
+  "stroke": 4.62,
+  "stroke_painting": 2.31
+ },
+ "tunic": {
+  "dE": 8.2,
+  "dE_mid": 0.9,
+  "pixels": 32863,
+  "stroke": 1.74,
+  "stroke_painting": 2.02
+ },
+ "arms": {
+  "dE": 16.1,
+  "dE_mid": 19.8,
+  "pixels": 29222,
+  "stroke": 4.99,
+  "stroke_painting": 4.32
+ },
+ "boots": {
+  "dE": 7.4,
+  "dE_mid": 3.6,
+  "pixels": 35936,
+  "stroke": 1.45,
+  "stroke_painting": 3.05
+ },
+ "face_gate": {
+  "p99": 5.0,
+  "biggest_dark_patch": 0.0,
+  "ok": true
+ },
+ "side": {
+  "hood": {
+   "dE": 7.5,
+   "pixels": 66218,
+   "p99": 36.0
+  },
+  "tunic": {
+   "dE": 14.3,
+   "pixels": 14028,
+   "p99": 49.0
+  },
+  "boots": {
+   "dE": 5.8,
+   "pixels": 22392,
+   "p99": 27.5
+  }
+ },
+ "back": {
+  "hood": {
+   "dE": 8.3,
+   "pixels": 85491,
+   "p99": 35.8
+  },
+  "tunic": {
+   "dE": 8.6,
+   "pixels": 37169,
+   "p99": 26.3
+  },
+  "boots": {
+   "dE": 6.5,
+   "pixels": 35957,
+   "p99": 25.4
+  },
+  "arms": {
+   "dE": 15.0,
+   "pixels": 29508,
+   "p99": 51.0
+  }
+ },
+ "three_views": {
+  "hood": 12.0,
+  "tunic": 10.4,
+  "arms": 15.6,
+  "boots": 6.6
+ },
+ "hood_back_p99": 35.8,
+ "doubled": {
+  "strap (chest, rows 400 and 440)": {
+   "painting": 1,
+   "model": 1,
+   "ok": true
+  },
+  "belt (columns 250 and 390)": {
+   "painting": 1,
+   "model": 1,
+   "ok": true
+  },
+  "trim (column 321, over the brow)": {
+   "painting": 1,
+   "model": 1,
+   "ok": true
+  }
+ }
+}

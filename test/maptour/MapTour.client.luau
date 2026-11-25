@@ -14,6 +14,13 @@ local function mark(...)
 end
 
 local HOLD = 2.6
+local v = Vector3.new
+local SPOTS = {
+	CursedForest = {
+		{ name = "yard", hero = v(23, 0, 14), toward = v(34, 0, 36) }, -- the stepping stones down to the chapel yard
+		{ name = "bridge", hero = v(64, 0, -26), toward = v(52, 0, -4) }, -- the shrine bridge's near landing
+	},
+}
 local function hold(mapId, name, cframe, fov)
 	camera.CameraType = Enum.CameraType.Scriptable
 	local old = camera.FieldOfView
@@ -36,6 +43,12 @@ cue.OnClientEvent:Connect(function(mapId)
 	task.wait(1.5)
 	-- the run camera as the game sets it at the hero's start
 	mark("shot", mapId, "hero")
+	local root = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	local function bearing(v)
+		return math.floor(math.deg(math.atan2(-v.Z, v.X)) + 0.5) -- 0 = east, 90 = north
+	end
+	mark("start", mapId, "camera looks to bearing", bearing(camera.CFrame.LookVector),
+		"hero faces bearing", root and bearing(root.CFrame.LookVector) or "-", "at", root and tostring(root.Position) or "-")
 	task.wait(1.2)
 	-- the plan: straight down
 	-- (from this far up the map's haze would hide it: the two far views are taken without it)
@@ -81,6 +94,14 @@ cue.OnClientEvent:Connect(function(mapId)
 		local eye = hero - look * 20.5 * math.cos(pitch) + Vector3.new(0, 20.5 * math.sin(pitch), 0)
 		local _ = y
 		hold(mapId, "lane" .. i, CFrame.lookAt(eye, hero))
+	end
+	-- the places a map's design is about (Lemp's map audit), at the run camera's angle: the hero stands at `hero`
+	-- and looks towards `toward`
+	for _, view in SPOTS[mapId] or {} do
+		local hero = Vector3.new(view.hero.X, (Ground.At(view.hero.X, view.hero.Z)) + 3, view.hero.Z)
+		local look = ((view.toward - hero) * Vector3.new(1, 0, 1)).Unit
+		local eye = hero - look * 20.5 * math.cos(pitch) + Vector3.new(0, 20.5 * math.sin(pitch), 0)
+		hold(mapId, view.name, CFrame.lookAt(eye, hero))
 	end
 	camera.CameraType = Enum.CameraType.Custom
 	cue:FireServer(mapId)

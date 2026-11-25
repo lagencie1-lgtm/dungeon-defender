@@ -17,13 +17,14 @@ $place = Join-Path $root "tools\$name.rbxl"
 if ($LASTEXITCODE -ne 0) { throw "rojo build failed" }
 $studio = (Get-ChildItem "$env:LOCALAPPDATA\Roblox\Versions\*\RobloxStudioBeta.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
 $logDir = "$env:LOCALAPPDATA\Roblox\logs"
-$before = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+# (every log that exists now: with another Studio open, the newest log can be that Studio's)
+$before = @(Get-ChildItem "$logDir\*Studio*.log" | ForEach-Object { $_.FullName })
 $proc = Start-Process $studio -ArgumentList "`"$place`"" -PassThru
 $log = $null
 for ($i = 0; $i -lt 90 -and -not $log; $i++) {
     Start-Sleep 1
-    $new = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($new -and (-not $before -or $new.FullName -ne $before.FullName)) { $log = $new.FullName }
+    $new = Get-ChildItem "$logDir\*Studio*.log" | Where-Object { $before -notcontains $_.FullName } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($new) { $log = $new.FullName }
 }
 $deadline = (Get-Date).AddSeconds($Limit)
 while ((Get-Date) -lt $deadline) {

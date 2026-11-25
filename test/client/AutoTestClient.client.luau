@@ -81,6 +81,30 @@ local function verifyGearLooks()
 	end), "accessories stayed visible after restoring Default")
 end
 
+-- every sound loaded on this device (client/SoundBank: batches, retries; the iPad-silence check)
+local soundOk, soundError = pcall(function()
+	local SoundBank = require(player:WaitForChild("PlayerScripts"):WaitForChild("Client"):WaitForChild("SoundBank"))
+	local report = SoundBank.CheckAll()
+	log("sounds:", SoundBank.Summary(report))
+	assert(#report.failed == 0, #report.failed .. " sound files did not load")
+	local names = 0
+	for _ in require(ReplicatedStorage.Shared.Config).Sounds do
+		names += 1
+	end
+	assert(report.files >= 1 and report.files <= names, "the sound check missed the sound list")
+	assert(waitFor(function() return player:GetAttribute("SoundCheck") end) == "ok", "SoundCheck.client did not report")
+end)
+log("sound check", soundOk and "OK" or ("FAILED: " .. tostring(soundError)))
+
+-- Roblox's own health bar and hotbar repeat our HUD (client/CoreUi): both stay off
+local coreOk, coreError = pcall(function()
+	local StarterGui = game:GetService("StarterGui")
+	for _, kind in { Enum.CoreGuiType.Health, Enum.CoreGuiType.Backpack } do
+		assert(not StarterGui:GetCoreGuiEnabled(kind), "Roblox's " .. kind.Name .. " is still on")
+	end
+end)
+log("core ui off", coreOk and "OK" or ("FAILED: " .. tostring(coreError)))
+
 local looksOk, looksError = pcall(verifyGearLooks)
 log("gear looks", looksOk and "OK" or ("FAILED: " .. tostring(looksError)))
 

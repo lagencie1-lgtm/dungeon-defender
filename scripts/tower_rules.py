@@ -40,19 +40,43 @@ def main():
             marks.append((float(t), name))
     views, masks, lows = {}, {}, {}
     box = None
+
+    def magenta(img):
+        return np.abs(img.astype(int) - np.array([255, 0, 255])).max(-1) < 70
+    # (2026-11-25: the clip's clock drifts against the marks by up to half a second, so a fixed +0.15 s missed the
+    # outline frames. Each mask is the frame with the most magenta in a window round its mark; that frame's offset
+    # from the mark is then used for the same tower's view picture)
+    drift = {}
     for t, name in marks:
         parts = name.split()
-        img = frame(ff, base + ".mp4", t + 0.15, os.path.join(out, "_frame.png"))
+        if parts[0] != "mask":
+            continue
+        best = None
+        for dt in np.arange(-0.9, 0.61, 0.15):
+            img = frame(ff, base + ".mp4", t + dt, os.path.join(out, "_frame.png"))
+            n = int(magenta(img).sum())
+            if best is None or n > best[0]:
+                best = (n, dt, img)
+        img = best[2]
         if box is None:
-            box = screen_box(img)
-        img = img[box[1]:box[3], box[0]:box[2]]
+            box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
+        masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])
+        drift[(parts[1], int(parts[2]))] = best[1]
+    for t, name in marks:
+        parts = name.split()
+        if parts[0] == "mask":
+            continue
+        if box is None:
+            box = screen_box(frame(ff, base + ".mp4", t, os.path.join(out, "_frame.png")))
         if parts[0] == "view":
-            views[(parts[1], int(parts[2]))] = img
+            key = (parts[1], int(parts[2]))
+            # (the view is held from 0.6 s before its mark until the outline goes on 0.5 s after it)
+            img = frame(ff, base + ".mp4", t + drift.get(key, 0.0) - 0.1, os.path.join(out, "_frame.png"))
+            img = img[box[1]:box[3], box[0]:box[2]]
+            views[key] = img
             Image.fromarray(img).save(os.path.join(out, f"{parts[1]}_l{parts[2]}_phone.png"))
-        elif parts[0] == "mask":
-            d = np.abs(img.astype(int) - np.array([255, 0, 255])).max(-1)
-            masks[(parts[1], int(parts[2]))] = d < 70
         else:
+            img = frame(ff, base + ".mp4", t + 0.15, os.path.join(out, "_frame.png"))[box[1]:box[3], box[0]:box[2]]
             lows[parts[1]] = " ".join(parts[2:])
             Image.fromarray(img).save(os.path.join(out, f"{parts[1]}_l3_low_effects.png"))
     res = {"levels": {}, "towers": {}, "stands_out": {}, "low_effects": lows, "fails": []}

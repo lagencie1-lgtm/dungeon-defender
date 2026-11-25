@@ -83,11 +83,11 @@ def footing():
     K.stone_ring("Foot", 0, P["foot_r"], P["foot_h"], P["foot_n"], depth=1.1)
     K.lathe("FootCore", [(P["foot_r"] - 0.9, 0), (P["foot_r"] - 0.9, P["foot_h"] - 0.02)], K.MORTAR)
     K.grass(P["foot_r"] - 0.05, 22, h=0.75)
-    K.pebbles(P["foot_r"] + 0.2, 5)
+    # (pebbles dropped 2026-11-24: on the turntable they read as thin glassy plates floating at the foot)
 
 
-def post(name, a, r, z0, h, strap_z=None):
-    K.block(name, K.at(a, r, z0 + h / 2), (0.62, 0.5, h), K.WOOD_DARK if (hash(name) % 2) else K.WOOD, (0, 0, a + rad(90)),
+def post(name, a, r, z0, h, strap_z=None, w=0.62):
+    K.block(name, K.at(a, r, z0 + h / 2), (w, w * 0.8, h), K.WOOD_DARK if (hash(name) % 2) else K.WOOD, (0, 0, a + rad(90)),
             key="wood", tile=1.0, bevel=0.1)
     if strap_z:
         K.block(name + "Strap", K.at(a, r + 0.2, strap_z), (0.8, 0.18, 0.45), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.05)
@@ -137,22 +137,35 @@ if level == 1:
     for v in o.data.vertices:
         v.co += Vector((rnd.uniform(-0.1, 0.1), rnd.uniform(-0.1, 0.1), rnd.uniform(-0.06, 0.06)))
     rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.48)), FWD, 2.0)
-    for s_ in (-1, 1):   # two big posts at the sides, bound with gold bands (as painted)
-        a = a0 + rad(90 * s_)
-        post(f"Post{s_}", a, P["stone_w"] * 0.95, fz, 2.3, strap_z=fz + 1.5)
-        K.block(f"PostBand{s_}", K.at(a, P["stone_w"] * 0.95, fz + 0.6), (0.82, 0.7, 0.32), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.05)
+    # (2026-11-24 review, from the painting: two thick short posts at each front corner of the stone, about 0.4 of its
+    # height, gold bands round each pair; at the sides behind it they hid and the stone looked too big for them)
+    for s_ in (-1, 1):
+        for k, da in enumerate((38, 68)):
+            a = a0 + rad(da * s_)
+            post(f"Post{s_}{k}", a, P["stone_w"] * 1.0, fz, 1.75 - 0.25 * k, strap_z=fz + 1.15 - 0.2 * k, w=0.85)
+        a = a0 + rad(53 * s_)
+        K.block(f"PostBand{s_}", K.at(a, P["stone_w"] * 1.02, fz + 1.15), (1.9, 0.95, 0.34), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.05)
     muzzle_z = fz + P["stone_h"] * 0.8
 else:
     # the plinth: a stone drum with arched niches, wooden posts, a brass collar on top
     pr, ph = P["plinth_r"], P["plinth_h"]
     # round 2 (2026-11-24): the paintings' skirt: cut stone flaring out at the foot, arched doors all round, dark wood
     # planks between them, a gold trim band at the top (not a ring of posts)
-    K.stone_wall("Plinth", fz, fz + ph, pr * 1.12, pr * 0.82, 3, 12, depth=0.45, gaps=[(FRONT + i * 60, 14, fz + ph * 0.72) for i in range(6)])
-    for i in range(6):
-        na = a0 + rad(i * 60)
-        K.arched_door(FRONT + i * 60, pr * 0.97 - 0.15, fz + 0.02, 0.85, ph * 0.66, steps=0, arch_stones=5)
-        a = a0 + rad(30 + i * 60)
-        post(f"Post{i}", a, pr * 1.0, fz, ph * 0.75)
+    # (2026-11-25 review, from the paintings: the skirt is dark wooden planks standing round a tapering drum, gold
+    # strapped, with one cut-stone arched door at the front and one at the back; a pale stone drum with arches all
+    # round read as a different tower and pulled the colour off)
+    K.lathe("Skirt", [(pr * 1.12, fz), (pr * 0.86, fz + ph)], K.WOOD_DARK, key="wood_dark", verts=16)
+    for i in range(16):
+        a = a0 + rad(i * 22.5 + 11.25)
+        if min(abs(((i * 22.5 + 11.25) - d + 180) % 360 - 180) for d in (0, 180)) < 20:
+            continue   # (the doors)
+        ra, rb = pr * 1.12 + 0.04, pr * 0.86 + 0.04
+        lean = math.atan2(ra - rb, ph)
+        K.block(f"Plank{i}", K.at(a, (ra + rb) / 2, fz + ph / 2), (0.75, 0.22, ph / math.cos(lean)), K.WOOD if i % 2 else K.WOOD_DARK,
+                (lean, 0, a + rad(90)), key="wood", tile=1.0, bevel=0.06)
+    for d in (0, 180):
+        K.arched_door(FRONT + d, pr * 1.0, fz + 0.02, 0.95, ph * 0.7, steps=0, arch_stones=5)
+    K.brass_band("SkirtBand", fz + ph * 0.45, pr * 0.99 + 0.06, 0.3, 10)
     K.brass_band("Collar", fz + ph + 0.05, pr * 0.84, 0.55, 14)
     for i in range(12):   # the gold band's pointed scallops, as painted
         a = a0 + rad(i * 30 + 15)
@@ -171,7 +184,13 @@ else:
         muzzle_z = top + 0.45 + P["rod"]
     else:
         # the orb: round, the brightest thing on the tower (Neon), held between the horns' tips
-        S.glow_ball("Orb", (0, 0, top + 0.5 + P["orb_r"]), P["orb_r"], (0.85, 0.65, 1.0), seg=20)
+        # (2026-11-24 review: an all-Neon ball draws as a flat purple disc, a sticker. The orb is a shaded violet
+        # sphere, light at the top and dark below, with a small glowing core showing through a slit ring, so it is
+        # round and still the brightest thing on the tower)
+        oc = Vector((0, 0, top + 0.5 + P["orb_r"]))
+        K.ball("Orb", tuple(oc), P["orb_r"], (0.55, 0.3, 0.85), seg=20, key=None)
+        K.lathe("OrbBand", [(P["orb_r"] * 1.02, oc.z - 0.1), (P["orb_r"] * 1.06, oc.z), (P["orb_r"] * 1.02, oc.z + 0.1)], K.BRASS, key="brass", verts=20)
+        S.glow_ball("OrbCore", tuple(oc + FWD * (P["orb_r"] * 0.55) + Vector((0, 0, P["orb_r"] * 0.25))), P["orb_r"] * 0.5, (0.9, 0.75, 1.0), seg=14)
         muzzle_z = top + 0.5 + P["orb_r"]
 
 print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % muzzle_z)

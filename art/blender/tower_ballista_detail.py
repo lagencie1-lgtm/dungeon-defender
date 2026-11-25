@@ -114,7 +114,7 @@ def weapon(name, base, iron=False, scale=1.0):
             mid = (p0 + p1) / 2
             taper = 1.0 - 0.55 * abs(mid.x) / (span / 2)
             yaw = math.atan2(d.y, d.x)
-            w_ = 0.12 * span * taper
+            w_ = 0.18 * span * taper   # (round 5b: 1.5 times thicker, so the arc reads at phone size)
             if iron:   # flat, tapered iron
                 K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.6), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
             else:      # squared timber
@@ -237,7 +237,7 @@ else:
         for e in (-1, 1):   # the gold arched cradle each weapon sits in
             q = Vector((base.x, base.y, t2 - 0.35)) + SIDE * (e * 0.42)
             K.block(f"Cradle{s}{e}", tuple(q), (0.22, 0.9, 1.1), K.BRASS, (0, 0, A), key="brass", tile=0.6, bevel=0.1)
-        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=1.4))
+        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4)))
 
 for g in LAYOUT:
     ok = (g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0

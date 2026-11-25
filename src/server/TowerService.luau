@@ -153,14 +153,14 @@ local LEVEL_LOOKS = {
 		{ Name = "tower_frost_l3", Height = 9.92, Muzzle = Vector3.new(0.00, 7.68, 0.00) },
 	},
 	StormObelisk = {
-		{ Name = "tower_storm_l1", Height = 7.34, Muzzle = Vector3.new(0.00, 6.05, 0.00) },
-		{ Name = "tower_storm_l2", Height = 10.40, Muzzle = Vector3.new(0.00, 10.12, 0.00) },
-		{ Name = "tower_storm_l3", Height = 12.05, Muzzle = Vector3.new(0.00, 11.11, 0.00) },
+		{ Name = "tower_storm_l1", Height = 5.26, Muzzle = Vector3.new(0.00, 4.32, 0.00) },
+		{ Name = "tower_storm_l2", Height = 10.37, Muzzle = Vector3.new(0.00, 10.11, 0.00) },
+		{ Name = "tower_storm_l3", Height = 11.96, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
 	},
 	Ballista = {
-		{ Name = "tower_ballista_l1", Height = 5.41, Muzzle = Vector3.new(-0.73, 5.12, 2.71) },
+		{ Name = "tower_ballista_l1", Height = 5.45, Muzzle = Vector3.new(-0.73, 5.12, 2.71) },
 		{ Name = "tower_ballista_l2", Height = 5.95, Muzzle = Vector3.new(-0.62, 5.70, 2.32) },
-		{ Name = "tower_ballista_l3", Height = 6.58, Muzzle = Vector3.new(-3.55, 6.29, 0.16), Muzzles = { Vector3.new(-3.55, 6.29, 0.16), Vector3.new(-0.16, 6.29, 3.55) } },
+		{ Name = "tower_ballista_l3", Height = 6.26, Muzzle = Vector3.new(-4.77, 5.84, 0.79), Muzzles = { Vector3.new(-4.77, 5.84, 0.79), Vector3.new(-0.79, 5.84, 4.77) } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS

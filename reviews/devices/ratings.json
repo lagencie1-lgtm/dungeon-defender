@@ -1,0 +1,12 @@
+{
+ "iphone_se": [6, "Every button is big enough and reachable now, but Pets and Backpack are crowded and their small print (+100, item lines) is hard to read"],
+ "iphone_new": [7, "Roomy and clean; the run screen reads well, only the Pets panel's small print stays tiny"],
+ "android_old": [6, "Smallest screen (280 px under Roblox's bar): all taps 36-44 px now, but panels are dense and captions tiny"],
+ "android_new": [6, "Studio's S25 Ultra preset is as small as the A06 (685x338): same as the cheap Android"],
+ "ipad_old": [8, "Readable, nothing cut, thumbs free; panels leave the lobby buttons peeking out below"],
+ "ipad_pro": [8, "Big and clear; the HUD stops growing at 1.3x so there is a lot of empty screen"],
+ "xbox_1080": [7, "Everything inside the TV-safe frame with a controller badge on every action; panel text is small from the sofa"],
+ "xbox_4k": [7, "Same as the Xbox at 1080 with PlayStation button names; a real 4K screen could not be emulated"],
+ "tv_touch": [6, "Works, but on a big touch TV the HUD is small in the corners (it stops at 1.3x)"],
+ "pc_laptop": [7, "Clean at 1365x768; ability names sit under their icons and item descriptions are small"]
+}

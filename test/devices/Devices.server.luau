@@ -48,6 +48,7 @@ local ok, err = pcall(function()
 	task.wait(6) -- screens built, pictures loaded
 	step("Outpost")
 	for _, panel in { "Shop", "Pets", "Backpack" } do
+		step("Clear-" .. panel) -- the screen before closes first (one panel at a time, as a player sees it)
 		Remotes.OpenPanel:FireClient(player, panel)
 		step(panel)
 	end
@@ -56,19 +57,33 @@ local ok, err = pcall(function()
 	waitFor(function() return State.Get("State") == "Break" end, 60, "the run")
 	task.wait(2)
 	State.Set("Gold", 5000)
-	-- a Ranger 7 studs east of the hero's spot, the hero beside it (the Y button picks the nearest defender)
-	local spot = Config.Maps.CursedForest.SpawnPoint
+	-- a Ranger on the first building spot, the hero 11 studs from it on its own side (Y picks the nearest defender)
+	-- the map's own first building spot (the one the tutorial points at), else rings round the hero
+	local spot = require(ReplicatedStorage.Shared.MapOutline).Start.Forest.FirstSpot
 	local rootPart = player.Character:WaitForChild("HumanoidRootPart")
 	local y = rootPart.Position.Y
-	local placed = false
-	for _, offset in { Vector3.new(7, 0, 0), Vector3.new(-7, 0, 0), Vector3.new(0, 0, 7), Vector3.new(0, 0, -7) } do
-		if TowerService.Place(player, "Ranger", spot + offset) then
-			placed = true
+	-- (rings of spots round the spawn, nearest first: some maps have rocks or the path right next to it)
+	local placedAt, why
+	for _, distance in { 0, 6, 10, 14 } do
+		for i = 0, (distance == 0 and 0 or 7) do
+			local angle = i * math.pi / 4
+			local at = spot + Vector3.new(math.cos(angle) * distance, 0, math.sin(angle) * distance)
+			local ok, message = TowerService.Place(player, "Ranger", at)
+			if ok then
+				placedAt = at
+				break
+			end
+			why = message
+		end
+		if placedAt then
 			break
 		end
 	end
-	assert(placed, "could not build a Ranger near the spawn")
-	rootPart.CFrame = CFrame.lookAt(Vector3.new(spot.X - 4, y, spot.Z), Vector3.new(spot.X + 7, y, spot.Z))
+	assert(placedAt, "could not build a Ranger near the spawn: " .. tostring(why))
+	local flat = Vector3.new(rootPart.Position.X - placedAt.X, 0, rootPart.Position.Z - placedAt.Z)
+	local away = flat.Magnitude > 0.5 and flat.Unit or Vector3.xAxis
+	local stand = Vector3.new(placedAt.X, y, placedAt.Z) + away * 11
+	rootPart.CFrame = CFrame.lookAt(stand, Vector3.new(placedAt.X, y, placedAt.Z))
 	rootPart.AssemblyLinearVelocity = Vector3.zero
 	task.wait(1)
 	step("Run")

@@ -16,12 +16,15 @@ trap 'rm -f "$LOCK"' EXIT
 STUDIO=$(ls -t "$LOCALAPPDATA"/Roblox/Versions/*/RobloxStudioBeta.exe | head -1)
 tools/rojo.exe build test.project.json -o tools/htd-autotest.rbxl || exit 1
 LOGDIR="$LOCALAPPDATA/Roblox/logs"
-before=$(ls -t "$LOGDIR"/*Studio*.log 2>/dev/null | head -1)
+# (every log that exists now: with another Studio open, the newest log can be that Studio's, and its old
+# "AUTOTEST DONE" line ended this run at once, 2026-11-25)
+before=$(ls "$LOGDIR"/*Studio*.log 2>/dev/null)
 "$STUDIO" "$(cygpath -w "$PWD/tools/htd-autotest.rbxl")" &
 # wait for Studio's new log file
-for _ in $(seq 1 60); do
-	log=$(ls -t "$LOGDIR"/*Studio*.log | head -1)
-	[ "$log" != "$before" ] && break
+log=""
+for _ in $(seq 1 90); do
+	log=$(ls -t "$LOGDIR"/*Studio*.log | grep -vxF "$before" | head -1)
+	[ -n "$log" ] && break
 	sleep 1
 done
 # wait until the play test ends (or about 12 minutes)

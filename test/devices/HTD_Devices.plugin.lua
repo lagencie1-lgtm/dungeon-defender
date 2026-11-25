@@ -18,6 +18,9 @@ task.delay(8, function()
 	if device and device ~= "" then
 		ok, err = pcall(function()
 			sim:SetDeviceAsync(device)
+		end)
+		-- (only phones and tablets turn: a TV or a PC preset says "orientation can only be set on mobile")
+		pcall(function()
 			if probe:GetAttribute("Portrait") then
 				sim:SetOrientationAsync(Enum.ScreenOrientation.Portrait)
 			else
@@ -28,7 +31,7 @@ task.delay(8, function()
 	print("[DEVICES] plugin emulator", device, ok and "set" or ("FAILED: " .. tostring(err)))
 	-- a list of what this Studio can emulate, so a wrong id can be fixed in scripts/device_pass.py
 	local listed, list = pcall(function()
-		return sim:GetDevicesAsync()
+		return sim:GetDeviceListAsync()
 	end)
 	if listed and type(list) == "table" then
 		local names = {}

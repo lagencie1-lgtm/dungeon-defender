@@ -29,18 +29,21 @@ LOCK = os.path.join(TOOLS, "studio.lock")
 STEPS = ["Outpost", "Shop", "Pets", "Backpack", "Run", "Defender"]
 CHECKS = ["Cut", "TV safe", "Thumbs", "Tap", "Text", "Fits", "Overlap"]
 
-# key, label on the sheet, Studio emulator id (SIM), input, the screen it should report (landscape, in UI pixels)
+# key, label on the sheet, Studio emulator id (SIM), input, the screen it reports (landscape, UI pixels, measured 2026-11-25)
+# SIM ids are the ones Studio's StudioDeviceSimulatorService:GetDeviceListAsync() lists (Studio 0.748, 2026-11-25).
+# Studio has no 4K preset and no custom device through the API: the PS5 preset also reports 1920x1080 UI pixels, so
+# xbox_4k checks the second console preset; the 4K UI scale (Ui.fitRoot grows to 3x) is checked by test/gamepad.
 DEVICES = [
-    ("iphone_se", "iPhone SE (1st gen, 2016) - oldest small iPhone", "iphone_se", "touch", (568, 320)),
-    ("iphone_new", "iPhone 16 Pro Max - newest big iPhone (notch side)", "iphone_16_pro_max", "touch", (956, 440)),
-    ("android_old", "Galaxy S7 class - old small Android", "samsung_galaxy_s7", "touch", (640, 360)),
-    ("android_new", "Galaxy S24 Ultra class - new Android", "samsung_galaxy_s24_ultra", "touch", (915, 412)),
-    ("ipad_old", "iPad (6th gen, 2018) - old iPad", "ipad", "touch", (1024, 768)),
-    ("ipad_pro", "iPad Pro 13 - new iPad", "ipad_pro_12_9", "touch", (1366, 1024)),
-    ("xbox_1080", "Xbox, 1080p TV, controller", "xbox_one", "pad", (1920, 1080)),
-    ("xbox_4k", "Xbox, 4K TV, controller (worst case: 3840x2160 UI pixels)", "4k", "pad", (3840, 2160)),
-    ("tv_touch", "Touch screen TV, 1080p", "1080p", "touch", (1920, 1080)),
-    ("pc_laptop", "PC laptop 1366x768, mouse", "", "mouse", (1366, 768)),
+    ("iphone_se", "iPhone 7 / SE 2nd gen - oldest small iPhone preset", "iphone_7", "touch", (666, 374)),
+    ("iphone_new", "iPhone 16 Pro Max - newest big iPhone (notch side)", "iphone_16_pro_max", "touch", (830, 439)),
+    ("android_old", "Galaxy A06 - cheap small Android (smallest Android preset)", "samsung_galaxy_a06", "touch", (705, 338)),
+    ("android_new", "Galaxy S25 Ultra - new big Android", "samsung_galaxy_s25_ultra", "touch", (685, 338)),
+    ("ipad_old", "iPad 6th gen (2018) - old iPad", "ipad_6th_generation", "touch", (1023, 768)),
+    ("ipad_pro", "iPad Pro 13 (M5) - newest iPad", "ipad_pro_M5_13in", "touch", (1375, 1032)),
+    ("xbox_1080", "Xbox, 1080p TV, controller", "xbox", "pad", (1919, 1079)),
+    ("xbox_4k", "PS5 preset, TV, controller (Studio has no 4K preset)", "ps5", "pad", (1919, 1079)),
+    ("tv_touch", "Touch screen TV, 1080p", "hd_1080", "touch", (1919, 1079)),
+    ("pc_laptop", "PC laptop (Studio's average Windows preset), mouse", "average_windows", "mouse", (1365, 768)),
 ]
 
 
@@ -94,24 +97,46 @@ def install_plugin():
     shutil.copy(os.path.join(ROOT, "test", "devices", "HTD_Devices.plugin.lua"), os.path.join(plugins, "HTD_Devices.lua"))
 
 
-def newest_log():
-    logs = glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Roblox\logs\*Studio*.log"))
-    return max(logs, key=os.path.getmtime) if logs else None
+class Connector:
+    """one connection to Studio's own connector per device run; finds that device's Studio by its file name"""
+    def __init__(self, key):
+        self.key, self.s = key, None
+
+    def studio(self):
+        from studio_mcp import Studio
+        if self.s is None:
+            self.s = Studio()
+        if not self.s.studio_id:
+            for _ in range(10):   # Studio connects to the connector a few seconds after it starts
+                found = [x for x in self.s.studios() if x.get("name") == "htd-devices-%s.rbxl" % self.key]
+                if found:
+                    self.s.studio_id = found[0]["id"]
+                    break
+                time.sleep(2)
+            else:
+                raise RuntimeError("this device's Studio is not on the connector")
+        return self.s
+
+    def close(self):
+        if self.s:
+            self.s.close()
 
 
-def capture(path, key):
+def window_grab(path, key):
+    """the Studio window (title: the place's full path - Roblox Studio)"""
+    ffmpeg = (glob.glob(os.path.join(TOOLS, "ffmpeg", "*", "bin", "ffmpeg.exe")) + glob.glob(os.path.join(TOOLS, "ffmpeg", "bin", "ffmpeg.exe"))
+              + [shutil.which("ffmpeg") or "ffmpeg"])[0]
+    title = "%s - Roblox Studio" % os.path.join(TOOLS, "htd-devices-%s.rbxl" % key)
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-i", "title=" + title, "-frames:v", "1", path])
+
+
+def capture(path, key, conn):
     """screenshot of the game view through Studio's connector; the whole Studio window as a fallback"""
     try:
-        from studio_mcp import Studio
-        with Studio() as s:
-            s.shot(path)
+        conn.studio().shot(path)
         return "connector"
     except BaseException as e:  # noqa: BLE001 (SystemExit from studio_mcp too)
-        ffmpeg = os.path.join(TOOLS, "ffmpeg", "bin", "ffmpeg.exe")
-        if not os.path.exists(ffmpeg):
-            ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
-        subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "gdigrab", "-i", "title=htd-devices-%s - Roblox Studio" % key,
-                        "-frames:v", "1", path])
+        window_grab(path, key)
         return "window (%s)" % str(e)[:80]
 
 
@@ -119,52 +144,62 @@ def run_device(key, label, sim, inputs, expect):
     place = project(key, sim, inputs)
     folder = os.path.join(OUT, key)
     os.makedirs(folder, exist_ok=True)
-    before = newest_log()
+    # (every log that exists now: with another Studio open, the newest log can be that Studio's)
+    before = set(glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Roblox\logs\*Studio*.log")))
     proc = subprocess.Popen([studio_exe(), place])
     log = None
     for _ in range(90):
         time.sleep(1)
-        new = newest_log()
-        if new and new != before:
-            log = new
+        new = [p for p in glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Roblox\logs\*Studio*.log")) if p not in before]
+        if new:
+            log = max(new, key=os.path.getmtime)
             break
     result = {"label": label, "sim": sim, "input": inputs, "expect": expect, "steps": {}, "lines": []}
     if not log:
         proc.kill()
         result["error"] = "no Studio log"
         return result
-    seen = 0
-    deadline = time.time() + 600
-    done = False
-    while time.time() < deadline and not done:
-        time.sleep(0.5)
-        try:
-            text = open(log, encoding="utf-8", errors="ignore").read()
-        except OSError:
-            continue
-        lines = [ln for ln in text.splitlines() if "[DEVICES]" in ln or "Script '" in ln]
-        for ln in lines[seen:]:
-            ln = re.sub(r"^[^\[]*\[FLog::\w+\] ", "", ln)
-            result["lines"].append(ln)
-            print(ln[:240], flush=True)
-            m = re.search(r"\[DEVICES\] SHOT (\S+) (\S+)", ln)
-            if m:
-                step = m.group(2)
-                how = capture(os.path.join(folder, step + ".png"), key)
-                result["steps"].setdefault(step, {})["shot"] = how
-            m = re.search(r"\[DEVICES\] CHECK (\S+) (\S+) (.+?) (\d+)(?:: (.*))?$", ln)
-            if m:
-                result["steps"].setdefault(m.group(2), {}).setdefault("checks", {})[m.group(3)] = \
-                    [int(m.group(4)), m.group(5) or ""]
-            m = re.search(r"\[DEVICES\] SIZE \S+ (\S+) viewport (\d+)x(\d+) inset (\d+),(\d+)", ln)
-            if m:
-                result["steps"].setdefault(m.group(1), {})["viewport"] = [int(m.group(2)), int(m.group(3))]
-                result["steps"][m.group(1)]["size_line"] = ln
-            if "[DEVICES] DONE" in ln or "play test finished" in ln:
-                done = True
-        seen = len(lines)
-    time.sleep(2)
-    proc.kill()
+    conn = Connector(key)
+    try:
+        try:   # connect now, so the first screenshot does not wait for the connector
+            conn.studio()
+        except BaseException as e:  # noqa: BLE001
+            print("connector not ready yet:", str(e)[:120], flush=True)
+        seen = 0
+        deadline = time.time() + 600
+        done = False
+        while time.time() < deadline and not done:
+            time.sleep(0.5)
+            try:
+                text = open(log, encoding="utf-8", errors="ignore").read()
+            except OSError:
+                continue
+            lines = [ln for ln in text.splitlines() if "[DEVICES]" in ln or "Script '" in ln]
+            for ln in lines[seen:]:
+                ln = re.sub(r"^[^\[]*\[FLog::\w+\] ", "", ln)
+                result["lines"].append(ln)
+                print(ln[:240], flush=True)
+                m = re.search(r"\[DEVICES\] SHOT (\S+) (\S+)", ln)
+                if m:
+                    step = m.group(2)
+                    how = capture(os.path.join(folder, step + ".png"), key, conn)
+                    result["steps"].setdefault(step, {})["shot"] = how
+                m = re.search(r"\[DEVICES\] CHECK (\S+) (\S+) (.+?) (\d+)(?:: (.*))?$", ln)
+                if m:
+                    result["steps"].setdefault(m.group(2), {}).setdefault("checks", {})[m.group(3)] = \
+                        [int(m.group(4)), m.group(5) or ""]
+                m = re.search(r"\[DEVICES\] SIZE \S+ (\S+) viewport (\d+)x(\d+) inset (\d+),(\d+)", ln)
+                if m:
+                    result["steps"].setdefault(m.group(1), {})["viewport"] = [int(m.group(2)), int(m.group(3))]
+                    result["steps"][m.group(1)]["size_line"] = ln
+                if "[DEVICES] DONE" in ln or "play test finished" in ln:
+                    done = True
+            seen = len(lines)
+        time.sleep(2)
+    finally:
+        conn.close()
+        proc.kill()
+
     with open(LOCK, "w") as f:   # keep the lock fresh between devices
         f.write("device pass %s" % time.strftime("%Y-%m-%dT%H:%M:%S"))
     return result

@@ -27,7 +27,7 @@ local DEVICE = probe:GetAttribute("Device") or "unknown"
 local INPUT = probe:GetAttribute("Input") or "mouse" -- touch / pad / mouse
 
 local NOT_OURS = { TouchGui = true, ProximityPrompts = true, BubbleChat = true, Chat = true, Freecam = true,
-	DeviceTestMarks = true }
+	DeviceTestMarks = true, DevPanel = true } -- (DevPanel: the owner's test buttons, never shown to players)
 
 local function shown(obj)
 	local node = obj
@@ -254,6 +254,12 @@ end
 local function run()
 	local step = probe:GetAttribute("Step")
 	if not step then
+		return
+	end
+	if string.sub(step, 1, 6) == "Clear-" then
+		closeAll()
+		task.wait(0.4)
+		probe:FireServer(step, 0)
 		return
 	end
 	local ok, result = pcall(function()

@@ -21,6 +21,8 @@ def main():
     os.makedirs(upload_art.SMALL, exist_ok=True)
     for name in names:
         fbx = os.path.join(ROOT, "art", "models", name + ".fbx")
+        if not os.path.exists(fbx):
+            fbx = os.path.join(ROOT, "art", "models", "mapkit", name + ".fbx")   # (a kit piece that is already live)
         request = {"assetType": "Model", "displayName": "HTD " + name, "description": "Heroes Tower Defense model",
                    "creationContext": {"creator": {"userId": owner}}}
         body, ctype = upload_models.multipart(request, fbx)

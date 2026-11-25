@@ -403,12 +403,13 @@ elif piece == "tower":
     tube("Trunk", [(0, 0.6, 0.0), (0.4, 0.4, 5.5), (1.0, -0.2, 10.5), (2.1, -1.2, 14.5)], 1.6, 1.0, bark)
     for k, end in enumerate(((5.4, -3.4, 18.2), (2.6, -4.6, 19.0), (4.2, 0.6, 18.8))):
         tube(f"Limb{k}", [(2.0, -1.1, 14.0), ((2.0 + end[0]) / 2, (-1.1 + end[1]) / 2, 16.8), end], 0.8, 0.38, bark)
-    leaves = ("leaves", (0.82, 0.95, 0.8), 2.5)
+    # (the crown in lobed clumps with painted light and shadow bands, like the map's trees: tree_painted.py)
+    import foliage
+    foliage.setup(rnd, 11)
     for k, (x, y, z, r) in enumerate(((5.2, -3.6, 19.8, 3.0), (2.4, -4.8, 20.6, 2.7), (4.6, 0.8, 20.4, 2.8),
                                       (3.6, -1.8, 22.4, 3.1))):
-        m = lib.sphere(f"Crown{k}", 1.0, (x, y, z), W, segments=10)
-        m.scale = (r * 1.05, r, r * 0.72)
-        paint.paint(m, leaves[0], tuple(c * rnd.uniform(0.9, 1.06) for c in leaves[1]), leaves[2])
+        foliage.leaves(foliage.clump((x, y, z), (r * 1.05, r, r * 0.75), lobes=14), 0.5 + 0.15 * k,
+                       (1.05, 1.1, 0.72), (0.52, 0.72, 0.66))
     # roots: from the trunk over the broken walls, down the outer faces (hugging the stone) and spreading into the
     # ground at the foot
     face = s + 0.22

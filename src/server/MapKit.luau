@@ -31,7 +31,7 @@ MapKit.Boxes = {
 	mapkit_stairs_crystal = { Min = Vector3.new(-4.35, -1.5, -4.1), Max = Vector3.new(3.28, 5.6, -0.65) },
 	mapkit_stairs_forest = { Min = Vector3.new(-4.35, -1.5, -4.224), Max = Vector3.new(3.28, 6.011, -0.65) },
 	mapkit_stairs_magma = { Min = Vector3.new(-4.35, -1.5, -4.1), Max = Vector3.new(3.28, 5.6, -0.65) },
-	mapkit_tower_forest = { Min = Vector3.new(-8.196, -0.604, -7.5), Max = Vector3.new(6.542, 24.632, 7.969) },
+	mapkit_tower_forest = { Min = Vector3.new(-9.275, -0.604, -8.227), Max = Vector3.new(6.542, 25.431, 7.969) },
 	mapkit_wall_crystal = { Min = Vector3.new(-7.05, -0.275, -2.568), Max = Vector3.new(6.98, 7.961, 2.7) },
 	mapkit_wall_forest = { Min = Vector3.new(-7.05, -0.206, -3.217), Max = Vector3.new(6.98, 6.379, 2.7) },
 	mapkit_wall_magma = { Min = Vector3.new(-7.05, -0.199, -3.436), Max = Vector3.new(6.98, 5.697, 2.7) },

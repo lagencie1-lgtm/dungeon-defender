@@ -16,6 +16,8 @@ def stage(kind, arg):
     look = arg if named else "l" + arg
     picture = os.path.join(ROOT, "art", "ref3d", f"tower_{kind}_{look}.png")
     fit = picture[:-4] + "_fit.png"
+    cam = picture[:-4] + "_fit_cam.png"   # re-drawn by Codex at the pipeline's camera (level 1: its picture's perspective was mirrored and steeper)
+    fit = cam if os.path.exists(cam) else fit
     az = float(os.environ["HTD_AZ"]) if os.environ.get("HTD_AZ") else AZIMUTH.get(kind, -75.0)   # (a one-off view to try)
     return {
         "look": look,

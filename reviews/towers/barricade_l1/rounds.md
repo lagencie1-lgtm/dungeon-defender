@@ -23,3 +23,6 @@
   IoU 85.1%  width profile off 18.6%  region colour dE 11.9  (pixel dE 45.7)  detail 7.8% vs picture 20.0% (ratio 0.39)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 8 (L 49/56)  lookout 4 (L 38/42)  wall 8 (L 37/44)  footing 12 (L 32/43)
 - note: rounds 6-8 had NO repaint. Codex hit its usage limit ("try again at Nov 28th, 2026 9:55 PM") from round 6 on and tower_paint.py stopped before projecting, so those rounds score the plain kit bake (hence detail 0.35-0.39). The best real rounds are 1-4 (outline 84.6-85.7%, colour 10.6-12.1, judge 6); their paints were overwritten. The committed tower_barricade_l1_paint.png is still the uploaded round 7 art from before the pipeline.
+
+## Target re-drawn (2026-11-25)
+From round 9 on, Level 1 is scored against art/ref3d/tower_barricade_l1_fit_cam.png: Codex re-painted the same Level 1 design (posts, logs, rope) from the pipeline's own camera (azimuth 105, 15 degrees up), because the original picture's perspective is mirrored and steeper and capped the outline at about 85%. The original picture art/ref3d/tower_barricade_l1.png is unchanged.

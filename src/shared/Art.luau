@@ -80,6 +80,14 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	boss_shadow_queen_rigged = "112915273553912",
+	boss_goblin_king_rigged = "101781670151395",
+	boss_molten_golem_rigged = "93293809714777",
+	enemy_knight_rigged = "80924423825366",
+	enemy_golem_rigged = "123529144246439",
+	enemy_slime_rigged = "76265320565173",
+	enemy_shade_rigged = "118983097056166",
+	enemy_imp_rigged = "75294124538549",
 	enemy_goblin_rigged = "130565995983817",
 	mapkit_pad_crystal = "129789847005303",
 	mapkit_pad_forest = "110105776393506",
@@ -216,6 +224,14 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
+	paint_boss_shadow_queen_rigged = "115937111068672",
+	paint_boss_goblin_king_rigged = "96246537196293",
+	paint_boss_molten_golem_rigged = "126340017303908",
+	paint_enemy_knight_rigged = "103858791151907",
+	paint_enemy_golem_rigged = "87159802211910",
+	paint_enemy_slime_rigged = "95859024071342",
+	paint_enemy_shade_rigged = "110719218625947",
+	paint_enemy_imp_rigged = "127181496211166",
 	paint_enemy_goblin_rigged = "90498830454310",
 	paint_mapkit_pad_crystal = "75392412440588",
 	paint_mapkit_pad_forest = "104727760976707",

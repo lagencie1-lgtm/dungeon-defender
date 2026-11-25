@@ -136,6 +136,17 @@ if level == 1:
     o = K.ball("RuneStone", (0, 0, fz + P["stone_h"] * 0.45), 1.0, K.STONE, (P["stone_w"], P["stone_d"], P["stone_h"] * 0.55), seg=8, key=None)
     for v in o.data.vertices:
         v.co += Vector((rnd.uniform(-0.1, 0.1), rnd.uniform(-0.1, 0.1), rnd.uniform(-0.06, 0.06)))
+    # (2026-11-25, towers tell apart: the painted stone is tall with a blunt point, not a round dome; its upper half
+    # narrows toward a point so its top reads unlike the Flame Cannon's barrel at level 1)
+    zs = [v.co.z for v in o.data.vertices]
+    z0, z1 = min(zs), max(zs)
+    for v in o.data.vertices:
+        t = (v.co.z - z0) / (z1 - z0)
+        if t > 0.5:
+            k = 1.0 - P.get("point", 0.55) * ((t - 0.5) / 0.5) ** 1.5
+            v.co.x *= k
+            v.co.y *= k
+            v.co.z += (t - 0.5) * 0.35
     rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.48)), FWD, 2.0)
     # (2026-11-24 review, from the painting: two thick short posts at each front corner of the stone, about 0.4 of its
     # height, gold bands round each pair; at the sides behind it they hid and the stone looked too big for them)

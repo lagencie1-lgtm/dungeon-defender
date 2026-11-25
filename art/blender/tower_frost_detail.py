@@ -109,8 +109,11 @@ for i in range(14):
     K.cone(f"Icicle{i}", K.at(a, P["ped_r1"] + 0.45, top - 0.3 - ln / 2), 0.11, ln, (0.8, 0.93, 1.0), rot=(rad(180), 0, 0), verts=6)
 if level == 1:
     shard("Shard", (0, 0.25, top), P["shard_h"], P["shard_r"], (-P["lean"], 6))
-    shard("ShardS1", (0.55, -0.45, top), P["shard_h"] * 0.3, P["shard_r"] * 0.45, (18, 12))
-    shard("ShardS2", (-0.6, -0.3, top), P["shard_h"] * 0.25, P["shard_r"] * 0.4, (14, -16))
+    # (2026-11-25 review: the painting's small shards are about half the big one's height, not a quarter; at a
+    # quarter the crystal read as one thin spike)
+    shard("ShardS1", (0.6, -0.45, top), P["shard_h"] * 0.5, P["shard_r"] * 0.65, (18, 12))
+    shard("ShardS2", (-0.65, -0.3, top), P["shard_h"] * 0.42, P["shard_r"] * 0.6, (14, -16))
+    shard("ShardS3", (0.1, 0.75, top), P["shard_h"] * 0.35, P["shard_r"] * 0.55, (-22, -4))
 elif level == 2:
     K.lathe("Ring", [(P["ring_r"] - 0.2, top - 0.05), (P["ring_r"], top), (P["ring_r"], top + 0.5), (P["ring_r"] - 0.2, top + 0.55)], SILVER, key=None, verts=32)
     for k in range(3):

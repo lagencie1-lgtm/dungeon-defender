@@ -33,6 +33,8 @@ end
 State.Set("Map", "CursedForest")
 State.Set("Mode", "Campaign")
 State.Set("Difficulty", "Easy")
+-- a long first break, so every look is shot before goblins arrive (the wave comes after the branch shots)
+Config.FirstBreakTime = 70
 GameService.StartRun()
 task.wait(3)
 State.Set("Gold", 100000)
@@ -52,12 +54,14 @@ local a, b = pts[best], pts[best + 1]
 local spotAt = a:Lerp(b, 0.5)
 local walk = (b - a).Unit
 
-local function heroAt(wall, away)
-	-- on the player's side (further along the path), facing back at the wall; `away` keeps the hero out of repair range
+local function heroAt(wall, away, aside)
+	-- on the player's side (further along the path), facing back at the wall; `away` keeps the hero out of repair range;
+	-- `aside` moves the hero off the path's middle so the camera behind the hero sees the wall, not the hero's back
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if root then
 		local p = wall.PrimaryPart.Position
-		local stand = p + walk * (away or 7) + Vector3.new(0, 3, 0)
+		local side = walk:Cross(Vector3.yAxis).Unit
+		local stand = p + walk * (away or 7) + side * (aside or 0) + Vector3.new(0, 3, 0)
 		root.CFrame = CFrame.lookAt(stand, Vector3.new(p.X, stand.Y, p.Z))
 	end
 end
@@ -92,33 +96,59 @@ local function report(tag)
 		"walk", walk, "wall bottom y", box.Position.Y - up / 2, "path y", spotAt.Y)
 end
 report("l1")
-heroAt(wall)
-task.wait(10) -- (the models and paints stream in)
-heroAt(wall)
-shot("l1_look")
-local d = wall:GetAttribute("PathDistance")
--- the new level 2 look first, then its health bar: enemies only fight a wall once a wave runs, so wait for the
--- first wave (the break counts down by itself) and send goblins straight at it
+-- each look is shot by the client (test/shots/LookCheck.client.luau) once it has really loaded there
+local ShotDone = Instance.new("RemoteEvent")
+ShotDone.Name = "ShotDone"
+ShotDone.Parent = game:GetService("ReplicatedStorage")
+local shotDone = nil
+ShotDone.OnServerEvent:Connect(function(_, name)
+	shotDone = name
+end)
+local function shootLook(name, model)
+	heroAt(wall, 9, 6)
+	task.wait(1)
+	report(name)
+	shotDone = nil
+	player:SetAttribute("CheckLook", "")
+	player:SetAttribute("CheckLook", name .. "|" .. model)
+	for _ = 1, 120 do
+		if shotDone == name then
+			break
+		end
+		task.wait(0.5)
+	end
+	print("[SHOT] state", State.Get("State"), "next wave in", State.Get("NextWaveIn"))
+	task.wait(1)
+end
+
+shootLook("l1_look", "tower_barricade_l1")
 TowerService.Upgrade(player, wall)
-task.wait(6) -- (the new look streams in)
-heroAt(wall)
-task.wait(2)
-report("l2")
-shot("l2_new")
-for _ = 1, 80 do
+shootLook("l2_new", "tower_barricade_l2")
+TowerService.Upgrade(player, wall, "Thornwall")
+shootLook("thornwall_look", "tower_barricade_thorn")
+TowerService.Sell(player, wall)
+task.wait(1)
+ok, why = TowerService.Place(player, "Barricade", spotAt)
+print("[SHOT] placed again", ok, why)
+wall = findWall()
+TowerService.Upgrade(player, wall)
+task.wait(1)
+TowerService.Upgrade(player, wall, "Rootwall")
+shootLook("rootwall_look", "tower_barricade_root")
+
+-- then the wave: goblins at the Rootwall, its health bar checked, and whatever shows in the top right named
+local d = wall:GetAttribute("PathDistance")
+for _ = 1, 200 do
 	if State.Get("State") == "Wave" then
 		break
 	end
 	task.wait(0.5)
 end
 print("[SHOT] state", State.Get("State"))
-heroAt(wall, 18) -- (a hero next to the wall repairs it faster than goblins hurt it)
-local goblins = {}
+heroAt(wall, 18, 6) -- (a hero next to the wall repairs it faster than goblins hurt it)
 for i = 1, 6 do
-	table.insert(goblins, EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5)))
+	EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5))
 end
--- a hurt goblin shows its own health bar (EnemyService.HealthBar): if no bar shows in a capture either, the capture
--- misses BillboardGuis, not the wall
 task.wait(1)
 for _ = 1, 60 do
 	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.8 then
@@ -128,32 +158,36 @@ for _ = 1, 60 do
 end
 print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
 player:SetAttribute("CheckBar", true)
-task.wait(0.5)
-shot("l2_health")
-for k = 2, 3 do
+-- the same view as the earlier wave shots (hero on the path's middle, 7 studs back), where a bar showed in the top right
+heroAt(wall, 7)
+task.wait(1)
+player:SetAttribute("CheckBar", os.clock())
+for k = 1, 3 do
+	player:SetAttribute("WhatBar", os.clock()) -- (a new value each time: false then true in one frame never reaches the client)
+	task.wait(0.5)
+	shot("rootwall_wave" .. k)
 	task.wait(2)
-	print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
-	shot("l2_health" .. k)
 end
--- the two branches: this wall becomes the Thornwall; then a fresh wall on the same spot goes to the Rootwall
-TowerService.Upgrade(player, wall, "Thornwall")
-task.wait(8)
-heroAt(wall)
-task.wait(2)
-report("thorn")
-shot("thornwall_look")
+-- the first run's view again (a Thornwall made during the wave, goblins at it, hero in the path's middle 7 studs
+-- back), where a green bar showed in the top right: name what is drawn there
 TowerService.Sell(player, wall)
 task.wait(1)
-ok, why = TowerService.Place(player, "Barricade", spotAt)
-print("[SHOT] placed again", ok, why)
+TowerService.Place(player, "Barricade", spotAt)
 wall = findWall()
 TowerService.Upgrade(player, wall)
 task.wait(1)
-TowerService.Upgrade(player, wall, "Rootwall")
-task.wait(8)
-heroAt(wall)
+TowerService.Upgrade(player, wall, "Thornwall")
+for i = 1, 6 do
+	EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5))
+end
+task.wait(6)
+heroAt(wall, 7)
 task.wait(2)
-report("root")
-shot("rootwall_look")
-task.wait(3)
+player:SetAttribute("CheckBar", os.clock())
+for k = 1, 3 do
+	player:SetAttribute("WhatBar", os.clock()) -- (a new value each time: false then true in one frame never reaches the client)
+	task.wait(0.5)
+	shot("thornwall_wave" .. k)
+	task.wait(2)
+end
 shot("done")

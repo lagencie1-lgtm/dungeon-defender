@@ -26,7 +26,7 @@ local function check()
 	local inset = game:GetService("GuiService"):GetGuiInset()
 	for _, gui in workspace:GetDescendants() do
 		if gui:IsA("BillboardGui") and gui.Name == "WallHealth" and gui.Adornee then
-			local world = gui.Adornee.Position + gui.StudsOffsetWorldSpace
+			local world = gui.Adornee.CFrame:PointToWorldSpace(gui.StudsOffsetWorldSpace) -- (the offset is in the adornee's axes)
 			local dist = root and (root.Position - world).Magnitude or -1
 			local p, onScreen = camera:WorldToViewportPoint(world)
 			local vp = camera.ViewportSize

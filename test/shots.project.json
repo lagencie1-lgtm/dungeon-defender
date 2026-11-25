@@ -22,6 +22,9 @@
         },
         "BarCheck": {
           "$path": "shots/BarCheck.client.luau"
+        },
+        "LookCheck": {
+          "$path": "shots/LookCheck.client.luau"
         }
       }
     },

@@ -921,7 +921,9 @@ local function wallBar(t)
 		-- low and out in front: at 55% of its height the bar still sat under the objective banner (NextGoal) from the
 		-- run camera at 15 studs (test/shots BarCheck); at its foot, 3.5 studs out on the road, it is clear
 		local spot = t.position + Vector3.new(0, (height or 3.4) * 0.2, 0) + dir * (t.wall.Depth + 3.5)
-		gui.StudsOffsetWorldSpace = spot - adornee.Position
+		-- (StudsOffsetWorldSpace is taken in the adornee's own axes, not the world's: a wall turned to span the path
+		-- threw a world offset sideways, and the bar showed in the top right corner of a phone screen)
+		gui.StudsOffsetWorldSpace = adornee.CFrame:VectorToObjectSpace(spot - adornee.Position)
 	end
 	local share = math.clamp(t.wall.Health / t.wall.MaxHealth, 0, 1)
 	local fill = gui.Back.Fill

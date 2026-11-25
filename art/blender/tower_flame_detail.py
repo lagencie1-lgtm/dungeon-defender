@@ -47,6 +47,7 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     os._exit(0)
 S.start()
 K.SIZES["barrel"] = 512
+K.GOLD_SMOOTH = True   # (the gold-trim rule, coordinator 2026-11-25)
 
 
 def aim_frame(z, tilt, side=0.0):

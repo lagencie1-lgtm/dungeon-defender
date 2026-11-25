@@ -37,6 +37,8 @@ GREEN = (0.34, 0.6, 0.25)
 LEAF = (0.36, 0.66, 0.26)
 CREAM = (0.97, 0.92, 0.8)
 BRASS = (1.0, 0.76, 0.3)
+GOLD_FLAT = (0.9, 0.6, 0.2)
+GOLD_SMOOTH = False   # (a tower sets it True to build its gold by the gold-trim rule; see _link)
 GRASS = (0.45, 0.72, 0.26)
 rnd = random.Random(7)
 
@@ -67,6 +69,15 @@ def _link(name, mesh, color, key=None, tile=1.4):
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(obj)
     obj["htd_atlas"] = ATLAS[-1]
+    if GOLD_SMOOTH and tuple(color) == tuple(BRASS):
+        # the gold-trim rule (coordinator 2026-11-25): gold is a smooth flat colour (the bake's light and occlusion
+        # still shade it), never the hammered-plate texture, which tiled over thin bands and studs read as popcorn;
+        # off the weapon it bakes into its own "gold" sheet, which the repaint leaves alone (KEEP_GOLD in
+        # tools/tower_round.sh)
+        key = None
+        color = GOLD_FLAT   # (the paintings' gold is a deeper orange gold; flat BRASS read as lemon plastic)
+        if ATLAS[-1] == "body":
+            obj["htd_atlas"] = "gold"
     return paint.paint(obj, key, color, tile)
 
 
@@ -92,6 +103,8 @@ def block(name, pos, size, color, rot=(0, 0, 0), key=None, tile=1.4, bevel=0.04)
 
 
 def ball(name, pos, radius, color, scale=(1, 1, 1), rot=(0, 0, 0), seg=10, key=None, tile=1.2):
+    if GOLD_SMOOTH and tuple(color) == tuple(BRASS):
+        seg = max(seg, 12)   # (rivets round, not six-sided crumbs)
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=max(4, seg // 2), radius=radius)
     bmesh.ops.scale(bm, vec=scale, verts=bm.verts)
@@ -700,7 +713,7 @@ def cull_hidden(reach=0.9, rays=16):
     print("CULLED %d of %d faces" % (removed, total))
 
 
-SIZES = {"body": 1024, "roof": 1024, "props": 512, "archer": 512}
+SIZES = {"body": 1024, "roof": 1024, "props": 512, "archer": 512, "gold": 256}
 
 
 def bake_atlases(name, out, budget=16000):

@@ -206,6 +206,11 @@ local function check(name)
 	elseif name == "Readable" then
 		-- 10-foot rule: no visible HUD text under about 18 pixels at 1080p
 		local viewport = workspace.CurrentCamera.ViewportSize
+		-- (the rule is about a TV, 1280x720 or more: in a smaller Studio window the controller layout shrinks to fit and
+		-- every text "fails". Say that instead, 2026-11-25: an un-maximized Studio, 750x635, failed a publish check)
+		assert(viewport.X >= 1280 and viewport.Y >= 720, string.format(
+			"test window too small (%dx%d): the TV text rule needs at least 1280x720, maximize Roblox Studio and run again",
+			viewport.X, viewport.Y))
 		local least = 18 * viewport.Y / 1080
 		local small = {}
 		local count = 0

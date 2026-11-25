@@ -258,6 +258,187 @@ local function lowestParts()
 end
 -- the rigged goblin in a real run (test/anim-goblin.project.json): walking from 3/4 and side, bashing the
 -- hero, hit, knocked out; feet measured against the ground, frame time
+-- every rigged monster alone (test/anim-monsters.project.json, attribute Monsters = "EmberImp,Shade,..."): each one
+-- spawned on an empty path, filmed walking from the side and 3/4, bashing the hero, (bosses) its tells, hit, knocked
+-- out; feet against the ground, slide inside MonsterAnim, frame marks per shot
+if cue:GetAttribute("Mode") == "monsters" then
+	cue:FireServer("StartRun", "CursedForest", "nowaves")
+	await("RunReady", 60)
+	task.wait(14) -- the models load
+	-- the reward chest that a killed boss opens would cover the next shots: kept closed in this film
+	for _, d in player.PlayerGui:GetDescendants() do
+		if d:IsA("TextLabel") and d.Text == "VICTORY CHEST" and d.Parent:IsA("GuiObject") then
+			local panel = d.Parent
+			panel:GetPropertyChangedSignal("Visible"):Connect(function()
+				panel.Visible = false
+			end)
+		end
+	end
+	local pts0 = Config.Path
+	local folder = workspace:WaitForChild("Enemies")
+	workspace:SetAttribute("MonsterAnimDebug", true)
+	local function sideOf(dist, up, sign)
+		return function(cf)
+			local at = cf.Position + Vector3.new(0, up * 0.4, 0)
+			return CFrame.lookAt(at + cf.RightVector * dist * (sign or 1) + Vector3.new(0, up, 0), at)
+		end
+	end
+	local function threeQ(dist, up)
+		return function(cf)
+			local at = cf.Position + Vector3.new(0, up * 0.3, 0)
+			return CFrame.lookAt(at + (cf.LookVector + cf.RightVector * 0.9).Unit * dist + Vector3.new(0, up, 0), at)
+		end
+	end
+	local function clearSide(dist, up)
+		return function(cf)
+			local at = cf.Position + Vector3.new(0, 1, 0)
+			for _, s in { 1, -1 } do
+				local eye = at + cf.RightVector * dist * s + Vector3.new(0, up, 0)
+				params.FilterDescendantsInstances = { character, folder }
+				if not workspace:Raycast(at, eye - at, params) then
+					return CFrame.lookAt(eye, at)
+				end
+			end
+			return CFrame.lookAt(at + cf.RightVector * dist + Vector3.new(0, up + 4, 0), at)
+		end
+	end
+	local function boneOf(m, name)
+		for _, d in m:GetDescendants() do
+			if d:IsA("Bone") and (string.gsub(d.Name, "[^%w]", "")) == name then
+				return d
+			end
+		end
+	end
+	for name in string.gmatch(cue:GetAttribute("Monsters") or "", "[^,]+") do
+		-- nobody else on the path
+		for _, x in folder:GetChildren() do
+			cue:FireServer("KillEnemy", x)
+		end
+		task.wait(1.2)
+		walk(pts0[2] + (pts0[3] - pts0[2]) * 0.5 + Vector3.new(14, 0, 0), 12)
+		cue:FireServer("SpawnEnemy", name)
+		local m
+		local deadline = os.clock() + 10
+		while not m and os.clock() < deadline do
+			for _, x in folder:GetChildren() do
+				if x.Name == name and x:GetAttribute("Rigged") and not x:GetAttribute("Dead") then
+					m = x
+				end
+			end
+			task.wait(0.1)
+		end
+		if not m then
+			say(name, "no rigged model appeared (rigged look not loaded?)")
+			continue
+		end
+		task.delay(1, function()
+			say(name, "leg rest", tostring(m:GetAttribute("LegRest")))
+		end)
+		local _, size = m:FindFirstChild("Look"):GetBoundingBox()
+		local h = size.Y
+		local fl, fr = boneOf(m, "FootL"), boneOf(m, "FootR")
+		local restFoot = fl and (fl.TransformedWorldCFrame.Position.Y - (groundBelow(fl.TransformedWorldCFrame.Position) or 0))
+		local look = m:FindFirstChild("Look")
+		local function follow(view_, seconds, label)
+			local t0 = os.clock()
+			local lowMin, lowMax = math.huge, -math.huge
+			local n0, s0 = m:GetAttribute("SlideContacts") or 0, m:GetAttribute("SlideTotal") or 0
+			m:SetAttribute("SlideWorst", 0)
+			mark(name .. " " .. label)
+			while os.clock() - t0 < seconds and m.Parent and not m:GetAttribute("Dead") do
+				local cf = m:GetPivot()
+				camera.CameraType = Enum.CameraType.Scriptable
+				camera.CFrame = view_(cf)
+				if fl and fr then
+					local a, b = fl.TransformedWorldCFrame.Position, fr.TransformedWorldCFrame.Position
+					local g = groundBelow((a + b) / 2) or cf.Position.Y
+					local low = math.min(a.Y, b.Y) - g
+					lowMin, lowMax = math.min(lowMin, low), math.max(lowMax, low)
+				end
+				RunService.RenderStepped:Wait()
+			end
+			local n1, s1 = m:GetAttribute("SlideContacts") or 0, m:GetAttribute("SlideTotal") or 0
+			say(string.format("%s %s: height %.1f; lowest ankle vs ground %.2f..%.2f (rest %.2f); planted-foot slide %.3f studs per contact over %d contacts (worst %.3f)",
+				name, label, h, lowMin == math.huge and 0 or lowMin, lowMax == -math.huge and 0 or lowMax, restFoot or 0,
+				(s1 - s0) / math.max(n1 - n0, 1), n1 - n0, m:GetAttribute("SlideWorst") or 0))
+		end
+		local dist = math.max(10, math.min(h * 2.4, 16 + h * 1.1)) -- (a 20-stud boss: 39 studs off, not 50)
+		follow(clearSide(dist, h * 0.35), 5, "walk side")
+		follow(threeQ(dist, h * 0.5), 4, "walk 3/4")
+		-- in its way: it swings at the hero
+		local hum = humanoidOf()
+		local t1 = os.clock()
+		while os.clock() - t1 < 10 and m.Parent and not m:GetAttribute("Bashing") do
+			local cf = m:GetPivot()
+			local spot = cf.Position + cf.LookVector * (h * 0.4 + 2)
+			if hum then
+				hum:MoveTo(Vector3.new(spot.X, rootPart().Position.Y, spot.Z))
+			end
+			camera.CFrame = threeQ(dist, h * 0.5)(cf)
+			RunService.RenderStepped:Wait()
+		end
+		if hum then
+			hum:MoveTo(rootPart().Position)
+		end
+		say(name, "bashing", tostring(m:GetAttribute("Bashing")))
+		follow(threeQ(dist, h * 0.5), 3, "bash")
+		cue:FireServer("Heal")
+		-- bosses: their tells (slam every few seconds; the queen's summon)
+		if Config.Enemies[name] and Config.Enemies[name].Boss then
+			local t2 = os.clock()
+			local seen = {}
+			if Config.Enemies[name].Charge then
+				local cf = m:GetPivot()
+				cue:FireServer("Charge", cf.Position + cf.LookVector * 14)
+			end
+			local healAt = 0
+			while os.clock() - t2 < 16 and m.Parent and not m:GetAttribute("Dead") do
+				local tell = m:GetAttribute("Tell") or ""
+				if tell ~= "" and not seen[tell] then
+					seen[tell] = true
+					mark(name .. " tell " .. tell)
+					say(name, "tell", tell)
+				end
+				if m:GetAttribute("SummonAt") and not seen.summon then
+					seen.summon = true
+					mark(name .. " tell summon")
+					say(name, "tell summon")
+				end
+				camera.CFrame = clearSide(dist * 1.1, h * 0.4)(m:GetPivot())
+				if os.clock() > healAt then
+					healAt = os.clock() + 0.5
+					cue:FireServer("Heal")
+				end
+				RunService.RenderStepped:Wait()
+			end
+		end
+		-- hit from the hero's side, then out
+		mark(name .. " hit")
+		for _ = 1, 2 do
+			cue:FireServer("HitEnemy", m)
+			local t3 = os.clock()
+			while os.clock() - t3 < 0.6 and m.Parent do
+				camera.CFrame = clearSide(dist, h * 0.35)(m:GetPivot())
+				RunService.RenderStepped:Wait()
+			end
+		end
+		local fallCF = m:GetPivot()
+		mark(name .. " knock out")
+		cue:FireServer("KillEnemy", m)
+		local t4 = os.clock()
+		while os.clock() - t4 < 2 do
+			camera.CFrame = clearSide(dist, h * 0.35)(fallCF)
+			RunService.RenderStepped:Wait()
+		end
+		say(name, "dead", tostring(m:GetAttribute("Dead")), "removed", tostring(m.Parent == nil))
+	end
+	camera.CameraType = Enum.CameraType.Custom
+	say("DONE")
+	mark("film end")
+	cue:FireServer("Done")
+	return
+end
+
 -- the rigged goblin alone (test/anim-goblin.project.json): one goblin spawned on an empty path, its run from the
 -- side and 3/4, two hits from the hero's side, then knocked out; feet, bob and step rate measured
 if cue:GetAttribute("Mode") == "goblin" then

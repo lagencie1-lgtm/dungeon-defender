@@ -10,9 +10,14 @@ local function mark(name)
 	print("[FILM]", DateTime.now().UnixTimestampMillis, name)
 end
 
-cue.OnServerEvent:Connect(function(player, step, arg)
+cue.OnServerEvent:Connect(function(player, step, arg, arg2)
 	mark(step)
 	if step == "StartRun" then
+		if arg2 == "nowaves" then
+			-- (the monster films: no wave comes while each monster is filmed alone)
+			local Config = require(ReplicatedStorage.Shared.Config)
+			Config.FirstBreakTime, Config.BreakTime = 9999, 9999
+		end
 		State.Set("Map", arg or "CursedForest")
 		GameService.StartRun()
 		cue:FireClient(player, "RunReady")
@@ -40,6 +45,29 @@ cue.OnServerEvent:Connect(function(player, step, arg)
 				EnemyService.Damage(e, 12, player, true, false, r and r.Position)
 				EnemyService.HitStop(e, 0.06)
 				EnemyService.Knockback(e, 1.5)
+			end
+		end
+	elseif step == "SpawnEnemy" then
+		-- one enemy of a kind alone at the start of the path
+		require(Server.EnemyService).Spawn(arg, 1, 0)
+	elseif step == "Charge" then
+		-- a boss with a charge needs a defender in reach: a stand-in post at arg, and its charge due now
+		local EnemyService = require(Server.EnemyService)
+		local post = Instance.new("Model")
+		post.Name = "ChargePost"
+		local p = Instance.new("Part")
+		p.Anchored, p.CanCollide, p.Transparency = true, false, 1
+		p.Size = Vector3.new(2, 4, 2)
+		p.Position = arg
+		p.Parent = post
+		post.PrimaryPart = p
+		post.Parent = workspace
+		EnemyService.PickChargeTarget = function()
+			return post
+		end
+		for _, e in EnemyService.GetActive() do
+			if e.stats.Charge then
+				e.nextCharge = 0
 			end
 		end
 	elseif step == "SpawnGoblin" then

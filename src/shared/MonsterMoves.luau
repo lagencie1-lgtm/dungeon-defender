@@ -40,10 +40,27 @@ MonsterMoves.Hop = { Length = 1.4, Ground = 0.45, Squash = 0.2, Stretch = 0.12, 
 MonsterMoves.Float = { Bob = 0.035, BobHz = 0.8, Lean = -8, Roll = 3, Trail = 22, Sway = 7, SwayHz = 1.1,
 	ArmForward = 20, ArmDrift = 6 }
 
--- which gait each enemy uses (by its name in Config.Enemies): "walk" or "run"
+-- which gait each enemy uses (by its name in Config.Enemies): "walk", "run" or "fly"
 MonsterMoves.Gaits = {
 	Default = "walk",
 	Goblin = "run", -- Lemp 2026-11-25: the bouncy run
+	-- (2026-11-26: the imp's stubby legs rest slanted 47 degrees and it is the fastest enemy, 15 studs/s: a walk
+	-- either slid or sank its feet, so it flies low on its wings and lands to fight)
+	EmberImp = "fly",
+}
+
+-- the low flight (a winged monster with short legs): it lifts off as it moves, bobs with each wing beat, leans into
+-- the flight with its legs trailing, and lands when it stops (to bash, to be hit)
+MonsterMoves.Fly = {
+	Hover = 0.12, -- how high the feet are off the ground in flight (share of height)
+	Bob = 0.03, -- the bob with each wing beat (share of height)
+	Lean = -14,
+	LegsBack = 28, -- the legs trail back (degrees)
+	Knee = 35,
+	Kick = 8, -- the legs paddle a little, one after the other
+	Flap = 36, -- the wing beat in flight (degrees; Wings.Flap when standing)
+	Hz = 4.2, -- wing beats a second in flight (Wings.Hz when standing)
+	ArmForward = 18,
 }
 
 -- the bouncy run: fewer, longer steps with a short hop between them (both feet up), the body rising on the
@@ -90,6 +107,37 @@ MonsterMoves.Attack = {
 		{ t = 0.40, hold = true },
 		-- recover with a little overshoot
 		{ t = 0.70, ease = "back" },
+	},
+}
+
+-- boss tells (6A: a boss never goes quiet). The arms stay within what each rig was tested at (the Goblin King:
+-- arms 35, so the club goes overhead from the elbow and wrist, and the body does the rest)
+-- slam: the server shows the red ring 0.9 s before the blow; the wind-up fills those 0.9 s, the smash lands on time
+MonsterMoves.Slam = {
+	Keys = {
+		{ t = 0.7, ease = "out", Drop = 0.05, Root = { 14, 0, 0 }, Spine = { 10, 0, 0 }, Neck = { -10, 0, 0 },
+			UpperArmL = { 35, 0, 10 }, UpperArmR = { 35, 0, 10 }, LowerArmL = { 70, 0, 0 }, LowerArmR = { 70, 0, 0 },
+			HandL = { 35, 0, 0 }, HandR = { 35, 0, 0 } },
+		{ t = 0.9, ease = "in", Drop = 0.12, Push = 0.05, Root = { -20, 0, 0 }, Spine = { -16, 0, 0 }, Neck = { 12, 0, 0 },
+			UpperArmL = { -10, 0, 14 }, UpperArmR = { -10, 0, 14 }, LowerArmL = { 10, 0, 0 }, LowerArmR = { 10, 0, 0 } },
+		{ t = 1.05, hold = true },
+		{ t = 1.5, ease = "back" },
+	},
+}
+-- charge: held while the boss winds up its charge at a defender: low, leaning in, arms swept back, head up
+MonsterMoves.Charge = {
+	Pose = { Drop = 0.1, Root = { -18, 0, 0 }, Spine = { -8, 0, 0 }, Neck = { 16, 0, 0 },
+		UpperArmL = { -30, 0, 12 }, UpperArmR = { -30, 0, 12 }, LowerArmL = { 30, 0, 0 }, LowerArmR = { 30, 0, 0 } },
+	Paw = 10, -- a foot paws the ground (degrees), PawHz times a second
+	PawHz = 2.2,
+}
+-- summon: hands rise from the elbows, head back, held, released
+MonsterMoves.Summon = {
+	Keys = {
+		{ t = 0.35, ease = "out", Drop = 0.03, Spine = { 8, 0, 0 }, Neck = { -14, 0, 0 },
+			UpperArmL = { 20, 0, 25 }, UpperArmR = { 20, 0, 25 }, LowerArmL = { 75, 0, 0 }, LowerArmR = { 75, 0, 0 } },
+		{ t = 0.85, hold = true },
+		{ t = 1.25, ease = "back" },
 	},
 }
 

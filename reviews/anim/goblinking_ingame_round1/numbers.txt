@@ -1,0 +1,8 @@
+[ANIM] GoblinKing leg rest 8.7 deg, 2.89 studs
+[ANIM] GoblinKing walk side: height 18.4; lowest ankle vs ground 0.19..0.73 (rest 0.73); planted-foot slide 0.001 studs per contact over 6 contacts (worst 0.004)
+[ANIM] GoblinKing walk 3/4: height 18.4; lowest ankle vs ground -1.14..0.95 (rest 0.73); planted-foot slide 0.015 studs per contact over 4 contacts (worst 0.058)
+[ANIM] GoblinKing bashing nil
+[ANIM] GoblinKing bash: height 18.4; lowest ankle vs ground -0.91..0.91 (rest 0.73); planted-foot slide 0.267 studs per contact over 5 contacts (worst 1.290)
+[ANIM] GoblinKing tell charge
+[ANIM] GoblinKing tell slam
+[ANIM] GoblinKing dead true removed true

@@ -4,7 +4,7 @@
 
 **How they move:** in game everything is driven from code with springs: `src/client/MonsterAnim.client.luau`, with every number in `src/shared/MonsterMoves.luau`. Heroes use `HeroAnim` and `HeroMoves`.
 
-**Uploads:** only the goblin is uploaded (private, with Lemp's OK). Every other FBX below waits for Lemp's typed OK.
+**Uploads:** all 9 rigged monsters are uploaded as private assets (with Lemp's OK). They are wired in `Art.luau` as `*_rigged`, with the old looks kept as fallback.
 
 **What the numbers mean:**
 
@@ -34,3 +34,31 @@
 
 - **`round1`:** the hero animation test. It found that HeroAnim did not move the hero at all on the new Roblox joints, and fixed that and the floating feet.
 - **`round2`:** the knock-out now lies on its back on the ground.
+
+## In a real run, round 1 (`<name>_ingame_round1`)
+
+Each monster was filmed alone at phone size by `test/anim-monsters-a/b.project.json`, with the feet measured.
+
+| monster | grades (1-10) |
+|---|---|
+| Ember Imp | fly 7 / attack 6 / hit 6 / death 6 |
+| Shade | float 7 / attack 6 / hit 6 / death 6 |
+| Magma Slime | hop 7 / attack 6 / hit 6 / death 6 |
+| Crystal Brute (golem) | walk 7 / attack 5 / hit 6 / death 6 |
+| Obsidian Knight | walk 8 / attack 7 / hit 6 / death 6 |
+| Molten Golem (boss) | walk 7 / slam 6 / hit 6 / death 6 |
+| Goblin King (boss) | walk 7 / slam 6 / charge 6 / hit 6 / death 6 |
+| Shadow Queen (boss) | float 7 / attack 6 / slam 5 / summon 5 / hit 5 / death 5 |
+
+**Fixed in this round:**
+- **Imp:** walking slid its stubby legs or sank them under the ground. It now flies low (`MonsterMoves.Fly`, `Gaits.EmberImp`).
+- **Turning on the spot:** turns now count as steps, so the legs step round instead of the feet sliding. Knight bash slide went from 0.04 to 0.005.
+- **Knockback:** the legs step backwards instead of sliding.
+- **Attack, hit and tells:** the knees bend under any sink or push from a clip, and the legs turn back against the hit tip, so the feet stay put.
+- **Walk solved about the leg's rest angle:** the planted foot no longer dips.
+- **Boss tells:** the server sets `Tell` (slam/charge) and `SummonAt`. MonsterAnim plays `MonsterMoves.Slam`, `Charge` and `Summon`.
+
+**Still open:**
+- Foot slide while the golem and the Goblin King bash (0.3 studs per contact).
+- Ankle readings under the ground in the bosses' 3/4 and bash windows. The sheets show no sinking; most likely the ray hits something between the feet.
+- Boss tells read small at phone distance.

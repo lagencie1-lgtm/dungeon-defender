@@ -795,6 +795,12 @@ function EnemyService.Start()
 				if e.slamming then
 					speed = 0 -- it stops to wind up the slam
 				end
+				-- what the boss is winding up, for MonsterAnim's tells (written only when it changes)
+				local tell = e.slamming and "slam" or e.charging and "charge" or ""
+				if e.rigged and e.tellShown ~= tell then
+					e.tellShown = tell
+					e.model:SetAttribute("Tell", tell)
+				end
 			end
 			if now < e.frozenUntil then
 				speed = 0
@@ -820,6 +826,9 @@ function EnemyService.Start()
 				e.nextSummon = e.nextSummon or (now + summon.Every)
 				if now >= e.nextSummon then
 					e.nextSummon = now + summon.Every
+					if e.rigged then
+						e.model:SetAttribute("SummonAt", workspace:GetServerTimeNow()) -- MonsterAnim: the summon tell
+					end
 					for i = 1, summon.Count do
 						EnemyService.Spawn(summon.Enemy, e.healthMultiplier, math.max(0, e.distance - i * 3))
 					end

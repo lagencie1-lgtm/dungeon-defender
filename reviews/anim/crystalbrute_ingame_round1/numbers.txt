@@ -1,0 +1,6 @@
+[ANIM] CrystalBrute leg rest 2.7 deg, 2.91 studs
+[ANIM] CrystalBrute walk side: height 11.1; lowest ankle vs ground 0.53..0.68 (rest 0.68); planted-foot slide 0.000 studs per contact over 10 contacts (worst 0.001)
+[ANIM] CrystalBrute walk 3/4: height 11.1; lowest ankle vs ground 0.54..0.67 (rest 0.68); planted-foot slide 0.000 studs per contact over 7 contacts (worst 0.000)
+[ANIM] CrystalBrute bashing true
+[ANIM] CrystalBrute bash: height 11.1; lowest ankle vs ground 0.37..0.81 (rest 0.68); planted-foot slide 0.316 studs per contact over 7 contacts (worst 1.861)
+[ANIM] CrystalBrute dead true removed true

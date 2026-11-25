@@ -98,6 +98,9 @@ local function clipOf(spec)
 	return keys
 end
 local ATTACK = clipOf(Moves.Attack)
+local SLAM = clipOf(Moves.Slam)
+local SUMMON = clipOf(Moves.Summon)
+local CHARGE = poseFromKey(Moves.Charge.Pose)
 local DEATH = clipOf(Moves.Death)
 local REST = emptyPose()
 
@@ -201,6 +204,21 @@ local function newState(model, bones)
 	-- leg length: hip to foot, from the bones themselves
 	local hip, foot = st.joints.UpperLegL, st.joints.FootL or st.joints.LowerLegL
 	st.leg = (hip and foot) and math.max(0.2, (hip.pos - foot.pos).Magnitude) or size.Y * 0.3
+	-- how far the foot rests in front of (+) or behind (-) the hip, as an angle seen from the side: the walk swings
+	-- the leg about that rest angle (an imp's legs rest slanted; solving them as if straight down sank its feet)
+	st.legB = 0
+	st.legS = st.leg
+	if hip and foot then
+		local d = foot.pos - hip.pos
+		st.legB = math.atan2(-d.Z, math.max(1e-3, -d.Y))
+		st.legS = math.max(0.2, Vector3.new(0, d.Y, d.Z).Magnitude)
+	end
+	-- half the stance (hip to hip across): a turn on the spot moves each foot by about this times the angle
+	local fl, fr = st.joints.FootL, st.joints.FootR
+	st.stance = (fl and fr) and math.abs(fl.pos.X - fr.pos.X) * 0.5 or 0
+	if DEBUG then
+		model:SetAttribute("LegRest", string.format("%.1f deg, %.2f studs", math.deg(st.legB), st.legS))
+	end
 	return st
 end
 
@@ -250,6 +268,20 @@ local function animate(st, dt, now)
 		moved = 0 -- a jump (a blink, a teleport): no stride for it
 	end
 	local dead = model:GetAttribute("Dead")
+	-- moving backwards (a knockback): the legs step backwards, instead of a planted foot sliding back with the body
+	local flat = Vector3.new(pivot.LookVector.X, 0, pivot.LookVector.Z)
+	local stepped = (flat.Magnitude > 1e-3 and delta:Dot(flat.Unit) < -0.5 * moved) and -moved or moved
+	-- turning on the spot (to face a hero it bashes, a corner) swings the planted foot round with the body: count the
+	-- turn as steps so the legs step round instead of the feet sliding
+	if flat.Magnitude > 1e-3 then
+		local last = st.lastFlat or flat.Unit
+		local turn = math.acos(math.clamp(last:Dot(flat.Unit), -1, 1)) * (st.stance or 0)
+		st.lastFlat = flat.Unit
+		if turn < h then
+			stepped += turn
+			moved += turn
+		end
+	end
 	local speed = moved / math.max(dt, 1e-3)
 	st.walk, st.walkVel = springStep(st.walk, st.walkVel, (speed > 0.3 and not dead) and 1 or 0, W.Settle.Hz, W.Settle.Damping, dt)
 	local w = math.clamp(st.walk, 0, 1.2)
@@ -307,6 +339,20 @@ local function animate(st, dt, now)
 		local out = Moves.Idle.ArmOut + F.ArmDrift * bob
 		pose.UpperArmL = Vector3.new(F.ArmForward * w, 0, out)
 		pose.UpperArmR = Vector3.new(F.ArmForward * w, 0, out)
+	elseif gait == "fly" then
+		-- the low flight (MonsterMoves.Fly): up off the ground while moving, a bob on each wing beat, legs trailing
+		local Fy = Moves.Fly
+		local k = math.min(w, 1)
+		local bob = math.sin((st.wingPh or 0) - math.pi / 2)
+		pose.Lift = (Fy.Hover + Fy.Bob * (bob + 1) * 0.5) * k
+		pose.Root = Vector3.new(Fy.Lean * k, 0, 0)
+		local kick = math.sin(now * 2 * math.pi * Fy.Hz * 0.5) * Fy.Kick
+		pose.UpperLegL = Vector3.new((-Fy.LegsBack + kick) * k, 0, 0)
+		pose.UpperLegR = Vector3.new((-Fy.LegsBack - kick) * k, 0, 0)
+		pose.LowerLegL = Vector3.new(-Fy.Knee * k, 0, 0)
+		pose.LowerLegR = Vector3.new(-Fy.Knee * k, 0, 0)
+		pose.UpperArmL = Vector3.new(Fy.ArmForward * k, 0, Moves.Idle.ArmOut)
+		pose.UpperArmR = Vector3.new(Fy.ArmForward * k, 0, Moves.Idle.ArmOut)
 	elseif gait == "run" then
 		-- the bouncy run: fewer, longer steps with a short hop between them. Each step is a contact (one foot planted,
 		-- its leg solved so the foot stays put; the knee gives on landing and straightens to push off) and then a
@@ -315,7 +361,7 @@ local function animate(st, dt, now)
 		local R = Moves.Run
 		st.speedAvg = (st.speedAvg or speed) + (speed - (st.speedAvg or speed)) * math.min(1, dt * 4)
 		local stepLen = math.clamp(st.speedAvg / R.StepRate, st.leg * 0.4, st.leg * R.MaxStep)
-		st.step = ((st.step or 0) + moved / stepLen) % 2 -- two steps = one cycle of both legs
+		st.step = ((st.step or 0) + stepped / stepLen) % 2 -- two steps = one cycle of both legs
 		local half = R.Contact * 0.5 * stepLen -- the planted foot goes from this far in front of the hip to this far behind
 		local function legOf(p) -- p: this leg's place in the cycle, 0..2 steps
 			if p < R.Contact then
@@ -376,22 +422,31 @@ local function animate(st, dt, now)
 		-- half. While planted, its leg angle is solved from where the foot must stay (asin of its offset from the hip),
 		-- so the foot does not slide; the hips sink by the straight-leg geometry of the planted leg. One cycle = two
 		-- steps of 2 x leg x sin(Swing).
-		local stride = 2 * st.leg * math.sin(W.Swing * RAD)
-		st.phase = (st.phase + moved / math.max(2 * stride, 0.05)) % 1
+		-- (angles below are turns from the leg's rest angle B; the foot's place is measured from where it rests)
+		local L, B = st.legS, st.legB
+		local stride = 2 * L * math.sin(W.Swing * RAD)
+		st.phase = (st.phase + stepped / math.max(2 * stride, 0.05)) % 1
+		local rest = L * math.sin(B)
 		local function leg(p)
 			local x, knee, planted
 			if p < 0.5 then
-				x = stride * (0.5 - p / 0.5) -- planted: from in front of the hip to behind it
+				x = stride * (0.5 - p / 0.5) -- planted: from in front of its rest spot to behind it
 				knee, planted = 0, true
 			else
 				local v = (p - 0.5) / 0.5
 				x = stride * (-0.5 + v * v * (3 - 2 * v)) -- swung forward again, lifting the knee
 				knee, planted = math.sin(v * math.pi), false
 			end
-			return math.asin(math.clamp(x / st.leg, -1, 1)), knee, planted
+			return math.asin(math.clamp((rest + x) / L, -1, 1)) - B, knee, planted
 		end
 		local aL, kL, pL = leg(st.phase)
 		local aR, kR = leg((st.phase + 0.5) % 1)
+		-- (the planted foot, for the correction after posing, as in the run)
+		st.down = (w > 0.9 and not dead) and (pL and "L" or "R") or nil
+		st.downA = pL and aL or aR
+		if DEBUG then
+			model:SetAttribute("FootDown", st.down or "")
+		end
 		local s = math.sin(st.phase * 2 * math.pi)
 		pose.UpperLegL = Vector3.new(aL / RAD * w, 0, 0)
 		pose.UpperLegR = Vector3.new(aR / RAD * w, 0, 0)
@@ -406,9 +461,11 @@ local function animate(st, dt, now)
 		pose.Root = Vector3.new(W.Lean * w, 0, 0)
 		-- the planted leg leaning out lowers the hips: sink by exactly that so the planted foot stays on the ground
 		local planted = (pL and aL or aR) * w
-		pose.Drop = st.leg * (1 - math.cos(planted)) / h
+		pose.Drop = L * (math.cos(B) - math.cos(B + planted)) / h
 
 	end
+
+	local gaitDrop, gaitPush = pose.Drop, pose.Push
 
 	-- breathing when standing
 	local still = 1 - math.min(w, 1)
@@ -426,7 +483,10 @@ local function animate(st, dt, now)
 	end
 	if st.joints.WingL then
 		local F = Moves.Wings
-		local beat = math.sin(now * 2 * math.pi * F.Hz + st.breath) * F.Flap
+		-- (a flyer beats harder and faster in flight; the beat runs on its own phase so the speed-up stays smooth)
+		local fk = gait == "fly" and math.min(w, 1) or 0
+		st.wingPh = ((st.wingPh or st.breath) + dt * 2 * math.pi * (F.Hz + (Moves.Fly.Hz - F.Hz) * fk)) % (2 * math.pi)
+		local beat = math.sin(st.wingPh) * (F.Flap + (Moves.Fly.Flap - F.Flap) * fk)
 		pose.WingL = Vector3.new(0, 0, F.Open + beat)
 		pose.WingR = Vector3.new(0, 0, F.Open + beat)
 	end
@@ -435,6 +495,36 @@ local function animate(st, dt, now)
 	if model:GetAttribute("Bashing") and not dead then
 		local t = (now + st.beat) % Moves.Attack.Every
 		addPose(pose, sample(ATTACK, t), 1)
+	end
+
+	-- boss tells: the slam wind-up (from the moment the server says), the charge wind-up (held), the summon
+	local tell = model:GetAttribute("Tell") or ""
+	if tell ~= (st.tell or "") then
+		st.tell = tell
+		st.tellAt = now
+	end
+	if not dead then
+		if tell == "slam" then
+			addPose(pose, sample(SLAM, now - st.tellAt), 1)
+		elseif tell == "charge" then
+			local k = math.min(1, (now - st.tellAt) / 0.25)
+			addPose(pose, CHARGE, k * k * (3 - 2 * k))
+			local paw = math.sin(now * 2 * math.pi * Moves.Charge.PawHz) * Moves.Charge.Paw
+			pose.UpperLegR += Vector3.new(math.max(0, paw), 0, 0)
+		elseif st.tellAt and st.lastTellName == "slam" and now - st.tellAt < 0.6 then
+			addPose(pose, sample(SLAM, 1.05 + (now - st.tellAt)), 1) -- (the recovery after the server ends the slam)
+		end
+		if tell ~= "" then
+			st.lastTellName = tell
+		end
+		local summonAt = model:GetAttribute("SummonAt")
+		if summonAt ~= st.lastSummon then
+			st.lastSummon = summonAt
+			st.summonStart = summonAt and now or nil
+		end
+		if st.summonStart and now - st.summonStart < 1.3 then
+			addPose(pose, sample(SUMMON, now - st.summonStart), 1)
+		end
 	end
 
 	-- the fall
@@ -449,6 +539,24 @@ local function animate(st, dt, now)
 		local back = Vector3.new(-pose.Root.X, 0, 0)
 		pose.UpperLegL += back
 		pose.UpperLegR += back
+	end
+
+	-- a clip that sinks or pushes the body (attack, hit, slam, charge, summon) bends the knees under it, so the feet
+	-- stay where they stand instead of sinking into the ground or sliding (a two-bone bend on the leg's length)
+	if not dead and st.joints.UpperLegL and st.joints.LowerLegL then
+		local exD, exP = (pose.Drop - gaitDrop) * h, (pose.Push - gaitPush) * h
+		local still = 1 - math.clamp(w, 0, 1)
+		if still > 0.01 and (math.abs(exD) > 1e-3 or math.abs(exP) > 1e-3) then
+			local L = st.leg
+			local x, y = -exP, math.max(L * 0.3, L - exD)
+			local bend = math.acos(math.min(1, math.sqrt(x * x + y * y) / L))
+			local lean = math.atan2(x, y)
+			for _, s in { "L", "R" } do
+				pose["UpperLeg" .. s] += Vector3.new((lean + bend) / RAD * still, 0, 0)
+				pose["LowerLeg" .. s] += Vector3.new(-2 * bend / RAD * still, 0, 0)
+				pose["Foot" .. s] += Vector3.new((bend - lean) / RAD * still, 0, 0)
+			end
+		end
 	end
 
 	-- the head trails the body on a loose spring (keeps it level against lean and bob)
@@ -476,6 +584,16 @@ local function animate(st, dt, now)
 		end
 	end
 	st.hit, st.hitVel = springStep(st.hit, st.hitVel, 0, Moves.Hit.Hz, Moves.Hit.Damping, dt)
+	-- the hit tips the body at the hips: turn the legs back by the same, so the feet stay on their spot (the tip
+	-- swung a golem's planted foot 0.5 studs and more)
+	if not dead and math.abs(st.hit) > 0.01 and st.joints.UpperLegL then
+		for _, s in { "L", "R" } do
+			local j = st.joints["UpperLeg" .. s]
+			if j then
+				pose["UpperLeg" .. s] += Vector3.new(-st.hit * st.hitAxis.X, 0, -st.hit * st.hitAxis.Z * j.out)
+			end
+		end
+	end
 
 	-- write the bones
 	local function write(name, j, v)
@@ -520,6 +638,14 @@ local function animate(st, dt, now)
 				local fixSide = math.clamp(-errSide / st.leg / RAD * st.joints[thigh].out, -15, 15)
 				write(thigh, st.joints[thigh], pose[thigh] + Vector3.new(fix, 0, fixSide))
 				write("Foot" .. side, foot, pose["Foot" .. side] - Vector3.new(fix, 0, fixSide))
+				-- the walk sank the hips for the solved leg angle; the corrected leg is steeper or flatter, so sink
+				-- the hips for that angle instead (else the planted foot dips under the ground: the imp, 0.4 studs)
+				if gait == "walk" then
+					local a0 = (st.downA or 0) + st.legB
+					local a1 = a0 + fix * RAD
+					pose.Drop += st.legS * (math.cos(a0) - math.cos(a1)) * math.min(w, 1) / h
+					write("Root", st.joints.Root, pose.Root)
+				end
 			end
 		end
 	else

@@ -54,6 +54,11 @@ local function goblinMesh(model, body, stats)
 		end
 	end
 	look.Parent = model
+	-- a skinned model with the rig's bones (art/blender/rig_monster.py): its walk, attack, hits and fall are played
+	-- by MonsterAnim on every computer, so the whole-model waddle and the topple below stay off for it
+	if look:FindFirstChildWhichIsA("Bone", true) then
+		model:SetAttribute("Rigged", true)
+	end
 	return skin
 end
 
@@ -449,6 +454,7 @@ function EnemyService.Spawn(name, healthMultiplier, startDistance)
 		saidHurt = false,
 		nextQuote = Clock.now + 3,
 		dead = false,
+		rigged = model:GetAttribute("Rigged") == true,
 	}
 	table.insert(active, enemy)
 
@@ -538,6 +544,9 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	end
 	if amount >= 1 then
 		enemy.flashUntil = Clock.now + 0.08 -- quick white flash
+		if enemy.rigged then
+			enemy.model:SetAttribute("HitAt", workspace:GetServerTimeNow()) -- MonsterAnim rocks it back
+		end
 	end
 	if showNumber then
 		local big = amount >= 60 or crit
@@ -561,6 +570,16 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 end
 
 -- pushes an enemy back along the path, eased over about 0.28 s (bosses barely move)
+-- the enemy is hitting something (a hero in its way; the barricade branch: the barricade it bashes): MonsterAnim
+-- plays the attack while this is on. Written only when it changes.
+function EnemyService.SetBashing(enemy, on)
+	on = on == true
+	if (enemy.bashingShown or false) ~= on then
+		enemy.bashingShown = on
+		enemy.model:SetAttribute("Bashing", on)
+	end
+end
+
 function EnemyService.Knockback(enemy, studs)
 	if enemy.dead or not studs or studs <= 0 then
 		return
@@ -678,6 +697,15 @@ function EnemyService.Start()
 				local s = e.stats.Size
 				local t0 = os.clock()
 				Effects.Ring(e.position + Vector3.new(0, 0.2, 0), s * 0.9, Color3.fromRGB(190, 175, 150), 0.3)
+				if e.rigged then
+					-- MonsterAnim plays the fall on the bones (knees give, forward onto the face, 0.6 s); the body
+					-- stays where it fell until then
+					model:SetAttribute("Dead", true)
+					task.delay(0.7, function()
+						model:Destroy()
+					end)
+					continue
+				end
 				local fall
 				fall = RunService.Heartbeat:Connect(function()
 					local t = math.min(1, (os.clock() - t0) / 0.3)
@@ -805,7 +833,8 @@ function EnemyService.Start()
 				local pos, dir = positionAt(e.distance)
 				e.position = pos
 				local s = e.stats.Size
-				local hop = math.abs(math.sin(e.distance * 0.8)) * 0.3 * s / 3 -- little hop while walking
+				-- little hop while walking (rigged monsters walk on their own legs: MonsterAnim)
+				local hop = e.rigged and 0 or math.abs(math.sin(e.distance * 0.8)) * 0.3 * s / 3
 				-- the Loot Goblin zig-zags, the king stomps
 				local side = Vector3.zero
 				if e.stats.Loot then
@@ -821,8 +850,8 @@ function EnemyService.Start()
 				end
 				local step = e.distance * 0.8
 				local moving = speed > 0 and 1 or 0
-				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
-				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
+				local waddle = (e.stats.Look == "Slime" or e.rigged) and 0 or math.sin(step) * 0.13 * moving
+				local lean = e.rigged and 0 or e.stats.Look == "Shade" and -0.18 or -0.07 * moving
 				-- tilting swings the model's lower edge down: lift by exactly that, so feet stay Ground.Feet over the ground
 				local tilt = (e.model:GetAttribute("FootHalfWidth") or s * 0.4) * math.abs(math.sin(waddle))
 					+ (e.model:GetAttribute("FootHalfDepth") or s * 0.4) * math.abs(math.sin(lean))

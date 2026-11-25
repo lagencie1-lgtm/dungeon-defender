@@ -1271,8 +1271,9 @@ function HeroService.Start()
 				rainbowParts[part] = nil
 			end
 		end
-		-- goblins hurt heroes that stand in their way
+		-- goblins hurt heroes that stand in their way (and swing at them: Bashing, for MonsterAnim)
 		local gameDt = dt * Clock.scale
+		local bashing = {}
 		for _, player in Players:GetPlayers() do
 			local root = rootOf(player)
 			if root then
@@ -1286,11 +1287,17 @@ function HeroService.Start()
 					if not e.dead and not opening
 						and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
 						hurt += (Config.ContactDamage[e.name] or 5) * gameDt
+						bashing[e] = true
 					end
 				end
 				if hurt > 0 then
 					humanoid:TakeDamage(hurt)
 				end
+			end
+		end
+		for _, e in EnemyService.GetActive() do
+			if e.rigged then
+				EnemyService.SetBashing(e, bashing[e])
 			end
 		end
 	end)

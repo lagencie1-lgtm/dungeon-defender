@@ -15,7 +15,8 @@ What it does
     mostly belong to plus the joint it hangs from (automatic weights leak: belly on the thigh, chest on the arm,
     shoulder pads on the head). Zero-weight vertices get their nearest bone; limits to 4 bones, normalizes, smooths
     once, makes the head (and weapon) rigid.
-  5 poses it (arms up 90, swing, knees bent 45, head turned 40), measures edge stretch against the rest pose,
+  5 poses it at the angles monsters really use (arms up 60, swing 100, knees bent 45, head turned 25; RIG_POSES=stress
+    for 90 / 120 / 40), measures edge stretch against the rest pose,
     smooths the weights around edges over 1.6x for up to 12 rounds and keeps the round with the fewest visible ones
     (over 1.6x and grown by more than 1% of the height). RIG_DEBUG=1 prints where the worst ones are.
   6 renders each pose from 8 sides, painted and grey, as contact sheets (when sheets_dir is given), exports the FBX
@@ -67,7 +68,7 @@ bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
 if len(meshes) > 1:
     bpy.ops.object.join()
 body = bpy.context.active_object
-body.name = NAME
+body.name = "Body"  # the game paints the part called Body with paint_<model> (ArtService)
 body.data.name = NAME
 for mod in list(body.modifiers):
     body.modifiers.remove(mod)
@@ -656,15 +657,20 @@ log("automatic weights: %d vertices had no weight (given their nearest bone)" % 
 # 5 test poses and stretch
 # ---------------------------------------------------------------------------------------------------------------
 # each turn: (bone, world axis, degrees) applied parent first, about the bone's head
+# the angles a monster really uses (src/shared/MonsterMoves.luau: arms up to 60, head up to 25, knees 45, the
+# attack's wind-up); RIG_POSES=stress tests the extremes instead (arms 90, head 40, swing 120)
+STRESS = os.environ.get("RIG_POSES") == "stress"
+A, HD, SW = (90, 40, 120) if STRESS else (60, 25, 100)
 POSES = {
     "rest": [],
-    "arms_up": [("UpperArm.L", (0, 1, 0), -90), ("UpperArm.R", (0, 1, 0), 90)],
-    "swing": [("Chest", (0, 0, 1), 25), ("UpperArm.R", (1, 0, 0), -120), ("LowerArm.R", (1, 0, 0), -40),
-              ("UpperArm.L", (1, 0, 0), 35)],
+    "arms_up": [("UpperArm.L", (0, 1, 0), -A), ("UpperArm.R", (0, 1, 0), A)],
+    "swing": [("Chest", (0, 0, 1), 25 if STRESS else 15), ("UpperArm.R", (1, 0, 0), -SW),
+              ("LowerArm.R", (1, 0, 0), -40), ("UpperArm.L", (1, 0, 0), 35 if STRESS else 25)],
     "knees_45": [("Hips", (0, 0, 1), 0), ("UpperLeg.L", (1, 0, 0), -25), ("LowerLeg.L", (1, 0, 0), 45),
                  ("UpperLeg.R", (1, 0, 0), -25), ("LowerLeg.R", (1, 0, 0), 45)],
-    "head_40": [("Head", (0, 0, 1), 40)],
+    "head_turn": [("Head", (0, 0, 1), HD)],
 }
+log("test poses: %s (arms %d, head %d, swing %d)" % ("stress" if STRESS else "real use", A, HD, SW))
 if weapon:
     POSES["swing"].append(("Hand.R", (1, 0, 0), -30))
 

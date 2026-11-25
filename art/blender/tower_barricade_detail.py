@@ -102,7 +102,7 @@ DEFAULTS = {
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
                   stake_lean=-0.3, front_tilt=38, rail_h=1.3, stake_out=0.3),
-    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0),
+    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0, pour_in=0.4),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -532,12 +532,13 @@ if stage == "root":
         n = int(P["pour"])
         # (they come down beside the shield, not over it: round 1 of the re-drawn target hid the shield under roots)
         inner = min(P["shield"] + 0.25, BX - BR - 0.5)
-        outer = BX - BR - 0.2
+        # (Rootwall round 3: along the inner edge of the big posts, so the whole shield shows between them)
+        outer = max(BX - BR * P["pour_in"], P["shield"] + P["root_r"] * 0.85 + 0.1)
         for k in range(n):
             side = -1 if k < n / 2 else 1
             j = k if side < 0 else n - 1 - k
             x0 = side * (outer - (outer - inner) * j / max(1, n / 2 - 1))
-            pour(f"Pour{tag}{k}", x0, s, P["root_r"] * (0.9 if k in (0, n - 1) else 1.05), k, n)
+            pour(f"Pour{tag}{k}", x0, s, P["root_r"] * (0.85 if k in (0, n - 1) else 1.0), k, n)
 
     wing_mid = (BX + BR + WX - WR) / 2
     for s, tag in ((1, "F"), (-1, "B")):

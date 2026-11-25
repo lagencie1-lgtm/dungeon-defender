@@ -518,20 +518,24 @@ for v in range(NV):
                 seen[b] = True
                 stack.append(b)
     islands.append(comp)
+WEAPON_SIDE = "R"
 hr = hands["R"]["c"]
 for comp in islands:
-    if len(comp) < 20 or len(comp) > NV * 0.4:
+    if weapon or len(comp) < 20 or len(comp) > NV * 0.4:
         continue
     pts = [P[i] for i in comp]
-    near = min((p - hr).length for p in pts)
-    reach = max((p - hr).length for p in pts)
-    # (and it must stick out of the body: a cloak piece next to the hand reaches far too, but stays inside the
-    # body's outline; a club or a sword leaves it)
-    outside = max(Vector((p.x, p.y - spine_y(p.z), 0)).length for p in pts) > abs(hr.x) + 0.15 * H
-    if near < 0.05 * H and reach > 0.3 * H and outside:
-        weapon = comp
-        log("weapon found: %d vertices, reaching %.2f from the right hand" % (len(comp), reach))
-        break
+    for side in ("R", "L"):  # (a club can be in either hand: the Goblin King holds his in the left)
+        hc = hands[side]["c"]
+        near = min((p - hc).length for p in pts)
+        reach = max((p - hc).length for p in pts)
+        # (and it must stick out of the body: a cloak piece next to the hand reaches far too, but stays inside the
+        # body's outline; a club or a sword leaves it)
+        outside = max(Vector((p.x, p.y - spine_y(p.z), 0)).length for p in pts) > abs(hc.x) + 0.15 * H
+        if near < 0.05 * H and reach > 0.3 * H and outside:
+            weapon, WEAPON_SIDE, hr = comp, side, hc
+            log("weapon found: %d vertices, reaching %.2f from the %s hand" % (len(comp), reach,
+                                                                            "right" if side == "R" else "left"))
+            break
 if not weapon:
     log("no weapon: nothing reaches out of the right hand")
 
@@ -651,8 +655,8 @@ for s in ("L", "R"):
 if weapon:
     wp = [P[i] for i in weapon]
     far = max(wp, key=lambda p: (p - hr).length)
-    w_head = bones["Hand.R"].tail.copy()
-    bone("Weapon", w_head, far, "Hand.R", roll_up=FWD)
+    w_head = bones["Hand." + WEAPON_SIDE].tail.copy()
+    bone("Weapon", w_head, far, "Hand." + WEAPON_SIDE, roll_up=FWD)
 bpy.ops.object.mode_set(mode="OBJECT")
 BONES = [b.name for b in arm_data.bones]
 REST = {b.name: (b.head_local.copy(), b.tail_local.copy()) for b in arm_data.bones}
@@ -910,7 +914,7 @@ GROUPS = [group_of(w) for w in W]
 # beside the jaw stay with the chest, or they were dragged up when the head turned)
 HEAD_V = set(i for i in HEAD_V if GROUPS[i] == "head")
 NECK_HALF = neck_half
-ALLOWED = [allowed(i) for i in range(NV)]
+ALLOWED = [(allowed(i) & set(BONES)) or {"Hips"} for i in range(NV)]  # (only bones this rig has)
 auto_zero = sum(1 for w in W if sum(w.values()) < 1e-4)
 W, zero = clean(W)
 write_weights(W)
@@ -941,6 +945,10 @@ if KIND == "robe":
 log("test poses: %s (arms %d, head %d, swing %d)" % ("stress" if STRESS else "real use", A, HD, SW))
 if weapon:
     POSES["swing"].append(("Hand.R", (1, 0, 0), -30))
+    if WEAPON_SIDE == "L":
+        # the swing is made with the weapon hand: mirror it to the left arm
+        POSES["swing"] = [((n[:-1] + "L") if n.endswith(".R") else (n[:-1] + "R") if n.endswith(".L") else n, a, d)
+                          for n, a, d in POSES["swing"]]
 
 
 def set_pose(turns):

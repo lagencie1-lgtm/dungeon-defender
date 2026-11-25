@@ -41,6 +41,23 @@ local box = make("Frame", { Size = UDim2.new(isTouch and 0.2 or 0.6, 0, 0, isTou
 	AnchorPoint = isTouch and Vector2.zero or Vector2.new(0.5, 1),
 	BackgroundColor3 = Ui.DARK, BackgroundTransparency = 0.1, Parent = gui }, { corner(14), stroke(Ui.GOLD, 3) })
 local hint = label({ Size = UDim2.new(1, -24, 1, -12), Position = UDim2.fromOffset(12, 6), Text = "", TextWrapped = true, Parent = box })
+-- with a controller the box sits higher: the HUD keeps to the TV-safe middle 90% then, so the defender cards
+-- reach further up (the box lay on their tops, scripts/device_pass.py 2026-11-25)
+local function placeBox()
+	if not isTouch then
+		box.Position = Gamepad.active and UDim2.new(0.5, 0, 0.75, 0) or UDim2.new(0.5, 0, 1, -150) -- (over the hero panel too)
+	end
+end
+Gamepad.OnChanged(placeBox)
+placeBox()
+-- an open screen (Shop, Pets, Backpack...) hides the hint: it lay across the middle of the panel
+-- (scripts/device_pass.py sheets, every device, 2026-11-25); it comes back when the screen closes
+task.spawn(function()
+	while gui.Parent do
+		gui.Enabled = Gamepad.TopPanel() == nil
+		task.wait(0.25)
+	end
+end)
 
 -- the arrow floating over the place to go
 -- (a calm painted-gold marker: the old spinning neon-yellow block read as a placeholder on the phone)

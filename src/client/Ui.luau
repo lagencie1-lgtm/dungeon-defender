@@ -23,6 +23,11 @@ function Ui.fitRoot(gui, root, mobileWidth, mobileHeight)
 		if size.X <= 0 or size.Y <= 0 then
 			return
 		end
+		-- a TV can cut off its edges (overscan): with a controller everything stays inside the middle 90% of the
+		-- screen, 5% off each side (scripts/device_pass.py "TV safe", 2026-11-25)
+		-- (the scale is worked out on the whole screen, so text stays as big as before: the layout area just gets
+		-- 10% smaller, and the screens were made for a 930x480 phone, so they fit)
+		local safe = Gamepad.active and 0.9 or 1
 		local width, height = 1280, 720
 		-- a TV is far away: with a controller the screens grow to fill the TV (1080p shows the full 1280x720
 		-- layout at 1.5x, so the smallest HUD text is about 18 pixels or more). A bigger TV screen (4K reports
@@ -34,7 +39,8 @@ function Ui.fitRoot(gui, root, mobileWidth, mobileHeight)
 		end
 		local factor = math.min(size.X / width, size.Y / height, biggest)
 		scale.Scale = factor
-		root.Size = UDim2.fromScale(1 / factor, 1 / factor)
+		root.Position = UDim2.fromScale((1 - safe) / 2, (1 - safe) / 2)
+		root.Size = UDim2.fromScale(safe / factor, safe / factor)
 	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
 	Gamepad.OnChanged(fit)

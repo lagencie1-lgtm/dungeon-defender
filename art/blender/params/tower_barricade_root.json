@@ -1,6 +1,6 @@
 {
  "length": 10.4,
- "log_r": 0.73,
+ "log_r": 0.774,
  "logs": 5,
  "wing_logs": 3,
  "big_r": 0.789,
@@ -12,15 +12,18 @@
  "overhang": 0.669,
  "single": 1,
  "post_fwd": 0.25,
- "tip": 1.138,
+ "tip": 1.006,
  "shield_h": 0.66,
  "band_lo": 0.42,
  "step": 1.56,
  "lift": 0.0,
  "pair_y": 1.0,
- "reach": 2.711,
- "sapling": 0.639,
- "root_r": 0.562,
+ "reach": 2.874,
+ "sapling": 0.677,
+ "root_r": 0.594,
  "spread": 0.383,
- "crown": 0.968
+ "crown": 0.968,
+ "pour": 4,
+ "fan": 1.6,
+ "fork_len": 0.884
 }

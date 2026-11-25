@@ -101,7 +101,7 @@ DEFAULTS = {
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
-    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4),
+    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -441,7 +441,7 @@ if stage == "root":
         # Rootwall shape: sideways roots ran flat along the road)
         for f, ang in enumerate((-38, 0, 38)):
             a = rad(ang + 12 * lean)
-            ln = rnd.uniform(1.4, 2.1)
+            ln = rnd.uniform(0.8, 1.2) * P["fork_len"]   # (the post roots' forks: short; the fan in the middle is the big one)
             tip = fork + Vector((math.sin(a) * ln, s * math.cos(a) * ln, -0.12))
             bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
             tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.5, r0 * 0.34, r0 * 0.08], ROOT_T, "bark", 1.6, verts=8)
@@ -474,6 +474,37 @@ if stage == "root":
         out_dy = post_y(r) + ra - R      # the ground part starts in front of the post, not back at the wall
         splay(name, pts, radii, px + 0.2 * (1 if px > 0 else -1), s, r0 * 0.85, 1 if px > 0 else -1,
               dys=((out_dy + 0.3, 0.2, 0.55), (out_dy + 0.65, 0.08, 0.35)))
+
+    def pour(name, x0, s, r0, k, n):
+        """a thick root that comes over the top between the posts, pours down the face and bends out toward the
+        viewer at the foot, where the roots of that face end in one fan in the middle (like the picture)"""
+        g = random.Random(300 + k + (0 if s > 0 else 50))
+        y_face = s * (R + r0 * 0.6)
+        pts = [(x0 * 0.9, -s * 0.1, top_c + 0.12), (x0, s * R * 0.6, top_c), (x0, y_face, top_c - 0.6)]
+        radii = [r0 * 0.75, r0 * 0.95, r0]
+        z = top_c - 0.6
+        while z > 0.9:
+            z = max(z - 0.75, 0.9)
+            pts.append((x0 * (0.5 + 0.5 * z / top_c) + g.uniform(-0.12, 0.12), y_face, z))
+            radii.append(r0 * (0.95 + 0.05 * g.random()))
+        # the foot: out toward the viewer and in toward the middle, then the fan
+        t = (k + 0.5) / n - 0.5                       # -0.5 .. 0.5 across the fan
+        foot = Vector((x0 * 0.45, s * (R + 0.9), 0.3))
+        end = Vector((t * 2 * P["fan"], s * (R + P["reach"] * 0.9), 0.06))
+        pts += [tuple(foot), tuple(foot.lerp(end, 0.55) + Vector((0, 0, 0.05))), tuple(end)]
+        radii += [r0 * 0.85, r0 * 0.55, r0 * 0.12]
+        tube(name, pts, radii, ROOT_T, "bark", 1.6, verts=12)
+        for f, side in enumerate((-1, 1)):            # two short forks off the fan's end
+            a = Vector(pts[-2])
+            tip = a + Vector((side * g.uniform(0.6, 1.0), s * g.uniform(0.4, 0.8), -0.1))
+            tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.4, r0 * 0.25, r0 * 0.06], ROOT_T,
+                 "bark", 1.6, verts=8)
+
+    for s, tag in ((1, "F"), (-1, "B")):
+        n = int(P["pour"])
+        for k in range(n):
+            x0 = ((k + 0.5) / n - 0.5) * 2 * (BX - BR - 0.35)
+            pour(f"Pour{tag}{k}", x0, s, P["root_r"] * (0.9 if k in (0, n - 1) else 1.05), k, n)
 
     wing_mid = (BX + BR + WX - WR) / 2
     for s, tag in ((1, "F"), (-1, "B")):

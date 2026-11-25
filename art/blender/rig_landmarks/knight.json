@@ -1,0 +1,18 @@
+{
+  "_note": "Obsidian Knight (152520_knight_warrior), 4.0 studs tall, read off front and side grid renders 2026-11-26. Rigid pieces; sword in the right hand, shield on the left arm, cape on the back.",
+  "crotch": [0, 0.25, 1.0],
+  "hips": [0, 0.25, 1.5],
+  "chest": [0, 0.25, 2.3],
+  "neck": [0, 0.1, 2.85],
+  "head_top": [0, 0.05, 4.0],
+  "shoulder_L": [0.93, 0.25, 2.85], "elbow_L": [1.03, 0.0, 2.06], "wrist_L": [1.28, -0.3, 1.8], "hand_tip_L": [1.4, -0.45, 1.6],
+  "shoulder_R": [-0.93, 0.25, 2.85], "elbow_R": [-1.28, -0.1, 2.13], "wrist_R": [-1.5, -0.4, 1.74], "hand_tip_R": [-1.55, -0.5, 1.35],
+  "hip_L": [0.4, 0.25, 1.25], "knee_L": [0.45, 0.15, 0.75], "ankle_L": [0.45, 0.2, 0.3], "toe_L": [0.45, -0.4, 0.05],
+  "hip_R": [-0.4, 0.25, 1.25], "knee_R": [-0.45, 0.15, 0.75], "ankle_R": [-0.45, 0.2, 0.3], "toe_R": [-0.45, -0.4, 0.05],
+  "piece_rules": [
+    {"bone": "Hand.L", "box": [[0.6, -1.15, 0.75], [2.3, -0.2, 2.75]], "_what": "the shield"},
+    {"bone": "Hand.R", "box": [[-2.45, -1.6, 1.9], [-1.2, 0.0, 3.6]], "_what": "the sword"},
+    {"bone": "Chest", "box": [[-1.5, 0.55, 0.5], [1.5, 1.7, 2.5]], "_what": "the cape"}
+  ],
+  "test_angles": {"arms": 60, "swing": 100, "head": 25}
+}

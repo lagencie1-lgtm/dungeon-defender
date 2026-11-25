@@ -131,6 +131,269 @@ if image:
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# the rigid body plan: golems and armoured knights are hard pieces, not skin. The model is cut into pieces along
+# its own seams (each mesh island stays whole; where an island spans two bones it is cut where the bones' regions
+# meet), every piece is closed with a cap painted from its rim and follows exactly one bone. Needs the hand-marked
+# key points (art/blender/rig_landmarks/<name>.json).
+# ---------------------------------------------------------------------------------------------------------------
+if KIND == "rigid":
+    import json
+    import numpy as np
+    OVr = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "rig_landmarks", NAME + ".json")))
+    Vr = lambda k: Vector(OVr[k])  # noqa: E731
+    arm_data = bpy.data.armatures.new(NAME + "_rig")
+    rig = bpy.data.objects.new(NAME + "_rig", arm_data)
+    bpy.context.scene.collection.objects.link(rig)
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = arm_data.edit_bones
+    FWD = Vector((0, -1, 0))
+
+    def rbone(name, head, tail, parent=None):
+        b = eb.new(name)
+        b.head, b.tail = Vector(head), Vector(tail)
+        b.align_roll(Vector((0, 0, 1)) if name.startswith("Foot") else FWD)
+        if parent:
+            b.parent = eb[parent]
+        return b
+
+    spine_p = Vr("hips").lerp(Vr("chest"), 0.4)
+    rbone("Root", (0, 0, 0), (0, 0, 0.12 * H))
+    rbone("Hips", Vr("hips"), spine_p, "Root")
+    rbone("Spine", spine_p, Vr("chest"), "Hips")
+    rbone("Chest", Vr("chest"), Vr("neck") - Vector((0, 0, 0.05 * H)), "Spine")
+    rbone("Neck", Vr("neck") - Vector((0, 0, 0.05 * H)), Vr("neck"), "Chest")
+    rbone("Head", Vr("neck"), Vr("head_top"), "Neck")
+    for s in ("L", "R"):
+        rbone("UpperArm." + s, Vr("shoulder_" + s), Vr("elbow_" + s), "Chest")
+        rbone("LowerArm." + s, Vr("elbow_" + s), Vr("wrist_" + s), "UpperArm." + s)
+        rbone("Hand." + s, Vr("wrist_" + s), Vr("hand_tip_" + s), "LowerArm." + s)
+        rbone("UpperLeg." + s, Vr("hip_" + s), Vr("knee_" + s), "Hips")
+        rbone("LowerLeg." + s, Vr("knee_" + s), Vr("ankle_" + s), "UpperLeg." + s)
+        rbone("Foot." + s, Vr("ankle_" + s), Vr("toe_" + s), "LowerLeg." + s)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    RB = {b.name: (b.head_local.copy(), b.tail_local.copy()) for b in arm_data.bones}
+    # which bones get pieces (Root, Neck and Spine are too small to own any: their share goes to the next)
+    OWN = [n for n in RB if n not in ("Root", "Neck")]
+
+    def sdist(p, a, b):
+        ab = b - a
+        tt = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-12)))
+        return (a + ab * tt - p).length
+
+    def nearest(p):
+        return min(OWN, key=lambda n: sdist(p, *RB[n]))
+
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    bm.faces.index_update()
+    uvl_ = bm.loops.layers.uv.active
+    # 1 a label per face (nearest bone to its middle), forced per hand-marked rule (a shield, a sword, a cape)
+    lab = {}
+    for f in bm.faces:
+        c = f.calc_center_median()
+        lab[f.index] = nearest(c)
+    for rule in OVr.get("piece_rules", []):  # {"bone": "Hand.L", "box": [[x0,y0,z0],[x1,y1,z1]]}
+        lo_, hi_ = Vector(rule["box"][0]), Vector(rule["box"][1])
+        for f in bm.faces:
+            c = f.calc_center_median()
+            if all(lo_[k] <= c[k] <= hi_[k] for k in range(3)):
+                lab[f.index] = rule["bone"]
+    # 2 smooth the labels (3 rounds of the majority of each face's neighbours), so cuts run straight
+    for _ in range(3):
+        new = {}
+        for f in bm.faces:
+            votes = {}
+            for e in f.edges:
+                for g in e.link_faces:
+                    votes[lab[g.index]] = votes.get(lab[g.index], 0) + 1
+            best = max(votes, key=votes.get)
+            new[f.index] = best if votes[best] > votes.get(lab[f.index], 0) else lab[f.index]
+        lab = new
+    # 3 a mesh island (one rock, one plate) stays whole when most of it is one bone's: pieces are not sliced
+    seen = set()
+    for f in bm.faces:
+        if f.index in seen:
+            continue
+        comp, stack = [], [f]
+        seen.add(f.index)
+        while stack:
+            g = stack.pop()
+            comp.append(g)
+            for e in g.edges:
+                for h in e.link_faces:
+                    if h.index not in seen:
+                        seen.add(h.index)
+                        stack.append(h)
+        votes = {}
+        for g in comp:
+            votes[lab[g.index]] = votes.get(lab[g.index], 0) + g.calc_area()
+        best = max(votes, key=votes.get)
+        if votes[best] >= sum(votes.values()) * OVr.get("island_whole", 0.8):
+            for g in comp:
+                lab[g.index] = best
+    # 4 cut along the label borders and close every opening with a cap wearing its rim's paint
+    bl = bm.faces.layers.int.new("bone")
+    names = sorted(set(lab.values()))
+    for f in bm.faces:
+        f[bl] = names.index(lab[f.index])
+    border = [e for e in bm.edges if len(e.link_faces) == 2 and e.link_faces[0][bl] != e.link_faces[1][bl]]
+    bmesh.ops.split_edges(bm, edges=border)
+    caps = 0
+    for idx in range(len(names)):
+        open_edges = [e for e in bm.edges if e.is_boundary and e.link_faces and e.link_faces[0][bl] == idx]
+        if not open_edges:
+            continue
+        filled = bmesh.ops.holes_fill(bm, edges=open_edges, sides=0)["faces"]
+        bm.faces.index_update()
+        fill_ids = {f.index for f in filled}
+        for f in filled:
+            f[bl] = idx
+            for loop in f.loops:
+                src = next((l for l in loop.vert.link_loops if l.face.index not in fill_ids), None)
+                if src is not None:
+                    loop[uvl_].uv = src[uvl_].uv
+        caps += len(filled)
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    bm.verts.index_update()
+    vbone = {}
+    for f in bm.faces:
+        for v in f.verts:
+            vbone[v.index] = names[f[bl]]
+    bm.faces.layers.int.remove(bl)
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    counts = {}
+    for n in vbone.values():
+        counts[n] = counts.get(n, 0) + 1
+    log("rigid pieces: %d bones own pieces, %d border edges cut, %d cap faces; vertices per bone %s" % (
+        len(names), len(border), caps, ", ".join("%s %d" % (n, counts[n]) for n in sorted(counts))))
+    # 5 weights: every vertex wholly to its piece's bone
+    for n in RB:
+        if n != "Root":
+            body.vertex_groups.new(name=n)
+    for i, n in vbone.items():
+        body.vertex_groups[n].add([i], 1.0, "REPLACE")
+    mod = body.modifiers.new("Armature", "ARMATURE")
+    mod.object = rig
+    body.parent = rig
+    zero = sum(1 for v in me.vertices if sum(g.weight for g in v.groups) < 1e-4)
+    log("CHECK zero-weight vertices %d, vertices on more than one bone %d" % (
+        zero, sum(1 for v in me.vertices if len([g for g in v.groups if g.weight > 1e-4]) > 1)))
+    # 6 the gaps at the cuts: the same seam point on the two pieces, apart in a pose
+    rest = [v.co.copy() for v in me.vertices]
+    seam = {}
+    for i, c in enumerate(rest):
+        seam.setdefault((round(c.x, 4), round(c.y, 4), round(c.z, 4)), []).append(i)
+    pairs = [g for g in seam.values() if len(g) > 1]
+    TA = OVr.get("test_angles", {})
+    POSES_R = {
+        "rest": [],
+        "arms_up": [("UpperArm.L", (0, 1, 0), -TA.get("arms", 60)), ("UpperArm.R", (0, 1, 0), TA.get("arms", 60))],
+        "swing": [("Chest", (0, 0, 1), 15), ("UpperArm.R", (1, 0, 0), -TA.get("swing", 100)), ("LowerArm.R", (1, 0, 0), -40)],
+        "knees_45": [("UpperLeg.L", (1, 0, 0), -25), ("LowerLeg.L", (1, 0, 0), 45), ("UpperLeg.R", (1, 0, 0), -25),
+                     ("LowerLeg.R", (1, 0, 0), 45)],
+        "head_turn": [("Head", (0, 0, 1), TA.get("head", 25))],
+    }
+
+    def rpose(turns):
+        for pb in rig.pose.bones:
+            pb.matrix_basis = Matrix.Identity(4)
+        bpy.context.view_layer.update()
+        for name, axis, deg in turns:
+            pb = rig.pose.bones[name]
+            head = pb.head.copy()
+            pb.matrix = Matrix.Translation(head) @ Matrix.Rotation(math.radians(deg), 4, Vector(axis)) @ Matrix.Translation(-head) @ pb.matrix
+            bpy.context.view_layer.update()
+    for pname, turns in POSES_R.items():
+        if pname == "rest":
+            continue
+        rpose(turns)
+        dg = bpy.context.evaluated_depsgraph_get()
+        ev = body.evaluated_get(dg)
+        m = ev.to_mesh()
+        Q = [v.co.copy() for v in m.vertices]
+        ev.to_mesh_clear()
+        worst, wpair = 0.0, None
+        open_ = 0
+        for g in pairs:
+            d = max((Q[a] - Q[b]).length for a in g for b in g)
+            if d > worst:
+                worst, wpair = d, g
+            if d > 0.05 * H:
+                open_ += 1
+        where = ""
+        if wpair:
+            where = " (worst between %s, at %s)" % ("/".join(sorted({vbone[i] for i in wpair})),
+                                                   tuple(round(c, 2) for c in rest[wpair[0]]))
+        log("CHECK pose %-9s widest gap at a cut %.3f studs; cut points opening more than %.2f studs: %d of %d%s" % (
+            pname, worst, 0.05 * H, open_, len(pairs), where))
+    rpose([])
+    log("BONES (rest, studs, front -Y, left +X):")
+    for b in arm_data.bones:
+        h, tl = b.head_local, b.tail_local
+        log("  %-11s parent %-11s head (%5.2f %5.2f %5.2f) tail (%5.2f %5.2f %5.2f)" % (
+            b.name, b.parent.name if b.parent else "-", h.x, h.y, h.z, tl.x, tl.y, tl.z))
+    if SHEETS:
+        os.makedirs(SHEETS, exist_ok=True)
+        sc = bpy.context.scene
+        sc.render.engine = "BLENDER_WORKBENCH"
+        sc.display.shading.light = "STUDIO"
+        sc.render.resolution_x = sc.render.resolution_y = 320
+        sc.world = bpy.data.worlds.new("w")
+        sc.world.color = (0.08, 0.08, 0.09)
+        cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
+        sc.collection.objects.link(cam)
+        sc.camera = cam
+        cam.data.type = "ORTHO"
+        wmax = max(max(abs(c.x), abs(c.y)) for c in rest)
+        cam.data.ortho_scale = max(H, wmax * 2) * 1.3
+        rig.hide_render = True
+        R = 320
+        for pname, turns in POSES_R.items():
+            rpose(turns)
+            rows = []
+            for look in ("TEXTURE", "SINGLE"):
+                sc.display.shading.color_type = look
+                sc.display.shading.single_color = (0.6, 0.6, 0.6)
+                tiles = []
+                for kk in range(8):
+                    a = math.radians(-90 + kk * 45)
+                    cam.location = (3 * H * math.cos(a), 3 * H * math.sin(a), H * 0.55)
+                    d = Vector((0, 0, H * 0.5)) - cam.location
+                    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+                    path = os.path.join(SHEETS, "_f.png")
+                    sc.render.filepath = path
+                    bpy.ops.render.render(write_still=True)
+                    img = bpy.data.images.load(path)
+                    px = np.empty(R * R * 4, dtype=np.float32)
+                    img.pixels.foreach_get(px)
+                    tiles.append(px.reshape(R, R, 4))
+                    bpy.data.images.remove(img)
+                rows.append(np.concatenate(tiles, axis=1))
+            sheet = np.concatenate(rows[::-1], axis=0)
+            out = bpy.data.images.new("sheet_" + pname, sheet.shape[1], sheet.shape[0])
+            out.pixels.foreach_set(sheet.ravel())
+            out.filepath_raw = os.path.join(SHEETS, "%s_%s.png" % (NAME, pname))
+            out.file_format = "PNG"
+            out.save()
+        os.remove(os.path.join(SHEETS, "_f.png"))
+        log("sheets in", SHEETS)
+    rpose([])
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    rig.select_set(True)
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    bpy.ops.export_scene.fbx(filepath=OUT, use_selection=True, apply_unit_scale=True, global_scale=1.0,
+                             axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", object_types={"ARMATURE", "MESH"},
+                             add_leaf_bones=False, use_armature_deform_only=True, bake_anim=False,
+                             path_mode="COPY", embed_textures=True)
+    log("EXPORTED", OUT, os.path.getsize(OUT), "bytes")
+    sys.exit(0)
+
+# ---------------------------------------------------------------------------------------------------------------
 # the slime body plan: a blob has no limbs. A column of body bones (Root, Body1-3, Top) and four bulge bones
 # (Bulge F/B/L/R) at its widest: squash = the column sinks while the bulges push out (no scale, bones only)
 # ---------------------------------------------------------------------------------------------------------------

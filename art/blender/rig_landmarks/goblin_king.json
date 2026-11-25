@@ -210,5 +210,12 @@
       135
     ]
   ],
-  "cloth_color_tolerance": 45
+  "cloth_color_tolerance": 45,
+  "separate_cloth": false,
+  "test_angles": {
+    "arms": 35,
+    "swing": 55,
+    "head": 20
+  },
+  "_test_angles_note": "option 2 (coordinator 2026-11-25): the King's arm moves stay small; the separate cape (separate_cloth) did not come out clean in 2 rounds"
 }

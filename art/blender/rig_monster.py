@@ -550,6 +550,60 @@ if VCOL:
         m = [(sum(m[j] for j in NEIGH[i]) + m[i]) * 2 > len(NEIGH[i]) + 1 for i in range(NV)]
     CLOTH_MASK = m
     log("cloth by colour: %d vertices" % sum(m))
+
+# a cape made its own piece ("separate_cloth" in the key-points file): the cloth faces are split off the body, the
+# hole they leave in the body is closed with a patch painted from the body around it, and the cape gets a back
+# face (a thin shell), so arms can rise in front of it instead of dragging it
+CAPE_V = None
+if CLOTH_MASK and OV.get("separate_cloth"):
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.verts.ensure_lookup_table()
+    bm.faces.ensure_lookup_table()
+    uvl_ = bm.loops.layers.uv.active
+    capel = bm.faces.layers.int.new("cape")  # (marks the cape's faces through the operations below)
+    for f in bm.faces:
+        f[capel] = 1 if all(CLOTH_MASK[v.index] for v in f.verts) else 0
+    cape_faces = [f for f in bm.faces if f[capel]]
+    bmesh.ops.split(bm, geom=cape_faces)
+    # the body's open edges where the cape was: fill them
+    body_open = [e for e in bm.edges if e.is_boundary and e.link_faces and not e.link_faces[0][capel]]
+    filled = bmesh.ops.holes_fill(bm, edges=body_open, sides=0)["faces"]
+    fill_set = set(filled)
+    for f in filled:
+        f[capel] = 0
+        for loop in f.loops:
+            src = next((l for l in loop.vert.link_loops if l.face not in fill_set and not l.face[capel]), None)
+            if src is not None:
+                loop[uvl_].uv = src[uvl_].uv  # (the patch wears the body paint at its rim)
+    if filled:
+        bmesh.ops.triangulate(bm, faces=filled)
+    # the cape's back face: a thin shell, its inside wearing the same paint
+    cape_now = [f for f in bm.faces if f[capel]]
+    solid = bmesh.ops.solidify(bm, geom=cape_now, thickness=OV.get("cloth_thickness", 0.012) * H)
+    for g in solid["geom"]:
+        if isinstance(g, bmesh.types.BMFace):
+            g[capel] = 1
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    CAPE_V = set()
+    bm.verts.index_update()
+    for f in bm.faces:
+        if f[capel]:
+            CAPE_V.update(v.index for v in f.verts)
+    bm.faces.layers.int.remove(capel)
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    P = [v.co.copy() for v in me.vertices]
+    NV = len(P)
+    NEIGH = [[] for _ in range(NV)]
+    for e in me.edges:
+        a, b = e.vertices
+        NEIGH[a].append(b)
+        NEIGH[b].append(a)
+    EDGES = [tuple(e.vertices) for e in me.edges]
+    log("cape made its own piece: %d cape vertices (with its back face), %d patch faces closing the body" % (
+        len(CAPE_V), len(filled)))
 log("landmarks: crotch %.2f hips %.2f chest %.2f shoulders %.2f neck %.2f top %.2f" % (
     crotch_z, hip_z, chest_z, shoulder_z, neck_z, H))
 for side in ("L", "R"):
@@ -925,6 +979,10 @@ def allowed(i):
     if i in TAIL_SET:
         return {"Hips", "Tail1", "Tail2", "Tail3"}
     if i in CLOTH_OF:
+        if CAPE_V is not None:
+            # (a separate cape: the chest and the cape's chains only, blended across them; one chain each tore the
+            # cape's thin shell apart where two chains met)
+            return {"Chest"} | {b for names in CHAINS.values() for b in names}
         return {"Chest", "Spine", "Hips"} | set(CHAINS[CLOTH_OF[i]])
     if i in WING_SET:
         return {"Chest", "Wing." + ("L" if P[i].x > 0 else "R")}
@@ -1041,9 +1099,11 @@ if OV and OV.get("chains"):
     for i in range(NV):
         if i in HEAD_V or i in WEAPON_V:
             continue
-        if (CLOTH_MASK[i] if CLOTH_MASK and i < len(CLOTH_MASK) else cloth_color(i)):
+        if (i in CAPE_V) if CAPE_V is not None else (CLOTH_MASK[i] if CLOTH_MASK and i < len(CLOTH_MASK) else cloth_color(i)):
             CLOTH_OF[i] = chain_bones[min((seg_dist(P[i], *REST[b]), b) for b in chain_bones)[1]]
             continue
+        if CAPE_V is not None:
+            continue  # (a separate cape: the body keeps everything that is not the cape)
         dc = min((seg_dist(P[i], *REST[b]), b) for b in chain_bones)
         db = min(seg_dist(P[i], *REST[b]) for b in body_bones)
         if dc[0] < db * OV.get("cloth_bias", 1.0):
@@ -1063,6 +1123,9 @@ log("automatic weights: %d vertices had no weight (given their nearest bone)" % 
 # attack's wind-up); RIG_POSES=stress tests the extremes instead (arms 90, head 40, swing 120)
 STRESS = os.environ.get("RIG_POSES") == "stress"
 A, HD, SW = (90, 40, 120) if STRESS else (60, 25, 100)
+if OV and OV.get("test_angles") and not STRESS:
+    # (a monster whose moves stay small: the key-points file sets the angles it really uses)
+    A, SW, HD = OV["test_angles"].get("arms", A), OV["test_angles"].get("swing", SW), OV["test_angles"].get("head", HD)
 POSES = {
     "rest": [],
     "arms_up": [("UpperArm.L", (0, 1, 0), -A), ("UpperArm.R", (0, 1, 0), A)],

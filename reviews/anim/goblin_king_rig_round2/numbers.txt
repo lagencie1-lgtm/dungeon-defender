@@ -1,0 +1,55 @@
+merged seams: 7045 -> 2738 vertices
+triangles 5354, vertices 2738, height 4.20
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\goblin_king_rigged_paint.png (1024, 1024)
+hand-marked key points from C:\Projects\RealmGuardians-anim\art\blender\rig_landmarks\goblin_king.json
+cloth by colour: 602 vertices
+landmarks: crotch 0.72 hips 0.95 chest 2.10 shoulders 2.62 neck 2.95 top 4.20
+  L hand (1.16, -1.17, 2.35) shoulder (0.85, -0.1, 2.65) foot (0.64, -0.05, 0.2)
+  R hand (-1.87, -0.1, 1.62) shoulder (-0.85, -0.1, 2.6) foot (-0.64, -0.05, 0.2)
+weapon found: 220 vertices, reaching 1.76 from the left hand
+weapon: 21 more vertices in small pieces on it (spikes, bands)
+cloth chain CapeL: 3 bones
+cloth chain CapeC: 3 bones
+cloth chain CapeR: 3 bones
+cut 118 welded edges (arms to legs or body well below the armpits)
+cloth vertices: 941
+automatic weights: 7 vertices had no weight (given their nearest bone)
+test poses: real use (arms 35, head 20, swing 55)
+stretch after binding: arms_up max 4.81x (94 edges over 1.6x, 93 of them visible), swing max 9.14x (156 edges over 1.6x, 151 of them visible), knees_45 max 7.12x (58 edges over 1.6x, 55 of them visible), head_turn max 2.61x (15 edges over 1.6x, 14 of them visible)
+final (best round): arms_up max 4.81x (46 edges over 1.6x, 46 of them visible), swing max 5.01x (73 edges over 1.6x, 70 of them visible), knees_45 max 5.59x (71 edges over 1.6x, 64 of them visible), head_turn max 2.61x (14 edges over 1.6x, 13 of them visible)
+CHECK zero-weight vertices 0, over 4 bones 0, head vertices on another bone 0 of 591, weapon vertices on another bone 0 of 241
+CHECK pose arms_up   max edge stretch 4.81x, edges over 1.6x: 46, of them grown more than 0.04 studs: 46
+CHECK pose swing     max edge stretch 5.01x, edges over 1.6x: 73, of them grown more than 0.04 studs: 70
+CHECK pose knees_45  max edge stretch 5.59x, edges over 1.6x: 71, of them grown more than 0.04 studs: 64
+CHECK pose head_turn max edge stretch 2.61x, edges over 1.6x: 14, of them grown more than 0.04 studs: 13
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.50)
+  Hips        parent Root        head ( 0.00  0.05  0.95) tail ( 0.00 -0.01  1.41)
+  Spine       parent Hips        head ( 0.00 -0.01  1.41) tail ( 0.00 -0.10  2.10)
+  Chest       parent Spine       head ( 0.00 -0.10  2.10) tail ( 0.00 -0.10  2.74)
+  Neck        parent Chest       head ( 0.00 -0.10  2.74) tail ( 0.00 -0.10  2.95)
+  Head        parent Neck        head ( 0.00 -0.10  2.95) tail ( 0.00 -0.15  4.20)
+  UpperArm.L  parent Chest       head ( 0.85 -0.10  2.65) tail ( 1.05 -0.35  2.15)
+  LowerArm.L  parent UpperArm.L  head ( 1.05 -0.35  2.15) tail ( 1.13 -1.00  2.35)
+  Hand.L      parent LowerArm.L  head ( 1.13 -1.00  2.35) tail ( 1.20 -1.35  2.35)
+  Weapon      parent Hand.L      head ( 1.20 -1.35  2.35) tail ( 1.28 -1.88  3.96)
+  UpperArm.R  parent Chest       head (-0.85 -0.10  2.60) tail (-1.45 -0.05  2.15)
+  LowerArm.R  parent UpperArm.R  head (-1.45 -0.05  2.15) tail (-1.76 -0.10  1.85)
+  Hand.R      parent LowerArm.R  head (-1.76 -0.10  1.85) tail (-1.97 -0.10  1.40)
+  CapeL1      parent Chest       head ( 0.70  0.60  2.80) tail ( 1.20  1.00  2.00)
+  CapeL2      parent CapeL1      head ( 1.20  1.00  2.00) tail ( 1.50  1.10  1.20)
+  CapeL3      parent CapeL2      head ( 1.50  1.10  1.20) tail ( 1.70  1.00  0.50)
+  CapeC1      parent Chest       head ( 0.00  0.70  2.90) tail ( 0.00  1.15  2.10)
+  CapeC2      parent CapeC1      head ( 0.00  1.15  2.10) tail ( 0.00  1.20  1.30)
+  CapeC3      parent CapeC2      head ( 0.00  1.20  1.30) tail ( 0.00  1.15  0.50)
+  CapeR1      parent Chest       head (-0.70  0.60  2.80) tail (-1.20  1.00  2.00)
+  CapeR2      parent CapeR1      head (-1.20  1.00  2.00) tail (-1.50  1.10  1.20)
+  CapeR3      parent CapeR2      head (-1.50  1.10  1.20) tail (-1.60  1.00  0.50)
+  UpperLeg.L  parent Hips        head ( 0.60  0.05  0.85) tail ( 0.62 -0.05  0.45)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.62 -0.05  0.45) tail ( 0.64 -0.05  0.20)
+  Foot.L      parent LowerLeg.L  head ( 0.64 -0.05  0.20) tail ( 0.64 -0.60  0.05)
+  UpperLeg.R  parent Hips        head (-0.60  0.05  0.85) tail (-0.62 -0.05  0.45)
+  LowerLeg.R  parent UpperLeg.R  head (-0.62 -0.05  0.45) tail (-0.64 -0.05  0.20)
+  Foot.R      parent LowerLeg.R  head (-0.64 -0.05  0.20) tail (-0.64 -0.60  0.05)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\goblin_king_rig_round2
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\goblin_king_rigged.fbx 8016412 bytes

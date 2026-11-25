@@ -1,0 +1,6 @@
+(gemini-3.8-flash failed: The read operation timed out)
+GEMINI gemini-3.5-flash: score 5 (A was the model)
+  - model features four red-tipped spikes extending above the top edge of the main wall, which are absent in painting.
+  - The front protective spikes in model are rendered as flat, distorted overlays, whereas painting shows fully painted wooden stakes with glowing red tips.
+  - painting is a clean, polished digital artwork, while model has severe cutout artifacts, pixelation, and degraded textures.
+  - The small stakes along the ground in model appear as floating cylindrical shapes instead of the properly integrated wooden stake base shown in painting.

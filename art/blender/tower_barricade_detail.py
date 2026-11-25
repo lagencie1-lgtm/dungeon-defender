@@ -100,7 +100,8 @@ DEFAULTS = {
     # has its logs held up on the posts)
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
-    "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
+    "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
+                  stake_lean=-0.3, front_tilt=38),
     "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0),
 }
 P = dict(DEFAULTS[stage])
@@ -384,27 +385,28 @@ if stage == "thorn":
         cone_to(name + "Point", base + d * (ln * 0.795), base + d * ln, r0 * 0.59, CHAR, verts=verts)
         return base + d * ln
 
-    for k in range(P["pairs"]):
-        xp = ((k + 0.5) / P["pairs"] - 0.5) * RACK * 0.8
-        for j, lean in enumerate((0.3, -0.3)):
-            d = Vector((lean, math.cos(tilt), math.sin(tilt))).normalized()
-            reach_t = (rail_y - base_y) / d.y
-            base = Vector((xp - d.x * reach_t, base_y, 0.02))
-            ln = P["stake_len"] * (0.94 + 0.06 * rnd.random())
-            tip = stake(f"Stake{k}{j}", base, d, ln, 0.27)
-            K.ball(f"Stake{k}{j}Mound", (base.x, base.y, 0.0), 0.45, DIRT, (1.2, 1.0, 0.4), seg=10)
-            front_y = max(front_y, tip.y)
-        # an iron strap round the rail where each pair crosses, two brass studs on its face
+    # (Thornwall round 2: like the picture, one row of long stakes leaning out toward the enemies and a little to one
+    # side, all parallel, over the rail, and a lower row in front; the crossed pairs read as flat Vs, the dirt heaps
+    # as floating stubs)
+    lean = P["stake_lean"]
+    d_up = Vector((lean, math.cos(tilt), math.sin(tilt))).normalized()
+    for k in range(int(P["upper"])):
+        xp = ((k + 0.5) / P["upper"] - 0.5) * RACK * 0.82
+        reach_t = (rail_y - base_y) / d_up.y
+        base = Vector((xp - d_up.x * reach_t, base_y, 0.02))
+        ln = P["stake_len"] * (0.95 + 0.05 * rnd.random())
+        tip = stake(f"Stake{k}", base, d_up, ln, 0.27)
+        front_y = max(front_y, tip.y)
+        # an iron strap round the rail where each stake rests on it, two brass studs on its face
         K.block(f"Strap{k}", (xp, rail_y, rail_z), (0.3, 0.62, 0.7), IRON_T, key="iron", tile=1.0, bevel=0.04)
         for dz in (-0.16, 0.16):
             K.ball(f"Strap{k}Stud{dz:+.2f}", (xp, rail_y + 0.32, rail_z + dz), 0.09, STUD, seg=6)
-    ft = rad(34)
-    for k in range(P["front"]):
-        x = ((k + 0.5) / P["front"] - 0.5) * RACK * 0.74 + rnd.uniform(-0.12, 0.12)
-        base = Vector((x, R + 1.75, 0.02))
-        d = Vector((rnd.uniform(-0.08, 0.08), math.cos(ft), math.sin(ft))).normalized()
-        tip = stake(f"Low{k}", base, d, P["front_len"] * (0.92 + 0.08 * rnd.random()), 0.23, verts=8)
-        K.ball(f"Low{k}Mound", (base.x, base.y, 0.0), 0.38, DIRT, (1.2, 1.0, 0.4), seg=10)
+    ft = rad(P["front_tilt"])
+    d_low = Vector((lean, math.cos(ft), math.sin(ft))).normalized()
+    for k in range(int(P["front"])):
+        x = ((k + 0.5) / P["front"] - 0.5) * RACK * 0.74
+        base = Vector((x, R + 0.9, 0.02))
+        tip = stake(f"Low{k}", base, d_low, P["front_len"] * (0.95 + 0.05 * rnd.random()), 0.25, verts=10)
         front_y = max(front_y, tip.y)
     # the crest: red spikes driven into the top logs, leaning toward the enemies, seen from both sides
     for top, x_from, x_to, tag in ((top_c, -(BX - BR - 0.1), BX - BR - 0.1, "C"),

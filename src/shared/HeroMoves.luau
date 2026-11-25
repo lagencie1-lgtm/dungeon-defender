@@ -60,6 +60,10 @@ HeroMoves.Life = {
 	Follow = { Hz = 7, Damping = 0.48, Joints = { "Neck", "LShoulder", "LElbow" } },
 }
 
+-- the knock-out fall tips the body about a line this high above the ground (studs at scale 1): half the body's
+-- depth, so the back rests on the ground instead of in it
+HeroMoves.FallPivot = 0.6
+
 -- the arm shakes for a moment on impact (6A: arm shudder at 34 Hz)
 HeroMoves.ShudderHz = 34
 
@@ -226,17 +230,20 @@ HeroMoves.Clips = {
 			{ t = 0.33, ease = "back" },
 		},
 	},
-	-- knocked out: knees buckle, a wobble, then over backwards (the hero comes back a few seconds later)
+	-- knocked out: knees buckle, a wobble, then over backwards onto the back (the hero comes back a few seconds
+	-- later). Fall = degrees the whole body tips back (about a line under the hips, FallPivot studs up).
 	death = {
 		Keys = {
 			{ t = 0.18, ease = "out", Drop = 0.8, Root = { -14, 0, 0 }, Waist = { -18, 0, 0 }, Neck = { -20, 0, 0 },
 				RShoulder = { -10, 0, 12 }, LShoulder = { -10, 0, -12 } },
 			{ t = 0.42, ease = "inout", Drop = 0.85, Root = { -10, 10, 6 }, Waist = { -14, 0, 0 }, Neck = { -24, 0, 10 },
 				RShoulder = { -5, 0, 16 }, LShoulder = { -5, 0, -16 } },
-			{ t = 0.82, ease = "in", Drop = 1.9, Root = { 78, 10, 4 }, Waist = { 6, 0, 0 }, Neck = { 10, 0, 0 },
-				RShoulder = { 40, 0, 65 }, LShoulder = { 40, 0, -65 }, RHip = { 40, 0, 0 }, LHip = { 20, 0, 0 } },
-			{ t = 0.95, ease = "back", Drop = 1.8, Root = { 74, 10, 4 }, Waist = { 4, 0, 0 }, Neck = { 6, 0, 0 },
-				RShoulder = { 35, 0, 70 }, LShoulder = { 35, 0, -70 }, RHip = { 35, 0, 0 }, LHip = { 15, 0, 0 } },
+			{ t = 0.82, ease = "in", Fall = 90, Root = { 0, 10, 4 }, Neck = { -10, 0, 0 },
+				RShoulder = { 60, 0, 60 }, LShoulder = { 60, 0, -60 }, RHip = { 25, 0, 0 }, LHip = { 10, 0, 0 },
+				RKnee = { -30, 0, 0 }, LKnee = { -12, 0, 0 } },
+			{ t = 0.95, ease = "back", Fall = 86, Root = { 0, 10, 4 }, Neck = { -8, 0, 0 },
+				RShoulder = { 55, 0, 64 }, LShoulder = { 55, 0, -64 }, RHip = { 22, 0, 0 }, LHip = { 8, 0, 0 },
+				RKnee = { -26, 0, 0 }, LKnee = { -10, 0, 0 } },
 			{ t = 30, hold = true },
 		},
 	},

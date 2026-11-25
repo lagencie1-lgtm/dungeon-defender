@@ -239,6 +239,91 @@ task.wait(12)
 mark("film start")
 say("hero", player:GetAttribute("HeroId") or "Swordmaster (default)")
 
+-- knock-out only (test/anim-ko.project.json): the fall, measured part by part against the ground
+local function lowestParts()
+	local worst, worstName, perPart = math.huge, "", {}
+	for _, p in character:GetChildren() do
+		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Transparency < 1 then
+			local g = groundBelow(p.Position)
+			if g then
+				local gap = lowestY(p) - g
+				perPart[p.Name] = gap
+				if gap < worst then
+					worst, worstName = gap, p.Name
+				end
+			end
+		end
+	end
+	return worst, worstName, perPart
+end
+if cue:GetAttribute("Mode") == "ko" then
+	local c0 = Config.OutpostCenter
+	walk(c0 + Vector3.new(0, 0, 10), 5)
+	cue:FireServer("StartRun", "CursedForest")
+	await("RunReady", 60)
+	task.wait(6)
+	for take = 1, 3 do
+		local pts0 = Config.Path
+		if take < 3 then
+			-- off the spawn pad, onto the open map ground (beside a wall and a grass bank)
+			walk(rootPart().Position + (pts0[#pts0] - pts0[#pts0 - 1]).Unit * -14, 5)
+		else
+			-- the middle of the goblins' path: open, flat ground
+			local mid = pts0[math.floor(#pts0 / 2)]
+			walk(mid, 12)
+		end
+		task.wait(1)
+		lockDirection()
+		view = side(9, 2)
+		task.wait(0.5)
+		local base = lowestParts()
+		say(string.format("ko%d standing lowest before %.2f (terrain under the feet is not flat: compare with this)", take, base))
+		mark("knock out " .. take)
+		local t0 = os.clock()
+		cue:FireServer("KO")
+		local minPart = {}
+		local nextPrint = 0
+		while os.clock() - t0 < 3.2 do
+			local worst, name, per = lowestParts()
+			for n, g in per do
+				minPart[n] = math.min(minPart[n] or math.huge, g)
+			end
+			local dt = os.clock() - t0
+			if dt >= nextPrint then
+				nextPrint += 0.25
+				local ut = character:FindFirstChild("UpperTorso")
+				local lt = character:FindFirstChild("LowerTorso")
+				local rj = lt and lt:FindFirstChild("Root")
+				local h = humanoidOf()
+				local rx = rj and math.deg((rj.Transform:ToEulerAnglesYXZ())) or 0
+				local r = rootPart()
+				say(string.format("ko%d t %.2f lowest %.2f (%s) torso up %.2f chest faces up %.2f | root joint x %.0f kinematic %s hp %.0f root anchored %s root up %.2f",
+					take, dt, worst, name, ut and ut.CFrame.UpVector.Y or 0, ut and ut.CFrame.LookVector.Y or 0, rx,
+					rj and rj:IsA("AnimationConstraint") and (tostring(rj.IsKinematic) .. " enabled " .. tostring(rj.Enabled)) or "-", h and h.Health or -1,
+					r and tostring(r.Anchored) or "?", r and r.CFrame.UpVector.Y or 0))
+			end
+			RunService.Heartbeat:Wait()
+		end
+		local parts = {}
+		for n, g in minPart do
+			table.insert(parts, string.format("%s %.2f", n, g))
+		end
+		table.sort(parts)
+		say("ko" .. take .. " lowest point of each part over 3 s: " .. table.concat(parts, ", "))
+		local worst, name = lowestParts()
+		say(string.format("ko%d final lowest %.2f (%s)", take, worst, name))
+		anchorCF = nil
+		gameCam()
+		mark("back " .. take)
+		player.CharacterAdded:Wait()
+		task.wait(3)
+	end
+	say("DONE")
+	mark("film end")
+	cue:FireServer("Done")
+	return
+end
+
 -- a short walk in the Outpost: lean and stride (game camera)
 local c = Config.OutpostCenter
 mark("outpost walk")

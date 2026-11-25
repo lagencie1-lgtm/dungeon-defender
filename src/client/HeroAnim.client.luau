@@ -39,7 +39,7 @@ local RAD = math.pi / 180
 -- poses: { [joint] = Vector3 degrees, Drop = studs, Push = studs }
 -------------------------------------------------------------------------------
 local function emptyPose()
-	local p = { Drop = 0, Push = 0 }
+	local p = { Drop = 0, Push = 0, Fall = 0 }
 	for _, name in POSE_JOINTS do
 		p[name] = ZERO
 	end
@@ -50,6 +50,7 @@ local function poseFromKey(key)
 	local p = emptyPose()
 	p.Drop = key.Drop or 0
 	p.Push = key.Push or 0
+	p.Fall = key.Fall or 0
 	for _, name in POSE_JOINTS do
 		local v = key[name]
 		if v then
@@ -60,7 +61,8 @@ local function poseFromKey(key)
 end
 
 local function lerpPose(a, b, w)
-	local p = { Drop = a.Drop + (b.Drop - a.Drop) * w, Push = a.Push + (b.Push - a.Push) * w }
+	local p = { Drop = a.Drop + (b.Drop - a.Drop) * w, Push = a.Push + (b.Push - a.Push) * w,
+		Fall = a.Fall + (b.Fall - a.Fall) * w }
 	for _, name in POSE_JOINTS do
 		p[name] = a[name]:Lerp(b[name], w)
 	end
@@ -71,6 +73,7 @@ end
 local function addPose(out, p, w)
 	out.Drop += p.Drop * w
 	out.Push += p.Push * w
+	out.Fall += p.Fall * w
 	for _, name in POSE_JOINTS do
 		out[name] += p[name] * w
 	end
@@ -144,6 +147,8 @@ end
 -- per-character state
 -------------------------------------------------------------------------------
 local states = {} -- [character] = state
+local params = RaycastParams.new()
+params.FilterType = Enum.RaycastFilterType.Exclude
 
 local function findJoints(character)
 	local found = {}
@@ -243,6 +248,19 @@ local function watchCharacter(player, character)
 	humanoid.Died:Connect(function()
 		st.dead = true
 		st.react = nil
+		-- pin the body where it stands at once (the server does too, but its pin arrives a moment later: in between
+		-- the dead body tipped over as one piece and sank into the ground, 2026-11-25)
+		local r = character:FindFirstChild("HumanoidRootPart")
+		if r then
+			r.Anchored = true
+		end
+		-- upgraded joints go limp on death: keep them driven so the fall below plays (the server does the same)
+		for _, joint in character:GetDescendants() do
+			if joint:IsA("AnimationConstraint") then
+				joint.IsKinematic = true
+				joint.Enabled = true
+			end
+		end
 		play(st, "death", "action")
 	end)
 end
@@ -430,6 +448,34 @@ local function animate(st, dt, now)
 	-- the body: crouch and lunge move the hips; the legs bend so the feet stay where they were
 	local drop = pose.Drop * scale
 	local push = pose.Push * scale
+
+	-- the knock-out fall: the whole body tips over backwards on the (anchored) root part, about a line under the
+	-- hips at the height of half the body's depth, so it lies on its back on the ground. Turning the Root joint
+	-- instead did not tip the body once the hero was dead (upgraded joints, 2026-11-25). Only this computer's view.
+	if st.dead and root.Anchored then
+		if not st.fallBase then
+			params.FilterDescendantsInstances = { character }
+			local hit = workspace:Raycast(root.Position, Vector3.new(0, -12, 0), params)
+			st.fallBase = root.CFrame
+			st.fallGround = hit and hit.Position.Y or (root.Position.Y - 3 * scale)
+			-- the ground behind can rise (a bank, a step) or drop: tip over only as far as it allows, so the head
+			-- and back rest on it instead of in it (a fall into a grass bank buried the head, 2026-11-25)
+			local back = -Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+			local slope = -math.huge
+			for d = 1, 5 do
+				local at = root.Position + back * d * scale
+				local g = workspace:Raycast(at + Vector3.new(0, 4 * scale, 0), Vector3.new(0, -14 * scale, 0), params)
+				if g then
+					slope = math.max(slope, math.atan2(g.Position.Y - st.fallGround, d * scale))
+				end
+			end
+			st.fallScale = slope > -math.huge and math.clamp((90 - math.deg(slope)) / 90, 0.5, 1.15) or 1
+		end
+		local base = st.fallBase
+		local pivot = Vector3.new(base.Position.X, st.fallGround + HeroMoves.FallPivot * scale, base.Position.Z)
+		root.CFrame = CFrame.new(pivot) * CFrame.fromAxisAngle(base.RightVector, pose.Fall * st.fallScale * RAD)
+			* CFrame.new(-pivot) * base
+	end
 	write(st, j.Root, CFrame.new(0, -drop, -push) * turn(pose.Root))
 	for _, name in { "Waist", "Neck", "RShoulder", "RElbow", "LShoulder", "LElbow" } do
 		if j[name] then

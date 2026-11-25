@@ -650,6 +650,14 @@ local function onCharacter(player, character)
 			if r then
 				r.Anchored = true
 			end
+			-- bodies with Roblox's upgraded joints go limp on death (a ragdoll that sank into the ground,
+			-- 2026-11-25): keep every joint driven so HeroAnim's fall is what players see
+			for _, joint in character:GetDescendants() do
+				if joint:IsA("AnimationConstraint") then
+					joint.IsKinematic = true
+					joint.Enabled = true
+				end
+			end
 			Remotes.Notify:FireAllClients(player.DisplayName .. " got bonked by goblins! Back in a few seconds",
 				Color3.fromRGB(255, 140, 140))
 		end)

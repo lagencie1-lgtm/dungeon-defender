@@ -154,7 +154,8 @@ MapLayouts.Magma = {
 		-- that shallow has no room left to build on. That pocket is open floor.)
 		{ Name = "Heart Bastion", X0 = 0, X1 = 30, Z0 = -12, Z1 = 30, H = 4, Parapet = "N",
 			Stairs = { { Side = "W", At = 0.6 }, { Side = "E", At = 0.4 } } },
-		{ Name = "East Bastion", X0 = 50, X1 = 70, Z0 = -50, Z1 = -30, H = 5, Parapet = "S", Stairs = { { Side = "W", At = 0 } } },
+		-- (the east bastion is gone: its pocket between the three lanes north of the river is the furnace court now,
+		-- Lemp's map audit 2026-11-24)
 		{ Name = "Gate Yard", X0 = -50, X1 = -20, Z0 = 6, Z1 = 40, H = 4, Parapet = "N",
 			Stairs = { { Side = "E", At = 0.5 }, { Side = "W", At = 0.5 } } },
 		-- the portal's keep: the last stretch climbs to it through the gate that is its whole west side
@@ -164,6 +165,10 @@ MapLayouts.Magma = {
 	-- the field's outline (src/shared/MapOutline.luau, shared with the build ghost)
 	Border = MapOutline.Magma,
 	Channels = {
+		-- the furnace's slag run: from the end of its trough down the middle of the court into the river (listed first: the river's
+		-- own passes then lay their banks over its end, and its second cut opens it into the river). It splits
+		-- the court into a west half that watches the x = 40 lane and an east half that watches the x = 80 lane
+		{ Name = "Furnace Run", Width = 5, Joins = true, Points = { v(60, 0, -37), v(60, 0, -18) } },
 		-- the lava river cuts the whole fortress in two: four bridges
 		{ Name = "Lava River", Width = 11, Points = { v(-132, 0, -14), v(-85, 0, -10), v(-60, 0, -12), v(-35, 0, -18), v(-10, 0, -16),
 			v(14, 0, -24), v(40, 0, -22), v(60, 0, -16), v(80, 0, -18), v(132, 0, -12) } },
@@ -185,6 +190,24 @@ MapLayouts.Magma = {
 				{ Piece = "arch", At = v(89, 0, 20), Look = v(1, 0, 0), Sink = 0.9 },
 				{ Piece = "set", At = v(84.5, 0, 10.6), Look = v(-1, 0, 0) },
 				{ Piece = "set", At = v(84.5, 0, 29.4), Look = v(-1, 0, 0) },
+			} },
+		-- Lemp's map audit: "give one court a large furnace mouth with a visible lava feed ... let the furnace and the
+		-- existing gate differ both in outline and in the type of defense they support". The south gate is a choke
+		-- on one road; the furnace court sits between three stretches of road (x = 40, z = -60, x = 80): a defender
+		-- in either half covers two of them, the place for the long-range and area defenders
+		{ Name = "The furnace court", Why = "the furnace at its north end, its slag running down the middle into the river, a build spot in each half",
+			Kit = {
+				{ Piece = "furnace", At = v(60, 0, -46.5), Look = v(0, 0, 1) },
+				{ Piece = "pad", At = v(50, 0, -36), Look = v(0, 0, 1), Sink = -0.02 },
+				{ Piece = "pad", At = v(70, 0, -36), Look = v(0, 0, 1), Sink = -0.02 },
+			} },
+		-- the research briefs: "does the bridge force a choice between holding the front and rotating behind?" A
+		-- build spot at the first crossing's landing (the front) and the heart bastion's spot over the second (the
+		-- back, the first build spot); the gate yard's stairs and the bastion's are the hero's way between them
+		{ Name = "The bridge posts", Why = "a build spot at the front bridge's landing and one on the heart bastion over the back bridge",
+			Kit = {
+				{ Piece = "pad", At = v(-50, 0, -3), Look = v(0, 0, 1), Sink = -0.02 },
+				{ Piece = "pad", At = v(9, 0, 2), Look = v(0, 0, 1), Sink = -0.02 },
 			} },
 		{ Name = "The demon gate's fires", Why = "two fires flank the road where it leaves the demon gate",
 			Kit = {

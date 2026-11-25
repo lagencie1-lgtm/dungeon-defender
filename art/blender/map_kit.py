@@ -18,6 +18,8 @@ Pieces (front faces -Y, the long side runs along X, studs):
             it, its crown over the top and its roots over the walls and down into the ground (about 28 high)
   pad       a build spot: a round of flat flagstones 7 across lying on the ground (blocks nothing)
   flags     four flat stones of a footpath, 4 along by 3 across (laid in a row along a route; blocks nothing)
+  furnace   (magma) the landmark: a squat basalt furnace 12 x 9 with a glowing arched mouth, a chimney, and a slag
+            trough 8 long out of its mouth
 Run: blender -b -P map_kit.py -- out.fbx <piece> <theme>
 """
 import math
@@ -451,10 +453,53 @@ elif piece == "flags":
                                       (1.05, 0.68, 1.7, 1.25))):
         block((w + rnd.uniform(-0.12, 0.12), d + rnd.uniform(-0.1, 0.1), 0.13),
               (x + rnd.uniform(-0.08, 0.08), y + rnd.uniform(-0.06, 0.06), 0.065), paver, turn=rnd.uniform(-0.12, 0.12), round_=0.05)
+elif piece == "furnace":
+    # Magma's landmark (Lemp's map audit, 2026-11-24: "give one court a large furnace mouth with a visible lava
+    # feed"): a squat basalt furnace 12 wide and 9 deep, a big arched mouth glowing in its front, iron bands, a
+    # round chimney at the back left with an iron cap, and an iron trough that carries the molten slag out of the
+    # mouth and away (the court's lava run continues it into the river). Front -Y; about 16 high to the chimney top.
+    hw, hd, h = 6.0, 4.5, 7.5
+    # the body: courses of big stones, a mouth cut in the front, a battered top course
+    course_wall(2 * hw, 1.6, lambda x: h, y=-hd + 0.8, gap=lambda x, z: abs(x) < 2.6 and z < 2.6 + 2.0 * math.sqrt(max(0.0, 1 - (x / 2.6) ** 2)), big=1.3)
+    course_wall(2 * hw, 1.6, lambda x: h, y=hd - 0.8, big=1.3)
+    for side in (-1, 1):
+        for k in range(4):
+            block((1.6, 2 * hd - 3.2, 1.9), (side * (hw - 0.8), 0, 0.95 + k * 1.9), round_=0.12)
+    block((2 * hw - 2.6, 2 * hd - 2.6, 0.9), (0, 0, h - 0.45), round_=0.14)      # the roof slab
+    block((2 * hw + 0.6, 2 * hd + 0.6, 0.6), (0, 0, 0.3), round_=0.12)           # the plinth
+    # the mouth: an arch of wedge stones over the opening, its inside glowing
+    n, radius = 9, 2.85
+    for k in range(n):
+        a = math.pi * (k + 0.5) / n
+        block((1.15, 1.9, 1.0), (radius * math.cos(a), -hd + 0.6, 2.6 + radius * 0.75 * math.sin(a)),
+              tilt=(0, -(a - math.pi / 2) * 0.9), round_=0.1)
+    paint.glow(lib.box("Mouth", (4.8, 0.3, 4.2), (0, -hd + 1.9, 2.3), W), T["glow"])
+    paint.glow(lib.box("Coals", (4.4, 2.4, 0.5), (0, -hd + 2.4, 0.85), W), (1.0, 0.62, 0.2))
+    # iron bands round the body
+    for z in (2.2, 5.6):
+        for y in (-hd - 0.02, hd + 0.02):
+            block((2 * hw + 0.1, 0.18, 0.35), (0, y, z), "trim", round_=0.03)
+    # the chimney: a round stack of stone rings at the back left, an iron cap with a faint glow under it
+    for k in range(6):
+        ring = lib.cylinder(f"Stack{k}", 1.6 - k * 0.06, 1.25, (-hw + 2.4, hd - 2.2, h + 0.6 + k * 1.25), W, vertices=12)
+        stone(bevel(ring, 0.08, 1), "stone", rnd.uniform(0.9, 1.05))
+    cap = lib.cylinder("Cap", 1.9, 0.35, (-hw + 2.4, hd - 2.2, h + 8.3), W, vertices=12)
+    paint.paint(bevel(cap, 0.06, 1), "iron", (0.75, 0.72, 0.7), 1.2)
+    paint.glow(lib.cylinder("Flue", 1.2, 0.2, (-hw + 2.4, hd - 2.2, h + 8.05), W, vertices=12), T["glow"])
+    # the slag trough out of the mouth: iron sides, glowing slag in it, 8 long
+    for side in (-1, 1):
+        block((0.3, 8.2, 0.7), (side * 1.25, -hd - 4.0, 0.35), "trim", round_=0.04)
+    block((2.8, 8.2, 0.25), (0, -hd - 4.0, 0.12), "trim", round_=0.03)
+    # (the slag in lumps, the lava's own orange: one long glowing strip read as a yellow plank in the first film)
+    for k in range(5):
+        paint.glow(lib.box(f"Slag{k}", (1.9 - 0.2 * (k % 2), 1.35, 0.12), (rnd.uniform(-0.15, 0.15), -hd - 0.9 - k * 1.6, 0.42), W),
+                   (1.0, 0.4, 0.1))
+    rubble(5, 6.5, 1.0, y0=-hd - 1.4)
+    theme_touches([(-4.0, -hd, h - 0.6), (4.2, -hd, h - 1.0), (0.0, -hd, h - 0.4)])
 else:
     raise SystemExit("unknown piece " + piece)
 
-size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512, "tower": 1024}.get(piece, 256)
+size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512, "tower": 1024, "furnace": 1024}.get(piece, 256)
 parts = paint.bake(f"mapkit_{piece}_{theme}", out[:-4] + "_paint.png", size)
 print("TRIANGLES", lib.triangles(parts))
 lib.export_fbx(out)

@@ -615,6 +615,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			arch = "The gate is in the way", pillar = "A column is in the way", bridge = "The bridge is in the way",
 			set_forest = "The standing stones are in the way", set_magma = "A fire is in the way",
 			set_crystal = "A mine cart is in the way", stairs = "The stairs are in the way", tower = "The tower is in the way",
+			furnace = "The furnace is in the way",
 			keep_well = "The well is in the way", keep_field_bush = "A bush is in the way",
 			keep_field_mushrooms = "Mushrooms are in the way", keep_field_ruin = "The ruin is in the way",
 			tree_oak = "A tree is in the way", tree_dead = "A tree is in the way", crystal_cluster = "Crystals are in the way",

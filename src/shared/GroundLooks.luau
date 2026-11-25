@@ -35,7 +35,9 @@ end
 
 -- how far each painting's tint goes towards white (white shows the painting as painted). The meadow grass is lifted
 -- more: from the run camera it was a dark green carpet on a phone (cycle 5 film).
-GroundLooks.Lift = { t_grass = 0.55 }
+GroundLooks.Lift = { t_grass = 0.55, basalt_flat = 0.38 }
+-- (basalt_flat: Magma's courts, verges and bridge landings, lifted so the floor you build on reads at a glance on a
+-- phone; Lemp's map audit 2026-11-24: "lift the value of the paving and bridge landings")
 function GroundLooks.Tint(texture)
 	return GroundLooks.Colors[texture]:Lerp(Color3.new(1, 1, 1), GroundLooks.Lift[texture] or 0.15)
 end

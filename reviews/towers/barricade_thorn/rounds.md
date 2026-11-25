@@ -22,3 +22,8 @@ From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn
 - round 7: centre stakes now in the same places in the full wall (the scored centre took mismatched paint in rounds 5-6); fresh repaint
   IoU 89.0%  width profile off 6.4%  region colour dE 6.9  (pixel dE 47.7)  detail 22.1% vs picture 22.5% (ratio 0.98)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 1 (L 45/45)  lookout 3 (L 40/38)  wall 4 (L 30/32)  footing 8 (L 32/37)
+- round 8: stakes kept whole through the cull (round 7's lower row was cut behind the rail); fresh repaint
+  IoU 93.9%  width profile off 8.6%  region colour dE 6.6  (pixel dE 45.6)  detail 21.1% vs picture 22.5% (ratio 0.94)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 45/45)  lookout 2 (L 40/39)  wall 5 (L 30/31)  footing 9 (L 32/33)
+  round 8 judge: 8, 6 (two more tries got no answer: Gemini's free quota)
+- best: round 8 (outline 93.9%, colour 6.6, detail 0.94, all measured gates pass; judge 8 and 6)

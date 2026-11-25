@@ -1,0 +1,4 @@
+GEMINI gemini-3.5-flash: score 8 (A was the model)
+  - model uses low-resolution, pixelated 3D textures with jagged cutout edges, whereas painting is a smooth, high-resolution painted illustration.
+  - The metal bands and rivets in model have coarse pixelation, while in painting they feature detailed shading and metallic highlights.
+  - The wood grain and spike textures are rough and low-poly in model, but cleanly rendered with soft lighting in painting.

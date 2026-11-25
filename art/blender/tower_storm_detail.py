@@ -48,6 +48,7 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     print("PARAMS " + json.dumps(P), flush=True)
     os._exit(0)
 S.start()
+K.GOLD_SMOOTH = True   # (the gold-trim rule, coordinator 2026-11-25)
 a0 = rad(FRONT)
 FWD = Vector((math.cos(a0), math.sin(a0), 0))
 SIDE = Vector((-math.sin(a0), math.cos(a0), 0))
@@ -70,13 +71,36 @@ def rune(name, center, normal, size):
     o = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(o)
     S.glow(o, VIOLET)
+    # (2026-11-25 review: the runes read as flat stickers; the painting cuts them into the stone. Each glowing shape
+    # now sits in a dark cut a little bigger than itself, so a dark edge runs round it like a groove)
+    cx = sum(x for x, _ in zig) / len(zig)
+    cy = sum(y for _, y in zig) / len(zig)
+    bm = bmesh.new()
+    vs = [bm.verts.new(tuple(Vector(center) + n * 0.035 + side * ((cx + (x - cx) * 1.22) * size) + up * ((cy + (y - cy) * 1.14) * size)))
+          for x, y in zig]
+    bm.faces.new(vs)
+    bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.03)
+    mesh = bpy.data.meshes.new(name + "Cut")
+    bm.to_mesh(mesh)
+    bm.free()
+    cut = bpy.data.objects.new(name + "Cut", mesh)
+    bpy.context.scene.collection.objects.link(cut)
+    cut["htd_atlas"] = "body"
+    K.paint.paint(cut, None, (0.16, 0.12, 0.2))
+    from mathutils import Quaternion
     for k, dy in enumerate((0.78, -0.78)):
         p = Vector(center) + n * 0.05 + up * (dy * size)
-        bpy.ops.mesh.primitive_cube_add(size=size * 0.22, location=p, rotation=(0, 0, 0))
-        d = bpy.context.active_object
-        d.rotation_euler = (n.to_track_quat("Z", "Y") @ __import__("mathutils").Quaternion((0, 0, 1), rad(45))).to_euler()
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        S.glow(d, VIOLET)
+        for sz, glow in ((size * 0.3, False), (size * 0.22, True)):
+            bpy.ops.mesh.primitive_cube_add(size=sz, location=p - n * (0.0 if glow else 0.03), rotation=(0, 0, 0))
+            d = bpy.context.active_object
+            d.name = f"{name}Diamond{k}{'' if glow else 'Cut'}"
+            d.rotation_euler = (n.to_track_quat("Z", "Y") @ Quaternion((0, 0, 1), rad(45))).to_euler()
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            if glow:
+                S.glow(d, VIOLET)
+            else:
+                d["htd_atlas"] = "body"
+                K.paint.paint(d, None, (0.16, 0.12, 0.2))
 
 
 def footing():

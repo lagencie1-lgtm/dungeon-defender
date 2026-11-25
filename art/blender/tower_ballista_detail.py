@@ -64,6 +64,7 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     os._exit(0)
 S.start()
 K.SIZES["barrel"] = 512
+K.GOLD_SMOOTH = True   # (the gold-trim rule, coordinator 2026-11-25)
 A = rad(FRONT + P["aim"])
 FWD = Vector((math.cos(A), math.sin(A), 0))
 SIDE = Vector((-math.sin(A), math.cos(A), 0))

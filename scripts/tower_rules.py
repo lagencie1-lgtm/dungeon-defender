@@ -54,13 +54,18 @@ def main():
         parts = name.split()
         if parts[0] != "mask":
             continue
-        best = None
+        best, seen = None, []
         for dt in np.arange(-0.9, 0.61, 0.15):
             img = frame(ff, base + ".mp4", t + dt, os.path.join(out, "_frame.png"))
             n = int(magenta(img).sum())
+            seen.append((dt, n))
             if best is None or n > best[0]:
                 best = (n, dt, img)
         img = best[2]
+        # (the drift is the middle of the run of outline frames, not its first frame: the first one put the view
+        # picture before the view shot began)
+        full = [dt for dt, n in seen if n >= 0.9 * best[0]]
+        best = (best[0], float(np.mean(full)), img)
         if box is None:
             box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
         masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])

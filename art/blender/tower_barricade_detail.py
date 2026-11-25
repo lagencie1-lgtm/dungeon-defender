@@ -101,7 +101,7 @@ DEFAULTS = {
     "l1": dict(BASE, log_r=0.6, logs=3, wing_logs=2, big_r=0.58, big_x=2.0, wing_r=0.44, wing_x=4.4, shield=0),
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=6, front_len=1.9, crest=0.8, crest_len=2.0),
-    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=2.4, crown=1.4),
+    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -437,8 +437,12 @@ if stage == "root":
             radii.append(r0 * rr)
         tube(name, pts, radii, ROOT_T, "bark", 1.6, verts=12)
         fork = Vector(pts[-n_dys])
-        for f, (sx, far) in enumerate(((-1, 1.0), (1, 1.0), (lean, 1.6))):
-            tip = fork + Vector((sx * rnd.uniform(1.2, 1.8) * far, s * rnd.uniform(0.7, 1.2), -0.12))
+        # three forks fanning out in FRONT of the wall (the picture's roots splay toward the viewer, round 3 of the
+        # Rootwall shape: sideways roots ran flat along the road)
+        for f, ang in enumerate((-38, 0, 38)):
+            a = rad(ang + 12 * lean)
+            ln = rnd.uniform(1.4, 2.1)
+            tip = fork + Vector((math.sin(a) * ln, s * math.cos(a) * ln, -0.12))
             bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
             tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.5, r0 * 0.34, r0 * 0.08], ROOT_T, "bark", 1.6, verts=8)
 
@@ -456,7 +460,7 @@ if stage == "root":
 
     def wind(name, px, s, r, turns=1.5, r0=None):
         r0 = r0 or P["root_r"]
-        py, ra = s * post_y(r), r + 0.22
+        py, ra = (R * P["post_fwd"] if P["single"] else s * post_y(r)), r + 0.22   # (round the real post: one per side now)
         a_end = rad(90) if s > 0 else rad(270)
         a0 = a_end - turns * 2 * math.pi
         pts = [(px + math.cos(a0) * ra * 1.4, -s * 0.15, top_c + 0.1)]
@@ -479,7 +483,7 @@ if stage == "root":
             root(f"Root{tag}0", -wing_mid, s, 0.7 if s > 0 else -0.6, top_w, r0=0.48 if s > 0 else 0.44)
             root(f"Root{tag}1", wing_mid, s, 2.3 if s > 0 else -1.9, top_w, r0=0.48 if s > 0 else 0.44)
     # moss: a flat mat along the tops that hangs over both faces
-    for top, xa, xb, n, tag in ((top_c, -(BX + BR), BX + BR, 7, "C"), (top_w, BX + BR, HALF * 0.92, 3, "R"), (top_w, -HALF * 0.92, -(BX + BR), 3, "L")):
+    for top, xa, xb, n, tag in ((top_c, -(BX - BR - 0.15), BX - BR - 0.15, 6, "C"), (top_w, BX + BR, HALF * 0.92, 3, "R"), (top_w, -HALF * 0.92, -(BX + BR), 3, "L")):
         if CENTRE and tag != "C":
             continue
         for k in range(n):

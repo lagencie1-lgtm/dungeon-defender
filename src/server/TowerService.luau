@@ -181,7 +181,7 @@ local LEVEL_LOOKS = {
 	-- Yaw turns a look if its spikes ever face the wrong way in the game (degrees)
 	Barricade = {
 		{ Name = "tower_barricade_l1", Height = 4.68, Muzzle = Vector3.new(0, 3, 0) },
-		{ Name = "tower_barricade_l2", Height = 6.04, Muzzle = Vector3.new(0, 4, 0) },
+		{ Name = "tower_barricade_l2", Height = 6.23, Muzzle = Vector3.new(0, 4, 0) },
 		{ Name = "tower_barricade_thorn", Height = 6.04, Muzzle = Vector3.new(0, 4, 0) },
 	},
 }

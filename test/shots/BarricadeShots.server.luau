@@ -38,10 +38,13 @@ task.wait(3)
 State.Set("Gold", 100000)
 
 local pts = Config.Path
+-- the longest straight that runs east-west (the run camera looks along the X axis's cross direction: a wall across
+-- a north-south stretch is seen end-on)
 local best, bestLength = 1, 0
 for i = 1, #pts - 1 do
-	local length = (pts[i + 1] - pts[i]).Magnitude
-	if length > bestLength then
+	local d = pts[i + 1] - pts[i]
+	local length = d.Magnitude
+	if length > bestLength and math.abs(d.X) > 0.8 * length then
 		best, bestLength = i, length
 	end
 end
@@ -70,6 +73,25 @@ end
 local ok, why = TowerService.Place(player, "Barricade", spotAt)
 print("[SHOT] placed", ok, why)
 local wall = findWall()
+local function report(tag)
+	-- which way the look's long side runs: across the path (as it should) or along it
+	local look = wall:FindFirstChild("Look")
+	if not look then
+		print("[SHOT] no Look on", tag)
+		return
+	end
+	local box, size = look:GetBoundingBox()
+	local ax = { box.RightVector * size.X, box.UpVector * size.Y, box.LookVector * size.Z }
+	local along, across, up = 0, 0, 0
+	for _, v in ax do
+		along = math.max(along, math.abs(v:Dot(walk)))
+		across = math.max(across, math.abs(v:Dot(walk:Cross(Vector3.yAxis).Unit)))
+		up = math.max(up, math.abs(v.Y))
+	end
+	print("[SHOT] look", tag, "size", size, "extent along path", along, "across path", across, "height", up,
+		"walk", walk, "wall bottom y", box.Position.Y - up / 2, "path y", spotAt.Y)
+end
+report("l1")
 heroAt(wall)
 task.wait(10) -- (the models and paints stream in)
 heroAt(wall)
@@ -89,6 +111,7 @@ TowerService.Upgrade(player, wall)
 task.wait(2)
 heroAt(wall)
 task.wait(2)
+report("l2")
 shot("l2")
 task.wait(3)
 TowerService.Upgrade(player, wall, "Thornwall")

@@ -213,10 +213,10 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
-	paint_tower_barricade_root = "94948847564153",
-	paint_tower_barricade_thorn = "132717050253998",
+	paint_tower_barricade_root = "83374740898674",
+	paint_tower_barricade_thorn = "123688527416074",
 	paint_tower_barricade_l2 = "83570228110719",
-	paint_tower_barricade_l1 = "72163248616669",
+	paint_tower_barricade_l1 = "134624693231847",
 	paint_mapkit_stairs_magma = "96540177451650",
 	paint_mapkit_stairs_forest = "99548681241432",
 	paint_mapkit_stairs_crystal = "74117814610835",

@@ -134,7 +134,7 @@ local BUILDERS = {
 -- the Blender-built look of a defender, scaled to its height, standing on `at`.
 -- Returns true when the model was used (otherwise the part-built look is used).
 -- heights and shot origins of the hand-built models (art/blender/towers_hand.py prints each HEIGHT)
-local MODEL_HEIGHT = { Ranger = 15.65, FlameCannon = 5.5, FrostCrystal = 8.28, StormObelisk = 13.08, Ballista = 5.93, Barricade = 4.68 }
+local MODEL_HEIGHT = { Ranger = 15.65, FlameCannon = 5.5, FrostCrystal = 8.28, StormObelisk = 13.08, Ballista = 5.93, Barricade = 4.65 }
 local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
 	StormObelisk = "tower_storm", Ballista = "tower_ballista", Barricade = "tower_barricade_l1" }
 local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector3.new(0, 4.6, -3.2), FrostCrystal = Vector3.new(0, 6.6, 0),
@@ -180,17 +180,17 @@ local LEVEL_LOOKS = {
 	-- the Oak Barricade (art/blender/tower_barricade_detail.py prints each HEIGHT): built along X, so it spans the path;
 	-- Yaw turns a look if its spikes ever face the wrong way in the game (degrees)
 	Barricade = {
-		{ Name = "tower_barricade_l1", Height = 4.68, Muzzle = Vector3.new(0, 3, 0) },
+		{ Name = "tower_barricade_l1", Height = 4.65, Muzzle = Vector3.new(0, 3, 0) },
 		{ Name = "tower_barricade_l2", Height = 6.23, Muzzle = Vector3.new(0, 4, 0) },
-		{ Name = "tower_barricade_thorn", Height = 6.04, Muzzle = Vector3.new(0, 4, 0) },
+		{ Name = "tower_barricade_thorn", Height = 6.11, Muzzle = Vector3.new(0, 4, 0) },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
 -- level 3 looks of a branching defender, by branch
 local BRANCH_LOOKS = {
 	Barricade = {
-		Thornwall = { Name = "tower_barricade_thorn", Height = 6.04, Muzzle = Vector3.new(0, 4, 0) },
-		Rootwall = { Name = "tower_barricade_root", Height = 6.91, Muzzle = Vector3.new(0, 4, 0) },
+		Thornwall = { Name = "tower_barricade_thorn", Height = 6.11, Muzzle = Vector3.new(0, 4, 0) },
+		Rootwall = { Name = "tower_barricade_root", Height = 9.15, Muzzle = Vector3.new(0, 4, 0) },
 	},
 }
 TowerService.BranchLooks = BRANCH_LOOKS

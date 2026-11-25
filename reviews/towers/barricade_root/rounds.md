@@ -42,3 +42,12 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
 - round 13: round 12's paintings; smaller leaf balls so the right post tip keeps its wood
   IoU 89.6%  width profile off 15.5%  region colour dE 8.9  (pixel dE 53.2)  detail 27.9% vs picture 23.4% (ratio 1.19)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 5 (L 49/47)  lookout 4 (L 37/34)  wall 2 (L 36/37)  footing 5 (L 50/54)
+- round 14: random-restart refit (shape IoU 90.0; tips 1.12 tall, roots wider); round 12's paintings; leaf tufts deeper green
+  IoU 89.8%  width profile off 15.2%  region colour dE 8.6  (pixel dE 52.8)  detail 26.3% vs picture 23.4% (ratio 1.12)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 49/47)  lookout 4 (L 37/34)  wall 1 (L 36/37)  footing 4 (L 50/54)
+- round 15: check: round 8 rebuilt from its own builder and params, with round 8's paint (the upload candidate)
+  IoU 90.1%  width profile off 16.6%  region colour dE 10.1  (pixel dE 51.6)  detail 28.3% vs picture 23.4% (ratio 1.21)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 49/47)  lookout 3 (L 37/36)  wall 6 (L 36/41)  footing 15 (L 50/58)
+- round 16: round 8's own paintings re-projected onto the rebuilt round 8 model (the rebuild packs a few parts differently), tips toned as in round 8
+  IoU 90.1%  width profile off 16.6%  region colour dE 8.8  (pixel dE 50.9)  detail 27.9% vs picture 23.4% (ratio 1.19)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 49/47)  lookout 4 (L 37/34)  wall 4 (L 36/39)  footing 9 (L 50/56)

@@ -72,6 +72,7 @@ Art.Icons = {
 	tower_frost = "140456354843254",
 	tower_storm = "138499479214660",
 	tower_ballista = "109131683987177",
+	tower_barricade = "131867274898781",
 	hero_swordmaster = "107097240985907",
 	hero_hunter = "77953179182389",
 	hero_mage = "99257200114899",

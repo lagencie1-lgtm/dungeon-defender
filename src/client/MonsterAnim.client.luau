@@ -24,7 +24,9 @@ local RAD = math.pi / 180
 local ZERO = Vector3.zero
 -- the rig's bones, by the name used in MonsterMoves (the bone's own name without dots or underscores)
 local JOINTS = { "Root", "Hips", "Spine", "Chest", "Neck", "Head", "UpperArmL", "LowerArmL", "HandL", "UpperArmR",
-	"LowerArmR", "HandR", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR" }
+	"LowerArmR", "HandR", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR",
+	-- optional (rig_monster.py adds them when the model has them): a tail of three and a pair of wings
+	"Tail1", "Tail2", "Tail3", "WingL", "WingR" }
 local NEEDED = { "Root", "Hips", "Chest", "Head", "UpperLegL", "LowerLegL", "FootL", "UpperLegR", "LowerLegR", "FootR" }
 
 -------------------------------------------------------------------------------
@@ -353,6 +355,22 @@ local function animate(st, dt, now)
 	local still = 1 - math.min(w, 1)
 	local breath = math.sin(now * 2 * math.pi * Moves.Idle.BreathHz + st.breath) * Moves.Idle.BreathDeg * still
 	pose.Chest += Vector3.new(breath, 0, 0)
+
+	-- a tail swishes from side to side, each bone a little later than the one before; wings beat (only on rigs
+	-- that have them)
+	if st.joints.Tail1 then
+		local T = Moves.Tail
+		for n = 1, 3 do
+			local a = math.sin(now * 2 * math.pi * T.Hz + st.breath - n * T.Lag) * T.Sway * (1 + 0.6 * math.min(w, 1))
+			pose["Tail" .. n] = Vector3.new(T.Lift * (n == 1 and 1 or 0), a, 0)
+		end
+	end
+	if st.joints.WingL then
+		local F = Moves.Wings
+		local beat = math.sin(now * 2 * math.pi * F.Hz + st.breath) * F.Flap
+		pose.WingL = Vector3.new(0, 0, F.Open + beat)
+		pose.WingR = Vector3.new(0, 0, F.Open + beat)
+	end
 
 	-- the attack while bashing, on this monster's own beat
 	if model:GetAttribute("Bashing") and not dead then

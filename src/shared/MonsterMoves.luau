@@ -56,6 +56,11 @@ MonsterMoves.Idle = {
 	ArmOut = 8,
 }
 
+-- a tail (Tail1-3): swishes side to side, each bone Lag radians behind the one before, wider while moving
+MonsterMoves.Tail = { Sway = 12, Hz = 0.9, Lag = 0.7, Lift = 6 }
+-- wings (Wing L/R): held a little open, beating
+MonsterMoves.Wings = { Open = 8, Flap = 16, Hz = 2.2 }
+
 -- the head trails the body's bob and turns on a loose spring (overlap)
 MonsterMoves.HeadLag = { Hz = 4.5, Damping = 0.45, Pitch = 0.6, PerBob = -1.2 } -- PerBob: degrees per stud/s of bob
 

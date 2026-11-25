@@ -100,7 +100,10 @@ if tris > MAX_TRIS:
 lo = Vector([min(v.co[i] for v in me.vertices) for i in range(3)])
 hi = Vector([max(v.co[i] for v in me.vertices) for i in range(3)])
 k = HEIGHT / (hi.z - lo.z)
-me.transform(Matrix.Diagonal((k, k, k, 1)) @ Matrix.Translation((-(lo.x + hi.x) / 2, -(lo.y + hi.y) / 2, -lo.z)))
+# centred on where it stands (the lowest tenth: feet), not on its box: a long tail would pull the box back
+low = [v.co for v in me.vertices if v.co.z < lo.z + (hi.z - lo.z) * 0.1]
+cx_, cy_ = sum(c.x for c in low) / len(low), sum(c.y for c in low) / len(low)
+me.transform(Matrix.Diagonal((k, k, k, 1)) @ Matrix.Translation((-cx_, -cy_, -lo.z)))
 me.update()
 H = HEIGHT
 P = [v.co.copy() for v in me.vertices]
@@ -400,6 +403,53 @@ for side, s in (("L", 1), ("R", -1)):
     bone("UpperLeg." + side, hip, knee, "Hips", roll_up=FWD)
     bone("LowerLeg." + side, knee, ankle, "UpperLeg." + side, True, FWD)
     bone("Foot." + side, ankle, toe, "LowerLeg." + side, True, Vector((0, 0, 1)))
+# a tail: mesh well behind the hips, low down (a devil's tail); a chain of 3 bones from the root out
+def behind_back(z):
+    ps = [p for p in P if abs(p.z - z) < 0.04 * H and abs(p.x) < 0.12 * H]
+    return max(p.y for p in ps) if ps else 0.0
+
+
+TAIL_V, WING_V = [], {"L": [], "R": []}
+# (the back is measured at the chest, where no tail hangs; the tail lies low behind it)
+back_ref = behind_back(chest_z)
+for i, p in enumerate(P):
+    if p.z < chest_z and p.y > back_ref + 0.1 * H and abs(p.x) < 0.3 * H:
+        TAIL_V.append(i)
+if len(TAIL_V) < 20:
+    TAIL_V = []
+# wings: out past the shoulders, from the armpits up (arms hang below; wings spread out at shoulder height)
+for i, p in enumerate(P):
+    s = "L" if p.x > 0 else "R"
+    if i not in TAIL_V and armpit_z[s] - 0.02 * H < p.z < neck_z + 0.15 * H             and abs(p.x) > abs(shoulders[s].x) + 0.06 * H and p.y > shoulders[s].y - 0.02 * H:
+        WING_V[s].append(i)
+for s in ("L", "R"):
+    if len(WING_V[s]) < 20:
+        WING_V[s] = []
+TAIL_SET = set(TAIL_V)
+WING_SET = set(WING_V["L"]) | set(WING_V["R"])
+if TAIL_V:
+    pts = [P[i] for i in TAIL_V]
+    # the chain starts at the base of the spine (where the tail leaves the body), not at the first tail vertex
+    base = Vector((0, back_ref, hip_z))
+    root = min(pts, key=lambda p: (p - base).length)
+    far = sorted(pts, key=lambda p: (p - root).length)
+    joints = [base]
+    for q in (0.33, 0.66, 1.0):
+        sel = far[int(len(far) * (q - 0.33)):max(int(len(far) * q), 1)]
+        joints.append(mean(sel[-max(1, len(sel) // 4):]))
+    parent = "Hips"
+    for n in range(3):
+        bone("Tail%d" % (n + 1), joints[n], joints[n + 1], parent, n > 0, Vector((0, 0, 1)))
+        parent = "Tail%d" % (n + 1)
+    log("tail: %d vertices, 3 bones" % len(TAIL_V))
+for s in ("L", "R"):
+    if WING_V[s]:
+        pts = [P[i] for i in WING_V[s]]
+        rootp = min(pts, key=lambda p: abs(p.x))
+        tip = max(pts, key=lambda p: (p - rootp).length)
+        bone("Wing." + s, rootp, tip, "Chest", roll_up=Vector((0, 0, 1)))
+        log("wing %s: %d vertices" % (s, len(pts)))
+
 if weapon:
     wp = [P[i] for i in weapon]
     far = max(wp, key=lambda p: (p - hr).length)
@@ -422,6 +472,10 @@ for n in BONES:
         GROUP[n] = "head"
     elif n == "Weapon":
         GROUP[n] = "weapon"
+    elif n.startswith("Tail"):
+        GROUP[n] = "tail"
+    elif n.startswith("Wing"):
+        GROUP[n] = "wing" + n[-1]
     else:
         GROUP[n] = "torso"
 
@@ -482,6 +536,9 @@ for _pass in range(3):  # a cut changes the next binding a little: look again un
         if arm and (other.startswith("leg") or other == "torso"):
             if max(P[a].z, P[b].z) < armpit_z[arm[-1]] - 0.15 * H:
                 cut.append(e.index)
+        # a wing welded to the arm next to it (a wing grows from the back, never from the arm)
+        elif arm and other.startswith("wing"):
+            cut.append(e.index)
         # (the jaw welded to the shoulder pads is NOT cut: tried 2026-11-25, it opened holes between the pads and
         # the vest collar when the arms rose; the head mask in allowed() keeps the pads off the head instead)
     if not cut:
@@ -546,6 +603,10 @@ def allowed(i):
     side = "L" if p.x > 0 else "R"
     if i in WEAPON_V:
         return {"Weapon"}
+    if i in TAIL_SET:
+        return {"Hips", "Tail1", "Tail2", "Tail3"}
+    if i in WING_SET:
+        return {"Chest", "Wing." + ("L" if P[i].x > 0 else "R")}
     if i in HEAD_V:
         return {"Head"}
     g = GROUPS[i]

@@ -1,4 +1,4 @@
-"""Tones the pencil points of a barricade's paint down to a darker, warmer wood after the grade (on a phone the bright
+"""Tones the pencil points (or, given spheres, the leafy crown) of a barricade's paint down to a darker, warmer wood after the grade (on a phone the bright
 points stole the eye). Only texels inside a point's cone change.
 Run: blender -b -P tone_tips.py -- model.fbx paint.png posts.json out.png [r g b]"""
 import json
@@ -36,7 +36,13 @@ changed = np.zeros((h, w), dtype=bool)
 
 
 def in_tip(p):
-    for x, y, r, top, tip in posts:
+    for entry in posts:
+        if len(entry) == 4:   # a sphere [x, y, z, radius] (the Rootwall's leafy crown)
+            x, y, z, rad_ = entry
+            if (p[0] - x) ** 2 + (p[1] - y) ** 2 + (p[2] - z) ** 2 <= rad_ * rad_:
+                return True
+            continue
+        x, y, r, top, tip = entry
         if top - tip - 0.03 <= p[2] <= top + 0.03:
             rr = r * 1.06 * max(0.0, (top - p[2]) / tip) + 0.04
             if math.hypot(p[0] - x, p[1] - y) <= rr:

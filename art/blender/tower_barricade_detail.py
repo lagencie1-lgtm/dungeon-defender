@@ -102,7 +102,7 @@ DEFAULTS = {
     "l2": dict(BASE),
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
                   stake_lean=-0.3, front_tilt=38, rail_h=1.3, stake_out=0.3),
-    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0, pour_in=0.4),
+    "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0, pour_in=0.4, wind_drop=0.0),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -489,13 +489,16 @@ if stage == "root":
         py, ra = (R * P["post_fwd"] if P["single"] else s * post_y(r)), r + 0.22   # (round the real post: one per side now)
         a_end = rad(90) if s > 0 else rad(270)
         a0 = a_end - turns * 2 * math.pi
-        pts = [(px + math.cos(a0) * ra * 1.4, -s * 0.15, top_c + 0.1)]
+        # (Rootwall round 9: the roots wind round the posts from below the upper iron band, so the pencil points and
+        # the band stand clear above them like the picture)
+        start = top_c - P["wind_drop"]
+        pts = [(px + math.cos(a0) * ra * 1.4, -s * 0.15, start + 0.1)]
         radii = [r0]
         n = int(turns * 14)
         for k in range(n + 1):
             t = k / n
             a = a0 + t * (a_end - a0)
-            pts.append((px + math.cos(a) * ra, py + math.sin(a) * ra, top_c - 0.1 - t * (top_c - 0.6)))
+            pts.append((px + math.cos(a) * ra, py + math.sin(a) * ra, start - 0.1 - t * (start - 0.6)))
             radii.append(r0 * (1 - 0.2 * t))
         out_dy = post_y(r) + ra - R      # the ground part starts in front of the post, not back at the wall
         splay(name, pts, radii, px + 0.2 * (1 if px > 0 else -1), s, r0 * 0.85, 1 if px > 0 else -1,
@@ -567,6 +570,13 @@ if stage == "root":
     fork = Vector((sx + 0.06, 0.0, top_c + h))
     tube("Sapling", [(sx, 0.0, top_c - 0.15), (sx + 0.12, 0.04, top_c + h * 0.5), fork], [0.26, 0.2, 0.15], ROOT_T, "bark", 1.2, verts=8)
     crown = P["crown"]
+    if os.environ.get("HTD_PRINT_CROWN"):   # (scripts: art/blender/tone_tips.py greens the leaves with it)
+        # (one ball per leafy tuft, so the post tips beside the tree stay out of it)
+        tufts = [[sx + 0.06 + dx * crown, dy * crown, top_c + h + dz * crown + 0.2, 0.6 * crown + 0.1]
+                 for dx, dy, dz in ((-1.0, 0.15, 0.45), (0.95, -0.1, 0.55), (0.1, 0.75, 0.65), (-0.1, -0.7, 0.75),
+                                    (-0.6, -0.4, 1.05), (0.55, 0.35, 1.0))]
+        print("CROWN " + json.dumps(tufts), flush=True)
+        os._exit(0)
     for k, (dx, dy, dz) in enumerate(((-1.0, 0.15, 0.45), (0.95, -0.1, 0.55), (0.1, 0.75, 0.65), (-0.1, -0.7, 0.75),
                                       (-0.6, -0.4, 1.05), (0.55, 0.35, 1.0))):
         dx, dy, dz = dx * crown, dy * crown, dz * crown

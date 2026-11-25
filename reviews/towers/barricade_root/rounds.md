@@ -27,3 +27,18 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
   IoU 90.1%  width profile off 16.6%  region colour dE 8.7  (pixel dE 50.1)  detail 27.9% vs picture 23.4% (ratio 1.19)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 3 (L 49/47)  lookout 4 (L 37/34)  wall 5 (L 36/40)  footing 9 (L 50/57)
 - best: round 8 (outline 90.1%, all measured gates pass; blind judge not available yet: Gemini's free quota)
+- round 9: roots wind from below the upper band, tall clear pencil tips (rule tip >= 1.2), fresh repaint, tips toned, leaves graded to a deeper green
+  IoU 89.3%  width profile off 16.0%  region colour dE 10.6  (pixel dE 53.4)  detail 27.1% vs picture 23.4% (ratio 1.16)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/45)  lookout 4 (L 37/34)  wall 2 (L 36/38)  footing 6 (L 50/55)
+- round 10: round 9's paintings re-projected; tips left as painted (pale wood like the picture); only the leafy tufts graded to a deeper green
+  IoU 89.3%  width profile off 16.0%  region colour dE 9.8  (pixel dE 53.0)  detail 27.5% vs picture 23.4% (ratio 1.17)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 49/47)  lookout 4 (L 37/34)  wall 2 (L 36/38)  footing 6 (L 50/55)
+- round 11: refit with post_up 0.525 (tips still 1.27 tall); paintings reused; leafy tufts graded deeper green
+  IoU 89.6%  width profile off 15.5%  region colour dE 9.6  (pixel dE 52.7)  detail 27.5% vs picture 23.4% (ratio 1.17)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 49/47)  lookout 4 (L 37/34)  wall 2 (L 36/38)  footing 7 (L 50/55)
+- round 12: fresh Codex paint of the refit (taller, freer tips); leafy tufts graded deeper green
+  IoU 89.6%  width profile off 15.5%  region colour dE 9.3  (pixel dE 53.4)  detail 27.8% vs picture 23.4% (ratio 1.19)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/46)  lookout 4 (L 37/34)  wall 2 (L 36/37)  footing 5 (L 50/54)
+- round 13: round 12's paintings; smaller leaf balls so the right post tip keeps its wood
+  IoU 89.6%  width profile off 15.5%  region colour dE 8.9  (pixel dE 53.2)  detail 27.9% vs picture 23.4% (ratio 1.19)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 49/47)  lookout 4 (L 37/34)  wall 2 (L 36/37)  footing 5 (L 50/54)

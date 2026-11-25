@@ -56,7 +56,7 @@ RULES = {"ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half
 for _k in ("barricade_l2", "barricade_thorn", "barricade_root"):   # the shield stays inside the bay between the posts
     RULES[_k] = [lambda p: p["shield"] + 0.15 < p["big_x"] - p["big_r"], lambda p: p["big_r"] > p["log_r"]]
 # the Rootwall's pencil tips stand clear above the top log, like the picture (the loop sank them under the moss)
-RULES["barricade_root"] = RULES["barricade_root"] + [lambda p: p["post_up"] >= 0.25, lambda p: p["crown"] <= 1.0]
+RULES["barricade_root"] = RULES["barricade_root"] + [lambda p: p["post_up"] >= 0.5, lambda p: p["tip"] >= 1.1, lambda p: p["crown"] <= 1.0]
 RULES["barricade_l1"] = [lambda p: p["big_r"] > p["log_r"] * 0.8]
 
 

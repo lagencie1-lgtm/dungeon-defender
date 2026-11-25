@@ -150,7 +150,7 @@ local LEVEL_LOOKS = {
 	FrostCrystal = {
 		{ Name = "tower_frost_l1", Height = 9.82, Muzzle = Vector3.new(0.00, 8.05, 0.00) },
 		{ Name = "tower_frost_l2", Height = 9.16, Muzzle = Vector3.new(0.00, 6.87, 0.00) },
-		{ Name = "tower_frost_l3", Height = 10.18, Muzzle = Vector3.new(0.00, 7.83, 0.00) },
+		{ Name = "tower_frost_l3", Height = 11.81, Muzzle = Vector3.new(0.00, 8.04, 0.00) },
 	},
 	StormObelisk = {
 		{ Name = "tower_storm_l1", Height = 5.43, Muzzle = Vector3.new(0.00, 4.32, 0.00) },

@@ -55,7 +55,7 @@ def main():
         if parts[0] != "mask":
             continue
         best, seen = None, []
-        for dt in np.arange(-0.9, 0.61, 0.15):
+        for dt in np.arange(-2.4, 1.01, 0.15):   # (drift seen up to -1.5 s, 2026-11-25)
             img = frame(ff, base + ".mp4", t + dt, os.path.join(out, "_frame.png"))
             n = int(magenta(img).sum())
             seen.append((dt, n))
@@ -131,6 +131,19 @@ def main():
         res["stands_out"][f"{key[0]} {key[1]}"] = round(de, 1)
         if de < 20:
             res["fails"].append(f"{key[0]} level {key[1]} stands out by dE {de:.1f} from what is round it (needs 20)")
+    # bright yellow-orange share (coordinator 2026-11-25, the Flame Cannon's level 3 read as a yellow blob): within the
+    # tower's outline in its phone view, pixels that are vivid and bright yellow-orange; 15 % or less
+    res["bright"] = {}
+    for key, m in masks.items():
+        if key not in views or m.sum() < 50:
+            continue
+        hsv = cv2.cvtColor(views[key], cv2.COLOR_RGB2HSV)
+        h, s_, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+        bright = (h >= 10) & (h <= 34) & (s_ > 130) & (v > 200)
+        share = round(100 * float((bright & m).sum() / m.sum()), 1)
+        res["bright"][f"{key[0]} {key[1]}"] = share
+        if share > 15:
+            res["fails"].append(f"{key[0]} level {key[1]}: {share}% of it is bright yellow-orange (needs 15% or less)")
     json.dump(res, open(os.path.join(out, "rules.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != "fails"}, indent=1))
     print("RULES", "PASS" if not res["fails"] else "FAIL", res["fails"])

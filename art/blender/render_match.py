@@ -57,6 +57,7 @@ scene = bpy.context.scene
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "FLAT" # albedo only: the pictures carry their own painted light
 scene.display.shading.color_type = "TEXTURE"
+scene.display.shading.show_backface_culling = bool(os.environ.get("HTD_CULL"))   # (HTD_CULL=1: one-sided faces as the game draws them)
 scene.render.resolution_x = scene.render.resolution_y = size
 scene.render.film_transparent = True
 scene.view_settings.view_transform = "Standard"  # the paint as painted (the default AgX tone curve washes it grey)

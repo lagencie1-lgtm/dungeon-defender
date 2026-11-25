@@ -29,6 +29,7 @@ rad = math.radians
 IRON = (0.42, 0.42, 0.45)
 IRON_DARK = (0.28, 0.28, 0.31)
 BRONZE = (0.62, 0.34, 0.2)
+BRONZE_DARK = (0.4, 0.24, 0.15)   # (level 3's dark bronze-brown barrels and rims, as painted)
 FIRE = (1.0, 0.55, 0.12)
 COAL = (0.16, 0.15, 0.16)
 
@@ -61,7 +62,7 @@ def aim_frame(z, tilt, side=0.0):
     return m @ tilt_m @ rot
 
 
-def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True):
+def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=False, core=False):
     """a cannon barrel along its own +Z: a slightly tapering tube, a thick banded mouth, bands, a rivet row, the
     fire inside the mouth (a glowing disc)"""
     with K.atlas("barrel"):
@@ -70,22 +71,51 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True):
         # (round 2, 2026-11-24: smooth metal, no texture pattern: the brass pattern read as wicker on the barrels)
         o = K.lathe(name, prof, color, key=None, verts=24, tile=1.0, cap=False)
         o.matrix_world = frame
-        mouth = K.lathe(name + "Mouth", [(r * 0.75, length * 0.6), (r * 1.18, length * 0.6), (r * 1.22, length * 0.82), (r * 1.08, length * 0.9), (r * 0.8, length * 0.88)],
-                        IRON_DARK if color == IRON else K.BRASS, key=None, verts=24, cap=False)
+        if thin or core:
+            # (profile from the bottom up so its faces look INTO the bore: one-sided faces turned outward were not drawn
+            # from the front, and the barrel's painted inside showed through)
+            bore = K.lathe(name + "Bore", [(r * 0.8, length * 0.87), (r * 0.8, length * 0.62)], (0.1, 0.06, 0.05), key=None, verts=20, cap=False)
+            bore.matrix_world = frame
+            # (its own unlit dark part, not painted: the painter filled the bore with fire, a yellow disc on the phone)
+            S.glow(bore, (0.08, 0.05, 0.04))
+            # (and closed a little way in by a dark disc, faces both ways, so nothing painted shows inside the bore)
+            for k_, zz in enumerate((0.62, 0.621)):
+                plug = K.lathe(name + f"Plug{k_}", [(0.0, length * zz), (r * 0.82, length * zz)] if k_ else [(r * 0.82, length * zz), (0.0, length * zz)],
+                               (0.08, 0.05, 0.04), key=None, verts=20, cap=False)
+                plug.matrix_world = frame
+                S.glow(plug, (0.08, 0.05, 0.04))
+        if thin:
+            # (2026-11-25, level 3 read as a yellow blob on the phone: a thin dark bronze rim with one gold band, a
+            # dark bore lining, as painted; not a wide flat gold ring)
+            # (only the outer lip: its inner wall was painted as fire and showed as a yellow ring inside the bore)
+            mouth = K.lathe(name + "Mouth", [(r * 0.96, length * 0.6), (r * 1.06, length * 0.6), (r * 1.1, length * 0.8), (r * 1.02, length * 0.87), (r * 0.8, length * 0.87)],
+                            BRONZE_DARK, key=None, verts=24, cap=False)
+            # (cap=False: a closed band put a solid disc across the barrel, which the painter painted as fire and which
+            # filled the whole opening on the phone)
+            ring = K.lathe(name + "MouthBand", [(r * 1.08, length * 0.66), (r * 1.13, length * 0.68), (r * 1.13, length * 0.74), (r * 1.08, length * 0.76)], K.BRASS, key=None, verts=24, cap=False)
+            ring.matrix_world = frame
+        else:
+            mouth = K.lathe(name + "Mouth", [(r * 0.75, length * 0.6), (r * 1.18, length * 0.6), (r * 1.22, length * 0.82), (r * 1.08, length * 0.9), (r * 0.8, length * 0.88)],
+                            IRON_DARK if color == IRON else K.BRASS, key=None, verts=24, cap=False)
         # the closed back end of the barrel
         back = K.lathe(name + "Breech", [(0.01, -length * 0.42), (r * 0.6, -length * 0.4), (r * 0.85, -length * 0.35)], color, key=None, verts=24, cap=False)
         back.matrix_world = frame
         mouth.matrix_world = frame
         for k in range(bands):   # a few broad gold bands
             zb = -length * 0.2 + k * length * 0.32
-            b = K.lathe(f"{name}Band{k}", [(r * 1.02, zb), (r * 1.1, zb + 0.05), (r * 1.1, zb + 0.32), (r * 1.02, zb + 0.37)], K.BRASS, key=None, verts=24)
+            b = K.lathe(f"{name}Band{k}", [(r * 1.02, zb), (r * 1.1, zb + 0.05), (r * 1.1, zb + 0.32), (r * 1.02, zb + 0.37)], K.BRASS, key=None, verts=24, cap=False)
             b.matrix_world = frame
         if rivets:
             for k in range(10):
                 ang = 2 * math.pi * k / 10
                 rv = K.ball(f"{name}Rivet{k}", (math.cos(ang) * r * 1.12, math.sin(ang) * r * 1.12, -length * 0.02), 0.09, K.BRASS, seg=6)
                 rv.matrix_world = frame @ rv.matrix_world
-    if fire:
+    if fire and (thin or core):
+        # (the glow only deep in the bore: a small orange core about a third of the bore's width)
+        # (a plain orange ball, not a glowing one: in the game a glowing core's bloom filled the whole dark bore)
+        core = K.ball(name + "Core", (0, 0, length * 0.66), r * 0.27, (0.95, 0.45, 0.1), seg=10)
+        core.matrix_world = frame @ core.matrix_world
+    elif fire:
         import bmesh
         bm = bmesh.new()
         bmesh.ops.create_circle(bm, cap_ends=True, segments=16, radius=r * 0.78)
@@ -124,15 +154,16 @@ def drum(z0, r, h, vents=False, bands=1, taper=1.0):
         zb = z0 + h * (0.25 + 0.5 * k / max(1, bands - 1)) if bands > 1 else z0 + h * 0.55
         rb = r + (r * taper - r) * (zb - z0) / h
         K.brass_band(f"DrumBand{z0:.1f}_{k}", zb, rb + 0.02, 0.42, 14)
-    if vents:   # glowing arched windows round the front (round 2: three tall arches, as painted)
-        for s in (-1, 0, 1):
-            a = rad(FRONT + s * 34)
+    if vents:   # glowing arched windows (2026-11-25: as painted, a group of three tall arches either side of the front;
+        # the windows are the glowing part of level 3, not the muzzles)
+        for s in (-1, 1):
+            a = rad(FRONT + s * 32)
             zc = z0 + h * 0.32
             rr = r + (r * taper - r) * 0.32 + 0.04
             p = Vector(K.at(a, rr, zc))
             t = Vector((-math.sin(a), math.cos(a), 0))
-            for j in range(2):
-                q = p + t * ((j - 0.5) * 0.36)
+            for j in range(3):
+                q = p + t * ((j - 1) * 0.36)
                 K.ball(f"Arch{s}{j}", tuple(q + Vector((0, 0, 0.35))), 0.15, FIRE, (1, 0.6, 1), seg=8)
                 bpy.ops.mesh.primitive_cube_add(size=1, location=q)
                 g = bpy.context.active_object
@@ -183,7 +214,7 @@ elif level == 2:
         c_ = K.ball(f"Coal{k}", (back.x + ((k % 3) - 1) * 0.42, back.y + (k // 3 - 0.5) * 0.45, top + 2.1), 0.26, COAL, (1, 1, 0.8), seg=7)
         if k % 2:
             S.glow(c_, FIRE)   # (glowing coals among the dark ones)
-    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"], BRONZE)
+    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"], BRONZE, core=True)   # (2026-11-25: glow only deep in the bore; 21.7 % bright yellow on the phone before)
     muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 0.85))]
 else:
     drum(fz, P["drum_r"], P["drum_h"], vents=True, bands=2, taper=0.72)
@@ -205,7 +236,7 @@ else:
     muzzles = []
     for s in (-1, 1):
         fr = aim_frame(P["barrel_z"], P["tilt"], side=s * P["barrel_r"] * 1.3)   # (two barrels side by side with a gap, not one)
-        barrel(f"Barrel{s}", fr, P["barrel_r"], P["barrel_len"], BRONZE, bands=2, rivets=False)
+        barrel(f"Barrel{s}", fr, P["barrel_r"], P["barrel_len"], BRONZE_DARK, bands=3, rivets=False, thin=True)
         muzzles.append(fr @ Vector((0, 0, P["barrel_len"] * 0.85)))
 
 for m in muzzles:   # Blender (x, y, z) -> the game's (-x, z, y)

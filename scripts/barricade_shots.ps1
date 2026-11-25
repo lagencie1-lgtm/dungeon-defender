@@ -22,12 +22,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "rojo build failed" }
     $studio = (Get-ChildItem "$env:LOCALAPPDATA\Roblox\Versions\*\RobloxStudioBeta.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
     $logDir = "$env:LOCALAPPDATA\Roblox\logs"
-    $before = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    # (by creation time: a Studio left open elsewhere keeps writing its own older log)
+    $before = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object CreationTime -Descending | Select-Object -First 1
     $proc = Start-Process $studio -ArgumentList "`"$place`"" -PassThru
     $log = $null
     for ($i = 0; $i -lt 90 -and -not $log; $i++) {
         Start-Sleep 1
-        $new = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $new = Get-ChildItem "$logDir\*Studio*.log" | Sort-Object CreationTime -Descending | Select-Object -First 1
         if ($new -and (-not $before -or $new.FullName -ne $before.FullName)) { $log = $new.FullName }
     }
     if (-not $log) { throw "no Studio log" }

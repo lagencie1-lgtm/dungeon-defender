@@ -116,6 +116,9 @@ local goblins = {}
 for i = 1, 6 do
 	table.insert(goblins, EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5)))
 end
+-- a hurt goblin shows its own health bar (EnemyService.HealthBar): if no bar shows in a capture either, the capture
+-- misses BillboardGuis, not the wall
+task.wait(1)
 for _ = 1, 60 do
 	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.8 then
 		break

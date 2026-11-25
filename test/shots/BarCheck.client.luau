@@ -37,10 +37,14 @@ local function check()
 			local inside = onScreen and p.X > 0 and p.X < vp.X and p.Y > 0 and p.Y < vp.Y
 			local covers = {}
 			for _, g in player.PlayerGui:GetDescendants() do
-				if g:IsA("GuiObject") and visible(g) and g.BackgroundTransparency < 0.95 and g.AbsoluteSize.X > 30 and g.AbsoluteSize.Y > 20 then
+				-- a panel: a frame with a background, a picture (9-slice banners have a see-through background), or text
+				local drawn = g:IsA("GuiObject") and (g.BackgroundTransparency < 0.95
+					or ((g:IsA("ImageLabel") or g:IsA("ImageButton")) and g.Image ~= "" and g.ImageTransparency < 0.95)
+					or ((g:IsA("TextLabel") or g:IsA("TextButton")) and g.Text ~= "" and g.TextTransparency < 0.95))
+				if drawn and visible(g) and g.AbsoluteSize.X > 30 and g.AbsoluteSize.Y > 12 then
 					local a0, b0, a1, b1 = rectOf(g)
 					if a0 < x1 and a1 > x0 and b0 < y1 and b1 > y0 then
-						table.insert(covers, g:GetFullName():gsub("^.-PlayerGui%.", ""))
+						table.insert(covers, (g:GetFullName():gsub("^.-PlayerGui%.", "")))
 					end
 				end
 			end

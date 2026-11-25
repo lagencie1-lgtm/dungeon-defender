@@ -9,7 +9,8 @@ Ratings (judged as a 9-13 year old on that device) are in `ratings.json`.
 The checks: **Cut** (nothing outside its screen area), **TV safe** (controller: inside the middle 90%), **Thumbs**
 (touch: no button on the thumbstick or jump button), **Tap** (touch: 44 px always on screen, 36 px in a panel),
 **Text** (11 px phone/tablet, 12 PC, 18 per 1080 lines TV), **Fits** (no cut text), **Overlap** (no two buttons on
-each other).
+each other), **Road** (in a run, at most 8% of the road ahead, the middle 40% of the width 18-45% down the screen,
+under our UI, see-through chips and text counted; orange outline).
 
 ## Emulator ids used
 
@@ -74,6 +75,39 @@ listed below that the checks don't count.
   path).
 - `autotest.sh` and `studio_test.ps1` picked the newest Studio log, which can be another open Studio's: one run
   "finished" at once on an old log. They now take the log their own Studio made.
+
+## Road ahead (2026-11-25, second pass)
+
+The orange RoadAhead box sits over the lane past the hero, the stretch 30+ studs down the road (the bridge and the
+lane behind it on the Cursed Forest run camera), so I left the box as it was.
+
+| key | Road before (Run / Defender) | after |
+|---|---|---|
+| iphone_se | 30% / 33% | 0 problems |
+| iphone_new | 22% / 27% | 0 problems |
+| android_old | 33% / 33% | 0 problems |
+| android_new | 33% / 33% | 0 problems |
+| ipad_old | ok / 22% | 0 problems |
+| ipad_pro | ok / 18% | 0 problems |
+| xbox_1080 | 38% / 38% | 0 problems |
+| xbox_4k | (not in the first list) | 0 problems |
+| tv_touch | (not in the first list) | 0 problems |
+| pc_laptop | 21% / 21% | 0 problems |
+
+What covered it and what I changed:
+- **Touch (phones, tablets, touch TV): the run bar** (wave, mana, build points, portal) sat under Roblox's top bar,
+  right over the road. It now sits up in the band of Roblox's top bar, whose middle is free (Roblox's buttons are at
+  its left end). It has its own screen, `RunBar`, with DeviceSafeInsets, so it still keeps out of the notch and the
+  home bar (the mobile test's rule is about those). Nothing was dropped from it. Mana orbs still fly to its mana line
+  (ManaFly converts between the two screens). The phone run screen's UI cover went from 30% to 23%.
+- **Tablets: the defender panel** sat in the road box: on a tablet it now sits just above the defender cards (phones
+  keep it under the wave buttons, clear of the jump button). It is placed again when the screen size changes, not
+  only when the HUD scale does (the iPad Pro kept its old place, its scale stays at the 1.3 cap).
+- **PC and controller:** the run bar moved to the top-right corner, Start wave and Speed under it, and the goal chip
+  to the left of the bar at the top. They had sat in the middle over the road (Start wave, Speed, the bar and the chip).
+- The phones' goal chip hides 5 s after it changes (commit 0acab79).
+- The Cut check now measures each screen in its own coordinates (a screen that reaches into the top bar band starts
+  above the usual (0,0)).
 
 ## What is left (not fixed)
 

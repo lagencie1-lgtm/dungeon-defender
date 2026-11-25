@@ -377,12 +377,19 @@ end
 local function runViewShots(kind, level, tower, base)
 	-- (2026-11-25: right after an upload the real look can take a while to load; the view and outline shots wait
 	-- until the stand-in is hidden, up to 15 s, and say so in the marks when it never was)
-	local standIn = tower:FindFirstChild("StandIn")
-	local waited = 0
-	while standIn and standIn:GetAttribute("Hidden") ~= true and waited < 15 do
-		waited += task.wait(0.25)
+	-- (looked up fresh each time and hidden for half a second running: right after an upgrade the server swaps in a
+	-- new stand-in, and the old, already hidden one let the shots start while the new one still showed)
+	local function hidden()
+		local s = tower:FindFirstChild("StandIn")
+		return s == nil or s:GetAttribute("Hidden") == true
 	end
-	if standIn and standIn:GetAttribute("Hidden") ~= true then
+	local waited, steady = 0, 0
+	while steady < 0.5 and waited < 15 do
+		local dt = task.wait(0.1)
+		waited += dt
+		steady = hidden() and steady + dt or 0
+	end
+	if not hidden() then
 		mark(string.format("look not loaded %s %d", kind, level))
 	end
 	local rc = Config.RunCamera

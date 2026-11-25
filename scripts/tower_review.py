@@ -19,6 +19,21 @@ import tower_painterly as TP  # noqa: E402
 KINDS = {"flame": "FlameCannon", "frost": "FrostCrystal", "storm": "StormObelisk", "ballista": "Ballista"}
 
 
+def save_safe(img, path):
+    """(2026-11-25: Windows now and then refuses to open a picture for writing just after something read it, Errno 22;
+    written to a new name and moved into place, with a few tries)"""
+    import time
+    tmp = path[:-4] + "_new.png"
+    for tries in range(6):
+        try:
+            img.save(tmp)
+            os.replace(tmp, path)
+            return
+        except OSError:
+            time.sleep(2)
+    raise OSError("could not write " + path)
+
+
 def main():
     film = sys.argv[1]
     kinds = sys.argv[2:] or list(KINDS)
@@ -61,7 +76,7 @@ def main():
             d.text((6, 8), f"{name}: target painting", fill="black")
             d.text((a.width + 26, 8), "model (its paint, the painting's angle)", fill="black")
             d.text((6, 22), txt[:150], fill="black")
-            sheet.save(os.path.join(out, f"{kind}_l{level}_sheet.png"))
+            save_safe(sheet, os.path.join(out, f"{kind}_l{level}_sheet.png"))
             subprocess.run([sys.executable, os.path.join(HERE, "turntable16.py"), fbx, os.path.join(out, f"_{kind}_l{level}_t16"), "paint"],
                            capture_output=True)
             t16 = os.path.join(out, f"_{kind}_l{level}_t16_paint_turntable16.png")

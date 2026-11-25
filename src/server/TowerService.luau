@@ -143,9 +143,9 @@ local LEVEL_LOOKS = {
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
-		{ Name = "tower_flame_l1", Height = 5.38, Muzzle = Vector3.new(-1.51, 4.15, -0.85) },
+		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
 		{ Name = "tower_flame_l2", Height = 5.70, Muzzle = Vector3.new(-2.08, 4.53, 1.62) },
-		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.70, 5.80, -2.28), Muzzles = { Vector3.new(-2.70, 5.80, -2.28), Vector3.new(-3.51, 5.80, 0.39) } },
+		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.01, 5.76, -2.81), Muzzles = { Vector3.new(-2.01, 5.76, -2.81), Vector3.new(-3.44, 5.76, -0.33) } },
 	},
 	FrostCrystal = {
 		{ Name = "tower_frost_l1", Height = 9.82, Muzzle = Vector3.new(0.00, 8.05, 0.00) },

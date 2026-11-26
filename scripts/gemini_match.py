@@ -6,6 +6,10 @@ HTD_JUDGE=codex asks Codex instead (the owner's logged-in Codex CLI, free; it sh
 it sparingly and never while another thread paints): the same rubric and the same two pictures, run in an empty folder
 outside the project with a read-only sandbox, so it knows nothing about our work.
 
+Pairwise (Codex's scores are flat, its picks are not): HTD_JUDGE=codex-pair python scripts/gemini_match.py picture.png
+first.png second.png shows the picture plus the two renders in random order and asks which is closer; prints
+"PAIR <first|second>" and why.
+
 Run: python scripts/gemini_match.py picture.png render.png      (HTD_JUDGE=codex python ... for the Codex judge)"""
 import base64
 import io
@@ -49,6 +53,65 @@ def png_b64(path):
     bg = prepared(path)
     bg.save(buf, "PNG")
     return base64.b64encode(buf.getvalue()).decode()
+
+
+PAIR_PROMPT = ("Image R is a concept painting of a game asset (" + os.environ.get("HTD_SUBJECT", "a defense tower") + "). Images X and Y "
+               "are two 3D model renders meant to match it. Which of X and Y shows the same asset as R more closely: overall "
+               "shape and proportions, every part, colours and the painted surface detail? Ignore the background and "
+               "small differences in viewing angle or lighting. Reply as JSON: {\"closer\": \"X\" or \"Y\", \"margin\": "
+               "\"clear\" or \"slight\", \"why\": [at most 4 short reasons]}")
+
+
+def codex_cmd():
+    exe = sorted(glob.glob(os.path.expandvars(r"%USERPROFILE%\.vscode\extensions\openai.chatgpt-*\bin\windows-x86_64\codex.exe")))
+    if not exe:
+        return None, None
+    cmd = [exe[-1], "exec", "--skip-git-repo-check", "--sandbox", "read-only"]
+    model = "default"
+    try:   # (the owner's default model is not always served on a ChatGPT login; scripts/tower_paint.py picks the same)
+        models = json.load(open(os.path.expanduser("~/.codex/models_cache.json"), encoding="utf-8")).get("models", [])
+        slugs = [m["slug"] for m in models if m["slug"].startswith("gpt-") and "reserve" not in m["slug"]]
+        model = next((m for m in slugs if "terra" in m), slugs[0] if slugs else "default")
+        if model != "default":
+            cmd += ["-m", model]
+    except (OSError, ValueError):
+        pass
+    return cmd, model
+
+
+def codex_pair(picture, first, second):
+    """which of two candidate renders is closer to the picture (random order X / Y, no context)"""
+    cmd, model = codex_cmd()
+    if not cmd:
+        print("PAIR codex not found")
+        return
+    cands = [("first", first), ("second", second)]
+    random.shuffle(cands)
+    folder = tempfile.mkdtemp(prefix="judge_")
+    try:
+        files = []
+        for letter, path in (("R", picture), ("X", cands[0][1]), ("Y", cands[1][1])):
+            f = os.path.join(folder, letter + ".png")
+            prepared(path).save(f)
+            files += ["-i", f]
+        prompt = "The attached images are, in order, R, X and Y. " + PAIR_PROMPT + " Reply with only that JSON, nothing else."
+        r = subprocess.run(cmd + [prompt] + files, cwd=folder, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="ignore", timeout=600)
+        found = re.findall(r'\{[^{}]*"closer"[^{}]*\}', r.stdout or "", re.S)
+        if not found:
+            print("PAIR no answer: " + ((r.stdout or "") + (r.stderr or ""))[-300:].replace("\n", " "))
+            return
+        verdict = json.loads(found[-1])
+    except (subprocess.TimeoutExpired, ValueError, OSError) as e:
+        print(f"PAIR failed: {e}")
+        return
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+    names = {"X": cands[0][0], "Y": cands[1][0]}
+    pick = names.get(str(verdict.get("closer", "")).strip().upper(), "?")
+    print(f"PAIR {pick} ({verdict.get('margin')}; X was the {names['X']}, {model})")
+    for d in verdict.get("why", []):
+        print("  - " + str(d).replace(" X", " " + names["X"]).replace(" Y", " " + names["Y"]))
 
 
 def codex_judge(pics):
@@ -97,6 +160,9 @@ def codex_judge(pics):
 def main():
     pics = [("painting", sys.argv[1]), ("model", sys.argv[2])]
     random.shuffle(pics)
+    if os.environ.get("HTD_JUDGE") == "codex-pair":
+        codex_pair(sys.argv[1], sys.argv[2], sys.argv[3])
+        return
     if os.environ.get("HTD_JUDGE", "gemini") == "codex":
         codex_judge(pics)
         return

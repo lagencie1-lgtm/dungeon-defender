@@ -44,7 +44,10 @@ def main():
     strength = float(sys.argv[3]) if len(sys.argv) > 3 else 0.8
     paint = fbx[:-4] + "_paint.png"
     keep = fbx[:-4] + "_ungraded.png"
-    shutil.copy(paint, keep)
+    # from the projection itself (scripts/tower_paint.py keeps it): grading the graded paint again sharpened it twice
+    projected = fbx[:-4] + "_projected.png"
+    use = projected if os.path.exists(projected) and os.path.getmtime(projected) >= os.path.getmtime(fbx) else paint
+    shutil.copy(use, keep)
     import glob
     for skin in glob.glob(fbx[:-4] + "_paint_*.png"):   # the other parts (tower kit atlases), sharpened the same way
         other = fbx[:-4] + "_ungraded_" + skin[len(fbx[:-4] + "_paint_"):]

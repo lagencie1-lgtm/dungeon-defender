@@ -45,3 +45,9 @@ From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn
 - round 14: round 13's repaint graded with sharpening 65
   IoU 94.1%  width profile off 8.7%  region colour dE 6.1  (pixel dE 45.8)  detail 22.5% vs picture 22.5% (ratio 1.00)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 5 (L 40/37)  wall 3 (L 30/28)  footing 11 (L 32/37)
+- round 15: round 14's paintings on a fresh build (fresh plain base under the uncovered faces), graded once from the projection with sharpening 55 (round 14 was sharpened twice)
+  IoU 94.1%  width profile off 8.7%  region colour dE 5.5  (pixel dE 42.9)  detail 18.3% vs picture 22.5% (ratio 0.81)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 45/46)  lookout 1 (L 40/39)  wall 2 (L 30/30)  footing 11 (L 32/36)
+- round 16: round 15 graded once from the projection with sharpening 75
+  IoU 94.1%  width profile off 8.7%  region colour dE 5.4  (pixel dE 43.6)  detail 19.4% vs picture 22.5% (ratio 0.86)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 0 (L 45/45)  lookout 2 (L 40/39)  wall 2 (L 30/30)  footing 11 (L 32/35)

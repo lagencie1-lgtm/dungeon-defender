@@ -494,6 +494,10 @@ function TowerService.Upgrade(_player, model, branchId)
 	if not t then
 		return false, "That's not a defender"
 	end
+	if t.wall and t.wall.Broken then
+		-- (the info panel's main button rebuilds a broken barricade)
+		return TowerService.Rebuild(_player, model)
+	end
 	local info = Config.Towers[t.type]
 	local nextLevel = info.Levels[t.level + 1]
 	if not nextLevel then
@@ -927,29 +931,98 @@ local function wallBar(t)
 	end
 	local share = math.clamp(t.wall.Health / t.wall.MaxHealth, 0, 1)
 	local fill = gui.Back.Fill
-	fill.Size = UDim2.fromScale(share, 1)
-	fill.BackgroundColor3 = share > 0.5 and Color3.fromRGB(120, 200, 90) or share > 0.25 and Color3.fromRGB(240, 190, 70)
-		or Color3.fromRGB(230, 80, 60)
-	-- only while it is hurt: a full wall shows nothing over the road
-	gui.Enabled = share < 0.999
+	if t.wall.Broken then
+		-- broken: the bar shows the rebuild (empty until the player pays for it)
+		fill.Size = UDim2.fromScale(math.clamp(t.wall.rebuild or 0, 0, 1), 1)
+		fill.BackgroundColor3 = Color3.fromRGB(120, 180, 255)
+		gui.Enabled = true
+	else
+		fill.Size = UDim2.fromScale(share, 1)
+		fill.BackgroundColor3 = share > 0.5 and Color3.fromRGB(120, 200, 90) or share > 0.25 and Color3.fromRGB(240, 190, 70)
+			or Color3.fromRGB(230, 80, 60)
+		-- only while it is hurt: a full wall shows nothing over the road
+		gui.Enabled = share < 0.999
+	end
 	model:SetAttribute("Health", math.floor(t.wall.Health + 0.5))
 	model:SetAttribute("MaxHealth", t.wall.MaxHealth)
 end
 
+-- a broken wall sinks into a stump (StumpShare of it above the ground); while it is rebuilt it rises back with the
+-- progress, so the model itself shows how far the rebuild is
+local function sinkLook(t, raised)
+	local look = t.model:FindFirstChild("Look")
+	if not look then
+		return
+	end
+	if not t.wall.lookPivot then
+		t.wall.lookPivot = look:GetPivot()
+	end
+	local _, height = lookFor(t.type, t.level, t.branch)
+	local down = (height or 4) * (1 - WALL.StumpShare) * (1 - raised)
+	look:PivotTo(t.wall.lookPivot - Vector3.new(0, down, 0))
+end
+
+-- broken, not gone (Lemp 2026-11-26): enemies walk over the stump until the player pays to rebuild it. Model
+-- attributes: Broken (true until rebuilt), Rebuilding (true while the rebuild runs), RebuildProgress (0..1).
 local function breakWall(t)
 	if not t.wall or t.wall.Broken then
 		return
 	end
-	t.wall.Broken = true
-	EnemyService.Blockers[t.wall.Key] = nil
+	local wall = t.wall
+	wall.Broken = true
+	wall.Health = 0
+	wall.rebuild = nil
+	EnemyService.Blockers[wall.Key] = nil
 	local model = t.model
-	State.Set("BuildUsed", math.max(0, (State.Get("BuildUsed") or 0) - (Config.BuildPoints[t.type] or 0)))
+	model:SetAttribute("Broken", true)
+	model:SetAttribute("Rebuilding", false)
+	model:SetAttribute("RebuildProgress", 0)
+	model:SetAttribute("Repairing", false)
 	Effects.Burst(t.position + Vector3.new(0, 2, 0), 7, Color3.fromRGB(150, 110, 70), 0.4, 0.5)
 	Effects.Ring(t.position + Vector3.new(0, 0.3, 0), 7, Color3.fromRGB(190, 170, 140), 0.4)
 	Effects.Text(t.position + Vector3.new(0, 6, 0), "Barricade broke!", Color3.fromRGB(255, 160, 120), 1.4)
 	Sound.Play("Land", t.position)
-	towers[model] = nil
-	model:Destroy()
+	sinkLook(t, 0)
+	wallBar(t)
+end
+
+-- the player pays RebuildCost; the rebuild then runs for RebuildTime seconds of game time (runWall)
+function TowerService.Rebuild(_player, model)
+	local t = towers[model]
+	if not t or not t.wall then
+		return false, "That's not a barricade"
+	end
+	if not t.wall.Broken then
+		return false, "It isn't broken"
+	end
+	if t.wall.rebuild then
+		return false, "Already rebuilding"
+	end
+	if not State.TrySpend(WALL.RebuildCost) then
+		return false, "Not enough mana"
+	end
+	t.wall.rebuild = 0
+	model:SetAttribute("Rebuilding", true)
+	Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
+	Sound.Play("Build", t.position)
+	return true
+end
+
+local function finishRebuild(t)
+	local wall = t.wall
+	wall.Broken = false
+	wall.rebuild = nil
+	wall.Health = wall.MaxHealth
+	wall.warned = false
+	EnemyService.Blockers[wall.Key] = wall
+	t.model:SetAttribute("Broken", false)
+	t.model:SetAttribute("Rebuilding", false)
+	t.model:SetAttribute("RebuildProgress", 1)
+	sinkLook(t, 1)
+	wall.lookPivot, wall.shownRebuild = nil, nil -- (an upgrade later swaps the look: measure it again next time)
+	Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
+	Sound.Play("Build", t.position)
+	wallBar(t)
 end
 
 function TowerService.HurtWall(t, amount)
@@ -1011,6 +1084,20 @@ end
 runWall = function(t, dt)
 	local wall = t.wall
 	if wall.Broken then
+		-- dt is game time (Clock.scale), so a faster run rebuilds faster in real seconds
+		if wall.rebuild then
+			wall.rebuild = math.min(1, wall.rebuild + dt / WALL.RebuildTime)
+			if wall.rebuild >= 1 then
+				finishRebuild(t)
+				return
+			end
+			if wall.rebuild - (wall.shownRebuild or 0) >= 0.02 then
+				wall.shownRebuild = wall.rebuild
+				t.model:SetAttribute("RebuildProgress", wall.rebuild)
+				sinkLook(t, wall.rebuild)
+				wallBar(t)
+			end
+		end
 		return
 	end
 	-- a hero standing near repairs it (no button to hold: phone and controller friendly)

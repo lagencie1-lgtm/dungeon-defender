@@ -545,6 +545,11 @@ Config.Barricade = {
 	RowDepth = 1.5, -- studs between rows (less than a goblin's body: the rows overlap into a pile)
 	Jitter = 0.5, -- up to this many studs of random side offset per enemy, so the pile is not a grid
 	PileShare = 0.6, -- an enemy behind the front row hits with this share (it reaches over the ones in front)
+	-- broken, not gone (Lemp 2026-11-26): at 0 health it falls into a stump the enemies walk over; the player pays a
+	-- little mana to rebuild it, which takes RebuildTime seconds of game time (so 15 s at 2x speed, 10 s at 3x)
+	RebuildCost = 20, -- mana
+	RebuildTime = 30, -- seconds of game time
+	StumpShare = 0.3, -- share of its height that still shows above the ground while broken
 	BlobEase = 1.5, -- after the wall breaks, the pile drifts back to the middle of the path this slowly (1 - exp(-k*dt))
 	Spacing = 12, -- studs along the path between two barricades
 	FromStart = 14, -- studs from where enemies come in

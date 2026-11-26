@@ -218,15 +218,15 @@ function testBarricade()
 	end
 	log("thornwall hurt", thorned, "goblins in the pile")
 	assert(thorned >= 1, "the Thornwall did not hurt the goblins hitting it")
-	-- four boss slams break it, and its build points come back
+	-- four boss slams break it: it stays as a stump the goblins walk over (Lemp 2026-11-26: broken, not gone)
 	local used = State.Get("BuildUsed")
 	for _ = 1, 5 do
-		if wall.Parent then
+		if wall:GetAttribute("Broken") ~= true then
 			TowerService.Stun(wall.PrimaryPart.Position, 6, 0.1)
 		end
 	end
-	assert(not wall.Parent, "boss slams did not break the barricade")
-	assert(State.Get("BuildUsed") == used - Config.BuildPoints.Barricade, "build points not given back")
+	assert(wall.Parent and wall:GetAttribute("Broken") == true, "boss slams did not break the barricade (or it vanished)")
+	assert(State.Get("BuildUsed") == used, "a broken barricade still holds its build points")
 	task.wait(1)
 	local walking = 0
 	for _, e in goblins do
@@ -236,6 +236,25 @@ function testBarricade()
 	end
 	log("barricade broke; goblins walking again", walking)
 	assert(walking >= 3, "goblins stayed stuck after the barricade broke")
+	-- the rebuild: costs RebuildCost mana, takes RebuildTime of game time (so less real time at a faster speed)
+	State.Set("Gold", 100000)
+	local gold = State.Get("Gold")
+	assert(TowerService.Rebuild(player, wall), "rebuild refused")
+	assert(State.Get("Gold") == gold - Config.Barricade.RebuildCost, "rebuild did not cost its mana")
+	assert(not TowerService.Rebuild(player, wall), "a second rebuild was accepted while one runs")
+	local scale = Clock.scale
+	Clock.scale = 10
+	local started = os.clock()
+	while wall:GetAttribute("Broken") == true and os.clock() - started < 8 do
+		task.wait(0.1)
+	end
+	local took = os.clock() - started
+	Clock.scale = scale
+	log("barricade rebuilt in", math.floor(took * 10) / 10, "s real at 10x (", Config.Barricade.RebuildTime, "s of game time )")
+	assert(wall:GetAttribute("Broken") == false, "the barricade did not finish its rebuild")
+	assert(took >= Config.Barricade.RebuildTime / 10 * 0.8, "the rebuild ran faster than its game time")
+	assert(wall:GetAttribute("Health") == wall:GetAttribute("MaxHealth"), "a rebuilt barricade is not at full health")
+	TowerService.Sell(player, wall) -- (the Rootwall below goes on the same spot)
 	-- Rootwall: the lane in front of it walks slowly
 	State.Set("Gold", 100000)
 	assert(TowerService.Place(player, "Barricade", spotAt), "second barricade not placed")

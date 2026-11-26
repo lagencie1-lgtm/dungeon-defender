@@ -1617,7 +1617,12 @@ local function refreshInfo()
 	local stats = Config.TowerStats(towerType, level, branchId)
 	local branch = Config.TowerBranch(towerType, branchId)
 	infoTitle.Text = (branch and branch.Name or info.DisplayName) .. "  Lv " .. level
-	if info.OnPath then
+	local broken = info.OnPath and selected:GetAttribute("Broken") == true
+	if broken then
+		local rebuilding = selected:GetAttribute("Rebuilding") == true
+		infoStats.Text = rebuilding and ("Rebuilding " .. math.floor((selected:GetAttribute("RebuildProgress") or 0) * 100) .. "%")
+			or "Broken · enemies walk over it"
+	elseif info.OnPath then
 		local health = selected:GetAttribute("Health") or stats.Health
 		infoStats.Text = "Health " .. health .. "/" .. (selected:GetAttribute("MaxHealth") or stats.Health)
 			.. (branch and (" · " .. branch.Text) or " · Stand near it to repair it")
@@ -1626,7 +1631,7 @@ local function refreshInfo()
 	end
 	local nextLevel = info.Levels[level + 1]
 	-- the level before the last of a branching defender: two choices instead of one Upgrade
-	local branching = nextLevel and info.Branches and level + 1 == #info.Levels
+	local branching = not broken and nextLevel and info.Branches and level + 1 == #info.Levels
 	upgradeButton.Visible = not branching
 	for i, b in branchButtons do
 		local choice = branching and info.Branches[i]
@@ -1656,8 +1661,19 @@ local function refreshInfo()
 	end
 	local nextImage = nextLevel and ReplicatedStorage.ArtImages:GetAttribute(Config.TowerIcons[towerType] .. "_l" .. (level + 1))
 	preview.Image = nextImage or ""
-	preview.Visible = nextImage ~= nil
-	if nextLevel then
+	preview.Visible = nextImage ~= nil and not broken
+	if broken then
+		-- a broken barricade: the main button rebuilds it (Config.Barricade.RebuildCost, RebuildTime of game time)
+		local gold = GameState:GetAttribute("Gold") or 0
+		local cost = Config.Barricade.RebuildCost
+		if selected:GetAttribute("Rebuilding") == true then
+			upgradeButton.Text = "Rebuilding..."
+			upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+		else
+			upgradeButton.Text = "Repair (" .. cost .. " mana)"
+			upgradeButton.BackgroundColor3 = gold >= cost and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
+		end
+	elseif nextLevel then
 		local gold = GameState:GetAttribute("Gold") or 0
 		upgradeButton.Text = "Upgrade (" .. nextLevel.Cost .. " mana)"
 		upgradeButton.BackgroundColor3 = gold >= nextLevel.Cost and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(70, 70, 80)
@@ -1683,12 +1699,21 @@ local function refreshInfo()
 	rangeCircle.Parent = workspace
 end
 
+local watchSelected = nil -- (keeps the panel live: health, Broken, Rebuilding, RebuildProgress)
 local function selectTower(model)
 	stopPlacing()
 	selected = model
 	infoPanel.Visible = true
 	Ui.pop(infoPanel, 0.9)
 	refreshInfo()
+	if watchSelected then
+		watchSelected:Disconnect()
+	end
+	watchSelected = model.AttributeChanged:Connect(function(name)
+		if selected == model and (name == "Health" or name == "Broken" or name == "Rebuilding" or name == "RebuildProgress") then
+			refreshInfo()
+		end
+	end)
 end
 
 local function upgradeSelected(branchId)

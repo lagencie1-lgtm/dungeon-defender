@@ -90,3 +90,84 @@ The three biggest flaws in A:
 2. **The cannon lacks the concept’s weight.** Its barrel reads as a small golden tube rather than a broad bronze cannon. Widen and lengthen the barrel, enlarge the muzzle, and make the dark bore visible.
 3. **The wooden structure and coal hopper are hard to distinguish.** Make the hopper a larger, square box behind the barrel, with a dark pile of coals and a warm glow. Darken the wooden supports so the gold bands stand out.
 
+## the Ballista, level 2: a big crossbow on an A-frame trestle on a raised timber platform, with a gold gear and cranks
+codex gpt-6.1-terra; A = before, B = after
+
+**A is better overall.** Its timber, gold fittings and crossbow are visible; B is almost entirely black, so most of its construction and materials are lost.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 2/10 |
+| Whole tower visible and well framed | 5/10 | 5/10 |
+| Shape and proportions true to the painting | 4/10 | 3/10 |
+| Colours and materials | 6/10 | 1/10 |
+
+A’s three biggest remaining flaws:
+
+1. **The crossbow is too small and tangled.** Enlarge and simplify the bow arms, stock and bolt so they form one unmistakable shape.
+2. **The trestle doesn’t read clearly.** Open up the space beneath the platform and thicken the angled legs to create a visible A-frame.
+3. **The tower blends into the tree.** Give the bow and frame a lighter, warmer value, and strengthen their silhouettes against the background.
+
+## the Flame Cannon, level 2: a bronze cannon on a banded wooden drum, a coal hopper behind
+codex gpt-6.1-terra; A = after, B = before
+
+**A**
+
+- Reads as the painted tower: **2/10**
+- Whole tower visible and well framed: **5/10**
+- Shape and proportions: **3/10**
+- Colours and materials: **1/10**
+
+The near-black rendering hides most of the construction. The muzzle and hopper are barely distinguishable.
+
+**B**
+
+- Reads as the painted tower: **5/10**
+- Whole tower visible and well framed: **6/10**
+- Shape and proportions: **4/10**
+- Colours and materials: **6/10**
+
+**B is better overall.** Its warm colours and pale stone base make the tower much easier to find and understand.
+
+Its three biggest remaining flaws:
+
+1. **The cannon doesn’t dominate the silhouette.** In the painting, the long, wide barrel is the focal point. Enlarge and lengthen it, and angle it clearly upward and outward.
+2. **The hopper is hard to read.** It blends into the tree behind it. Make the hopper wider, give it a clear boxy rim, and show several dark coal lumps with orange glow between them.
+3. **The base reads as a flat white ring.** Replace it with larger, individually defined tan stone blocks, and make the dark wooden drum and thick gold bands more distinct above them.
+
+## the Ballista, level 2: a big crossbow on an A-frame trestle on a raised timber platform, with a gold gear and cranks
+codex gpt-6.1-terra; A = before, B = after
+
+**B is better overall.** Its wider bow gives the tower a clearer crossbow silhouette, although neither version captures the weight and structure of the painting at phone size. I’m treating picture 2 as A and picture 3 as B.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 4/10 | 5/10 |
+| Whole tower visible and well framed | 6/10 | 7/10 |
+| Shape and proportions | 3/10 | 4/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+B’s three biggest remaining flaws:
+
+1. **The trestle is missing from the read.** The weapon looks mounted on a solid box. Expose and enlarge the angled wooden legs, with visible gaps between them.
+2. **The crossbow is too thin and busy.** Thicken the bow limbs and central stock, and remove small details that merge into gold noise at phone size.
+3. **The gear and crank lack a clear identity.** Make the gold gear a larger, distinct circle on one side, with a single bold crank projecting beyond the frame.
+
+## the Flame Cannon, level 2: a bronze cannon on a banded wooden drum, a coal hopper behind
+codex gpt-6.1-terra; A = before, B = after
+
+**B is better overall.** Its cannon barrel is much easier to recognize, and its silhouette is closer to the painting. Neither version carries the concept’s weight or material detail convincingly at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 4/10 | 6/10 |
+| Whole tower visible and well framed | 4/10 | 5/10 |
+| Shape and proportions | 3/10 | 5/10 |
+| Colours and materials | 5/10 | 6/10 |
+
+B’s three biggest remaining flaws:
+
+1. **The tree swallows the rear silhouette.** The hopper is hard to separate from the trunk. Move the tower forward or give it a clearer background in this view.
+2. **The cannon feels too small and thin.** Enlarge and thicken the barrel, especially the muzzle, and give it the painting’s upward angle.
+3. **The wood and coal barely read.** Darken the wooden drum and hopper, add distinct black coal chunks with orange glow, and reserve the brightest gold for the metal bands.
+

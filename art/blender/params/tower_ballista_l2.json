@@ -11,5 +11,6 @@
  "bend": 1.0,
  "thick": 1.549,
  "roll": 40.0,
- "plat_w": 4.8
+ "plat_w": 4.2,
+ "wscale": 1.25
 }

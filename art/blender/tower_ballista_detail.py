@@ -194,17 +194,18 @@ if level in (1, 2):
     if level == 2:   # (coordinator 2026-11-24: level 2 stands on a raised timber platform, so it reads apart from level 1)
         # (round 4: 1.2 tall, not 0.6: at 0.6 levels 1 and 2 were the same height and overlapped 84 % on the phone)
         pw = P.get("plat_w", 3.6)   # (2026-11-26: wider, so level 2 reads apart from level 1 at phone size)
-        K.block("Platform", (0, 0, fz + 0.6), (pw, pw, 1.2), K.WOOD_DARK, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
+        K.block("Platform", (0, 0, fz + 0.6), (pw, pw, 1.2), K.WOOD, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
         for k in range(4):
             q = FWD * ((pw / 2 - 0.25) * (1 if k % 2 else -1)) + SIDE * ((pw / 2 - 0.25) * (1 if k < 2 else -1))
             K.block(f"PlatformCap{k}", (q.x, q.y, fz + 1.22), (0.5, 0.5, 0.14), K.BRASS, (0, 0, A), key=None, bevel=0.03)
         fz += 1.2
     top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))
-    muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2)))
+    # (2026-11-26: level 2's weapon larger than level 1's, so at phone size the weapon is the biggest readable thing)
+    muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2), scale=P.get("wscale", 1.0) if level == 2 else 1.0))
     if level == 2:
         # round 5 (coordinator 2026-11-24, as painted): a small gold gear with teeth beside the stock's pivot, about a
         # third of the trestle's height across, on the side the camera sees, with two crank handles on its axle
-        r = (P["leg_h"] + 0.75) / 6
+        r = (P["leg_h"] + 0.75) / 4.3   # (2026-11-26: larger, the painting's level 2 mark that level 1 doesn't have)
         c = -SIDE * (P["leg_spread"] * 0.75 + 0.45) - FWD * 0.15 + Vector((0, 0, top - 0.45))   # (outside the A-frame on that side)
         ax = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
         g = K.lathe("Gear", [(0.0, -0.12), (r, -0.12), (r, 0.12), (0.0, 0.12)], K.BRASS, key="brass", verts=24)

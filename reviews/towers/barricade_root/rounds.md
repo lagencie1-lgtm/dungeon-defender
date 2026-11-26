@@ -57,3 +57,18 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
 - round 18: one root trunk under the shield, finer root ends, smoother leaf clumps, taller tips (post_up 0.55, tip 1.12); fresh Codex repaint; tips toned
   IoU 89.9%  width profile off 14.1%  region colour dE 9.1  (pixel dE 52.9)  detail 26.1% vs picture 23.4% (ratio 1.12)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 49/48)  lookout 4 (L 37/35)  wall 2 (L 36/37)  footing 7 (L 50/54)
+- round 19: round 18's repaint graded with sharpening 70 (smoother, the judge's 'pixelated')
+  IoU 89.9%  width profile off 14.1%  region colour dE 9.8  (pixel dE 56.9)  detail 30.5% vs picture 23.4% (ratio 1.30)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/46)  lookout 6 (L 37/33)  wall 4 (L 36/35)  footing 8 (L 50/52)
+- round 20: round 18 with the tree crown at its 1.0 limit; round 18's paintings re-projected
+  IoU 90.0%  width profile off 15.3%  region colour dE 9.0  (pixel dE 53.5)  detail 26.0% vs picture 23.4% (ratio 1.11)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 49/48)  lookout 4 (L 37/34)  wall 2 (L 36/37)  footing 7 (L 50/54)
+- round 21: round 20 with the sapling 0.9 tall (was 0.855); round 18's paintings re-projected
+  IoU 89.7%  width profile off 16.1%  region colour dE 9.2  (pixel dE 54.0)  detail 26.1% vs picture 23.4% (ratio 1.11)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 49/48)  lookout 4 (L 37/34)  wall 2 (L 36/36)  footing 8 (L 50/54)
+- round 22: round 20 with the sapling 0.8 tall; round 18's paintings re-projected
+  IoU 89.5%  width profile off 17.2%  region colour dE 9.1  (pixel dE 53.0)  detail 25.9% vs picture 23.4% (ratio 1.11)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 49/48)  lookout 3 (L 37/35)  wall 2 (L 36/36)  footing 7 (L 50/55)
+- round 23: round 20 with a thicker trunk (1.15); round 18's paintings re-projected
+  IoU 90.0%  width profile off 16.1%  region colour dE 9.5  (pixel dE 53.7)  detail 26.0% vs picture 23.4% (ratio 1.11)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 49/47)  lookout 3 (L 37/34)  wall 2 (L 36/36)  footing 8 (L 50/55)

@@ -51,3 +51,6 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
 - round 16: round 8's own paintings re-projected onto the rebuilt round 8 model (the rebuild packs a few parts differently), tips toned as in round 8
   IoU 90.1%  width profile off 16.6%  region colour dE 8.8  (pixel dE 50.9)  detail 27.9% vs picture 23.4% (ratio 1.19)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 49/47)  lookout 4 (L 37/34)  wall 4 (L 36/39)  footing 9 (L 50/56)
+- round 17: check of the uploaded model and paint (for the blind judge)
+  IoU 90.1%  width profile off 16.6%  region colour dE 8.8  (pixel dE 50.9)  detail 27.9% vs picture 23.4% (ratio 1.19)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 49/47)  lookout 4 (L 37/34)  wall 4 (L 36/39)  footing 9 (L 50/56)

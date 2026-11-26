@@ -30,3 +30,18 @@ From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn
 - round 9: check of the uploaded model and paint (for the blind judge)
   IoU 93.9%  width profile off 8.6%  region colour dE 6.6  (pixel dE 45.6)  detail 21.1% vs picture 22.5% (ratio 0.94)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 45/45)  lookout 2 (L 40/39)  wall 5 (L 30/31)  footing 9 (L 32/33)
+- round 10: round 8's paintings re-projected (bilinear), sharpening 15 instead of 55
+  IoU 93.9%  width profile off 8.6%  region colour dE 8.2  (pixel dE 43.5)  detail 16.0% vs picture 22.5% (ratio 0.71)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 5 (L 45/48)  lookout 3 (L 40/42)  wall 9 (L 30/33)  footing 10 (L 32/33)
+- round 11: round 8's paintings re-projected (bilinear), sharpening 35
+  IoU 93.9%  width profile off 8.6%  region colour dE 6.7  (pixel dE 44.4)  detail 18.7% vs picture 22.5% (ratio 0.83)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 45/47)  lookout 1 (L 40/39)  wall 4 (L 30/31)  footing 12 (L 32/35)
+- round 12: dark core kept from the cull (no see-through gaps between log ends); round 8's paintings; sharpening 45
+  IoU 94.1%  width profile off 8.7%  region colour dE 7.3  (pixel dE 44.6)  detail 18.1% vs picture 22.5% (ratio 0.80)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 45/47)  lookout 2 (L 40/41)  wall 6 (L 30/32)  footing 10 (L 32/33)
+- round 13: fresh Codex repaint of the gap-free model; bilinear projection; sharpening 45
+  IoU 94.1%  width profile off 8.7%  region colour dE 5.7  (pixel dE 42.9)  detail 18.1% vs picture 22.5% (ratio 0.80)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 45/46)  lookout 1 (L 40/40)  wall 3 (L 30/29)  footing 11 (L 32/36)
+- round 14: round 13's repaint graded with sharpening 65
+  IoU 94.1%  width profile off 8.7%  region colour dE 6.1  (pixel dE 45.8)  detail 22.5% vs picture 22.5% (ratio 1.00)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 5 (L 40/37)  wall 3 (L 30/28)  footing 11 (L 32/37)

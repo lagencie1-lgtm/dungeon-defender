@@ -1,0 +1,20 @@
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - B has a much larger, cleaner central shield with a broad gold rim; A’s shield is smaller and more weathered.
+  - The roots and lower footing differ in arrangement: B has a prominent central trunk splitting into several long roots, while A has a narrower central stump and differently positioned roots.
+  - B’s tree has a taller, more exposed trunk and distinct broad leaves; A’s canopy is denser, more irregular and mottled.
+  - B’s posts are taller and more clearly exposed, with prominent gold studs on the bands; A’s posts are more obscured and have darker, less regular bands.
+  - A has a rough, pixelated, heavily mottled painted surface, while B has smoother, sharper and more uniform detailing.
+  - A’s upper center forms a flatter moss-covered ledge, whereas B’s roots rise into a rounded mound beneath the tree.
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - The roots have different layouts: B has a prominent central trunk splitting into several large exposed roots, while A has a narrower central root and more irregular wrapping.
+  - The shield in B is larger and cleaner, with a brighter gold rim and evenly spaced studs; A’s shield is darker and more weathered.
+  - The tree in B has a broader, more open canopy with distinct leaves, while A’s canopy is denser and more irregular.
+  - B’s posts and logs are more clearly defined and symmetrical; A’s barricade is more obscured by roots and foliage.
+  - A has a rough, pixelated texture with mottled moss and darker shadows, while B has smooth, crisp painted detail and warmer, more saturated wood.
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - The roots have different arrangements: B has a prominent central stump and fewer distinct exposed roots at the base.
+  - B's tree canopy is broader and denser, with smaller, less distinct leaves.
+  - The shield in B is smaller and has a rougher, more irregular rim and central boss.
+  - B's surface is much more pixelated and mottled, with harsher green moss and less defined wood grain.
+  - The posts and log wall differ in their visible proportions and iron-band details.
+JUDGE 7 7 7 avg 7.0

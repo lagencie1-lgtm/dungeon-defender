@@ -1,0 +1,40 @@
+== l2 1
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - model has conspicuous gaps and dark structural elements between the horizontal logs; picture A forms a largely solid wall.
+  - model has a rougher, more photographic wood texture and less cleanly painted surface detail than picture A.
+  - The posts in picture B are taller and slimmer, with lower bands placed higher relative to their bases.
+  - The shield in picture B has a thinner, more irregular rim and a less prominent central boss.
+  - model shows more exposed log ends along both sides, while picture A has a cleaner side profile.
+== l2 2
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - painting has a cleaner, more stylized painted finish, while A has rougher, more textured wood and metal.
+  - B's horizontal logs form a solid, orderly wall; A has visible gaps and more irregular construction.
+  - B is taller and narrower in proportion, with a larger, more prominent shield relative to the wall.
+  - A's shield has a brighter, broader gold rim and more numerous rivets; B's has a darker face and fewer rivets.
+  - The posts and iron bands differ in shape and placement, with B's lower bands positioned farther down.
+== l2 3
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - model has prominent gaps between the horizontal logs and exposed structural pieces, while picture A forms a more solid wall.
+  - model uses a more realistic, rough and pixelated wood texture; picture A has a smoother, stylized painted finish.
+  - The shield in picture B is larger relative to the wall, with different rim and rivet detailing.
+  - The posts in picture B are taller and slimmer, with different iron band placement and less-rounded bases.
+== l1 1
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - model has a coarse, pixelated wood and rope texture, while picture B has a smooth, hand-painted appearance.
+  - The horizontal logs in picture B have prominent round cut ends on the right; those ends are not clearly visible in picture A.
+  - painting’s rope bindings are cleaner and more uniformly braided, while picture A’s are rougher and irregular.
+  - The posts and pointed tops have slightly different proportions and surface detailing.
+== l1 2
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - model has a much coarser, pixelated surface, while picture A has smooth, painted wood grain and clean highlights.
+  - The rope bindings in B are irregular and mottled, compared with the smooth, clearly defined coils in A.
+  - The horizontal logs in B have mostly flat, cut-off ends; A shows prominent rounded end grain on the right.
+  - The posts and logs in B have less clearly defined contours and joinery.
+== l1 3
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - model has a much more pixelated, streaky surface, while picture A has smooth, hand-painted wood grain and shading.
+  - The horizontal logs in A have prominent round cut ends on the right; in B their ends appear mostly flat and squared off.
+  - The rope bindings in B are rougher and less evenly shaped than the clean, braided loops in A.
+  - The posts and log edges in B are less smoothly defined, with some differences in proportions and overlap.
+
+[exited with code 0]

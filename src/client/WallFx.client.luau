@@ -14,6 +14,24 @@ blow.Name = "PileBlow"
 blow.Parent = ReplicatedStorage
 
 local shaking = {}
+-- when each wall's Look was last swapped (an upgrade puts a new Look in and springs it to size over ~0.45 s on the
+-- server): no nudge for 0.5 s after that, so the client never fights the server's move
+local swappedAt = {}
+local watched = {}
+local function watch(wall)
+	if watched[wall] then
+		return
+	end
+	watched[wall] = true
+	wall.ChildAdded:Connect(function(child)
+		if child.Name == "Look" then
+			swappedAt[wall] = os.clock()
+		end
+	end)
+	wall.Destroying:Connect(function()
+		watched[wall], swappedAt[wall], shaking[wall] = nil, nil, nil
+	end)
+end
 
 -- the barricade the monster is hitting: the nearest standing one
 local function wallNear(pos)
@@ -32,8 +50,10 @@ local function wallNear(pos)
 end
 
 local function shudder(wall, from)
+	watch(wall)
+	-- (the Look is found again on every blow: an upgrade replaces it)
 	local look = wall:FindFirstChild("Look")
-	if not look or shaking[wall] then
+	if not look or shaking[wall] or (swappedAt[wall] and os.clock() - swappedAt[wall] < 0.5) then
 		return
 	end
 	shaking[wall] = true
@@ -51,9 +71,11 @@ local function shudder(wall, from)
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		local t = os.clock() - t0
-		if t >= W.Time or not wall.Parent or wall:GetAttribute("Broken") or wall:GetAttribute("Rebuilding") then
+		local swapped = look.Parent ~= wall or (swappedAt[wall] and swappedAt[wall] > t0)
+		if t >= W.Time or not wall.Parent or swapped or wall:GetAttribute("Broken") or wall:GetAttribute("Rebuilding") then
 			conn:Disconnect()
-			if not wall:GetAttribute("Rebuilding") then
+			-- (put the parts back, unless the server is moving the wall: a rebuild, or a new Look from an upgrade)
+			if not wall:GetAttribute("Rebuilding") and not swapped then
 				for part, c in parts do
 					if part.Parent then
 						part.CFrame = c

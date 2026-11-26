@@ -144,6 +144,15 @@ def main():
         res["bright"][f"{key[0]} {key[1]}"] = share
         if share > 15:
             res["fails"].append(f"{key[0]} level {key[1]}: {share}% of it is bright yellow-orange (needs 15% or less)")
+    # gold share in the phone view (measured, not a gate; coordinator 2026-11-26: the Flame Cannon's level 2 read as a
+    # gold ring/pot): vivid gold-hued pixels of the tower's outline
+    res["gold"] = {}
+    for key, m in masks.items():
+        if key not in views or m.sum() < 50:
+            continue
+        hsv = cv2.cvtColor(views[key], cv2.COLOR_RGB2HSV)
+        gold = (hsv[..., 0] >= 15) & (hsv[..., 0] <= 30) & (hsv[..., 1] > 100) & (hsv[..., 2] > 110)
+        res["gold"][f"{key[0]} {key[1]}"] = round(100 * float((gold & m).sum() / m.sum()), 1)
     # fits the phone screen (coordinator 2026-11-26, the Ranger's level 3 roof was cut off at the run camera): in the
     # phone view the top of the tower's outline stays at least 5 % of the screen's height below its top edge
     res["top_margin"] = {}

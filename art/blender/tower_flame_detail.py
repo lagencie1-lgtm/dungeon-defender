@@ -30,6 +30,7 @@ IRON = (0.42, 0.42, 0.45)
 IRON_DARK = (0.28, 0.28, 0.31)
 BRONZE = (0.62, 0.34, 0.2)
 BRONZE_DARK = (0.4, 0.24, 0.15)   # (level 3's dark bronze-brown barrels and rims, as painted)
+BARREL_L2 = (0.72, 0.44, 0.26)   # (a lighter bronze, so level 2's barrel stands out from the drum at phone size)
 FIRE = (1.0, 0.55, 0.12)
 COAL = (0.16, 0.15, 0.16)
 
@@ -211,12 +212,15 @@ if level == 1:
 elif level == 2:
     drum(fz, P["drum_r"], P["drum_h"], bands=1)
     top = fz + P["drum_h"]
-    K.lathe("DrumLid", [(P["drum_r"] + 0.15, top - 0.1), (P["drum_r"] + 0.15, top + 0.15), (P["drum_r"] - 0.3, top + 0.2)], K.BRASS, key="brass", verts=32)
+    # (2026-11-26, phone view read as a gold ring/pot: the lid is dark wood with a thin gold rim, the cradle bronze, so
+    # the barrel, longer and in lighter bronze, is what reads)
+    K.lathe("DrumLid", [(P["drum_r"] + 0.15, top - 0.1), (P["drum_r"] + 0.15, top + 0.15), (P["drum_r"] - 0.3, top + 0.2)], K.WOOD_DARK, key="wood_dark", verts=32)
+    K.lathe("DrumLidRim", [(P["drum_r"] + 0.17, top + 0.05), (P["drum_r"] + 0.2, top + 0.1), (P["drum_r"] + 0.17, top + 0.17)], K.BRASS, key="brass", verts=32)
     a = rad(FRONT + P["aim"])
     side = Vector((-math.sin(a), math.cos(a), 0))
     for s in (-1, 1):
         c = side * (s * (P["barrel_r"] + 0.35))
-        K.block(f"Arm{s}", (c.x, c.y, top + 0.85), (0.9, 0.35, 1.8), K.BRASS, (0, 0, a), key="brass", tile=0.6, bevel=0.1)
+        K.block(f"Arm{s}", (c.x, c.y, top + 0.85), (0.9, 0.35, 1.8), BRONZE_DARK, (0, 0, a), key=None, tile=0.6, bevel=0.1)
         hub = c + side * (s * 0.22)
         K.lathe(f"Hub{s}", [(0.0, -0.18), (0.55, -0.18), (0.6, 0.0), (0.55, 0.18), (0.0, 0.2)], K.BRASS, key="brass", verts=20).matrix_world = \
             Matrix.Translation((hub.x, hub.y, P["barrel_z"])) @ Matrix.Rotation(rad(90), 4, Vector((math.cos(a), math.sin(a), 0)))
@@ -228,8 +232,8 @@ elif level == 2:
         c_ = K.ball(f"Coal{k}", (back.x + ((k % 3) - 1) * 0.42, back.y + (k // 3 - 0.5) * 0.45, top + 2.1), 0.26, COAL, (1, 1, 0.8), seg=7)
         if k % 2:
             S.glow(c_, FIRE)   # (glowing coals among the dark ones)
-    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"], BRONZE, core=True)   # (2026-11-25: glow only deep in the bore; 21.7 % bright yellow on the phone before)
-    muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 0.85))]
+    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"] * 1.3, BARREL_L2, core=True)   # (2026-11-25: glow only deep in the bore; 21.7 % bright yellow on the phone before)
+    muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 1.3 * 0.85))]
 else:
     drum(fz, P["drum_r"], P["drum_h"], vents=True, bands=2, taper=0.72)
     top = fz + P["drum_h"]

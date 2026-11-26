@@ -135,8 +135,8 @@ local LEVEL_LOOKS = {
 		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
 			Archers = { { Vector3.new(0.51, 4.4, -1.13), 4, 3.2 } } },
 		-- (2026-11-26, the screen-fit rule: levels 2 and 3 lowered, the archers with the balcony; level 3 also narrower)
-		{ Name = "tower_ranger_l2", Height = 13.90, Muzzle = Vector3.new(-0.68, 7.0, -2.2),
-			Archers = { { Vector3.new(-0.68, 5.5, -1.64), 30, 3.2 } } },
+		{ Name = "tower_ranger_l2", Height = 13.90, Muzzle = Vector3.new(-0.76, 7.0, -2.46),
+			Archers = { { Vector3.new(-0.76, 5.5, -1.84), 30, 3.2 } } },   -- (balcony 1.12 wider, 2026-11-26)
 		{ Name = "tower_ranger_l3", Height = 14.05, Muzzle = Vector3.new(0.38, 8.2, -2.74),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
 			-- (2026-11-26, Codex: the archers barely read: a little larger; the tower 0.9 as wide, so they stand closer in)
@@ -146,7 +146,7 @@ local LEVEL_LOOKS = {
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
 		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
-		{ Name = "tower_flame_l2", Height = 5.95, Muzzle = Vector3.new(-1.97, 4.82, 1.53) },
+		{ Name = "tower_flame_l2", Height = 6.40, Muzzle = Vector3.new(-2.56, 5.25, 1.98) },
 		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-3.03, 6.42, -0.92), Muzzles = { Vector3.new(-3.03, 6.42, -0.92), Vector3.new(-2.54, 6.42, 1.90) } },
 	},
 	FrostCrystal = {

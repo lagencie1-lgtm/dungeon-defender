@@ -120,6 +120,18 @@ levels), so a tower near the film's spot needs to stay under about 14.8 studs. T
 to about 14.4 studs and level 3 from 19.64 to about 14.6 (walls lower, roofs flatter, the level 3 tower narrower by
 0.78 so its proportions still match the painting: outline 71.7 -> 86.8 %), the archers moved down with the balcony.
 
+### No face read (coordinator 2026-11-26)
+
+Kit-built towers don't turn in the game (no turners), so the pose built in Blender is what players see. A barrel's
+mouth seen from the run camera is an ellipse whose short-to-long ratio is |cos| of the angle between the barrel and
+the view. Two or more bore openings of one level above 0.8 (nearly face-on circles side by side) read as a face with
+goggles, and `scripts/tower_rules.py` fails them. The Flame Cannon builder writes each bore's axis and mouth to
+`art/models/tower_flame_l<n>_bores.json`; the rule reads those with the film's camera (horizontal 0.6, 0, 0.8 and
+`Config.RunCamera`'s pitch). Before: the Flame Cannon's level 3 at 0.91 and 0.91; after (barrels turned to the right
+and raised 32 degrees): 0.61 and 0.61. `scripts/tower_rules.py` also reports each level's gold share (vivid gold-hued
+pixels of its outline in the phone view), measured, not a gate. `scripts/level_overlap.py` estimates the film's
+level overlaps offline from fast builds (it reads a few points higher than the film).
+
 ## Tools
 
 Everything above runs on what is on this PC: Blender 5.2 (bevel, lathe, bmesh, Cycles bake), Python with Pillow and

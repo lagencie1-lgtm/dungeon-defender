@@ -193,9 +193,10 @@ muzzles = []
 if level in (1, 2):
     if level == 2:   # (coordinator 2026-11-24: level 2 stands on a raised timber platform, so it reads apart from level 1)
         # (round 4: 1.2 tall, not 0.6: at 0.6 levels 1 and 2 were the same height and overlapped 84 % on the phone)
-        K.block("Platform", (0, 0, fz + 0.6), (3.6, 3.6, 1.2), K.WOOD_DARK, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
+        pw = P.get("plat_w", 3.6)   # (2026-11-26: wider, so level 2 reads apart from level 1 at phone size)
+        K.block("Platform", (0, 0, fz + 0.6), (pw, pw, 1.2), K.WOOD_DARK, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
         for k in range(4):
-            q = FWD * (1.55 * (1 if k % 2 else -1)) + SIDE * (1.55 * (1 if k < 2 else -1))
+            q = FWD * ((pw / 2 - 0.25) * (1 if k % 2 else -1)) + SIDE * ((pw / 2 - 0.25) * (1 if k < 2 else -1))
             K.block(f"PlatformCap{k}", (q.x, q.y, fz + 1.22), (0.5, 0.5, 0.14), K.BRASS, (0, 0, A), key=None, bevel=0.03)
         fz += 1.2
     top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))

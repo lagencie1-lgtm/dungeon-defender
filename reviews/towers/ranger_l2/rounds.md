@@ -52,3 +52,6 @@
 - round 17: Codex notes: level 3 0.9 as wide, calmer smooth gold, archers larger; level 2 longer flag (levels 1-2 at 80.0 %)
   IoU 80.1%  width profile off 26.7%  region colour dE 11.6  (pixel dE 53.8)  detail 22.6% vs picture 21.3% (ratio 1.06)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 5 (L 40/39)  wall 3 (L 58/59)  footing 7 (L 63/69)
+- round 18: levels apart (75 % target): level 2 1.12 wider; level 3 wide overhanging roof and broader base, as painted
+  IoU 75.0%  width profile off 35.3%  region colour dE 11.2  (pixel dE 51.9)  detail 21.4% vs picture 21.3% (ratio 1.00)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 6 (L 40/39)  wall 3 (L 58/58)  footing 6 (L 63/69)

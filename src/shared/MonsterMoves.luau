@@ -95,20 +95,34 @@ MonsterMoves.HeadLag = { Hz = 4.5, Damping = 0.45, Pitch = 0.6, PerBob = -1.2 } 
 -- the attack, played over and over while the server says the monster is bashing (attribute "Bashing"),
 -- each monster on its own beat
 MonsterMoves.Attack = {
-	Every = 1.0, -- seconds from one blow to the next
+	Every = 1.1, -- seconds from one blow to the next
+	-- (round 3: a longer wind-up that rises and holds a beat, a faster strike, and a held contact frame)
 	Keys = {
-		-- wind-up: right arm high, leaning back
-		{ t = 0.25, ease = "out", Chest = { 12, -10, 0 }, Spine = { 6, 0, 0 }, Neck = { -6, 0, 0 },
-			UpperArmR = { 165, 0, 18 }, LowerArmR = { 35, 0, 0 }, UpperArmL = { 25, 0, 10 } },
-		-- strike: down hard with a lunge
-		{ t = 0.32, ease = "out", Push = 0.06, Drop = 0.025, Chest = { -18, 12, 0 }, Spine = { -8, 0, 0 },
-			Neck = { 10, 0, 0 }, UpperArmR = { 35, 0, 6 }, LowerArmR = { 10, 0, 0 }, UpperArmL = { -15, 0, 14 } },
-		-- contact: hold
-		{ t = 0.40, hold = true },
+		-- wind-up: rise a little, lean back, right arm high, the off arm out for balance
+		{ t = 0.3, ease = "out", Lift = 0.012, Chest = { 16, -14, 0 }, Spine = { 8, 0, 0 }, Neck = { -8, 0, 0 },
+			UpperArmR = { 165, 0, 18 }, LowerArmR = { 40, 0, 0 }, UpperArmL = { 30, 0, 14 } },
+		-- the beat at the top before the blow
+		{ t = 0.4, hold = true },
+		-- strike: down hard and fast with a lunge
+		{ t = 0.46, ease = "in", Push = 0.07, Drop = 0.03, Chest = { -22, 14, 0 }, Spine = { -10, 0, 0 },
+			Neck = { 12, 0, 0 }, UpperArmR = { 30, 0, 6 }, LowerArmR = { 8, 0, 0 }, UpperArmL = { -20, 0, 14 } },
+		-- contact: held so the hit reads
+		{ t = 0.58, hold = true },
 		-- recover with a little overshoot
-		{ t = 0.70, ease = "back" },
+		{ t = 0.9, ease = "back" },
 	},
+	-- a slime (no arms) lunges with its top: back and up in the wind-up, forward and down at the strike (shares of
+	-- height, rig frame: -Z is forward)
+	SlimeWind = { 0, 0.05, 0.06 },
+	SlimeStrike = { 0, -0.07, -0.12 },
 }
+
+-- the back rows (standing, not hitting, next to one that is): they jeer, arms pumping, little hops, each on its own beat
+MonsterMoves.Jeer = { Hz = 1.7, Hop = 0.025, ArmUp = 110, Pump = 30, Near = 2.5 } -- Near: in heights
+
+-- a crowd standing still spreads out to the sides so it doesn't melt into one blob (client only: the bodies move
+-- inside their models; the server's places are unchanged)
+MonsterMoves.Crowd = { Radius = 0.55, Spread = 0.5, Max = 0.7, Lane = 0.18, Hz = 1.1 } -- shares of height
 
 -- boss tells (6A: a boss never goes quiet). Round 2: they must read at phone distance, so the whole body moves
 -- (rear back, rise, crouch, head up) and each pose holds 0.4-0.6 s; the arms stay within what each rig was tested at
@@ -156,7 +170,16 @@ MonsterMoves.Summon = {
 }
 
 -- getting hit: rock back from the hit, then spring back (0.28 s)
-MonsterMoves.Hit = { Deg = 9, Hz = 2.6, Damping = 0.55 }
+MonsterMoves.Hit = { Deg = 8, Hz = 2.6, Damping = 0.55 }
+-- with the rock, the body recoils: knocked back and down a little, head snapped back, arms flung, eased back in 0.28 s
+MonsterMoves.HitRecoil = {
+	Length = 0.3,
+	Keys = {
+		{ t = 0.06, ease = "out", Push = -0.05, Drop = 0.025, Neck = { -18, 0, 0 }, Chest = { 12, 0, 0 },
+			UpperArmL = { -25, 0, 30 }, UpperArmR = { -25, 0, 30 }, LowerArmL = { 30, 0, 0 }, LowerArmR = { 30, 0, 0 } },
+		{ t = 0.3, ease = "back" },
+	},
+}
 
 -- knocked out: knees give, then forward onto the face; the server removes the body 0.7 s after it fell
 MonsterMoves.Death = {

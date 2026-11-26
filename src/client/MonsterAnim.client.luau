@@ -98,6 +98,7 @@ local function clipOf(spec)
 	return keys
 end
 local ATTACK = clipOf(Moves.Attack)
+local HITRECOIL = clipOf(Moves.HitRecoil)
 local SLAM = clipOf(Moves.Slam)
 local SUMMON = clipOf(Moves.Summon)
 local CHARGE = clipOf(Moves.Charge)
@@ -279,7 +280,9 @@ local function animate(st, dt, now)
 		st.lastFlat = flat.Unit
 		st.lastTurn = turn
 		if turn < h then
-			stepped += turn
+			-- (counted 4 times over for the stride: a big boss rounding a corner must take quicker steps, or the planted
+			-- foot is swung round further than its leg can reach, 1.6-2.6 studs in round 3)
+			stepped += turn * 4
 			moved += turn
 		end
 	end
@@ -509,7 +512,38 @@ local function animate(st, dt, now)
 	-- the attack while bashing, on this monster's own beat
 	if model:GetAttribute("Bashing") and not dead then
 		local t = (now + st.beat) % Moves.Attack.Every
-		addPose(pose, sample(ATTACK, t), 1)
+		if st.joints.Top then
+			-- (a slime: the lunge with its top)
+			local A = Moves.Attack
+			local wind, strike = Vector3.new(table.unpack(A.SlimeWind)), Vector3.new(table.unpack(A.SlimeStrike))
+			local v
+			if t < 0.4 then
+				local k = math.min(1, t / 0.3)
+				v = wind * (1 - (1 - k) ^ 3)
+			elseif t < 0.46 then
+				local k = (t - 0.4) / 0.06
+				v = wind:Lerp(strike, k * k)
+			elseif t < 0.58 then
+				v = strike
+			else
+				local k = math.min(1, (t - 0.58) / 0.32)
+				v = strike * (1 - k * k * (3 - 2 * k))
+			end
+			pose.Moves.Top = (pose.Moves.Top or ZERO) + v
+		else
+			addPose(pose, sample(ATTACK, t), 1)
+		end
+	elseif not dead and st.jeer then
+		-- a back row: jeers at the front (arms pumping, little hops), on its own beat
+		local J = Moves.Jeer
+		local ph = now * 2 * math.pi * J.Hz + st.breath
+		local k = st.jeer
+		pose.UpperArmL += Vector3.new((J.ArmUp + J.Pump * math.sin(ph)) * k, 0, 20 * k)
+		pose.UpperArmR += Vector3.new((J.ArmUp + J.Pump * math.sin(ph + math.pi)) * k, 0, 20 * k)
+		pose.LowerArmL += Vector3.new(40 * k, 0, 0)
+		pose.LowerArmR += Vector3.new(40 * k, 0, 0)
+		pose.Neck += Vector3.new(-10 * k, 12 * math.sin(ph * 0.5) * k, 0)
+		pose.Lift += J.Hop * math.max(0, math.sin(ph * 2)) * k
 	end
 
 	-- boss tells: the slam (its whole clip from the moment the server starts it, the smash on the server's beat), the
@@ -568,6 +602,7 @@ local function animate(st, dt, now)
 	if not dead and st.joints.UpperLegL and st.joints.LowerLegL then
 		-- (on the move it does not lunge: a push would drag the planted foot along)
 		pose.Push -= (pose.Push - gaitPush) * math.clamp(w, 0, 1)
+		pose.Drop -= (pose.Drop - gaitDrop) * math.clamp(w, 0, 1) -- (nor crouch: the bend moved the planted foot)
 		local exD, exP = (pose.Drop - gaitDrop) * h, (pose.Push - gaitPush) * h
 		local still = 1
 		if math.abs(exD) > 1e-3 or math.abs(exP) > 1e-3 then
@@ -603,11 +638,23 @@ local function animate(st, dt, now)
 			if away.Magnitude < 1e-3 then
 				away = Vector3.zAxis
 			end
+			st.hitAway = away.Z >= 0 and 1 or -1 -- (+Z is the rig's back: a blow from the front)
 			st.hitAxis = Vector3.yAxis:Cross(away.Unit) -- turning about this tips the top away from the hitter
 			st.hit, st.hitVel = Moves.Hit.Deg, 0
+			st.hitClipAt = now
 		end
 	end
 	st.hit, st.hitVel = springStep(st.hit, st.hitVel, 0, Moves.Hit.Hz, Moves.Hit.Damping, dt)
+	if st.hitClipAt and now - st.hitClipAt < Moves.HitRecoil.Length and not dead then
+		local rc = sample(HITRECOIL, now - st.hitClipAt)
+		-- (the recoil goes away from the hitter: backwards for a blow from the front, forwards for one from behind)
+		local away = st.hitAway or 1
+		pose.Push += rc.Push * away
+		pose.Drop += rc.Drop
+		for _, n in { "Neck", "Chest", "UpperArmL", "UpperArmR", "LowerArmL", "LowerArmR" } do
+			pose[n] += rc[n]
+		end
+	end
 	-- the hit tips the body at the hips: turn the legs back by the same, so the feet stay on their spot (the tip
 	-- swung a golem's planted foot 0.5 studs and more)
 	if not dead and math.abs(st.hit) > 0.01 and st.joints.UpperLegL then
@@ -626,7 +673,7 @@ local function animate(st, dt, now)
 			if math.abs(st.hit) > 0.01 then
 				r = CFrame.fromAxisAngle(st.hitAxis, st.hit * RAD) * r
 			end
-			local move = Vector3.new(0, (pose.Lift - pose.Drop) * h, -pose.Push * h)
+			local move = Vector3.new(st.crowdX or 0, (pose.Lift - pose.Drop) * h, -pose.Push * h)
 			j.bone.Transform = CFrame.new(j.inv * move) * (j.inv * r * j.rot)
 		elseif pose.Moves[name] then
 			j.bone.Transform = CFrame.new(j.inv * (pose.Moves[name] * h)) * (j.inv * r * j.rot)
@@ -702,6 +749,55 @@ local function animate(st, dt, now)
 end
 
 -------------------------------------------------------------------------------
+-- the crowd: monsters standing close spread to the sides (inside their models: the server's places are unchanged), and
+-- the ones standing near a monster that is hitting something jeer (MonsterMoves.Crowd, MonsterMoves.Jeer)
+local function crowdPass(dt)
+	local C, J = Moves.Crowd, Moves.Jeer
+	local list = {}
+	for model, st in states do
+		if st and model.Parent then
+			local pv = model:GetPivot() * st.frame
+			table.insert(list, { st = st, pos = Vector3.new(pv.Position.X, 0, pv.Position.Z),
+				right = Vector3.new(pv.RightVector.X, 0, pv.RightVector.Z), bash = model:GetAttribute("Bashing") == true,
+				h = st.height })
+		end
+	end
+	for _, a in list do
+		local st = a.st
+		st.lane = st.lane or (math.random() * 2 - 1) * C.Lane
+		local side, crowded, nearBash = 0, false, false
+		for _, b in list do
+			if b ~= a then
+				local d = a.pos - b.pos
+				local r = (a.h + b.h) * C.Radius
+				local dist = d.Magnitude
+				if dist < r then
+					crowded = true
+					local s = d:Dot(a.right)
+					if math.abs(s) < 1e-3 then
+						s = st.lane -- (exactly in line: each takes its own side)
+					end
+					side += (s >= 0 and 1 or -1) * (1 - dist / r)
+				end
+				if b.bash and dist < (a.h + b.h) * 0.5 * J.Near then
+					nearBash = true
+				end
+			end
+		end
+		local standing = (st.walk or 0) < 0.5
+		if standing then
+			-- (only a standing crowd spreads: on the move the offset is held, so no planted foot is dragged)
+			st.crowdGoal = crowded and math.clamp((side * C.Spread + st.lane) * a.h, -C.Max * a.h, C.Max * a.h) or 0
+		end
+		st.crowdX, st.crowdV = springStep(st.crowdX or 0, st.crowdV or 0, st.crowdGoal or 0, C.Hz, 0.9, dt)
+		local jeerGoal = (standing and nearBash and not a.bash) and 1 or 0
+		st.jeer = (st.jeer or 0) + (jeerGoal - (st.jeer or 0)) * math.min(1, dt * 5)
+		if st.jeer < 0.01 then
+			st.jeer = nil
+		end
+	end
+end
+
 local nextScan = 0
 RunService.RenderStepped:Connect(function(dt)
 	dt = math.clamp(dt, 1 / 240, 1 / 15)
@@ -712,6 +808,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	local camera = workspace.CurrentCamera
 	local eye = camera and camera.CFrame.Position
+	crowdPass(dt)
 	for model, st in states do
 		if not model.Parent then
 			states[model] = nil

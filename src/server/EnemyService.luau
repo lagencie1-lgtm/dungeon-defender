@@ -861,7 +861,9 @@ function EnemyService.Start()
 					pos = Vector3.new(pos.X, (Ground.At(x, z)), pos.Z)
 				end
 				-- turn smoothly at corners, waddle from foot to foot, lean into the walk (solid models, no skeleton)
-				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * 9)) or dir
+				-- (a rigged boss turns slower: its feet step round instead of sliding, MonsterAnim)
+				local turnRate = (e.rigged and e.stats.Boss) and 3.5 or 9
+				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * turnRate)) or dir
 				if e.facing.Magnitude < 0.01 then
 					e.facing = dir
 				end

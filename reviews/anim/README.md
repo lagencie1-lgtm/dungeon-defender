@@ -88,3 +88,26 @@ Each monster was filmed alone at phone size by `test/anim-monsters-a/b.project.j
 - **Wider foot fixes for big bosses:** wider foot corrections while turning (25 / 30 degrees).
 
 **Still open:** brute and king bash slide 0.06 / 0.075 studs per contact (target 0.05); the king's foot slides 0.5 studs at sharp corners; barricade crowding.
+
+## In a real run, round 3 (`<name>_ingame_round3`, `goblin_barricade_round3`)
+
+| monster | grades (1-10) |
+|---|---|
+| Ember Imp | fly 7 / attack 7 / hit 7 / knock out 6 |
+| Shade | float 7 / attack 7 / hit 7 / knock out 6 |
+| Magma Slime | hop 7 / attack 7 (new lunge with its top) / hit 6 / knock out 6 |
+| Crystal Brute | walk 8 / attack 8 / hit 7 / knock out 7 |
+| Obsidian Knight | walk 8 / attack 8 / hit 7 / knock out 7 |
+| Molten Golem (boss) | walk 7 / slam 7 / hit 7 / knock out 7 |
+| Goblin King (boss) | walk 7 / attack 8 / slam 6 / charge 7 / hit 7 / knock out 7 |
+| Shadow Queen (boss) | float 7 / attack 7 / slam 7 / summon 7 / hit 7 / knock out 6 |
+| Goblins at the Oak Barricade | 6 |
+
+**Changed:**
+- **Attack:** a longer wind-up that rises and holds a beat, a faster strike and a held contact frame (`MonsterMoves.Attack`). The slime lunges with its top.
+- **Hit:** the rock is 8 degrees. A recoil plays with it: the body is pushed away from the hitter, the head snaps back and the arms fling, easing back in 0.28 s (`MonsterMoves.HitRecoil`).
+- **Attack slide:** no crouch or lunge while the monster is moving. Brute bash slide is 0.021 and King 0.005 studs per contact (target 0.05).
+- **Corners:** turns count 4 times over for the stride, and rigged bosses turn slower (server, facing rate 3.5 instead of 9). Worst corner contact: golem 0.36, King 0.75 studs (round 2: 1.6 / 2.6).
+- **Crowds:** a standing crowd spreads sideways inside the models, and the back rows jeer (`MonsterMoves.Crowd`, `MonsterMoves.Jeer`).
+
+**Still open:** the King's corner contact (0.75 studs); the barricade crowd seen from the run camera.

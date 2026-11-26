@@ -1,0 +1,11 @@
+[ANIM] ShadowQueen walk side: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen walk 3/4: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen bashing true
+[ANIM] ShadowQueen bash: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen tell summon
+[ANIM] ShadowQueen tell slam
+[ANIM] ShadowQueen tell slam: on screen 122 px at rest, 111..127 px in the tell (-9% / +4%); top -17..+4% of its height
+[ANIM] ShadowQueen tell summon: on screen 123 px at rest, 123..127 px in the tell (-0% / +3%); top -2..+20% of its height
+[ANIM] ShadowQueen tell slam: on screen 120 px at rest, 114..145 px in the tell (-5% / +21%); top -14..+20% of its height
+[ANIM] ShadowQueen tell summon: on screen 124 px at rest, 121..126 px in the tell (-2% / +2%); top -3..+15% of its height
+[ANIM] ShadowQueen dead true removed true

@@ -100,7 +100,7 @@ end
 local ATTACK = clipOf(Moves.Attack)
 local SLAM = clipOf(Moves.Slam)
 local SUMMON = clipOf(Moves.Summon)
-local CHARGE = poseFromKey(Moves.Charge.Pose)
+local CHARGE = clipOf(Moves.Charge)
 local DEATH = clipOf(Moves.Death)
 local REST = emptyPose()
 
@@ -277,13 +277,28 @@ local function animate(st, dt, now)
 		local last = st.lastFlat or flat.Unit
 		local turn = math.acos(math.clamp(last:Dot(flat.Unit), -1, 1)) * (st.stance or 0)
 		st.lastFlat = flat.Unit
+		st.lastTurn = turn
 		if turn < h then
 			stepped += turn
 			moved += turn
 		end
 	end
 	local speed = moved / math.max(dt, 1e-3)
-	st.walk, st.walkVel = springStep(st.walk, st.walkVel, (speed > 0.3 and not dead) and 1 or 0, W.Settle.Hz, W.Settle.Damping, dt)
+	-- a boss winding up a tell stands: the legs leave the stride quickly, so the crouch bends straight legs (a stride
+	-- under the crouch pushed the feet into the ground)
+	local telling = (st.slamStart and now - st.slamStart < Moves.Slam.Length) or model:GetAttribute("Tell") == "charge"
+	if telling then
+		st.walk *= math.exp(-dt * 12)
+		st.walkVel = 0
+		speed = 0
+	end
+	-- (the server's moves reach this computer at its network rate, so at 60 fps every other frame moves 0: the walk
+	-- decides on the speed over the last ~0.15 s, else it sat at half a stride and the feet never planted)
+	st.speedAvg2 = (st.speedAvg2 or speed) + (speed - (st.speedAvg2 or speed)) * math.min(1, dt * 7)
+	if telling then
+		st.speedAvg2 = 0
+	end
+	st.walk, st.walkVel = springStep(st.walk, st.walkVel, (st.speedAvg2 > 0.3 and not dead) and 1 or 0, W.Settle.Hz, W.Settle.Damping, dt)
 	local w = math.clamp(st.walk, 0, 1.2)
 
 	local gait = st.joints.Body1 and "hop" or st.joints.UpperLegL and (Moves.Gaits[model.Name] or Moves.Gaits.Default)
@@ -497,32 +512,39 @@ local function animate(st, dt, now)
 		addPose(pose, sample(ATTACK, t), 1)
 	end
 
-	-- boss tells: the slam wind-up (from the moment the server says), the charge wind-up (held), the summon
+	-- boss tells: the slam (its whole clip from the moment the server starts it, the smash on the server's beat), the
+	-- charge (rear up, then crouched until it ends), the summon
 	local tell = model:GetAttribute("Tell") or ""
 	if tell ~= (st.tell or "") then
 		st.tell = tell
 		st.tellAt = now
+		if tell == "slam" then
+			st.slamStart = now
+		end
 	end
 	if not dead then
-		if tell == "slam" then
-			addPose(pose, sample(SLAM, now - st.tellAt), 1)
-		elseif tell == "charge" then
-			local k = math.min(1, (now - st.tellAt) / 0.25)
-			addPose(pose, CHARGE, k * k * (3 - 2 * k))
-			local paw = math.sin(now * 2 * math.pi * Moves.Charge.PawHz) * Moves.Charge.Paw
-			pose.UpperLegR += Vector3.new(math.max(0, paw), 0, 0)
-		elseif st.tellAt and st.lastTellName == "slam" and now - st.tellAt < 0.6 then
-			addPose(pose, sample(SLAM, 1.05 + (now - st.tellAt)), 1) -- (the recovery after the server ends the slam)
+		if st.slamStart and now - st.slamStart < Moves.Slam.Length then
+			addPose(pose, sample(SLAM, now - st.slamStart), 1)
 		end
-		if tell ~= "" then
-			st.lastTellName = tell
+		if tell == "charge" then
+			local t = now - st.tellAt
+			addPose(pose, sample(CHARGE, t), 1)
+			if t > 1.15 then
+				local paw = math.sin(now * 2 * math.pi * Moves.Charge.PawHz) * Moves.Charge.Paw
+				pose.UpperLegR += Vector3.new(math.max(0, paw), 0, 0)
+			end
+			st.chargeEnd = now
+		elseif st.chargeEnd and now - st.chargeEnd < 0.35 then
+			-- (out of the crouch on a spring-like ease when the charge ends)
+			local k = 1 - (now - st.chargeEnd) / 0.35
+			addPose(pose, sample(CHARGE, 99), k * k * (3 - 2 * k))
 		end
 		local summonAt = model:GetAttribute("SummonAt")
 		if summonAt ~= st.lastSummon then
 			st.lastSummon = summonAt
 			st.summonStart = summonAt and now or nil
 		end
-		if st.summonStart and now - st.summonStart < 1.3 then
+		if st.summonStart and now - st.summonStart < Moves.Summon.Length then
 			addPose(pose, sample(SUMMON, now - st.summonStart), 1)
 		end
 	end
@@ -544,9 +566,11 @@ local function animate(st, dt, now)
 	-- a clip that sinks or pushes the body (attack, hit, slam, charge, summon) bends the knees under it, so the feet
 	-- stay where they stand instead of sinking into the ground or sliding (a two-bone bend on the leg's length)
 	if not dead and st.joints.UpperLegL and st.joints.LowerLegL then
+		-- (on the move it does not lunge: a push would drag the planted foot along)
+		pose.Push -= (pose.Push - gaitPush) * math.clamp(w, 0, 1)
 		local exD, exP = (pose.Drop - gaitDrop) * h, (pose.Push - gaitPush) * h
-		local still = 1 - math.clamp(w, 0, 1)
-		if still > 0.01 and (math.abs(exD) > 1e-3 or math.abs(exP) > 1e-3) then
+		local still = 1
+		if math.abs(exD) > 1e-3 or math.abs(exP) > 1e-3 then
 			local L = st.leg
 			local x, y = -exP, math.max(L * 0.3, L - exD)
 			local bend = math.acos(math.min(1, math.sqrt(x * x + y * y) / L))
@@ -632,10 +656,11 @@ local function animate(st, dt, now)
 			if fwd.Magnitude > 1e-3 and right.Magnitude > 1e-3 then
 				-- along the walk: swing the thigh; across it (the body turning at a corner): swing the leg out or in
 				local err = (p - st.plantPos):Dot(fwd.Unit)
-				local fix = math.clamp(-err / (st.leg * math.max(0.4, math.cos(st.downA or 0))) / RAD, -12, 12)
+				local fix = math.clamp(-err / (st.leg * math.max(0.4, math.cos(st.downA or 0))) / RAD, -25, 25)
 				local thigh = "UpperLeg" .. side
 				local errSide = (p - st.plantPos):Dot(right.Unit)
-				local fixSide = math.clamp(-errSide / st.leg / RAD * st.joints[thigh].out, -15, 15)
+				-- (a big boss turning at a corner moves its hips across by stance x angle: up to 30 degrees)
+				local fixSide = math.clamp(-errSide / st.leg / RAD * st.joints[thigh].out, -30, 30)
 				write(thigh, st.joints[thigh], pose[thigh] + Vector3.new(fix, 0, fixSide))
 				write("Foot" .. side, foot, pose["Foot" .. side] - Vector3.new(fix, 0, fixSide))
 				-- the walk sank the hips for the solved leg angle; the corrected leg is steeper or flatter, so sink
@@ -664,6 +689,12 @@ local function animate(st, dt, now)
 			model:SetAttribute("SlideContacts", (model:GetAttribute("SlideContacts") or 0) + 1)
 			model:SetAttribute("SlideTotal", (model:GetAttribute("SlideTotal") or 0) + (st.contactSlide or 0))
 			model:SetAttribute("SlideWorst", math.max(model:GetAttribute("SlideWorst") or 0, st.contactSlide or 0))
+			if (st.contactSlide or 0) > 0.1 then
+				-- (test rigs: what was going on during a contact that slid)
+				print(string.format("[MONSTERANIM] %s slid %.2f: w %.2f, back %s, hit %.1f, bashing %s, tell %s, turn %.2f",
+					model.Name, st.contactSlide, w, tostring(stepped < 0), st.hit, tostring(model:GetAttribute("Bashing")),
+					tostring(model:GetAttribute("Tell")), st.lastTurn or 0))
+			end
 			st.contactSlide = 0
 		end
 		st.lastDown, st.lastFoot = down, p

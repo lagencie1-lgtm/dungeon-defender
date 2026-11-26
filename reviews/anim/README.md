@@ -62,3 +62,29 @@ Each monster was filmed alone at phone size by `test/anim-monsters-a/b.project.j
 - Foot slide while the golem and the Goblin King bash (0.3 studs per contact).
 - Ankle readings under the ground in the bosses' 3/4 and bash windows. The sheets show no sinking; most likely the ray hits something between the feet.
 - Boss tells read small at phone distance.
+
+## In a real run, round 2 (`<name>_ingame_round2`, `goblin_barricade_round2`)
+
+| monster | grades (1-10) |
+|---|---|
+| Ember Imp | fly 7 / attack 6 / hit 6 / knock out 6 |
+| Shade | float 7 / attack 6 / hit 6 / knock out 6 |
+| Magma Slime | hop 7 / attack 6 / hit 6 / knock out 6 |
+| Crystal Brute | walk 8 / attack 6 / hit 6 / knock out 7 |
+| Obsidian Knight | walk 8 / attack 7 / hit 6 / knock out 7 |
+| Molten Golem (boss) | walk 7 / slam 7 / hit 6 / knock out 7 |
+| Goblin King (boss) | walk 7 / slam 7 / charge 7 / hit 6 / knock out 7 |
+| Shadow Queen (boss) | float 7 / attack 6 / slam 6 / summon 7 / hit 6 / knock out 6 |
+| Goblin at the Oak Barricade | hitting 5 |
+
+**Changed:**
+- **Boss tells move the whole body:** they rear back and rise, crouch for the smash or the charge, and the Queen levitates for her summon. Each pose holds 0.4-0.55 s.
+  - Measured at phone distance: the top of the silhouette moves 18-26% of the boss's height (target 15%).
+  - The first try (Drop 0.15, 56 degrees of bend) looked like the golem falling over; it is a crouch now.
+- **Rise after the slam:** the server keeps the boss still for 0.7 s after the slam while it rises (`slamRecoverUntil`).
+- **"Feet under the ground" was real:** it was terrain, and the feet sank under the slam crouch while the legs were still mid-stride. Legs now leave the stride as a tell starts. The ground ray in the test now skips everything but solid map parts, and no foot goes under any more.
+- **Walk decided on smoothed speed:** at 60 fps every other frame gets no new position from the server. The walk used to sit at half a stride and the feet never planted. That would have happened on phones too.
+- **No lunge while moving:** the attack doesn't push forward while the monster is moving.
+- **Wider foot fixes for big bosses:** wider foot corrections while turning (25 / 30 degrees).
+
+**Still open:** brute and king bash slide 0.06 / 0.075 studs per contact (target 0.05); the king's foot slides 0.5 studs at sharp corners; barricade crowding.

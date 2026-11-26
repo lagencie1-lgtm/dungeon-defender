@@ -302,6 +302,50 @@ if cue:GetAttribute("Mode") == "monsters" then
 			return CFrame.lookAt(at + cf.RightVector * dist + Vector3.new(0, up + 4, 0), at)
 		end
 	end
+	-- the ground under a point: only solid, visible map parts count (round 1 read boss ankles 1.8 studs "under" the
+	-- ground: the ray hit something between the feet). Skips the hero, enemies, effects, pets, the stand-in post.
+	local skipFolders = { "Enemies", "Effects", "Pets", "Towers", "Drops", "Loot" }
+	local lastGroundHit = ""
+	local function solidGround(pos)
+		local skip = { character, workspace:FindFirstChild("ChargePost") }
+		for _, n in skipFolders do
+			table.insert(skip, workspace:FindFirstChild(n))
+		end
+		for _, pl in Players:GetPlayers() do
+			table.insert(skip, pl.Character)
+		end
+		local rp = RaycastParams.new()
+		for _ = 1, 12 do
+			rp.FilterDescendantsInstances = skip
+			local hit = workspace:Raycast(pos + Vector3.new(0, 4, 0), Vector3.new(0, -14, 0), rp)
+			if not hit then
+				return nil
+			end
+			local part = hit.Instance
+			if part == workspace.Terrain or (part:IsA("BasePart") and part.CanCollide and part.Transparency < 0.9) then
+				lastGroundHit = part:GetFullName()
+				return hit.Position.Y
+			end
+			table.insert(skip, part)
+		end
+		return nil
+	end
+	-- the monster's height on screen (px): every bone, plus its crown (the top of the model, carried by the head)
+	local function screenHeight(m, crown)
+		local lo, hi = math.huge, -math.huge
+		local groundPx = camera:WorldToViewportPoint(m:GetPivot().Position - Vector3.new(0, m:GetExtentsSize().Y * 0.5, 0)).Y
+		for _, d in m:GetDescendants() do
+			if d:IsA("Bone") then
+				local p = camera:WorldToViewportPoint(d.TransformedWorldCFrame.Position)
+				lo, hi = math.min(lo, p.Y), math.max(hi, p.Y)
+			end
+		end
+		if crown then
+			local p = camera:WorldToViewportPoint((crown.bone.TransformedWorldCFrame * crown.offset).Position)
+			lo, hi = math.min(lo, p.Y), math.max(hi, p.Y)
+		end
+		return hi - lo, groundPx - lo -- (its extent, and its top over its base: a levitating queen rises)
+	end
 	local function boneOf(m, name)
 		for _, d in m:GetDescendants() do
 			if d:IsA("Bone") and (string.gsub(d.Name, "[^%w]", "")) == name then
@@ -337,11 +381,19 @@ if cue:GetAttribute("Mode") == "monsters" then
 		local _, size = m:FindFirstChild("Look"):GetBoundingBox()
 		local h = size.Y
 		local fl, fr = boneOf(m, "FootL"), boneOf(m, "FootR")
-		local restFoot = fl and (fl.TransformedWorldCFrame.Position.Y - (groundBelow(fl.TransformedWorldCFrame.Position) or 0))
+		local restFoot = fl and (fl.TransformedWorldCFrame.Position.Y - (solidGround(fl.TransformedWorldCFrame.Position) or 0))
+		local headBone = boneOf(m, "Head")
+		local crown
+		if headBone then
+			local cf, sz = m:FindFirstChild("Look"):GetBoundingBox()
+			local hc = headBone.TransformedWorldCFrame
+			crown = { bone = headBone, offset = CFrame.new(hc:PointToObjectSpace(Vector3.new(hc.Position.X, cf.Position.Y + sz.Y / 2, hc.Position.Z))) }
+		end
 		local look = m:FindFirstChild("Look")
 		local function follow(view_, seconds, label)
 			local t0 = os.clock()
 			local lowMin, lowMax = math.huge, -math.huge
+			local underWhat = ""
 			local n0, s0 = m:GetAttribute("SlideContacts") or 0, m:GetAttribute("SlideTotal") or 0
 			m:SetAttribute("SlideWorst", 0)
 			mark(name .. " " .. label)
@@ -351,8 +403,13 @@ if cue:GetAttribute("Mode") == "monsters" then
 				camera.CFrame = view_(cf)
 				if fl and fr then
 					local a, b = fl.TransformedWorldCFrame.Position, fr.TransformedWorldCFrame.Position
-					local g = groundBelow((a + b) / 2) or cf.Position.Y
-					local low = math.min(a.Y, b.Y) - g
+					-- (each foot against the solid ground under that foot)
+					local ga = solidGround(a) or cf.Position.Y
+					local gb = solidGround(b) or cf.Position.Y
+					local low = math.min(a.Y - ga, b.Y - gb)
+					if low < -0.1 and underWhat == "" then
+						underWhat = lastGroundHit
+					end
 					lowMin, lowMax = math.min(lowMin, low), math.max(lowMax, low)
 				end
 				RunService.RenderStepped:Wait()
@@ -361,6 +418,9 @@ if cue:GetAttribute("Mode") == "monsters" then
 			say(string.format("%s %s: height %.1f; lowest ankle vs ground %.2f..%.2f (rest %.2f); planted-foot slide %.3f studs per contact over %d contacts (worst %.3f)",
 				name, label, h, lowMin == math.huge and 0 or lowMin, lowMax == -math.huge and 0 or lowMax, restFoot or 0,
 				(s1 - s0) / math.max(n1 - n0, 1), n1 - n0, m:GetAttribute("SlideWorst") or 0))
+			if underWhat ~= "" then
+				say(name, label, "a foot went under, ground there:", underWhat)
+			end
 		end
 		local dist = math.max(10, math.min(h * 2.4, 16 + h * 1.1)) -- (a 20-stud boss: 39 studs off, not 50)
 		follow(clearSide(dist, h * 0.35), 5, "walk side")
@@ -392,8 +452,37 @@ if cue:GetAttribute("Mode") == "monsters" then
 				cue:FireServer("Charge", cf.Position + cf.LookVector * 14)
 			end
 			local healAt = 0
+			local base, curTell, tMin, tMax, summonT, slamT, lastTell, baseTop, topMin, topMax
+			local lastSummon = m:GetAttribute("SummonAt")
 			while os.clock() - t2 < 16 and m.Parent and not m:GetAttribute("Dead") do
 				local tell = m:GetAttribute("Tell") or ""
+				if m:GetAttribute("SummonAt") ~= lastSummon then
+					lastSummon = m:GetAttribute("SummonAt")
+					summonT = os.clock()
+				end
+				if tell == "slam" and lastTell ~= "slam" then
+					slamT = os.clock()
+				end
+				lastTell = tell
+				local sh, top = screenHeight(m, crown)
+				local which = (tell ~= "" and tell) or (summonT and os.clock() - summonT < 1.6 and "summon")
+					or (slamT and os.clock() - slamT < 2 and "slam") or nil
+				if curTell and which ~= curTell then
+					say(string.format("%s tell %s: on screen %.0f px at rest, %.0f..%.0f px in the tell (%+.0f%% / %+.0f%%); top %+.0f..%+.0f%% of its height",
+						name, curTell, base or 0, tMin, tMax, (tMin / (base or 1) - 1) * 100, (tMax / (base or 1) - 1) * 100,
+						(topMin - (baseTop or 0)) / (base or 1) * 100, (topMax - (baseTop or 0)) / (base or 1) * 100))
+					curTell = nil
+				end
+				if which then
+					if curTell ~= which then
+						curTell, tMin, tMax, topMin, topMax = which, sh, sh, top, top
+					end
+					tMin, tMax = math.min(tMin, sh), math.max(tMax, sh)
+					topMin, topMax = math.min(topMin, top), math.max(topMax, top)
+				else
+					base = base and (base * 0.9 + sh * 0.1) or sh
+					baseTop = baseTop and (baseTop * 0.9 + top * 0.1) or top
+				end
 				if tell ~= "" and not seen[tell] then
 					seen[tell] = true
 					mark(name .. " tell " .. tell)
@@ -413,6 +502,8 @@ if cue:GetAttribute("Mode") == "monsters" then
 			end
 		end
 		-- hit from the hero's side, then out
+		cue:FireServer("Tough", m) -- (enough health that the two hits don't kill it: the fall gets its own shot)
+		task.wait(0.2)
 		mark(name .. " hit")
 		for _ = 1, 2 do
 			cue:FireServer("HitEnemy", m)

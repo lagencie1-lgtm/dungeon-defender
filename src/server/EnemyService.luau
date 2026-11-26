@@ -783,6 +783,7 @@ function EnemyService.Start()
 					Effects.Ring(spot + Vector3.new(0, 0.3, 0), radius, Color3.fromRGB(255, 40, 40), 0.9)
 					task.delay(0.9, function()
 						e.slamming = false
+						e.slamRecoverUntil = Clock.now + 0.7 -- (stands while it rises from the smash; MonsterMoves.Slam)
 						e.nextSlam = Clock.now + (e.enraged and 3.5 or 6)
 						if e.dead then
 							return
@@ -792,8 +793,8 @@ function EnemyService.Start()
 						EnemyService.OnBossSlam(spot, radius)
 					end)
 				end
-				if e.slamming then
-					speed = 0 -- it stops to wind up the slam
+				if e.slamming or (e.slamRecoverUntil and now < e.slamRecoverUntil) then
+					speed = 0 -- it stops to wind up the slam, and to rise from it
 				end
 				-- what the boss is winding up, for MonsterAnim's tells (written only when it changes)
 				local tell = e.slamming and "slam" or e.charging and "charge" or ""

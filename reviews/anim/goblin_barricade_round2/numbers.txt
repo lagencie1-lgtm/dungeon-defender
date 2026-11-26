@@ -1,0 +1,3 @@
+[ANIM] barricade placed true nil 73.5, 0, 42
+[ANIM] goblins bashing the wall: 1
+[ANIM] most goblins bashing at once: 3

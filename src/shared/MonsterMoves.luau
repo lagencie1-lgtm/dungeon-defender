@@ -110,34 +110,48 @@ MonsterMoves.Attack = {
 	},
 }
 
--- boss tells (6A: a boss never goes quiet). The arms stay within what each rig was tested at (the Goblin King:
--- arms 35, so the club goes overhead from the elbow and wrist, and the body does the rest)
--- slam: the server shows the red ring 0.9 s before the blow; the wind-up fills those 0.9 s, the smash lands on time
+-- boss tells (6A: a boss never goes quiet). Round 2: they must read at phone distance, so the whole body moves
+-- (rear back, rise, crouch, head up) and each pose holds 0.4-0.6 s; the arms stay within what each rig was tested at
+-- (the Goblin King: arms 35; the Shadow Queen keeps hers near the body). Drop/Lift/Push are shares of height; the
+-- legs bend under them (MonsterAnim), so the feet stay put.
+-- slam: the server shows the red ring 0.9 s before the blow. Rear back and up (0.3 s), hold, smash down at 0.9 s
+-- into a deep crouch, hold it, rise again.
 MonsterMoves.Slam = {
+	Length = 1.6,
 	Keys = {
-		{ t = 0.7, ease = "out", Drop = 0.05, Root = { 14, 0, 0 }, Spine = { 10, 0, 0 }, Neck = { -10, 0, 0 },
-			UpperArmL = { 35, 0, 10 }, UpperArmR = { 35, 0, 10 }, LowerArmL = { 70, 0, 0 }, LowerArmR = { 70, 0, 0 },
-			HandL = { 35, 0, 0 }, HandR = { 35, 0, 0 } },
-		{ t = 0.9, ease = "in", Drop = 0.12, Push = 0.05, Root = { -20, 0, 0 }, Spine = { -16, 0, 0 }, Neck = { 12, 0, 0 },
-			UpperArmL = { -10, 0, 14 }, UpperArmR = { -10, 0, 14 }, LowerArmL = { 10, 0, 0 }, LowerArmR = { 10, 0, 0 } },
-		{ t = 1.05, hold = true },
-		{ t = 1.5, ease = "back" },
+		{ t = 0.3, ease = "out", Lift = 0.03, Root = { 22, 0, 0 }, Spine = { 14, 0, 0 }, Chest = { 8, 0, 0 },
+			Neck = { -18, 0, 0 }, UpperArmL = { 35, 0, 16 }, UpperArmR = { 35, 0, 16 }, LowerArmL = { 75, 0, 0 },
+			LowerArmR = { 75, 0, 0 }, HandL = { 35, 0, 0 }, HandR = { 35, 0, 0 } },
+		{ t = 0.76, hold = true }, -- (held 0.46 s)
+		-- (round 2 first try: Drop 0.15 and 56 degrees of bend read as the golem falling over; this is a crouch)
+		{ t = 0.9, ease = "in", Drop = 0.1, Push = 0.03, Root = { -20, 0, 0 }, Spine = { -12, 0, 0 }, Chest = { -6, 0, 0 },
+			Neck = { 20, 0, 0 }, UpperArmL = { -15, 0, 18 }, UpperArmR = { -15, 0, 18 }, LowerArmL = { 10, 0, 0 },
+			LowerArmR = { 10, 0, 0 } },
+		{ t = 1.3, hold = true }, -- (held 0.4 s; the server keeps the boss still until the rise is done)
+		{ t = 1.6, ease = "back" },
 	},
 }
--- charge: held while the boss winds up its charge at a defender: low, leaning in, arms swept back, head up
+-- charge: the wind-up lasts seconds. Rear up and roar (head back) for half a second, then drop low into a crouch,
+-- leaning in with the head up at the target, held for the rest of the wind-up while one foot paws the ground.
 MonsterMoves.Charge = {
-	Pose = { Drop = 0.1, Root = { -18, 0, 0 }, Spine = { -8, 0, 0 }, Neck = { 16, 0, 0 },
-		UpperArmL = { -30, 0, 12 }, UpperArmR = { -30, 0, 12 }, LowerArmL = { 30, 0, 0 }, LowerArmR = { 30, 0, 0 } },
-	Paw = 10, -- a foot paws the ground (degrees), PawHz times a second
+	Keys = {
+		{ t = 0.3, ease = "out", Lift = 0.02, Root = { 20, 0, 0 }, Spine = { 12, 0, 0 }, Neck = { -24, 0, 0 },
+			UpperArmL = { 30, 0, 25 }, UpperArmR = { 30, 0, 25 }, LowerArmL = { 50, 0, 0 }, LowerArmR = { 50, 0, 0 } },
+		{ t = 0.8, hold = true }, -- (held 0.5 s)
+		{ t = 1.15, ease = "out", Drop = 0.11, Root = { -24, 0, 0 }, Spine = { -10, 0, 0 }, Neck = { 30, 0, 0 },
+			UpperArmL = { -30, 0, 14 }, UpperArmR = { -30, 0, 14 }, LowerArmL = { 30, 0, 0 }, LowerArmR = { 30, 0, 0 } },
+	},
+	Paw = 12, -- a foot paws the ground (degrees), PawHz times a second, once crouched
 	PawHz = 2.2,
 }
--- summon: hands rise from the elbows, head back, held, released
+-- summon: rise up (a floating queen levitates), lean back with the head up and the arms open, hold, sink back
 MonsterMoves.Summon = {
+	Length = 1.5,
 	Keys = {
-		{ t = 0.35, ease = "out", Drop = 0.03, Spine = { 8, 0, 0 }, Neck = { -14, 0, 0 },
-			UpperArmL = { 20, 0, 25 }, UpperArmR = { 20, 0, 25 }, LowerArmL = { 75, 0, 0 }, LowerArmR = { 75, 0, 0 } },
-		{ t = 0.85, hold = true },
-		{ t = 1.25, ease = "back" },
+		{ t = 0.4, ease = "out", Lift = 0.16, Root = { 16, 0, 0 }, Spine = { 10, 0, 0 }, Neck = { -22, 0, 0 },
+			UpperArmL = { 15, 0, 30 }, UpperArmR = { 15, 0, 30 }, LowerArmL = { 40, 0, 0 }, LowerArmR = { 40, 0, 0 } },
+		{ t = 0.95, hold = true }, -- (held 0.55 s)
+		{ t = 1.5, ease = "back" },
 	},
 }
 

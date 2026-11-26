@@ -587,6 +587,15 @@ function EnemyService.SetBashing(enemy, on)
 	end
 end
 
+-- its row in the pile at a wall (the barricade branch sets e.pileRow: 0 = the front row, nil when not at a wall):
+-- MonsterAnim lets the rows behind reach over the ones in front. Written only when it changes.
+function EnemyService.SetPileRow(enemy, row)
+	if enemy.pileRowShown ~= row then
+		enemy.pileRowShown = row
+		enemy.model:SetAttribute("PileRow", row)
+	end
+end
+
 function EnemyService.Knockback(enemy, studs)
 	if enemy.dead or not studs or studs <= 0 then
 		return

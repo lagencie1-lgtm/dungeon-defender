@@ -117,12 +117,35 @@ MonsterMoves.Attack = {
 	SlimeStrike = { 0, -0.07, -0.12 },
 }
 
--- the back rows (standing, not hitting, next to one that is): they jeer, arms pumping, little hops, each on its own beat
-MonsterMoves.Jeer = { Hz = 1.7, Hop = 0.025, ArmUp = 110, Pump = 30, Near = 2.5 } -- Near: in heights
+-- the pile-up at a wall (Lemp 2026-11-26: "they should pile up before the barricade and smash onto it"): everyone
+-- standing in the pile swings at it on their own beat. The rows behind lean on the ones in front, reach over them with
+-- higher overhead swings (some hop up to swing) and the whole pile surges forward a little on each blow.
+MonsterMoves.Pile = {
+	Near = 2.5, -- in the pile: standing within this many heights of one that is hitting the wall
+	Lean = -12, -- a back row leans on the one in front (degrees)
+	Reach = 25, -- extra overhead on the wind-up (degrees, the striking arm)
+	Hop = 0.07, -- the hoppers jump this high on the wind-up (share of height); about half of the back rows hop
+	Surge = 0.035, -- the push forward on each blow, on top of the strike's own lunge (share of height)
+}
+-- the wall breaks (Bashing goes off for the whole pile): a beat, then they burst forward as a running blob
+MonsterMoves.Burst = {
+	Beat = 0.15, -- the beat before the burst (seconds); each one's start is staggered by up to Stagger more
+	Stagger = 0.1,
+	Lean = -14, -- extra forward lean in the burst, easing off over Fade seconds
+	Fade = 0.9,
+}
 
--- a crowd standing still spreads out to the sides so it doesn't melt into one blob (client only: the bodies move
--- inside their models; the server's places are unchanged)
-MonsterMoves.Crowd = { Radius = 0.55, Spread = 0.5, Max = 0.7, Lane = 0.18, Hz = 1.1 } -- shares of height
+-- a broken wall leaves a stump on the path (the barricade branch: attribute Broken on the tower model): monsters
+-- crossing it hop over, knees tucked, so no foot goes into it
+MonsterMoves.StepOver = {
+	Clear = 0.35, -- studs over the stump's top at the top of the hop
+	Reach = 0.55, -- the hop starts this many heights before the stump's face (and ends as far behind it)
+	Tuck = 45, -- knee tuck at the top of the hop (degrees)
+}
+
+-- a standing crowd keeps a little room between its members (a lane each, so two never sit in one spot); round 3 spread
+-- them wider, which Lemp didn't want at a wall (the pile-up). Client only: the bodies move inside their models.
+MonsterMoves.Crowd = { Radius = 0.55, Spread = 0.08, Max = 0.25, Lane = 0.1, Hz = 1.1 } -- shares of height
 
 -- boss tells (6A: a boss never goes quiet). Round 2: they must read at phone distance, so the whole body moves
 -- (rear back, rise, crouch, head up) and each pose holds 0.4-0.6 s; the arms stay within what each rig was tested at

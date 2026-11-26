@@ -1300,6 +1300,7 @@ function HeroService.Start()
 			if e.rigged then
 				-- (a hero in its way, or the wall it is stopped at: the barricade branch sets e.bashing)
 				EnemyService.SetBashing(e, bashing[e] or e.bashing == true)
+				EnemyService.SetPileRow(e, e.pileRow)
 			end
 		end
 	end)

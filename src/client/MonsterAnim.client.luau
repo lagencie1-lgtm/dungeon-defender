@@ -223,7 +223,22 @@ local function newState(model, bones)
 	return st
 end
 
+-- broken walls on the path (the barricade branch: tower attribute Broken): their stumps, for the hop over them
+local stumps = {}
+local function scanStumps()
+	table.clear(stumps)
+	local towers = workspace:FindFirstChild("Towers")
+	for _, m in towers and towers:GetChildren() or {} do
+		if m:IsA("Model") and m:GetAttribute("Broken") then
+			local look = m:FindFirstChild("Look") or m
+			local cf, size = look:GetBoundingBox()
+			table.insert(stumps, { cf = cf, size = size, top = cf.Position.Y + size.Y / 2 })
+		end
+	end
+end
+
 local function scan()
+	scanStumps()
 	local folder = workspace:FindFirstChild("Enemies")
 	if not folder then
 		return
@@ -510,7 +525,34 @@ local function animate(st, dt, now)
 	end
 
 	-- the attack while bashing, on this monster's own beat
-	if model:GetAttribute("Bashing") and not dead then
+	local bashing = model:GetAttribute("Bashing") == true
+	-- the pile at a wall: the ones standing in it swing too, the back rows lean in, reach over, some hop
+	local inPile = not dead and st.pile ~= nil and st.pile > 0.5
+	-- the wall breaks: the whole pile stops hitting at once; a beat, then the burst (MonsterMoves.Burst)
+	local hitting = (bashing or inPile) and not dead
+	if st.wasHitting and not hitting and not dead and st.wasPile then
+		local B = Moves.Burst
+		st.burstAt = now + B.Beat + math.random() * B.Stagger
+		st.beatFrom = now
+	end
+	st.wasHitting, st.wasPile = hitting, inPile or (st.wasPile and hitting)
+	if st.burstAt and not dead then
+		local B = Moves.Burst
+		if now < st.burstAt then
+			-- (the beat: a crouch, gathering)
+			local k = math.min(1, (now - st.beatFrom) / 0.08)
+			pose.Drop += 0.035 * k
+			pose.Root += Vector3.new(6 * k, 0, 0)
+			pose.UpperArmL += Vector3.new(-20 * k, 0, 10 * k)
+			pose.UpperArmR += Vector3.new(-20 * k, 0, 10 * k)
+		elseif now < st.burstAt + B.Fade then
+			local k = 1 - (now - st.burstAt) / B.Fade
+			pose.Root += Vector3.new(B.Lean * k * k, 0, 0)
+		else
+			st.burstAt = nil
+		end
+	end
+	if hitting then
 		local t = (now + st.beat) % Moves.Attack.Every
 		if st.joints.Top then
 			-- (a slime: the lunge with its top)
@@ -533,17 +575,22 @@ local function animate(st, dt, now)
 		else
 			addPose(pose, sample(ATTACK, t), 1)
 		end
-	elseif not dead and st.jeer then
-		-- a back row: jeers at the front (arms pumping, little hops), on its own beat
-		local J = Moves.Jeer
-		local ph = now * 2 * math.pi * J.Hz + st.breath
-		local k = st.jeer
-		pose.UpperArmL += Vector3.new((J.ArmUp + J.Pump * math.sin(ph)) * k, 0, 20 * k)
-		pose.UpperArmR += Vector3.new((J.ArmUp + J.Pump * math.sin(ph + math.pi)) * k, 0, 20 * k)
-		pose.LowerArmL += Vector3.new(40 * k, 0, 0)
-		pose.LowerArmR += Vector3.new(40 * k, 0, 0)
-		pose.Neck += Vector3.new(-10 * k, 12 * math.sin(ph * 0.5) * k, 0)
-		pose.Lift += J.Hop * math.max(0, math.sin(ph * 2)) * k
+		if st.backRow and inPile then
+			-- a back row: leans on the one in front, reaches higher over it, half of them hop up on the wind-up, and
+			-- the blow surges forward
+			local P = Moves.Pile
+			local wind = t < 0.3 and (1 - (1 - t / 0.3) ^ 2) or t < 0.4 and 1 or t < 0.46 and 1 - (t - 0.4) / 0.06 or 0
+			local strike = (t >= 0.4 and t < 0.58) and math.min(1, (t - 0.4) / 0.06) or (t >= 0.58 and t < 0.9)
+				and 1 - (t - 0.58) / 0.32 or 0
+			pose.Root += Vector3.new(P.Lean, 0, 0)
+			pose.UpperArmR += Vector3.new(P.Reach * wind, 0, 0)
+			if st.hopper then
+				pose.Lift += P.Hop * wind
+			end
+			pose.Push += P.Surge * strike
+		elseif inPile then
+			pose.Push += Moves.Pile.Surge * ((t >= 0.4 and t < 0.58) and 1 or 0) * 0.5
+		end
 	end
 
 	-- boss tells: the slam (its whole clip from the moment the server starts it, the smash on the server's beat), the
@@ -614,6 +661,35 @@ local function animate(st, dt, now)
 				pose["UpperLeg" .. s] += Vector3.new((lean + bend) / RAD * still, 0, 0)
 				pose["LowerLeg" .. s] += Vector3.new(-2 * bend / RAD * still, 0, 0)
 				pose["Foot" .. s] += Vector3.new((bend - lean) / RAD * still, 0, 0)
+			end
+		end
+	end
+
+	-- over a broken wall's stump: a hop where the stump is, knees tucked (the server walks it straight through)
+	if not dead and #stumps > 0 and st.joints.UpperLegL then
+		local S = Moves.StepOver
+		local here = pivot.Position
+		for _, s in stumps do
+			local rel = s.cf:PointToObjectSpace(here)
+			-- (the stump's thin side is across the path: the axis along which the monster crosses it)
+			local thin = s.size.X < s.size.Z and "X" or "Z"
+			local across = thin == "X" and math.abs(rel.X) or math.abs(rel.Z)
+			local along = thin == "X" and math.abs(rel.Z) or math.abs(rel.X)
+			local halfThin = (thin == "X" and s.size.X or s.size.Z) / 2
+			local halfWide = (thin == "X" and s.size.Z or s.size.X) / 2
+			local reach = halfThin + S.Reach * h
+			if across < reach and along < halfWide + h * 0.3 then
+				local k = 1 - (across / reach) ^ 2
+				-- (where the feet rest, from the rig's own foot bones)
+				local footJ = st.joints.FootL or st.joints.LowerLegL
+				local feet = here.Y + (footJ and footJ.pos.Y or -h * 0.5)
+				local need = math.max(0, s.top + S.Clear - feet)
+				pose.Lift += need * k / h
+				pose.LowerLegL += Vector3.new(-S.Tuck * k, 0, 0)
+				pose.LowerLegR += Vector3.new(-S.Tuck * k, 0, 0)
+				pose.UpperLegL += Vector3.new(S.Tuck * 0.5 * k, 0, 0)
+				pose.UpperLegR += Vector3.new(S.Tuck * 0.5 * k, 0, 0)
+				st.down = nil -- (in the air: no planted foot)
 			end
 		end
 	end
@@ -750,22 +826,22 @@ end
 
 -------------------------------------------------------------------------------
 -- the crowd: monsters standing close spread to the sides (inside their models: the server's places are unchanged), and
--- the ones standing near a monster that is hitting something jeer (MonsterMoves.Crowd, MonsterMoves.Jeer)
+-- the ones standing near a monster that is hitting something join the pile (MonsterMoves.Crowd, MonsterMoves.Pile)
 local function crowdPass(dt)
-	local C, J = Moves.Crowd, Moves.Jeer
+	local C, J = Moves.Crowd, Moves.Pile
 	local list = {}
 	for model, st in states do
 		if st and model.Parent then
 			local pv = model:GetPivot() * st.frame
 			table.insert(list, { st = st, pos = Vector3.new(pv.Position.X, 0, pv.Position.Z),
 				right = Vector3.new(pv.RightVector.X, 0, pv.RightVector.Z), bash = model:GetAttribute("Bashing") == true,
-				h = st.height })
+				fwd = Vector3.new(pv.LookVector.X, 0, pv.LookVector.Z), h = st.height, row = model:GetAttribute("PileRow") })
 		end
 	end
 	for _, a in list do
 		local st = a.st
 		st.lane = st.lane or (math.random() * 2 - 1) * C.Lane
-		local side, crowded, nearBash = 0, false, false
+		local side, crowded, nearBash, behind = 0, false, false, false
 		for _, b in list do
 			if b ~= a then
 				local d = a.pos - b.pos
@@ -782,6 +858,10 @@ local function crowdPass(dt)
 				if b.bash and dist < (a.h + b.h) * 0.5 * J.Near then
 					nearBash = true
 				end
+				-- someone right in front of it (the row ahead)
+				if dist < (a.h + b.h) * 0.6 and (b.pos - a.pos):Dot(a.fwd.Magnitude > 1e-3 and a.fwd.Unit or Vector3.zAxis) > a.h * 0.15 then
+					behind = true
+				end
 			end
 		end
 		local standing = (st.walk or 0) < 0.5
@@ -790,10 +870,17 @@ local function crowdPass(dt)
 			st.crowdGoal = crowded and math.clamp((side * C.Spread + st.lane) * a.h, -C.Max * a.h, C.Max * a.h) or 0
 		end
 		st.crowdX, st.crowdV = springStep(st.crowdX or 0, st.crowdV or 0, st.crowdGoal or 0, C.Hz, 0.9, dt)
-		local jeerGoal = (standing and nearBash and not a.bash) and 1 or 0
-		st.jeer = (st.jeer or 0) + (jeerGoal - (st.jeer or 0)) * math.min(1, dt * 5)
-		if st.jeer < 0.01 then
-			st.jeer = nil
+		-- in the pile: standing next to one that is hitting the wall (or hitting it itself)
+		local pileGoal = (standing and (nearBash or a.bash)) and 1 or 0
+		st.pile = (st.pile or 0) + (pileGoal - (st.pile or 0)) * math.min(1, dt * 6)
+		if st.pile < 0.01 then
+			st.pile = nil
+		end
+		-- (the server says which row of a wall's pile it is in; else: someone right in front of it)
+		local row = a.row
+		st.backRow = if row ~= nil then row > 0 else behind
+		if st.hopper == nil then
+			st.hopper = math.random() < 0.5
 		end
 	end
 end

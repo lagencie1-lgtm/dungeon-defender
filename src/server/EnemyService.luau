@@ -819,7 +819,8 @@ function EnemyService.Start()
 				local moving = speed > 0 and 1 or 0
 				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
 				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
-				if e.bashing then
+				if e.bashing and not e.rigged then
+					-- (rigged monsters swing with their own bones, see the animation branch: no whole-body lean on top)
 					-- hitting the wall: a forward chop about once a second, each enemy on its own beat
 					lean = -0.07 - 0.24 * math.max(0, math.sin(now * 6.5 + (e.blockSlot or 0) * 1.3))
 				end

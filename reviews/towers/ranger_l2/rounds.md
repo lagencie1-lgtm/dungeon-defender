@@ -37,3 +37,15 @@
 - round 12: elevation pass: Codex flat front/side/back sheet painted onto the kit model, hybrid rule (painting on door, banner, ivy, flag; calm colour + painted light on stone, shingles, timber)
   IoU 88.8%  width profile off 12.0%  region colour dE 11.6  (pixel dE 50.0)  detail 16.6% vs picture 21.3% (ratio 0.78)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 12 (L 45/49)  lookout 9 (L 40/47)  wall 4 (L 58/61)  footing 5 (L 63/63)
+- round 13: height rule (coordinator 2026-11-26): lower to fit the phone screen at the run camera; fixed paint tools
+  IoU 85.9%  width profile off 17.2%  region colour dE 11.1  (pixel dE 51.9)  detail 22.8% vs picture 21.3% (ratio 1.07)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 8 (L 45/48)  lookout 3 (L 40/39)  wall 3 (L 58/58)  footing 5 (L 63/67)
+- round 14: screen fit: roof flatter (level 3 also a slightly lower wall)
+  IoU 79.8%  width profile off 27.9%  region colour dE 10.4  (pixel dE 50.4)  detail 23.6% vs picture 21.3% (ratio 1.11)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 45/48)  lookout 5 (L 40/37)  wall 3 (L 58/58)  footing 7 (L 63/69)
+- round 15: screen fit: level 2 roof back up half way (levels 1 and 2 overlapped 81.3 %)
+  IoU 83.4%  width profile off 21.1%  region colour dE 10.8  (pixel dE 50.7)  detail 21.5% vs picture 21.3% (ratio 1.01)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 8 (L 45/49)  lookout 4 (L 40/40)  wall 3 (L 58/57)  footing 4 (L 63/67)
+- round 16: levels apart: level 2 roof 10 % wider (levels 1 and 2 overlapped 80.5 %)
+  IoU 82.2%  width profile off 24.2%  region colour dE 11.0  (pixel dE 51.8)  detail 22.2% vs picture 21.3% (ratio 1.04)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 4 (L 40/38)  wall 2 (L 58/59)  footing 7 (L 63/69)

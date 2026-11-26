@@ -144,6 +144,27 @@ def main():
         res["bright"][f"{key[0]} {key[1]}"] = share
         if share > 15:
             res["fails"].append(f"{key[0]} level {key[1]}: {share}% of it is bright yellow-orange (needs 15% or less)")
+    # fits the phone screen (coordinator 2026-11-26, the Ranger's level 3 roof was cut off at the run camera): in the
+    # phone view the top of the tower's outline stays at least 5 % of the screen's height below its top edge
+    res["top_margin"] = {}
+    for key, m in masks.items():
+        rows = np.where(m.any(1))[0]
+        if not len(rows):
+            continue
+        margin = round(100 * rows.min() / m.shape[0], 1)
+        res["top_margin"][f"{key[0]} {key[1]}"] = margin
+        if margin < 5:
+            res["fails"].append(f"{key[0]} level {key[1]}: its top is {margin}% below the screen's top edge (needs 5% or more)")
+    # no tower's level 3 more than 1.3 times as tall as the tallest other tower's level 3 (TowerService LEVEL_LOOKS)
+    import re
+    src = open(os.path.join(ROOT, "src", "server", "TowerService.luau"), encoding="utf-8").read()
+    h3 = {m.group(1): float(m.group(2)) for m in re.finditer(r'Name = "tower_(\w+)_l3", Height = ([\d.]+)', src)}
+    res["level3_height"] = h3
+    for k, h in h3.items():
+        others = [v for kk, v in h3.items() if kk != k]
+        if others and h > 1.3 * max(others):
+            res["fails"].append(f"{k} level 3 is {h:.2f} studs tall, {h / max(others):.2f} times the tallest other level 3 "
+                                f"(needs 1.3 or less)")
     json.dump(res, open(os.path.join(out, "rules.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != "fails"}, indent=1))
     print("RULES", "PASS" if not res["fails"] else "FAIL", res["fails"])

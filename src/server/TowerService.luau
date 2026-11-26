@@ -134,11 +134,12 @@ local LEVEL_LOOKS = {
 		-- as in the paintings)
 		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
 			Archers = { { Vector3.new(0.51, 4.4, -1.13), 4, 3.2 } } },
-		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-0.68, 8.0, -2.2),
-			Archers = { { Vector3.new(-0.68, 6.5, -1.64), 30, 3.2 } } },
-		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(0.54, 12.3, -3.9),
+		-- (2026-11-26, the screen-fit rule: levels 2 and 3 lowered, the archers with the balcony; level 3 also narrower)
+		{ Name = "tower_ranger_l2", Height = 13.90, Muzzle = Vector3.new(-0.68, 7.0, -2.2),
+			Archers = { { Vector3.new(-0.68, 5.5, -1.64), 30, 3.2 } } },
+		{ Name = "tower_ranger_l3", Height = 14.05, Muzzle = Vector3.new(0.42, 8.2, -3.04),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
-			Archers = { { Vector3.new(0.54, 10.8, -3.35), 11, 3.2 }, { Vector3.new(-2.15, 10.8, -2.63), 39, 3.1 } } },
+			Archers = { { Vector3.new(0.42, 6.7, -2.61), 11, 3.2 }, { Vector3.new(-1.68, 6.7, -2.05), 39, 3.1 } } },
 	},
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)

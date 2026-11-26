@@ -132,3 +132,8 @@ player:GetAttributeChangedSignal("WhatBar"):Connect(function()
 		whatBar()
 	end
 end)
+-- "PickWall": press the gamepad's Y (pick the nearest defender), so the info panel opens the way a player opens it
+player:GetAttributeChangedSignal("PickWall"):Connect(function()
+	local Gamepad = require(player.PlayerScripts:WaitForChild("Client"):WaitForChild("Gamepad"))
+	print("[LOOKCHECK] pick wall", Gamepad.Press(Enum.KeyCode.ButtonY))
+end)

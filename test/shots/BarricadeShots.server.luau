@@ -136,58 +136,85 @@ task.wait(1)
 TowerService.Upgrade(player, wall, "Rootwall")
 shootLook("rootwall_look", "tower_barricade_root")
 
--- then the wave: goblins at the Rootwall, its health bar checked, and whatever shows in the top right named
-local d = wall:GetAttribute("PathDistance")
-for _ = 1, 200 do
+-- then wave 1 against a fresh level 1 wall with no hero near (Lemp 2026-11-26: the whole pile smashes the wall):
+-- a phone shot of the goblins piled at it, and how long the wall lasts
+TowerService.Sell(player, wall)
+task.wait(1)
+ok, why = TowerService.Place(player, "Barricade", spotAt)
+print("[SHOT] placed level 1 for the wave", ok, why)
+wall = findWall()
+heroAt(wall, 11) -- (out of repair range: Config.Barricade.RepairRange is 9)
+for _ = 1, 240 do
 	if State.Get("State") == "Wave" then
 		break
 	end
 	task.wait(0.5)
 end
-print("[SHOT] state", State.Get("State"))
-heroAt(wall, 18, 6) -- (a hero next to the wall repairs it faster than goblins hurt it)
-for i = 1, 6 do
-	EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5))
+local t0 = os.clock()
+print("[SHOT] wave 1 starts, wall", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
+local firstHit, shotTaken, most = nil, false, 0
+while wall.Parent and (wall:GetAttribute("Health") or 0) > 0 and os.clock() - t0 < 150 do
+	heroAt(wall, 11)
+	local hp, max = wall:GetAttribute("Health") or 0, wall:GetAttribute("MaxHealth") or 1
+	if not firstHit and hp < max then
+		firstHit = os.clock()
+		print(string.format("[SHOT] first hit %.1f s into the wave", firstHit - t0))
+	end
+	local piled, smashing = 0, 0
+	for _, e in EnemyService.GetActive() do
+		if not e.dead and e.wall then
+			piled += 1
+			if e.bashing then
+				smashing += 1
+			end
+		end
+	end
+	if piled > most then
+		most = piled
+		print(string.format("[SHOT] pile %d at the wall, %d smashing, wall %.0f / %.0f at %.1f s", piled, smashing, hp, max, os.clock() - t0))
+	end
+	if not shotTaken and piled >= 7 then
+		shotTaken = true
+		shot("pile_wave1")
+	end
+	task.wait(0.25)
 end
+local gone = os.clock()
+print(string.format("[SHOT] level 1 wall %s after %.1f s of the wave, %.1f s after the first hit; most piled %d",
+	(wall.Parent and (wall:GetAttribute("Health") or 0) > 0) and "still standing" or "broken", gone - t0,
+	firstHit and gone - firstHit or -1, most))
+if not shotTaken then
+	shot("pile_wave1")
+end
+-- the broken wall: the hero walks up, picks it (the gamepad's Y, as a player would) and the panel offers the paid
+-- rebuild; then halfway through the rebuild (Config.Barricade.RebuildTime of game time)
+print("[SHOT] broken", wall:GetAttribute("Broken"), "rebuilding", wall:GetAttribute("Rebuilding"))
+heroAt(wall, 5)
 task.wait(1)
-for _ = 1, 60 do
-	if (wall:GetAttribute("Health") or 0) < (wall:GetAttribute("MaxHealth") or 0) * 0.8 then
+player:SetAttribute("PickWall", os.clock())
+task.wait(2)
+shot("broken_repair")
+task.wait(3) -- (the screen grab follows the log line by a second or two)
+local paid = TowerService.Rebuild(player, wall)
+print("[SHOT] rebuild paid", paid, "mana left", State.Get("Gold"))
+local r0 = os.clock()
+for _ = 1, 160 do
+	if (wall:GetAttribute("RebuildProgress") or 0) >= 0.5 then
 		break
 	end
-	task.wait(0.5)
+	heroAt(wall, 5)
+	task.wait(0.25)
 end
-print("[SHOT] health", wall:GetAttribute("Health"), "/", wall:GetAttribute("MaxHealth"))
-player:SetAttribute("CheckBar", true)
--- the same view as the earlier wave shots (hero on the path's middle, 7 studs back), where a bar showed in the top right
-heroAt(wall, 7)
-task.wait(1)
-player:SetAttribute("CheckBar", os.clock())
-for k = 1, 3 do
-	player:SetAttribute("WhatBar", os.clock()) -- (a new value each time: false then true in one frame never reaches the client)
-	task.wait(0.5)
-	shot("rootwall_wave" .. k)
-	task.wait(2)
+print(string.format("[SHOT] rebuild at %.0f%% after %.1f s", (wall:GetAttribute("RebuildProgress") or 0) * 100, os.clock() - r0))
+shot("rebuild_half")
+for _ = 1, 160 do
+	if not wall:GetAttribute("Broken") then
+		break
+	end
+	task.wait(0.25)
 end
--- the first run's view again (a Thornwall made during the wave, goblins at it, hero in the path's middle 7 studs
--- back), where a green bar showed in the top right: name what is drawn there
-TowerService.Sell(player, wall)
-task.wait(1)
-TowerService.Place(player, "Barricade", spotAt)
-wall = findWall()
-TowerService.Upgrade(player, wall)
-task.wait(1)
-TowerService.Upgrade(player, wall, "Thornwall")
-for i = 1, 6 do
-	EnemyService.Spawn("Goblin", 400, math.max(0, d - 4 - i * 1.5))
-end
-task.wait(6)
-heroAt(wall, 7)
+print(string.format("[SHOT] rebuilt after %.1f s, health %s / %s", os.clock() - r0, tostring(wall:GetAttribute("Health")),
+	tostring(wall:GetAttribute("MaxHealth"))))
+shot("rebuilt")
 task.wait(2)
-player:SetAttribute("CheckBar", os.clock())
-for k = 1, 3 do
-	player:SetAttribute("WhatBar", os.clock()) -- (a new value each time: false then true in one frame never reaches the client)
-	task.wait(0.5)
-	shot("thornwall_wave" .. k)
-	task.wait(2)
-end
 shot("done")

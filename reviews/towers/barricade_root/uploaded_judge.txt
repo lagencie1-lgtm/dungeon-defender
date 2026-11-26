@@ -1,0 +1,5 @@
+Blind judge (Gemini 3.5 Flash) of the uploaded Rootwall (round 8) against art/ref3d/tower_barricade_root_fit_cam.png, 2026-11-26:
+- run 1: 7 (blocky leaves, coarse root ends with texture stretching, shield and wood low-res)
+- run 2: 7 (blocky leaf clusters, pixelated wood with seams, simplified metal bands and shield)
+- run 3: 6 (roots under the shield split into side legs instead of one trunk; upper roots cover the post tips; bands hidden)
+average 6.7

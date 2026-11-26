@@ -54,7 +54,8 @@ Gamepad.Hint(tab, Enum.KeyCode.ButtonR3, UDim2.fromOffset(2, 2))
 local COLS, CELL_W, CELL_H, GAP = 2, 170, 52, 8
 local rows = math.ceil(#GRANTS / COLS)
 local panelW = COLS * CELL_W + (COLS + 1) * GAP
-local panelH = 40 + rows * (CELL_H + GAP) + 34
+local RESET_TOP = 40 + rows * (CELL_H + GAP) + 6 -- the reset button sits alone below the grid, set apart
+local panelH = RESET_TOP + CELL_H + GAP + 34
 
 local panel = make("Frame", { Name = "Panel", Size = UDim2.fromOffset(panelW, panelH), Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Ui.DARK, Visible = false, ZIndex = 10, Parent = root },
@@ -90,8 +91,63 @@ for i, g in GRANTS do
 	end)
 end
 
+-- Reset my save: press once to arm (the button turns red and asks again), press again within a few
+-- seconds to delete the whole save. The server checks both presses and then sends you out of the game.
+local CONFIRM_SECONDS = 8 -- a little under the server's 10 s, so an armed button never outlives the server
+local RESET_TEXT = "Reset my save (start over)"
+local resetButton = button({ Name = "ResetSave", Size = UDim2.fromOffset(panelW - 2 * GAP, CELL_H),
+	Position = UDim2.fromOffset(GAP, RESET_TOP), Text = RESET_TEXT, BackgroundColor3 = Color3.fromRGB(90, 38, 34),
+	TextColor3 = Ui.BAD, ZIndex = 11, Parent = panel })
+local armedAt = nil
+local function disarm()
+	armedAt = nil
+	resetButton.Text = RESET_TEXT
+	resetButton.BackgroundColor3 = Color3.fromRGB(90, 38, 34)
+	resetButton.TextColor3 = Ui.BAD
+end
+resetButton.Activated:Connect(function()
+	if busy then
+		return
+	end
+	busy = true
+	local confirm = armedAt ~= nil
+	local ok, result = remote:InvokeServer(confirm and "ResetSaveConfirm" or "ResetSave")
+	busy = false
+	if not ok then
+		disarm()
+		status.Text = tostring(result or "Didn't work")
+		status.TextColor3 = Ui.BAD
+		return
+	end
+	if confirm then
+		armedAt = nil
+		resetButton.Text = "Save deleted"
+		status.Text = tostring(result or "Save reset. Join again to start fresh")
+		status.TextColor3 = Ui.GEM
+		return
+	end
+	local stamp = os.clock()
+	armedAt = stamp
+	resetButton.Text = "Press again to DELETE everything"
+	resetButton.BackgroundColor3 = Color3.fromRGB(170, 45, 40)
+	resetButton.TextColor3 = Color3.new(1, 1, 1)
+	status.Text = "Deletes ALL progress for good. Press again within " .. CONFIRM_SECONDS .. " s"
+	status.TextColor3 = Ui.BAD
+	Ui.pop(resetButton, 0.94)
+	task.delay(CONFIRM_SECONDS, function()
+		if armedAt == stamp then
+			disarm()
+			status.Text = "Reset cancelled"
+			status.TextColor3 = Ui.TEXT_DIM
+		end
+	end)
+end)
+
 local function setOpen(open)
 	panel.Visible = open
+	if not open and armedAt then
+		disarm()
+	end
 	if open then
 		-- the sound check's result (SoundBank): shows a sound this device could not load
 		status.Text = require(script.Parent.SoundBank).Summary()

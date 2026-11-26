@@ -313,18 +313,10 @@ end
 -- Codes box: RESETMYSAVE, then once more within a minute to confirm. Deletes the whole save (and the Endless
 -- leaderboard entry) and sends the owner out, so the next join starts like a brand-new player. For every other
 -- player the code simply doesn't exist. Robux game passes come back by themselves; bought gems do not.
-local resetAsked = {} -- [player] = when they typed it the first time
-local function ownerReset(player)
-	local isOwner = game.CreatorType == Enum.CreatorType.User and game.CreatorId == player.UserId
-	if not isOwner and not game:GetService("RunService"):IsStudio() then
-		return false, "That code doesn't exist (yet)"
-	end
-	local asked = resetAsked[player]
-	if not asked or os.clock() - asked > 60 then
-		resetAsked[player] = os.clock()
-		return false, "This DELETES all your progress. Type the code again within 1 minute to confirm"
-	end
-	resetAsked[player] = nil
+local resetAsked = setmetatable({}, { __mode = "k" }) -- [player] = when they typed it the first time
+
+-- deletes the whole save (and the Endless leaderboard entry) and sends the player out a moment later
+local function wipeSave(player)
 	player:SetAttribute("SaveLocked", true)
 	local ok = true
 	if storeOk and store and not player:GetAttribute("SavesOff") then
@@ -339,12 +331,48 @@ local function ownerReset(player)
 		player:SetAttribute("SaveLocked", nil)
 		return false, "Couldn't reach the save right now. Try again in a moment"
 	end
+	print(("[DEV] %s reset their save"):format(player.Name))
 	task.delay(2, function()
 		if player.Parent then
 			player:Kick("Your save was reset. Join again to start fresh.")
 		end
 	end)
 	return true, "Save reset. Join again to start fresh"
+end
+
+local function ownerReset(player)
+	local isOwner = game.CreatorType == Enum.CreatorType.User and game.CreatorId == player.UserId
+	if not isOwner and not game:GetService("RunService"):IsStudio() then
+		return false, "That code doesn't exist (yet)"
+	end
+	local asked = resetAsked[player]
+	if not asked or os.clock() - asked > 60 then
+		resetAsked[player] = os.clock()
+		return false, "This DELETES all your progress. Type the code again within 1 minute to confirm"
+	end
+	resetAsked[player] = nil
+	return wipeSave(player)
+end
+
+-- The same reset from the developer panel (Lemp 2026-11-26: "add the reset to the dev panel"). DevService
+-- checks the developer first. Two presses: the first (confirm = false) only arms it, the second must come
+-- between 0.6 s (so a double tap can't do it by accident) and 10 s later.
+DataService.ResetConfirmSeconds = 10
+local panelResetAsked = setmetatable({}, { __mode = "k" })
+function DataService.ResetSave(player, confirm)
+	if not confirm then
+		panelResetAsked[player] = os.clock()
+		return true
+	end
+	local asked = panelResetAsked[player]
+	panelResetAsked[player] = nil
+	if not asked or os.clock() - asked > DataService.ResetConfirmSeconds then
+		return false, "Took too long. Press Reset again"
+	end
+	if os.clock() - asked < 0.6 then
+		return false, "Too fast. Press Reset again, then once more"
+	end
+	return wipeSave(player)
 end
 
 local function redeemCode(player, text)

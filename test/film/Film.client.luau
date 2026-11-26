@@ -456,7 +456,7 @@ local function runViewShots(kind, level, tower, base)
 end
 -- every other defender at its three levels (2026-11-23: the kit-built level looks), a close camera on each
 ask("Own")
-for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
+for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ranger" } do   -- (Ranger added 2026-11-25: its load time and the tower rules)
 	ask("Mana")
 	task.wait(0.4)
 	-- (2026-11-24, research brief: "towers must be visible while art loads"): from the tap to something tower-shaped

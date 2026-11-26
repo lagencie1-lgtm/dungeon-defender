@@ -33,11 +33,14 @@ def main():
     kinds = sys.argv[1:] or list(PARTS)
     out = os.path.join(ROOT, "reviews", "towers", "review", "scores.md")
     text = open(out, encoding="utf-8").read() if os.path.exists(out) else ""
-    text = re.sub(r"\n## Per part \(Codex\).*", "", text, flags=re.S)
-    rows = ["", "## Per part (Codex)", "", "Codex as an outside art director: painting, 16-frame turntable and phone view per level, each part 1-10."]
+    m = re.search(r"\n## Per part \(Codex\).*", text, re.S)
+    # (towers not re-rated this time keep their last table)
+    kept = dict(re.findall(r"\n### (.+?)\n(.*?)(?=\n### |\Z)", m.group(0), re.S)) if m else {}
+    text = text[:m.start()] if m else text
+    tables = {}
     for kind in kinds:
         name, parts = PARTS[kind]
-        rows += ["", f"### {name}", "", "| level | " + " | ".join(parts) + " | whole | weakest |", "|" + "---|" * (len(parts) + 3)]
+        rows = tables.setdefault(name, ["", "| level | " + " | ".join(parts) + " | whole | weakest |", "|" + "---|" * (len(parts) + 3)])
         for level in (1, 2, 3):
             imgs = [os.path.join(ROOT, "art", "ref3d", f"tower_{kind}_l{level}.png"),
                     os.path.join(ROOT, "reviews", "towers", "review", f"{kind}_l{level}_turntable16.png"),
@@ -53,7 +56,13 @@ def main():
             sc = [str((d.get("parts") or {}).get(p, "?")) for p in parts]
             rows.append(f"| {level} | " + " | ".join(sc) + f" | {d.get('whole', '?')} | {d.get('weakest', '')} |")
             print(kind, level, sc, d.get("whole"), flush=True)
-    open(out, "w", encoding="utf-8").write(text.rstrip() + "\n" + "\n".join(rows) + "\n")
+    head = ["", "## Per part (Codex)", "", "Codex as an outside art director: painting, 16-frame turntable and phone view per level, each part 1-10."]
+    for name, _ in PARTS.values():
+        if name in tables:
+            head += ["", f"### {name}"] + tables[name]
+        elif name in kept:
+            head += ["", f"### {name}", kept[name].rstrip()]
+    open(out, "w", encoding="utf-8").write(text.rstrip() + "\n" + "\n".join(head) + "\n")
     print("WROTE", out)
 
 

@@ -50,22 +50,39 @@ def main():
     # outline frames. Each mask is the frame with the most magenta in a window round its mark; that frame's offset
     # from the mark is then used for the same tower's view picture)
     drift = {}
+    # (2026-11-27: one film ran 5.5 s off its marks and every picture showed the next level: the first mask is
+    # searched in a wide window, the others round the offset it found)
+    centre = None
     for t, name in marks:
         parts = name.split()
         if parts[0] != "mask":
             continue
         best, seen = None, []
-        for dt in np.arange(-2.4, 1.01, 0.15):   # (drift seen up to -1.5 s, 2026-11-25)
+        window = np.arange(-8.0, 3.01, 0.15) if centre is None else np.arange(centre - 1.5, centre + 1.51, 0.15)
+        for dt in window:   # (drift seen up to -1.5 s, 2026-11-25)
             img = frame(ff, base + ".mp4", t + dt, os.path.join(out, "_frame.png"))
             n = int(magenta(img).sum())
             seen.append((dt, n))
             if best is None or n > best[0]:
                 best = (n, dt, img)
+        if centre is None:
+            # (the wide window can hold the next level's outline too: the film's first outline is the earliest run)
+            first = next(i for i, (dt, n) in enumerate(seen) if n >= 0.5 * best[0])
+            run = []
+            for dt, n in seen[first:]:
+                if n < 0.5 * best[0]:
+                    break
+                run.append((dt, n))
+            top = max(n for _, n in run)
+            best = (top, next(dt for dt, n in run if n == top), frame(ff, base + ".mp4", t + next(dt for dt, n in run if n == top), os.path.join(out, "_frame.png")))
+            seen = run
         img = best[2]
         # (the drift is the middle of the run of outline frames, not its first frame: the first one put the view
         # picture before the view shot began)
         full = [dt for dt, n in seen if n >= 0.9 * best[0]]
         best = (best[0], float(np.mean(full)), img)
+        if centre is None:
+            centre = best[1]
         if box is None:
             box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
         masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])

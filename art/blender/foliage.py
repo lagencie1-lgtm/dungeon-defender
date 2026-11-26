@@ -8,6 +8,7 @@ import bmesh
 import bpy
 from mathutils import Vector, noise
 
+import lib
 import paint
 
 rnd = None
@@ -28,6 +29,9 @@ def new_object(name, bm):
     bpy.context.scene.collection.objects.link(obj)
     for p in mesh.polygons:
         p.use_smooth = True
+    # white vertex colours like every lib part: joined with parts that have them, a mesh without them gets black
+    # ones, and Roblox multiplies the paint by them (the keep tower's crown and the bush came out black in game)
+    lib._paint(obj, (1, 1, 1))
     return obj
 
 

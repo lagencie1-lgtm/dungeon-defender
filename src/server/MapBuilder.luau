@@ -14,9 +14,19 @@ local Ground = require(ReplicatedStorage.Shared.Ground)
 -- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
 -- painted wood and leaves are matte (Lemp 2026-11-25: the trees looked like bubble gum; the smooth plastic every
 -- model gets put white shine spots on their crowns, art/STYLE.md: "never glossy 3D-render plastic")
-local MATTE = { tree_oak = true, tree_dead = true, keep_field_bush = true }
+local MATTE = { tree_oak = true, tree_oak_b = true, tree_oak_c = true, tree_dead = true, keep_field_bush = true }
+-- three oak shapes (the outside judge, 2026-11-26: "canopies use the exact same stacked shape across the board"):
+-- every oak picks one by where it stands, so the same map always grows the same wood
+local OAKS = { "tree_oak", "tree_oak_b", "tree_oak_c" }
 
 local function placeModel(parent, name, cframe, height)
+	if name == "tree_oak" then
+		local p = cframe.Position
+		local pick = OAKS[(math.floor(p.X * 7.31 + p.Z * 3.17) % 3) + 1]
+		if ArtService.Model(pick) then
+			name = pick
+		end
+	end
 	local template = ArtService.Model(name)
 	if not template then
 		return nil

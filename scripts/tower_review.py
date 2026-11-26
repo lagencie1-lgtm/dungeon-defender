@@ -16,7 +16,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import tower_painterly as TP  # noqa: E402
 
-KINDS = {"flame": "FlameCannon", "frost": "FrostCrystal", "storm": "StormObelisk", "ballista": "Ballista"}
+KINDS = {"flame": "FlameCannon", "frost": "FrostCrystal", "storm": "StormObelisk", "ballista": "Ballista", "ranger": "Ranger"}
 
 
 def save_safe(img, path):

@@ -14,9 +14,26 @@ local Ground = require(ReplicatedStorage.Shared.Ground)
 -- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
 -- painted wood and leaves are matte (Lemp 2026-11-25: the trees looked like bubble gum; the smooth plastic every
 -- model gets put white shine spots on their crowns, art/STYLE.md: "never glossy 3D-render plastic")
-local MATTE = { tree_oak = true, tree_dead = true, keep_field_bush = true }
+local MATTE = { tree_oak = true, tree_oak_b = true, tree_oak_c = true, tree_dead = true, keep_field_bush = true }
+-- three oak shapes (the outside judge, 2026-11-26: "canopies use the exact same stacked shape across the board"):
+-- every oak picks one by where it stands, so the same map always grows the same wood
+local OAKS = { "tree_oak", "tree_oak_b", "tree_oak_c" }
 
 local function placeModel(parent, name, cframe, height)
+	if name == "tree_oak" then
+		local p = cframe.Position
+		local pick = OAKS[(math.floor(p.X * 7.31 + p.Z * 3.17) % 3) + 1]
+		if ArtService.Model(pick) then
+			name = pick
+		end
+	end
+	if MATTE[name] then
+		-- every painted tree keeps the way it was built, so their painted light sides all face one way (the outside
+		-- judge, 2026-11-26: "highlights appear scattered rather than consistently facing a light source"); a few
+		-- degrees of turn by where it stands, so they still differ
+		local p = cframe.Position
+		cframe = CFrame.new(p) * CFrame.Angles(0, math.rad(((p.X * 13.7 + p.Z * 5.3) % 24) - 12), 0)
+	end
 	local template = ArtService.Model(name)
 	if not template then
 		return nil
@@ -539,7 +556,11 @@ function MapBuilder.BuildBattlefield(mapId)
 					local z = gz + rng:NextNumber(-0.35, 0.35) * spacing
 					local roll, size, turn, dead = rng:NextNumber(), rng:NextNumber(), rng:NextNumber(0, math.pi * 2), rng:NextNumber()
 					local rise, out, face = MapLayouts.RiseAt(layout, x, z)
-					if rise > 0 and out >= 3 and out <= 46 and roll < (out < 20 and 0.85 or out < 34 and 0.6 or 0.4) and planted < 170 then
+					-- groups with gaps between them (the outside judge, 2026-11-26: the rise read as "a dense green wall"):
+					-- low noise thins whole patches out, so trunks and single crowns show between the groups
+					local grouped = math.noise(x / 26, z / 26, 2.3) > -0.08
+					if rise > 0 and out >= 3 and out <= 46 and grouped and roll < (out < 20 and 0.8 or out < 34 and 0.55 or 0.35)
+						and planted < 150 then
 						local y = Ground.At(x, z)
 						-- (on the treads, not on a step's rock face; the gorges have no rise)
 						if not face then

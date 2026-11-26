@@ -1,0 +1,27 @@
+[MAPTOUR] 1795683393402 ok CursedForest first spot at -6, -8: free, 4 studs from the spawn, 6 of 8 spots 1.5 studs round it free too
+[MAPTOUR] 1795683393403 ok CursedForest Keep Hill: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795683393410 ok CursedForest North Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795683393414 ok CursedForest South Bank: top 5.00..5.00 (wanted 5)
+[MAPTOUR] 1795683393419 ok CursedForest Portal Rise: top 4.02..4.07 (wanted 4)
+[MAPTOUR] 1795683393437 ok CursedForest Witchwater: 26 of 26 spots are liquid, surface -1.29..-1.09 (Water 26)
+[MAPTOUR] 1795683393438 ok CursedForest placement: 44 things in 11 sets, 0 stand alone 
+[MAPTOUR] 1795683393595 ok CursedForest outline: the lane keeps 18 studs from it, 1334 spots of rise checked, least room under the camera's line 1.8 at 10, -80 (19 out, ground 16.0)
+[MAPTOUR] 1795683393612 ok CursedForest lane: ground 0.00..4.00, biggest step 0.80 per 2 studs, furthest from the plan 1.38
+[MAPTOUR] 1795683394749 ok CursedForest beside the lane (8.5 to 18 studs): 46% of the ground takes a defender, room for about 102
+[MAPTOUR] 1795683394749 CursedForest field: A bush is in the way 0%, A column is in the way 0%, A tree is in the way 3%, A wall is in the way 6%, Can't build on the path 14%, Can't build on water 1%, Mushrooms are in the way 0%, The bridge is in the way 1%, The standing stones are in the way 1%, The tower is in the way 0%, The well is in the way 0%, Too bumpy here 6%, Too close to another defender 1%, Too close to the edge 49%, Too close to the portal 1%, Too close to the water 1%, Too rocky here 1%, ok 17%
+[MAPTOUR] 1795683407214 shot CursedForest hero
+[MAPTOUR] 1795683407215 start CursedForest camera looks to bearing 40 hero faces bearing 40 at -8.002894401550293, 7.0093536376953125, -14.182345390319824
+[MAPTOUR] 1795683410021 shot CursedForest plan
+[MAPTOUR] 1795683412638 shot CursedForest overview
+[MAPTOUR] 1795683415237 shot CursedForest lane1
+[MAPTOUR] 1795683417856 shot CursedForest lane2
+[MAPTOUR] 1795683420472 shot CursedForest lane3
+[MAPTOUR] 1795683423102 shot CursedForest lane4
+[MAPTOUR] 1795683425703 shot CursedForest lane5
+[MAPTOUR] 1795683428305 shot CursedForest lane6
+[MAPTOUR] 1795683430923 shot CursedForest lane7
+[MAPTOUR] 1795683433537 shot CursedForest yard
+[MAPTOUR] 1795683436137 shot CursedForest bridge
+[MAPTOUR] 1795683438817 DONE PASS 0 failures
+
+errors:

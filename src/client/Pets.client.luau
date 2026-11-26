@@ -20,6 +20,9 @@ Ui.fitRoot(gui, root, 964, 564)
 local Art = require(ReplicatedStorage.Shared.Art)
 local TweenService = game:GetService("TweenService")
 
+-- touch: panel buttons at least 36 px on the smallest phone preset (this screen's scale there: 0.5)
+local PET_TAP = Ui.isTouch and 74 or 44
+local LIST_TOP = Ui.isTouch and 96 or 66 -- (touch: the pet list starts under the bigger close button)
 local petButton = require(script.Parent.Menu).Add("Pets", "Pets", 6)
 
 local function rarityColor(kind)
@@ -61,7 +64,7 @@ local goldLabel = label({ Size = UDim2.fromOffset(200, 28), Position = UDim2.fro
 	TextColor3 = Ui.GOLD, ZIndex = 31, Parent = panel })
 local message = label({ Size = UDim2.fromOffset(440, 24), Position = UDim2.fromOffset(350, 22), Text = "",
 	Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, ZIndex = 31, Parent = panel })
-local closeButton = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
+local closeButton = button({ Size = UDim2.fromOffset(PET_TAP, PET_TAP), Position = UDim2.new(1, -18, 0, 14), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 31, Parent = panel })
 
 -------------------------------------------------------------------------------
@@ -80,7 +83,7 @@ local revealName = label({ Size = UDim2.new(1, -40, 0, 36), Position = UDim2.fro
 	ZIndex = 52, Parent = reveal })
 local revealInfo = label({ Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 290), Text = "", Font = Enum.Font.Gotham,
 	TextColor3 = Ui.TEXT_DIM, ZIndex = 52, Parent = reveal })
-local revealOk = button({ Size = UDim2.fromOffset(180, 46), Position = UDim2.new(0.5, 0, 1, -22), AnchorPoint = Vector2.new(0.5, 1),
+local revealOk = button({ Size = UDim2.fromOffset(180, Ui.isTouch and PET_TAP or 46), Position = UDim2.new(0.5, 0, 1, -22), AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Nice!", ZIndex = 52, Parent = reveal })
 revealOk.Activated:Connect(function()
 	reveal.Visible = false
@@ -144,7 +147,7 @@ local function buildEggs()
 			total += c[2]
 		end
 		local rows = math.ceil(#egg.Chances / 4)
-		local card = make("Frame", { Size = UDim2.fromOffset(428, 110 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
+		local card = make("Frame", { Size = UDim2.fromOffset(428, PET_TAP + 66 + rows * 92), BackgroundColor3 = Ui.PANEL, LayoutOrder = i,
 			ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(egg.Color, 2) })
 		local eggSlot = make("Frame", { Size = UDim2.fromOffset(88, 88), Position = UDim2.fromOffset(10, 10),
 			BackgroundColor3 = egg.Color:Lerp(Color3.fromRGB(30, 24, 36), 0.7), ZIndex = 33, Parent = card }, { corner(14), stroke(egg.Color, 2) })
@@ -152,10 +155,13 @@ local function buildEggs()
 			Image = eggImage(egg) or "", ScaleType = Enum.ScaleType.Fit, ZIndex = 34, Parent = eggSlot })
 		label({ Size = UDim2.fromOffset(300, 30), Position = UDim2.fromOffset(110, 10), Text = egg.Name, TextColor3 = egg.Color,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-		local hatch = button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.fromOffset(110, 50),
+		local hatch = button({ Size = UDim2.fromOffset(212, PET_TAP), Position = UDim2.fromOffset(110, 50),
 			BackgroundColor3 = Color3.fromRGB(60, 130, 60), Text = "Hatch: " .. egg.Price .. " gold", ZIndex = 33, Parent = card })
+		-- three at once: the same price each and the same odds (gold only)
+		local hatch3 = button({ Size = UDim2.fromOffset(80, PET_TAP), Position = UDim2.fromOffset(330, 50),
+			BackgroundColor3 = Color3.fromRGB(50, 105, 50), Text = "x3", ZIndex = 33, Parent = card })
 		-- what can come out
-		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, 106),
+		local inside = make("Frame", { Size = UDim2.new(1, -20, 0, rows * 92), Position = UDim2.fromOffset(10, PET_TAP + 62),
 			BackgroundTransparency = 1, ZIndex = 33, Parent = card },
 			{ make("UIGridLayout", { CellSize = UDim2.fromOffset(96, 86), CellPadding = UDim2.fromOffset(6, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -167,6 +173,31 @@ local function buildEggs()
 				Text = percent >= 1 and string.format("%.0f%%", percent) or string.format("%.2f%%", percent),
 				TextColor3 = rarityColor(c[1]), ZIndex = 34, Parent = cell })
 		end
+		hatch3.Activated:Connect(function()
+			local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id, 3)
+			if ok and type(result) == "table" and result[1] then
+				-- the rarest of the three gets the reveal, the line names all three
+				local names = {}
+				local indexGold = 0
+				for _, pet in result do
+					table.insert(names, Config.Pets[pet.kind].Name)
+					indexGold += pet.indexGold or 0
+				end
+				local best = result[1]
+				local chance = 0
+				for _, ch in egg.Chances do
+					if ch[1] == best.kind then
+						chance = ch[2] / total * 100
+					end
+				end
+				message.Text = "Hatched: " .. table.concat(names, ", ") .. (indexGold > 0 and (" · Pet Index +" .. indexGold .. " gold") or "")
+				message.TextColor3 = Ui.GOLD
+				task.spawn(showReveal, egg, best, chance)
+			else
+				message.Text = (type(result) == "string" and result) or "Can't hatch"
+				message.TextColor3 = Ui.BAD
+			end
+		end)
 		hatch.Activated:Connect(function()
 			local ok, result = Remotes.HatchEgg:InvokeServer(egg.Id)
 			if ok then
@@ -194,7 +225,7 @@ end
 -------------------------------------------------------------------------------
 -- your pets on the right
 -------------------------------------------------------------------------------
-local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 450), Position = UDim2.new(1, -24, 0, 66), AnchorPoint = Vector2.new(1, 0),
+local list = make("ScrollingFrame", { Size = UDim2.fromOffset(430, 516 - LIST_TOP), Position = UDim2.new(1, -24, 0, LIST_TOP), AnchorPoint = Vector2.new(1, 0),
 	BackgroundColor3 = Color3.fromRGB(35, 28, 48), BorderSizePixel = 0, ScrollBarThickness = 6,
 	AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 31, Parent = panel },
 	{ corner(10), make("UIListLayout", { Padding = UDim.new(0, 6) }),
@@ -314,22 +345,22 @@ local function refresh()
 	for i, pet in sorted do
 		local info = Config.Pets[pet.kind]
 		local color = Items.Rarities[info.Rarity].Color
-		local row = make("Frame", { Size = UDim2.new(1, -12, 0, 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
+		local row = make("Frame", { Size = UDim2.new(1, -12, 0, Ui.isTouch and 130 or 118), BackgroundColor3 = Ui.PANEL, LayoutOrder = i, ZIndex = 32,
 			Parent = list }, { corner(8), stroke(color, table.find(team, pet.id) and 3 or 1) })
 		local place = table.find(team, pet.id) -- 1 = lead, 2 or 3 = helper, nil = not in the team
 		petTile(row, pet.kind, 60, 33, { Position = UDim2.fromOffset(6, 6) })
-		label({ Size = UDim2.fromOffset(170, 26), Position = UDim2.fromOffset(76, 8),
+		label({ Size = UDim2.fromOffset(Ui.isTouch and 150 or 170, 26), Position = UDim2.fromOffset(76, 8),
 			Text = info.Name .. (pet.evolved and " (evolved)" or "") .. (place == 1 and " · Lead" or place and " · Helper" or ""),
 			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 33, Parent = row })
-		label({ Size = UDim2.fromOffset(170, 22), Position = UDim2.fromOffset(76, 38),
+		label({ Size = UDim2.fromOffset(Ui.isTouch and 150 or 170, 22), Position = UDim2.fromOffset(76, 38),
 			Text = "Lv " .. (pet.level or 1) .. " · " .. bonusText(pet, place ~= nil and place > 1), Font = Enum.Font.Gotham,
 			TextColor3 = Ui.TEXT_DIM,
 			TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		local move = Config.PetMoves[info.Stat]
 		if move then
 			-- what it does in a fight, under its bonus
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 72),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, Ui.isTouch and 84 or 72),
 				Text = (place == 1 and "In a fight · " or "As lead · ") .. move.Name .. ": " .. move.Text, Font = Enum.Font.Gotham,
 				TextColor3 = place == 1 and Ui.GOLD or Ui.TEXT_DIM,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
@@ -338,12 +369,13 @@ local function refresh()
 		if carry then
 			-- what it fetches from the ground (Config.PetCarry)
 			local best = carry.MaxItemRarity >= #Items.Rarities and "all gear" or ("gear up to " .. Items.Rarities[carry.MaxItemRarity].Name)
-			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 94),
+			label({ Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, Ui.isTouch and 106 or 94),
 				Text = string.format("Fetches %s%s · %d per trip%s", carry.Gems and "gems and " or "", best, carry.Carry,
 					carry.Pass and " · 2x speed, whole map" or ""),
 				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = row })
 		end
-		local equip = button({ Size = UDim2.fromOffset(70, 44), Position = UDim2.new(1, -164, 0, 36), AnchorPoint = Vector2.new(0, 0.5),
+		local equip = button({ Size = UDim2.fromOffset(Ui.isTouch and 78 or 70, PET_TAP),
+			Position = UDim2.new(1, Ui.isTouch and -176 or -164, 0, Ui.isTouch and 42 or 36), AnchorPoint = Vector2.new(0, 0.5),
 			Text = place == 1 and "Lead" or place and "Lead it" or "Equip",
 			BackgroundColor3 = place == 1 and Color3.fromRGB(60, 60, 70) or place and Color3.fromRGB(150, 110, 40)
 				or Color3.fromRGB(60, 130, 60), ZIndex = 33, Parent = row })
@@ -354,7 +386,7 @@ local function refresh()
 			end
 		end)
 		local maxed = (pet.level or 1) >= Config.PetMaxLevel and not pet.evolved
-		local other = button({ Size = UDim2.fromOffset(84, 44), Position = UDim2.new(1, -8, 0, 36), AnchorPoint = Vector2.new(1, 0.5),
+		local other = button({ Size = UDim2.fromOffset(84, PET_TAP), Position = UDim2.new(1, -8, 0, Ui.isTouch and 42 or 36), AnchorPoint = Vector2.new(1, 0.5),
 			Text = maxed and "Evolve" or place and "Rest" or "Release", ZIndex = 33,
 			BackgroundColor3 = maxed and Color3.fromRGB(150, 110, 40) or place and Color3.fromRGB(60, 60, 70)
 				or Color3.fromRGB(110, 60, 60), Parent = row })

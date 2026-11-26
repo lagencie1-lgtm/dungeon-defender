@@ -1,0 +1,6 @@
+[ANIM] MagmaSlime leg rest 0.0 deg, 2.76 studs
+[ANIM] MagmaSlime walk side: height 9.2; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] MagmaSlime walk 3/4: height 9.2; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] MagmaSlime bashing true
+[ANIM] MagmaSlime bash: height 9.2; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] MagmaSlime dead true removed true

@@ -1,0 +1,6 @@
+[ANIM] EmberImp leg rest 47.2 deg, 1.05 studs
+[ANIM] EmberImp walk side: height 6.3; lowest ankle vs ground 0.85..1.07 (rest 0.85); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] EmberImp walk 3/4: height 6.3; lowest ankle vs ground 0.88..1.07 (rest 0.85); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] EmberImp bashing true
+[ANIM] EmberImp bash: height 6.3; lowest ankle vs ground 0.75..1.07 (rest 0.85); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] EmberImp dead true removed true

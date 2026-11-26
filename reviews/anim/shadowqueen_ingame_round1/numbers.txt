@@ -1,0 +1,8 @@
+[ANIM] ShadowQueen leg rest 0.0 deg, 5.13 studs
+[ANIM] ShadowQueen walk side: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen walk 3/4: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen bashing true
+[ANIM] ShadowQueen bash: height 17.1; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] ShadowQueen tell summon
+[ANIM] ShadowQueen tell slam
+[ANIM] ShadowQueen dead true removed true

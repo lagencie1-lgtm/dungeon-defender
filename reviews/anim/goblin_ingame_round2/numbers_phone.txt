@@ -1,0 +1,11 @@
+[ANIM] rigged goblin loaded: 1 parts, 18 bones
+[ANIM] hero Swordmaster
+[ANIM] ankle bone at rest 0.29 above the ground
+[ANIM] run side, measured inside MonsterAnim right after posing: 18 contacts, 0.013 studs per contact, worst contact so far 0.018
+[ANIM] run side: 17 foot contacts in 6.1 s (2.80 steps/s); planted foot slid 0.041 studs per contact on average, worst contact 0.136 (35 frames in contact); hips bob 0.36 studs (-0.24..0.11 over the pivot)
+[ANIM] run 3/4, measured inside MonsterAnim right after posing: 14 contacts, 0.015 studs per contact, worst contact so far 0.022
+[ANIM] run 3/4: 14 foot contacts in 5.1 s (2.76 steps/s); planted foot slid 0.040 studs per contact on average, worst contact 0.137 (28 frames in contact); hips bob 0.33 studs (-0.22..0.11 over the pivot)
+[ANIM] hit from -30.999984741210938 -7.302357196807861
+[ANIM] dead true removed true
+[ANIM] frame time: 220 frames, mean 66.7 ms, worst 69.6 ms
+[ANIM] DONE

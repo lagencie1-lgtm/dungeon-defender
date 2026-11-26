@@ -487,7 +487,35 @@ PetService.Equip = function(player, id, action)
 end
 
 function PetService.Start()
-	Remotes.HatchEgg.OnServerInvoke = hatch
+	-- count 3 = Hatch x3: three eggs in one tap (research report: automate low-value steps). Same price each, same
+	-- odds, gold only (gold is earned by playing, never bought). Returns the three pets, rarest first.
+	Remotes.HatchEgg.OnServerInvoke = function(player, eggId, count)
+		if count ~= 3 then
+			return hatch(player, eggId)
+		end
+		local profile = DataService.Get(player)
+		local egg = Config.FindById(Config.Eggs, eggId)
+		if not profile or not egg then
+			return false, "Unknown egg"
+		end
+		if #(profile.Pets or {}) + 3 > Config.PetBagSize then
+			return false, "Not enough room in the pet bag for 3 (" .. Config.PetBagSize .. " max)"
+		end
+		if profile.Gold < egg.Price * 3 then
+			return false, "Not enough gold (need " .. egg.Price * 3 .. ")"
+		end
+		local hatched = {}
+		for _ = 1, 3 do
+			local ok, pet = hatch(player, eggId)
+			if ok then
+				table.insert(hatched, pet)
+			end
+		end
+		table.sort(hatched, function(a, b)
+			return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
+		end)
+		return #hatched > 0, hatched
+	end
 	Remotes.EquipPet.OnServerInvoke = equip
 	Remotes.EvolvePet.OnServerInvoke = evolve
 	Remotes.ReleasePet.OnServerInvoke = release

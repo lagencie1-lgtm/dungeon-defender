@@ -53,8 +53,12 @@ def main():
         marks.setdefault(name, float(t))
     for n in SHOTS:
         if n in marks:
-            subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{marks[n] + 0.9:.2f}", "-i", base + ".mp4", "-frames:v", "1",
-                            "-vf", "crop=604:280:714:604", os.path.join(out, n.replace(" ", "_") + ".png")], check=True)
+            dst = os.path.join(out, n.replace(" ", "_") + ".png")
+            subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{marks[n] + 0.9:.2f}", "-i", base + ".mp4", "-frames:v", "1", dst], check=True)
+            im = Image.open(dst).convert("RGB")
+            from film_screen import screen_box   # (the phone screen, wherever Studio's window put it)
+            box = screen_box(np.asarray(im))
+            im.crop(box).resize((604, 280)).save(dst)
     g = Image.open(os.path.join(out, "dragon_open_light.png"))
     c1, _ = med(g, (250, 90, 370, 200), purple)
     c2, _ = med(Image.open(os.path.join(ROOT, "art", "ref3d", "batch2", "pet_babydragon.png")), None, purple)

@@ -18,7 +18,9 @@ local LOOK_SCALE = 1.35 -- monsters are drawn this much bigger than their hit si
 -- the enemy each image-to-3D model was painted as: it keeps the model's own colours, its variants get a tint
 local PLAIN_KIND = { Goblin = true, ["Ember Imp"] = true, ["Obsidian Knight"] = true, ["Magma Slime"] = true, Shade = true }
 local function goblinMesh(model, body, stats)
-	local template = ArtService.Model(stats.Model or ("enemy_" .. string.lower(stats.Look or "Goblin")))
+	-- a rigged version (bones, art/blender/rig_monster.py) wins once it has loaded; the solid one stays the fallback
+	local base = stats.Model or ("enemy_" .. string.lower(stats.Look or "Goblin"))
+	local template = ArtService.Model(base .. "_rigged") or ArtService.Model(base)
 	if not template then
 		return nil
 	end
@@ -54,6 +56,11 @@ local function goblinMesh(model, body, stats)
 		end
 	end
 	look.Parent = model
+	-- a skinned model with the rig's bones (art/blender/rig_monster.py): its walk, attack, hits and fall are played
+	-- by MonsterAnim on every computer, so the whole-model waddle and the topple below stay off for it
+	if look:FindFirstChildWhichIsA("Bone", true) then
+		model:SetAttribute("Rigged", true)
+	end
 	return skin
 end
 
@@ -119,6 +126,18 @@ end
 local function positionAt(distance)
 	local pos, dir = flatAt(distance)
 	return Vector3.new(pos.X, groundAt(distance), pos.Z), dir
+end
+
+-- the path for other services (RescueService): its length, a point on the real ground at a distance along it,
+-- and how far along it a corner is
+function EnemyService.PathLength()
+	return pathLength
+end
+function EnemyService.PathPoint(distance)
+	return (positionAt(distance))
+end
+function EnemyService.CornerDistance(index)
+	return corners[math.clamp(index, 1, #corners)] or 0
 end
 
 local function newPart(model, props)
@@ -437,6 +456,7 @@ function EnemyService.Spawn(name, healthMultiplier, startDistance)
 		saidHurt = false,
 		nextQuote = Clock.now + 3,
 		dead = false,
+		rigged = model:GetAttribute("Rigged") == true,
 	}
 	table.insert(active, enemy)
 
@@ -477,14 +497,36 @@ end
 
 -- player is optional: who hit it (the hero), for xp.
 -- showNumber shows a floating damage number.
-function EnemyService.Damage(enemy, amount, player, showNumber, crit)
+-- from is optional: where the blow came from (the hero, the tower, the blast), so a rigged monster rocks away from it
+function EnemyService.Damage(enemy, amount, player, showNumber, crit, from)
 	if enemy.dead then
 		return
 	end
 	-- armor takes a flat bite out of every hit (but never more than 75%)
 	local armor = enemy.stats.Armor
+	if enemy.crackedUntil and Clock.now < enemy.crackedUntil then
+		armor = nil -- cracked by the King's Cleaver: full damage from everyone for a moment
+	end
 	if armor and amount >= 1 then
 		amount = math.max(amount - armor, amount * 0.25)
+	end
+	-- a boss that staggered out of a broken charge takes more damage for a moment (BossService)
+	if enemy.weakUntil and Clock.now < enemy.weakUntil then
+		amount *= enemy.stats.Charge.Weak
+	end
+	-- heroes hitting a boss during its charge wind-up: enough hits break the charge
+	local charging = enemy.charging
+	if charging and player and amount >= 1 then
+		charging.hits += 1
+		if charging.hits >= enemy.stats.Charge.BreakHits then
+			enemy.charging = nil
+			enemy.weakUntil = Clock.now + enemy.stats.Charge.WeakTime
+			enemy.knockLeft = (enemy.knockLeft or 0) + enemy.stats.Charge.Knock
+			enemy.hitStopUntil = math.max(enemy.hitStopUntil or 0, Clock.now + 0.6)
+			enemy.nextCharge = Clock.now + enemy.stats.Charge.Every
+			enemy.nextSlam = math.max(enemy.nextSlam or 0, enemy.weakUntil + 1) -- the opening stays safe
+			EnemyService.OnChargeEnd(enemy, charging.target, true, player)
+		end
 	end
 	-- a pet's Mark (PetMoves): the next real hit is a sure crit, and the mark goes away
 	if enemy.petMark and amount >= 1 then
@@ -505,12 +547,24 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 	end
 	if amount >= 1 then
 		enemy.flashUntil = Clock.now + 0.08 -- quick white flash
+		if enemy.rigged then
+			if from then
+				enemy.model:SetAttribute("HitFromX", from.X)
+				enemy.model:SetAttribute("HitFromZ", from.Z)
+			end
+			enemy.model:SetAttribute("HitAt", workspace:GetServerTimeNow()) -- MonsterAnim rocks it back, away from "from"
+		end
 	end
 	if showNumber then
 		local big = amount >= 60 or crit
 		local color = crit and Color3.fromRGB(255, 230, 60) or big and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(255, 255, 255)
 		Effects.Text(enemy.position + Vector3.new(math.random() * 2 - 1, enemy.stats.Size * 1.3, 0),
 			(crit and "CRIT " or "") .. tostring(math.floor(amount)), color, big and 1.4 or 0.8)
+	end
+	if enemy.stats.Dummy and enemy.health <= 0 then
+		enemy.health = enemy.maxHealth -- the training knight never falls
+		enemy.model:SetAttribute("Health", enemy.health)
+		enemy.fill.Size = UDim2.fromScale(1, 1)
 	end
 	if enemy.health <= 0 then
 		kill(enemy, player)
@@ -523,6 +577,25 @@ function EnemyService.Damage(enemy, amount, player, showNumber, crit)
 end
 
 -- pushes an enemy back along the path, eased over about 0.28 s (bosses barely move)
+-- the enemy is hitting something (a hero in its way; the barricade branch: the barricade it bashes): MonsterAnim
+-- plays the attack while this is on. Written only when it changes.
+function EnemyService.SetBashing(enemy, on)
+	on = on == true
+	if (enemy.bashingShown or false) ~= on then
+		enemy.bashingShown = on
+		enemy.model:SetAttribute("Bashing", on)
+	end
+end
+
+-- its row in the pile at a wall (the barricade branch sets e.pileRow: 0 = the front row, nil when not at a wall):
+-- MonsterAnim lets the rows behind reach over the ones in front. Written only when it changes.
+function EnemyService.SetPileRow(enemy, row)
+	if enemy.pileRowShown ~= row then
+		enemy.pileRowShown = row
+		enemy.model:SetAttribute("PileRow", row)
+	end
+end
+
 function EnemyService.Knockback(enemy, studs)
 	if enemy.dead or not studs or studs <= 0 then
 		return
@@ -540,6 +613,10 @@ end
 
 -- set by GameService: a boss slam hits heroes and stuns defenders near it
 EnemyService.OnBossSlam = function(_position, _radius) end
+-- set by BossService: a boss's charge at a defender (stats.Charge): who it aims at, the tell, and the end of it
+EnemyService.PickChargeTarget = function(_enemy, _range) return nil end
+EnemyService.OnChargeTell = function(_enemy, _target, _seconds) end
+EnemyService.OnChargeEnd = function(_enemy, _target, _broken, _by) end
 
 function EnemyService.Slow(enemy, factor, seconds)
 	local now = Clock.now
@@ -566,11 +643,14 @@ function EnemyService.GetActive()
 end
 
 -- enemies within `radius` of a point, the one furthest along the path first
-function EnemyService.InRange(position, radius)
+-- bodies = true: count from the enemy's body, not its middle (a sword reaches a big boss's belly; the batch film
+-- showed a hero swinging beside the Goblin King and missing, because his middle was out of reach)
+function EnemyService.InRange(position, radius, bodies)
 	local found = {}
 	local flat = Vector3.new(position.X, 0, position.Z)
 	for _, e in active do
-		if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude <= radius then
+		local reach = radius + (bodies and e.stats.Size * 0.5 or 0)
+		if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude <= reach then
 			table.insert(found, e)
 		end
 	end
@@ -588,8 +668,25 @@ function EnemyService.Clear()
 	end
 end
 
+-- enemies of the run (the Outpost's training knight doesn't count)
 function EnemyService.Count()
-	return #active
+	local n = 0
+	for _, e in active do
+		if not e.stats.Dummy then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- the training knight at a spot on the ground, facing `look` (Config.Enemies.TrainingKnight)
+function EnemyService.SpawnDummy(position, look)
+	local e = EnemyService.Spawn("TrainingKnight", 1, 0)
+	local stats = e.stats
+	e.position = position
+	e.model:PivotTo(CFrame.lookAt(position + Vector3.new(0, stats.Size * 0.74 + Ground.Feet, 0),
+		position + Vector3.new(look.X, stats.Size * 0.74 + Ground.Feet, look.Z)))
+	return e
 end
 
 local WHITE = Color3.new(1, 1, 1)
@@ -616,6 +713,15 @@ function EnemyService.Start()
 				local s = e.stats.Size
 				local t0 = os.clock()
 				Effects.Ring(e.position + Vector3.new(0, 0.2, 0), s * 0.9, Color3.fromRGB(190, 175, 150), 0.3)
+				if e.rigged then
+					-- MonsterAnim plays the fall on the bones (knees give, forward onto the face, 0.6 s); the body
+					-- stays where it fell until then
+					model:SetAttribute("Dead", true)
+					task.delay(0.7, function()
+						model:Destroy()
+					end)
+					continue
+				end
 				local fall
 				fall = RunService.Heartbeat:Connect(function()
 					local t = math.min(1, (os.clock() - t0) / 0.3)
@@ -628,6 +734,10 @@ function EnemyService.Start()
 						model:Destroy()
 					end
 				end)
+				continue
+			end
+			if e.stats.Dummy then
+				e.knockLeft = 0 -- the training knight stands where it was put (SpawnDummy)
 				continue
 			end
 
@@ -650,8 +760,31 @@ function EnemyService.Start()
 					Effects.Text(e.position + Vector3.new(0, e.stats.Size * 1.6, 0), "ENRAGED!", Color3.fromRGB(255, 80, 80), 1.6)
 					Sound.Play("PortalHit", e.position)
 				end
+				-- the charge at a defender (stats.Charge, BossService draws it): stands still while winding up
+				local charge = e.stats.Charge
+				if charge then
+					e.nextCharge = e.nextCharge or (now + charge.First)
+					if e.charging then
+						speed = 0
+						if now >= e.charging.endsAt then
+							local done = e.charging
+							e.charging = nil
+							e.nextCharge = now + charge.Every
+							EnemyService.OnChargeEnd(e, done.target, false, nil)
+						end
+					elseif now >= e.nextCharge and not e.slamming then
+						local target = EnemyService.PickChargeTarget(e, charge.Range)
+						if target then
+							e.charging = { target = target, endsAt = now + charge.Windup, hits = 0 }
+							e.nextSlam = math.max(e.nextSlam or now, now + charge.Windup + 1.5) -- no slam in the middle
+							EnemyService.OnChargeTell(e, target, charge.Windup)
+						else
+							e.nextCharge = now + 2 -- nothing in reach yet: look again soon
+						end
+					end
+				end
 				e.nextSlam = e.nextSlam or (now + 5)
-				if now >= e.nextSlam and not e.slamming then
+				if now >= e.nextSlam and not e.slamming and not e.charging then
 					e.slamming = true
 					local spot = e.position
 					local radius = 14
@@ -659,6 +792,7 @@ function EnemyService.Start()
 					Effects.Ring(spot + Vector3.new(0, 0.3, 0), radius, Color3.fromRGB(255, 40, 40), 0.9)
 					task.delay(0.9, function()
 						e.slamming = false
+						e.slamRecoverUntil = Clock.now + 0.7 -- (stands while it rises from the smash; MonsterMoves.Slam)
 						e.nextSlam = Clock.now + (e.enraged and 3.5 or 6)
 						if e.dead then
 							return
@@ -668,8 +802,14 @@ function EnemyService.Start()
 						EnemyService.OnBossSlam(spot, radius)
 					end)
 				end
-				if e.slamming then
-					speed = 0 -- it stops to wind up the slam
+				if e.slamming or (e.slamRecoverUntil and now < e.slamRecoverUntil) then
+					speed = 0 -- it stops to wind up the slam, and to rise from it
+				end
+				-- what the boss is winding up, for MonsterAnim's tells (written only when it changes)
+				local tell = e.slamming and "slam" or e.charging and "charge" or ""
+				if e.rigged and e.tellShown ~= tell then
+					e.tellShown = tell
+					e.model:SetAttribute("Tell", tell)
 				end
 			end
 			if now < e.frozenUntil then
@@ -696,6 +836,9 @@ function EnemyService.Start()
 				e.nextSummon = e.nextSummon or (now + summon.Every)
 				if now >= e.nextSummon then
 					e.nextSummon = now + summon.Every
+					if e.rigged then
+						e.model:SetAttribute("SummonAt", workspace:GetServerTimeNow()) -- MonsterAnim: the summon tell
+					end
 					for i = 1, summon.Count do
 						EnemyService.Spawn(summon.Enemy, e.healthMultiplier, math.max(0, e.distance - i * 3))
 					end
@@ -716,7 +859,8 @@ function EnemyService.Start()
 				local pos, dir = positionAt(e.distance)
 				e.position = pos
 				local s = e.stats.Size
-				local hop = math.abs(math.sin(e.distance * 0.8)) * 0.3 * s / 3 -- little hop while walking
+				-- little hop while walking (rigged monsters walk on their own legs: MonsterAnim)
+				local hop = e.rigged and 0 or math.abs(math.sin(e.distance * 0.8)) * 0.3 * s / 3
 				-- the Loot Goblin zig-zags, the king stomps
 				local side = Vector3.zero
 				if e.stats.Loot then
@@ -726,14 +870,16 @@ function EnemyService.Start()
 					pos = Vector3.new(pos.X, (Ground.At(x, z)), pos.Z)
 				end
 				-- turn smoothly at corners, waddle from foot to foot, lean into the walk (solid models, no skeleton)
-				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * 9)) or dir
+				-- (a rigged boss turns slower: its feet step round instead of sliding, MonsterAnim)
+				local turnRate = (e.rigged and e.stats.Boss) and 3.5 or 9
+				e.facing = e.facing and e.facing:Lerp(dir, math.min(1, dt * turnRate)) or dir
 				if e.facing.Magnitude < 0.01 then
 					e.facing = dir
 				end
 				local step = e.distance * 0.8
 				local moving = speed > 0 and 1 or 0
-				local waddle = e.stats.Look == "Slime" and 0 or math.sin(step) * 0.13 * moving
-				local lean = e.stats.Look == "Shade" and -0.18 or -0.07 * moving
+				local waddle = (e.stats.Look == "Slime" or e.rigged) and 0 or math.sin(step) * 0.13 * moving
+				local lean = e.rigged and 0 or e.stats.Look == "Shade" and -0.18 or -0.07 * moving
 				-- tilting swings the model's lower edge down: lift by exactly that, so feet stay Ground.Feet over the ground
 				local tilt = (e.model:GetAttribute("FootHalfWidth") or s * 0.4) * math.abs(math.sin(waddle))
 					+ (e.model:GetAttribute("FootHalfDepth") or s * 0.4) * math.abs(math.sin(lean))

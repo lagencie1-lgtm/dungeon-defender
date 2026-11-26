@@ -17,6 +17,7 @@ local ItemService = require(script.Parent.ItemService)
 local State = require(script.Parent.State)
 local Clock = require(script.Parent.Clock)
 local Effects = require(script.Parent.Effects)
+local Telemetry = require(script.Parent.Telemetry)
 local Sound = require(script.Parent.Sound)
 local QuestService = require(script.Parent.QuestService)
 local PetService = require(script.Parent.PetService)
@@ -209,8 +210,20 @@ local function damageFor(player, base)
 end
 
 local function hit(player, enemy, base, knock)
+	-- the King's Cleaver (any hero holding it): an armored enemy it hits is cracked for a moment
+	local cleaver = Items.WeaponTypes[player:GetAttribute("WeaponType") or ""]
+	if cleaver and cleaver.ArmorBreak and enemy.stats.Armor then
+		if not (enemy.crackedUntil and Clock.now < enemy.crackedUntil) then
+			Effects.Text(enemy.position + Vector3.new(0, enemy.stats.Size * 1.3, 0), "Armor cracked", Color3.fromRGB(255, 205, 90), 0.9)
+		end
+		enemy.crackedUntil = Clock.now + cleaver.ArmorBreak
+	end
 	local damage, crit = damageFor(player, base)
-	EnemyService.Damage(enemy, damage, player, true, crit)
+	if not enemy.stats.Dummy then
+		Telemetry.First(player, "FirstHeroHit")
+	end
+	local root = rootOf(player)
+	EnemyService.Damage(enemy, damage, player, true, crit, root and root.Position)
 	EnemyService.HitStop(enemy, crit and 0.11 or 0.06)
 	EnemyService.Knockback(enemy, knock or 1.5)
 end
@@ -471,7 +484,7 @@ local function giveWeapon(player, character)
 	elseif heroId == "Swordmaster" and not skin.Baguette then
 		local weaponType = player:GetAttribute("WeaponType") or "Longsword"
 		local model, length = "gear_sword_long", 4.6
-		if weaponType == "Greatsword" then
+		if weaponType == "Greatsword" or weaponType == "KingsCleaver" then
 			model, length = "gear_sword_great", 6.6
 		elseif weaponType == "TwinBlades" then
 			model, length = "gear_sword_twin", 3.4
@@ -547,7 +560,7 @@ local function giveWeapon(player, character)
 		end
 	else
 		local weaponType = player:GetAttribute("WeaponType") or "Longsword"
-		if weaponType == "Greatsword" then
+		if weaponType == "Greatsword" or weaponType == "KingsCleaver" then
 			makeBlade(character, hand, skin, color, 6.5, 1.8)
 		elseif weaponType == "TwinBlades" then
 			makeBlade(character, hand, skin, color, 3.2, 0.9)
@@ -631,7 +644,21 @@ local function onCharacter(player, character)
 		local maxHealth = player:GetAttribute("HeroMaxHealth") or Config.HeroBaseHealth
 		humanoid.MaxHealth = maxHealth
 		humanoid.Health = maxHealth
+		-- the body stays in one piece and in place when knocked out: HeroAnim plays the fall (knees buckle, over backwards)
+		humanoid.BreakJointsOnDeath = false
 		humanoid.Died:Connect(function()
+			local r = character:FindFirstChild("HumanoidRootPart")
+			if r then
+				r.Anchored = true
+			end
+			-- bodies with Roblox's upgraded joints go limp on death (a ragdoll that sank into the ground,
+			-- 2026-11-25): keep every joint driven so HeroAnim's fall is what players see
+			for _, joint in character:GetDescendants() do
+				if joint:IsA("AnimationConstraint") then
+					joint.IsKinematic = true
+					joint.Enabled = true
+				end
+			end
 			Remotes.Notify:FireAllClients(player.DisplayName .. " got bonked by goblins! Back in a few seconds",
 				Color3.fromRGB(255, 140, 140))
 		end)
@@ -665,7 +692,7 @@ local function melee(player, root, damage, range, targets, color, knock)
 	Effects.Arc(root.CFrame * CFrame.new(0, -0.5, 0), range * 0.55, color, targets >= 5)
 	Sound.Play("Swing", root.Position)
 	local hits = 0
-	for _, e in EnemyService.InRange(front, range * 0.6) do
+	for _, e in EnemyService.InRange(front, range * 0.6, true) do
 		Effects.Particles(e.position + Vector3.new(0, e.stats.Size * 0.6, 0), { Texture = "Sparks", Color = color, Count = 8,
 			Size = 0.8, Speed = 14, Life = 0.35 })
 		hit(player, e, damage, knock or (targets >= 5 and 4 or 2.5))
@@ -1138,7 +1165,7 @@ local function resetPoints(player)
 	if pointsUsed(data) == 0 then
 		return false, "Nothing to reset"
 	end
-	local cost = data.Level * Config.StatResetGoldPerLevel
+	local cost = data.Level < Config.FreeStatResetBelow and 0 or data.Level * Config.StatResetGoldPerLevel
 	if profile.Gold < cost then
 		return false, "Reset costs " .. cost .. " gold"
 	end
@@ -1245,8 +1272,9 @@ function HeroService.Start()
 				rainbowParts[part] = nil
 			end
 		end
-		-- goblins hurt heroes that stand in their way
+		-- goblins hurt heroes that stand in their way (and swing at them: Bashing, for MonsterAnim)
 		local gameDt = dt * Clock.scale
+		local bashing = {}
 		for _, player in Players:GetPlayers() do
 			local root = rootOf(player)
 			if root then
@@ -1254,13 +1282,25 @@ function HeroService.Start()
 				local flat = Vector3.new(root.Position.X, 0, root.Position.Z)
 				local hurt = 0
 				for _, e in EnemyService.GetActive() do
-					if not e.dead and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
+					-- (a boss winding up its charge or staggering from a broken one is the opening: it doesn't hurt by touch;
+					-- the training knight never does)
+					local opening = e.charging or (e.weakUntil and Clock.now < e.weakUntil) or e.stats.Dummy
+					if not e.dead and not opening
+						and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
 						hurt += (Config.ContactDamage[e.name] or 5) * gameDt
+						bashing[e] = true
 					end
 				end
 				if hurt > 0 then
 					humanoid:TakeDamage(hurt)
 				end
+			end
+		end
+		for _, e in EnemyService.GetActive() do
+			if e.rigged then
+				-- (a hero in its way, or the wall it is stopped at: the barricade branch sets e.bashing)
+				EnemyService.SetBashing(e, bashing[e] or e.bashing == true)
+				EnemyService.SetPileRow(e, e.pileRow)
 			end
 		end
 	end)

@@ -1,0 +1,30 @@
+merged seams: 2507 -> 1633 vertices
+triangles 3120, vertices 1633, height 4.00
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\knight_rigged_paint.png (1024, 1024)
+rigid pieces: 16 bones own pieces, 391 border edges cut, 18 cap faces; vertices per bone Chest 296, Foot.L 75, Foot.R 86, Hand.L 237, Hand.R 243, Head 224, Hips 70, LowerArm.L 75, LowerArm.R 59, LowerLeg.L 81, LowerLeg.R 65, Spine 36, UpperArm.L 201, UpperArm.R 147, UpperLeg.L 89, UpperLeg.R 83
+CHECK zero-weight vertices 0, vertices on more than one bone 0
+CHECK pose arms_up   widest gap at a cut 2.088 studs; cut points opening more than 0.20 studs: 116 of 364 (worst between Hand.L/LowerLeg.L/UpperLeg.L, at (0.74, -0.21, 0.77))
+CHECK pose swing     widest gap at a cut 1.491 studs; cut points opening more than 0.20 studs: 62 of 364 (worst between Spine/UpperArm.R, at (-0.62, 0.17, 1.95))
+CHECK pose knees_45  widest gap at a cut 0.404 studs; cut points opening more than 0.20 studs: 51 of 364 (worst between LowerLeg.R/UpperLeg.R, at (-0.59, -0.36, 0.63))
+CHECK pose head_turn widest gap at a cut 0.374 studs; cut points opening more than 0.20 studs: 45 of 364 (worst between Head/UpperArm.L, at (0.46, 0.83, 2.92))
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.48)
+  Hips        parent Root        head ( 0.00  0.25  1.50) tail ( 0.00  0.25  1.82)
+  Spine       parent Hips        head ( 0.00  0.25  1.82) tail ( 0.00  0.25  2.30)
+  Chest       parent Spine       head ( 0.00  0.25  2.30) tail ( 0.00  0.10  2.65)
+  Neck        parent Chest       head ( 0.00  0.10  2.65) tail ( 0.00  0.10  2.85)
+  Head        parent Neck        head ( 0.00  0.10  2.85) tail ( 0.00  0.05  4.00)
+  UpperArm.L  parent Chest       head ( 0.93  0.25  2.85) tail ( 1.03  0.00  2.06)
+  LowerArm.L  parent UpperArm.L  head ( 1.03  0.00  2.06) tail ( 1.28 -0.30  1.80)
+  Hand.L      parent LowerArm.L  head ( 1.28 -0.30  1.80) tail ( 1.40 -0.45  1.60)
+  UpperArm.R  parent Chest       head (-0.93  0.25  2.85) tail (-1.28 -0.10  2.13)
+  LowerArm.R  parent UpperArm.R  head (-1.28 -0.10  2.13) tail (-1.50 -0.40  1.74)
+  Hand.R      parent LowerArm.R  head (-1.50 -0.40  1.74) tail (-1.55 -0.50  1.35)
+  UpperLeg.L  parent Hips        head ( 0.40  0.25  1.25) tail ( 0.45  0.15  0.75)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.45  0.15  0.75) tail ( 0.45  0.20  0.30)
+  Foot.L      parent LowerLeg.L  head ( 0.45  0.20  0.30) tail ( 0.45 -0.40  0.05)
+  UpperLeg.R  parent Hips        head (-0.40  0.25  1.25) tail (-0.45  0.15  0.75)
+  LowerLeg.R  parent UpperLeg.R  head (-0.45  0.15  0.75) tail (-0.45  0.20  0.30)
+  Foot.R      parent LowerLeg.R  head (-0.45  0.20  0.30) tail (-0.45 -0.40  0.05)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\knight_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\knight_rigged.fbx 2260108 bytes

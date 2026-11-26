@@ -93,7 +93,9 @@ end
 local function setOpen(open)
 	panel.Visible = open
 	if open then
-		status.Text = ""
+		-- the sound check's result (SoundBank): shows a sound this device could not load
+		status.Text = require(script.Parent.SoundBank).Summary()
+		status.TextColor3 = Ui.TEXT_DIM
 		Ui.pop(panel, 0.92)
 	end
 end

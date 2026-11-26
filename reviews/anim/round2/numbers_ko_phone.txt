@@ -1,0 +1,50 @@
+[ANIM] hero Swordmaster
+[ANIM] ko1 standing lowest before -0.04 (terrain under the feet is not flat: compare with this)
+[ANIM] ko1 t 0.00 lowest -0.04 (LeftLowerLeg) torso up 1.00 chest faces up 0.02 | root joint x -0 kinematic true enabled true hp 100 root anchored false root up 1.00
+[ANIM] ko1 t 0.27 lowest -1.85 (HeroWeapon) torso up 0.85 chest faces up -0.52 | root joint x -14 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko1 t 0.52 lowest -1.08 (HeroWeapon) torso up 0.91 chest faces up -0.40 | root joint x -10 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko1 t 0.75 lowest -0.10 (LeftFoot) torso up 0.99 chest faces up -0.02 | root joint x -7 kinematic true enabled true hp 0 root anchored true root up 0.97
+[ANIM] ko1 t 1.02 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 1.27 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 1.52 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 1.77 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 2.02 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 2.27 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 2.52 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 2.77 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 t 3.02 lowest -0.17 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko1 lowest point of each part over 3 s: Head 1.46, HeroWeapon -1.16, LeftFoot -0.18, LeftHand 0.51, LeftLowerArm 1.10, LeftLowerLeg -0.14, LeftUpperArm 1.16, LeftUpperLeg 0.09, LowerTorso 0.68, RightFoot -0.03, RightHand 0.74, RightLowerArm 1.29, RightLowerLeg -0.12, RightUpperArm 1.62, RightUpperLeg 0.18, UpperTorso 0.57
+[ANIM] ko1 final lowest -0.17 (LeftFoot)
+[ANIM] ko2 standing lowest before -0.05 (terrain under the feet is not flat: compare with this)
+[ANIM] ko2 t 0.00 lowest -0.05 (LeftLowerLeg) torso up 1.00 chest faces up 0.01 | root joint x -0 kinematic true enabled true hp 100 root anchored false root up 1.00
+[ANIM] ko2 t 0.26 lowest -0.08 (LeftLowerLeg) torso up 0.85 chest faces up -0.52 | root joint x -14 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko2 t 0.51 lowest -0.14 (LeftLowerLeg) torso up 0.91 chest faces up -0.40 | root joint x -10 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko2 t 0.77 lowest -0.12 (LeftFoot) torso up 0.99 chest faces up 0.05 | root joint x -6 kinematic true enabled true hp 0 root anchored true root up 0.95
+[ANIM] ko2 t 1.01 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 1.26 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 1.51 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 1.76 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 2.01 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 2.27 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 2.51 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 2.76 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 t 3.01 lowest -0.18 (LeftFoot) torso up 0.72 chest faces up 0.68 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.73
+[ANIM] ko2 lowest point of each part over 3 s: Head 1.50, LeftFoot -0.18, LeftHand 0.51, LeftLowerArm 1.10, LeftLowerLeg -0.15, LeftUpperArm 1.17, LeftUpperLeg 0.08, LowerTorso 0.69, RightFoot -0.04, RightHand 0.73, RightLowerArm 1.28, RightLowerLeg -0.13, RightUpperArm 1.63, RightUpperLeg 0.17, UpperTorso 0.58
+[ANIM] ko2 final lowest -0.18 (LeftFoot)
+[ANIM] ko3 standing lowest before -0.23 (terrain under the feet is not flat: compare with this)
+[ANIM] ko3 t 0.00 lowest -0.23 (LeftLowerLeg) torso up 1.00 chest faces up -0.02 | root joint x -0 kinematic true enabled true hp 100 root anchored false root up 1.00
+[ANIM] ko3 t 0.27 lowest -0.26 (LeftLowerLeg) torso up 0.85 chest faces up -0.52 | root joint x -14 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko3 t 0.52 lowest -0.32 (LeftLowerLeg) torso up 0.91 chest faces up -0.40 | root joint x -10 kinematic true enabled true hp 0 root anchored true root up 1.00
+[ANIM] ko3 t 0.75 lowest -0.27 (LeftFoot) torso up 0.95 chest faces up 0.25 | root joint x -7 kinematic true enabled true hp 0 root anchored true root up 0.86
+[ANIM] ko3 t 1.02 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 1.27 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 1.50 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 1.77 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 2.02 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 2.27 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 2.50 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 2.77 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 t 3.02 lowest -0.29 (LeftLowerArm) torso up 0.06 chest faces up 0.98 | root joint x -0 kinematic true enabled true hp 0 root anchored true root up 0.07
+[ANIM] ko3 lowest point of each part over 3 s: Head -0.03, LeftFoot -0.29, LeftHand -0.00, LeftLowerArm -0.37, LeftLowerLeg -0.33, LeftUpperArm -0.39, LeftUpperLeg -0.10, LowerTorso -0.05, RightFoot -0.22, RightHand 0.55, RightLowerArm 0.16, RightLowerLeg -0.31, RightUpperArm -0.03, RightUpperLeg -0.01, UpperTorso -0.04
+[ANIM] ko3 final lowest -0.29 (LeftLowerArm)
+[ANIM] DONE

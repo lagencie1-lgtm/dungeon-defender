@@ -15,10 +15,24 @@ local ForestPath = {
 	Vector3.new(95, 0, 42), -- the magic portal you defend
 }
 Config.PathWidth = 10
+
+-- the first-wave rescue (RescueService, RescueCue.client): when the Sneak has walked EscapeAt of the path it counts
+-- as slipping past and every hero is shown where they can still catch it (heroes run 20; HeroSpeed allows for
+-- turns and stairs, Margin is seconds to spare)
+Config.Rescue = { EscapeAt = 0.55, HeroSpeed = 16, Margin = 0.8 }
 Config.MapSize = Vector2.new(240, 180) -- ground size (X, Z)
 Config.OutpostCenter = Vector3.new(0, 0, 1600) -- the hub, far from the battlefield (its own terrain and hills)
 -- which hub: "Keep" (the Watch Keep, 2026-11-22, layout in HubLayout.luau) or "Meadow" (the old open meadow)
 Config.HubVersion = "Keep"
+
+-- the camera at a run's start (src/client/RunCamera.client.luau): degrees down, studs from the hero, and how far above
+-- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Was 42, 20.5, 0;
+-- 2026-11-24 the camera trial (reviews/camera/starting_views.png): 32 degrees aimed 3 studs up, in the test build.
+Config.RunCamera = { Pitch = 32, Distance = 20.5, AimHeight = 3,
+	-- (Lemp 2026-11-26, option C2) while a wall the hero can see is under attack, the camera looks down this many
+	-- degrees more, so the pile shows above the wall (a flatter camera hid more of it: reviews/anim/barricade_options),
+	-- springing in and out over about TiltTime seconds; WallRange: studs from the hero to the wall
+	WallTilt = 8, TiltTime = 0.4, WallRange = 70 }
 
 Config.StartGold = 200
 Config.PortalHealth = 100
@@ -266,6 +280,13 @@ Config.Enemies = {
 		Health = 30, Speed = 9, Damage = 1, Gold = 4, Xp = 2, Gems = 1, GemChance = 0.03,
 		Color = Color3.fromRGB(90, 160, 60), Size = 3,
 	},
+	-- the first-wave rescue (RescueService): slips out past the first Ranger's reach, too tough for one Ranger,
+	-- slow enough for a hero to catch. Caught: a handful of gems. Missed: a small, recoverable hit on the portal.
+	Sneak = {
+		DisplayName = "Goblin Sneak", Rescue = true, DropChance = 0.25,
+		Health = 60, Speed = 12, Damage = 8, Gold = 15, Xp = 12, Gems = 5, GemChance = 1,
+		Color = Color3.fromRGB(230, 150, 60), Size = 2.5,
+	},
 	Runner = {
 		DisplayName = "Goblin Speedrunner",
 		Health = 18, Speed = 16, Damage = 1, Gold = 3, Xp = 2, Gems = 1, GemChance = 0.03,
@@ -329,8 +350,19 @@ Config.Enemies = {
 		Health = 2800, Speed = 4.5, Damage = 100, Gold = 300, Xp = 150, Gems = 55, GemChance = 1,
 		Color = Color3.fromRGB(120, 40, 160), Size = 6.5,
 	},
+	-- the Outpost's training knight (EnemyService.SpawnDummy): armored like an Obsidian Knight, stands still, never
+	-- falls. Hit it to see what a weapon does (the King's Cleaver cracks its armor) before the next run.
+	TrainingKnight = {
+		DisplayName = "Training Knight", Look = "Knight", Dummy = true, Armor = 6, DropChance = 0,
+		Health = 400, Speed = 0, Damage = 0, Gold = 0, Xp = 0,
+		Color = Color3.fromRGB(190, 160, 110), Size = 3.6,
+	},
 	GoblinKing = {
 		DisplayName = "Goblin King", Model = "boss_goblin_king", -- its own image-to-3D model (art/ref3d)
+		-- two jobs (BossService): every Every seconds (First after he appears) he winds up a charge at the nearest
+		-- defender within Range. BreakHits hero hits during the Windup break it: he staggers back Knock studs and takes
+		-- Weak x damage for WeakTime seconds. Unanswered, the charge jams that defender for Stun seconds.
+		Charge = { First = 7, Every = 14, Windup = 6, Range = 45, BreakHits = 3, Knock = 6, Weak = 1.5, WeakTime = 3.5, Stun = 6 },
 		Health = 2600, Speed = 4, Damage = 100, Gold = 250, Xp = 100, Gems = 40, GemChance = 1,
 		Color = Color3.fromRGB(120, 60, 140), Size = 7, Boss = true,
 	},
@@ -340,9 +372,13 @@ Config.Enemies = {
 -- Waves: each wave is a list of groups that come one after another.
 -- Count = how many, Gap = seconds between each one.
 -------------------------------------------------------------------------------
+-- Delay = seconds before the group starts; StartCorner = the group appears at that corner of the path, not the start.
 local ForestWaves = {
+	-- the first-wave rescue: slow goblins the first Ranger can watch and shoot, then a Sneak that comes out of the
+	-- woods past the keep hill (corner 5) and runs for the portal, then a few more slow ones
 	{ Title = "The tutorial nobody asked for",
-		{ Enemy = "Goblin", Count = 8, Gap = 1.2 } },
+		{ Enemy = "Goblin", Count = 5, Gap = 1.6 }, { Enemy = "Sneak", Count = 1, Gap = 1, Delay = 6, StartCorner = 5 },
+		{ Enemy = "Goblin", Count = 3, Gap = 1.6 } },
 	{ Title = "They brought friends",
 		{ Enemy = "Goblin", Count = 14, Gap = 0.9 } },
 	{ Title = "Any% portal speedrun",
@@ -524,6 +560,9 @@ Config.HeroIcons = { Swordmaster = "hero_swordmaster", BeastHunter = "hero_hunte
 
 Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" }
 Config.SellRefund = 0.7 -- you get back 70% of what you paid
+-- Trying a build must never cost you (research report: "get the early investment back"): before the first wave,
+-- and for RefundWindow seconds after placing or upgrading, selling gives back everything that was paid.
+Config.RefundWindow = 10
 Config.TowerSpacing = 6 -- defenders can't stand closer than this
 
 -------------------------------------------------------------------------------
@@ -555,6 +594,7 @@ Config.StatPoints = {
 }
 Config.HeroBaseHealth = 100
 Config.StatResetGoldPerLevel = 20
+Config.FreeStatResetBelow = 10 -- resetting stat points is free until the hero reaches this level
 
 -- the heroes. Abilities are on F, E and R.
 Config.Heroes = {
@@ -627,6 +667,15 @@ Config.DailyRewards = { 20, 30, 40, 50, 60, 80, 150 }
 Config.DailyCooldownHours = 20 -- how long until you can claim again
 Config.DailyStreakHours = 48 -- miss it longer than this and the streak resets
 
+-- A loot hunt you can follow (research report, priority three): each boss shows the one reward it carries.
+-- The first win against it gives that reward for sure. After that every boss kill fills a meter (Fill by
+-- difficulty) and a full meter gives it again at your current item level, so a bad roll never wastes a run;
+-- DropChance is the small extra surprise per kill. Item = an Items.WeaponTypes id (a unique weapon).
+Config.BossRewards = {
+	GoblinKing = { Item = "KingsCleaver", Rarity = 5, Stats = { "Power", "Command", "Crit" }, Meter = 8,
+		Fill = { Easy = 1, Normal = 2, Hard = 3, Insane = 4, Mythic = 4 }, DropChance = 0.08 },
+}
+
 -- gold on top of the gems on some days of the streak (day 7 is the big one)
 Config.DailyGold = { [3] = 300, [5] = 500, [7] = 1500 }
 
@@ -674,7 +723,14 @@ Config.Sounds = {
 	Zap = { Id = "rbxasset://sounds/impact_explosion_03.mp3", Volume = 0.2, Pitch = { 2.5, 3 } },
 	Click = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.5, Pitch = { 1, 1.1 } },
 	Coin = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.6, Pitch = { 1.8, 2.1 } },
+	Sneak = { Id = "rbxasset://sounds/action_footsteps_plastic.mp3", Volume = 0.9, Pitch = { 1.7, 1.8 } }, -- quick feet
 	Land = { Id = "rbxasset://sounds/action_jump_land.mp3", Volume = 1, Pitch = { 0.6, 0.7 } },
+	-- pet moves (made from code: art/sounds/pet_sounds.py; played by PetFollow at the pet, quiet, a few times a minute)
+	PetPounce = { Id = "rbxassetid://108573592683800", Volume = 0.45, Pitch = { 0.96, 1.04 } },
+	PetRally = { Id = "rbxassetid://138761381729872", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetMark = { Id = "rbxassetid://99606147842320", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetSpark = { Id = "rbxassetid://107579833673360", Volume = 0.3, Pitch = { 0.96, 1.04 } },
+	PetDig = { Id = "rbxassetid://73012526581803", Volume = 0.4, Pitch = { 0.96, 1.04 } },
 }
 
 -- how far a point is from the middle line of the path

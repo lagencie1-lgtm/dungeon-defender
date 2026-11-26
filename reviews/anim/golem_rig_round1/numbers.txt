@@ -1,0 +1,30 @@
+merged seams: 4916 -> 1681 vertices
+triangles 3356, vertices 1681, height 4.00
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\golem_rigged_paint.png (1024, 1024)
+rigid pieces: 16 bones own pieces, 338 border edges cut, 23 cap faces; vertices per bone Chest 60, Foot.L 94, Foot.R 94, Hand.L 201, Hand.R 192, Head 259, Hips 70, LowerArm.L 77, LowerArm.R 71, LowerLeg.L 109, LowerLeg.R 109, Spine 107, UpperArm.L 177, UpperArm.R 188, UpperLeg.L 108, UpperLeg.R 118
+CHECK zero-weight vertices 0, vertices on more than one bone 0
+CHECK pose arms_up   widest gap at a cut 1.098 studs; cut points opening more than 0.20 studs: 80 of 323 (worst between UpperArm.L/UpperLeg.L, at (0.71, -0.04, 1.86))
+CHECK pose swing     widest gap at a cut 2.054 studs; cut points opening more than 0.20 studs: 66 of 323 (worst between Spine/UpperArm.R, at (-0.55, 0.99, 2.3))
+CHECK pose knees_45  widest gap at a cut 0.408 studs; cut points opening more than 0.20 studs: 75 of 323 (worst between LowerLeg.R/UpperLeg.R, at (-0.72, 0.53, 0.79))
+CHECK pose head_turn widest gap at a cut 0.504 studs; cut points opening more than 0.20 studs: 52 of 323 (worst between Chest/Head, at (0.01, 1.11, 3.0))
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.48)
+  Hips        parent Root        head ( 0.00  0.05  1.45) tail ( 0.00  0.05  1.83)
+  Spine       parent Hips        head ( 0.00  0.05  1.83) tail ( 0.00  0.05  2.40)
+  Chest       parent Spine       head ( 0.00  0.05  2.40) tail ( 0.00 -0.05  2.75)
+  Neck        parent Chest       head ( 0.00 -0.05  2.75) tail ( 0.00 -0.05  2.95)
+  Head        parent Neck        head ( 0.00 -0.05  2.95) tail ( 0.00 -0.10  4.00)
+  UpperArm.L  parent Chest       head ( 0.85  0.00  2.95) tail ( 1.53 -0.05  2.19)
+  LowerArm.L  parent UpperArm.L  head ( 1.53 -0.05  2.19) tail ( 1.69 -0.20  1.69)
+  Hand.L      parent LowerArm.L  head ( 1.69 -0.20  1.69) tail ( 1.72 -0.30  0.80)
+  UpperArm.R  parent Chest       head (-0.85  0.00  2.95) tail (-1.53 -0.05  2.19)
+  LowerArm.R  parent UpperArm.R  head (-1.53 -0.05  2.19) tail (-1.69 -0.20  1.69)
+  Hand.R      parent LowerArm.R  head (-1.69 -0.20  1.69) tail (-1.72 -0.30  0.80)
+  UpperLeg.L  parent Hips        head ( 0.45  0.05  1.35) tail ( 0.60  0.00  0.75)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.60  0.00  0.75) tail ( 0.65  0.00  0.30)
+  Foot.L      parent LowerLeg.L  head ( 0.65  0.00  0.30) tail ( 0.65 -0.50  0.05)
+  UpperLeg.R  parent Hips        head (-0.45  0.05  1.35) tail (-0.60  0.00  0.75)
+  LowerLeg.R  parent UpperLeg.R  head (-0.60  0.00  0.75) tail (-0.65  0.00  0.30)
+  Foot.R      parent LowerLeg.R  head (-0.65  0.00  0.30) tail (-0.65 -0.50  0.05)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\golem_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\golem_rigged.fbx 2650028 bytes

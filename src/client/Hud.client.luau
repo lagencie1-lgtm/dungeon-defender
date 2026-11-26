@@ -10,12 +10,14 @@ local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Ground = require(ReplicatedStorage.Shared.Ground)
+local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
 local GearLooks = require(ReplicatedStorage.Shared.GearLooks)
 local Memes = require(ReplicatedStorage.Shared.Memes)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Ui = require(script.Parent.Ui)
 local ShopLooks = require(script.Parent.ShopLooks)
 local Store = require(ReplicatedStorage.Shared.Store)
+local Items = require(ReplicatedStorage.Shared.Items)
 local MarketplaceService = game:GetService("MarketplaceService")
 local GameState = ReplicatedStorage:WaitForChild("GameState")
 
@@ -26,6 +28,12 @@ local make, corner, stroke, label, button = Ui.make, Ui.corner, Ui.stroke, Ui.la
 
 -- phones and tablets get bigger buttons in different places
 local isTouch = Ui.isTouch
+-- touch sizes (scripts/device_pass.py "Tap": 44 px for buttons always on screen, 36 in a panel). The smallest
+-- phone presets (Galaxy A06 / S25 Ultra, 338 px tall less Roblox's top bar) give this screen a scale of 0.58.
+local HUD_TAP = 76 -- 76 x 0.58 = 44 px (the biggest size; fitTaps at the end sizes them to the phone)
+local PANEL_TAP = isTouch and 64 or 44 -- 64 x 0.58 = 37 px
+local ROW_H = isTouch and 76 or 64 -- a shop row round a PANEL_TAP button
+local LIST_TOP = 56 + PANEL_TAP + 8 -- the shop list starts under the tab bar
 
 -------------------------------------------------------------------------------
 -- the screen, scaled to fit any size (phones get everything a bit smaller)
@@ -58,7 +66,28 @@ local top = make("Frame", {
 if isTouch then
 	-- phones: the run bar at 80% size (the mobile test keeps 70% of the screen free for the game)
 	make("UIScale", { Scale = 0.8, Parent = top })
+	-- and up in the band of Roblox's top bar (its middle is free, Roblox's buttons sit at its left end): under it the
+	-- bar covered 22-33% of the road ahead on phones (scripts/device_pass.py "Road", 2026-11-25). Its own screen keeps
+	-- out of the notch and the home bar (DeviceSafeInsets), with the HUD's scale.
+	local barGui = make("ScreenGui", { Name = "RunBar", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets, Parent = player:WaitForChild("PlayerGui") })
+	local barRoot = make("Frame", { Name = "Root", BackgroundTransparency = 1, Parent = barGui })
+	local barScale = make("UIScale", { Parent = barRoot })
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function follow()
+		local scale = hudScale.Scale > 0 and hudScale.Scale or 1
+		barScale.Scale = scale
+		barRoot.Size = UDim2.fromScale(1 / scale, 1 / scale)
+	end
+	hudScale:GetPropertyChangedSignal("Scale"):Connect(follow)
+	follow()
+	top.Parent = barRoot
 	top.Position = UDim2.new(0.5, 0, 0, 4)
+else
+	-- PC and controller: the run bar in the top-right corner, the Start wave and Speed buttons under it, so the
+	-- road ahead in the middle stays clear (scripts/device_pass.py "Road": 21-38% was covered, 2026-11-25)
+	top.Position = UDim2.new(1, -10, 0, 8)
+	top.AnchorPoint = Vector2.new(1, 0)
 end
 
 local waveLabel = label({ Size = UDim2.fromOffset(160, 30), Position = UDim2.fromOffset(14, 6), Text = "Wave 0/10",
@@ -82,18 +111,18 @@ local portalText = label({ Size = UDim2.fromScale(1, 0.85), Position = UDim2.fro
 -- phones: a compact stack in the top-right corner, off the lane (it sat over the middle of the map before)
 local controls = make("Frame", {
 	Name = "WaveControls",
-	Size = isTouch and UDim2.fromOffset(160, 136) or UDim2.fromOffset(420, 44),
-	-- (left of the ability column, which reaches up the right edge)
-	Position = isTouch and UDim2.new(1, -118, 0, 8) or UDim2.new(0.5, 0, 0, 80),
-	AnchorPoint = isTouch and Vector2.new(1, 0) or Vector2.new(0.5, 0),
+	Size = isTouch and UDim2.fromOffset(160, HUD_TAP * 2 + 6) or UDim2.fromOffset(330, 44),
+	-- (phones: left of the ability column, which reaches up the right edge; PC and controller: under the run bar)
+	Position = isTouch and UDim2.new(1, -118, 0, 8) or UDim2.new(1, -10, 0, 86),
+	AnchorPoint = Vector2.new(1, 0),
 	BackgroundTransparency = 1,
 	Parent = root,
 }, { make("UIListLayout", { FillDirection = isTouch and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
 	Padding = UDim.new(0, isTouch and 6 or 10),
-	HorizontalAlignment = isTouch and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Center }) })
-local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 140 or 210, isTouch and 66 or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
+	HorizontalAlignment = Enum.HorizontalAlignment.Right }) })
+local startButton = button({ Name = "StartWave", Size = UDim2.fromOffset(isTouch and 140 or 200, isTouch and HUD_TAP or 44), BackgroundColor3 = Color3.fromRGB(160, 60, 40),
 	Text = isTouch and "Start wave" or "Start wave now", LayoutOrder = 1, Parent = controls })
-local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 88 or 110, isTouch and 64 or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
+local speedButton = button({ Name = "WaveSpeed", Size = UDim2.fromOffset(isTouch and 88 or 110, isTouch and HUD_TAP or 44), BackgroundColor3 = Color3.fromRGB(50, 90, 140),
 	Text = "Speed 1x", LayoutOrder = 2, Parent = controls })
 
 -- the difficulty's name, with the Mythic tier ("Mythic 3")
@@ -274,7 +303,8 @@ local BUTTON_W = isTouch and 98 or 112
 local towerBar = make("Frame", {
 	Name = "TowerBar",
 	Size = UDim2.fromOffset(#Config.TowerOrder * (BUTTON_W + 8), 100),
-	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -10),
+	-- (touch: 24 to the right, so the left card stays off the thumbstick on a 667-wide iPhone)
+	Position = UDim2.new(0.5, isTouch and 24 or 0, 1, isTouch and -14 or -10),
 	AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundTransparency = 1,
 	Parent = root,
@@ -323,6 +353,59 @@ local heroPanel = make("Frame", {
 }, { corner(12), stroke() })
 if isTouch then
 	make("UIScale", { Scale = 0.8, Parent = heroPanel })
+	-- the Menu button lives on its own screen with its own scale; on a narrow, tall screen (a 4:3 tablet, a Studio
+	-- window of 750x635) it reached down past this panel's top (test/mobile: "menu covers hero status").
+	-- Keep the panel just below it, wherever the two scales put them.
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function keepBelowMenu()
+		local menuGui = player.PlayerGui:FindFirstChild("SideMenu")
+		local open = menuGui and menuGui:FindFirstChild("OpenMenu", true)
+		if not open or not hudScale or hudScale.Scale <= 0 then
+			return
+		end
+		local bottom = open.AbsolutePosition.Y + open.AbsoluteSize.Y
+		local y = (bottom - root.AbsolutePosition.Y) / hudScale.Scale + 6
+		heroPanel.Position = UDim2.fromOffset(10, math.max(168, math.ceil(y)))
+	end
+	task.spawn(function()
+		local menuGui = player.PlayerGui:WaitForChild("SideMenu", 30)
+		local open = menuGui and menuGui:FindFirstChild("OpenMenu", true)
+		if open then
+			open:GetPropertyChangedSignal("AbsolutePosition"):Connect(keepBelowMenu)
+			open:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepBelowMenu)
+		end
+		root:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepBelowMenu)
+		root:GetPropertyChangedSignal("AbsolutePosition"):Connect(keepBelowMenu)
+		keepBelowMenu()
+	end)
+end
+if not isTouch then
+	-- with a controller the menu dock is taller (its "Up" badge) and the layout area 10% smaller (TV-safe), so the
+	-- dock reached down over this panel's left end (scripts/device_pass.py Xbox sheet, 2026-11-25): then the panel
+	-- moves right of the dock
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function clearDock()
+		local menuGui = player.PlayerGui:FindFirstChild("SideMenu")
+		local dock = menuGui and menuGui:FindFirstChild("Dock", true)
+		local x = 10
+		if dock and dock.Visible and hudScale and hudScale.Scale > 0 then
+			local dockBottom = dock.AbsolutePosition.Y + dock.AbsoluteSize.Y
+			if dockBottom > heroPanel.AbsolutePosition.Y - 4 then
+				x = math.ceil((dock.AbsolutePosition.X + dock.AbsoluteSize.X - root.AbsolutePosition.X) / hudScale.Scale) + 8
+			end
+		end
+		heroPanel.Position = UDim2.new(0, x, 1, -132)
+	end
+	task.spawn(function()
+		local menuGui = player.PlayerGui:WaitForChild("SideMenu", 30)
+		local dock = menuGui and menuGui:FindFirstChild("Dock", true)
+		if dock then
+			dock:GetPropertyChangedSignal("AbsoluteSize"):Connect(clearDock)
+			dock:GetPropertyChangedSignal("AbsolutePosition"):Connect(clearDock)
+		end
+		root:GetPropertyChangedSignal("AbsoluteSize"):Connect(clearDock)
+		clearDock()
+	end)
 end
 local heroPortrait = Icons.Draw(heroPanel, Config.HeroIcons.Swordmaster, nil,
 	{ Size = UDim2.fromOffset(46, 46), Position = UDim2.fromOffset(4, 3) })
@@ -344,6 +427,22 @@ if isTouch then
 		Parent = root,
 	}, { make("UIListLayout", { Padding = UDim.new(0, 12), VerticalAlignment = Enum.VerticalAlignment.Bottom,
 		HorizontalAlignment = Enum.HorizontalAlignment.Right }) })
+	-- always above Roblox's jump button: it is 120 px and sits 210 px up on a tablet (70 px, 90 up on a phone), so
+	-- on an iPad the column's lowest button lay on it (scripts/device_pass.py "Thumbs", 2026-11-25)
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function clearJump()
+		local viewport = workspace.CurrentCamera.ViewportSize
+		local jumpTop = math.min(viewport.X, viewport.Y) <= 500 and 90 or 210
+		local scale = hudScale and hudScale.Scale > 0 and hudScale.Scale or 1
+		abilityHolder.Position = UDim2.new(1, -12, 1, -math.max(168, math.ceil(jumpTop / scale) + 10))
+	end
+	root:GetPropertyChangedSignal("AbsoluteSize"):Connect(clearJump)
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(clearJump)
+	if hudScale then
+		hudScale:GetPropertyChangedSignal("Scale"):Connect(clearJump)
+	end
+	clearJump()
+	task.delay(2, clearJump)
 else
 	abilityHolder = make("Frame", {
 		Size = UDim2.fromOffset(230, 64),
@@ -354,7 +453,7 @@ else
 end
 
 local function abilityButton(text, key, order)
-	local size = isTouch and UDim2.fromOffset(72, 72) or UDim2.fromOffset(71, 58) -- 72 x 0.69 = 50 px on an iPhone 13
+	local size = isTouch and UDim2.fromOffset(HUD_TAP, HUD_TAP) or UDim2.fromOffset(71, 58) -- 76 x 0.58 = 44 px on the smallest phone
 	local b = button({ Size = size, Text = "", LayoutOrder = order, BackgroundColor3 = Color3.fromRGB(70, 50, 100),
 		Parent = abilityHolder })
 	if isTouch then
@@ -407,8 +506,9 @@ local INFO_BUTTON = isTouch and 66 or 38 -- 66 x the phone scale (0.69 on an iPh
 local infoPanel = make("Frame", {
 	Name = "TowerInfo",
 	Size = UDim2.fromOffset(240, 100 + INFO_BUTTON * 2),
-	Position = isTouch and UDim2.new(1, -124, 0.42, 0) or UDim2.new(1, -10, 0.5, 0),
-	AnchorPoint = Vector2.new(1, 0.5),
+	-- (touch: under the wave buttons and 170 from the right edge, clear of Roblox's jump button on every phone)
+	Position = isTouch and UDim2.new(1, -170, 0, 8 + HUD_TAP * 2 + 6 + 8) or UDim2.new(1, -44, 0.5, 0), -- (room for the B badge on its corner: "Circle" on a PlayStation is 72 wide)
+	AnchorPoint = isTouch and Vector2.new(1, 0) or Vector2.new(1, 0.5),
 	BackgroundColor3 = Ui.DARK,
 	BackgroundTransparency = 0.1,
 	Visible = false,
@@ -444,7 +544,7 @@ local tapHint = label({ Size = UDim2.fromOffset(400, 26), Position = UDim2.new(0
 -------------------------------------------------------------------------------
 local lobbyBar = make("Frame", {
 	Size = UDim2.fromOffset(520, isTouch and 76 or 60),
-	Position = UDim2.new(0.5, 0, 1, isTouch and -14 or -12),
+	Position = UDim2.new(0.5, isTouch and 24 or 0, 1, isTouch and -14 or -12), -- (touch: clear of the thumbstick)
 	AnchorPoint = Vector2.new(0.5, 1),
 	BackgroundTransparency = 1,
 	Visible = false,
@@ -483,9 +583,32 @@ for i, mapId in Config.MapOrder do
 		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
 	label({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(28, 36), Text = info.Description,
 		Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
-	label({ Size = UDim2.new(1, -40, 0, 18), Position = UDim2.fromOffset(28, 60),
+	local statsLine = label({ Size = UDim2.new(1, -40, 0, 18), Position = UDim2.fromOffset(28, 60),
 		Text = string.format("Goblin health x%.2f · gems x%.1f · better loot +%d", info.Health, info.Gems, info.ItemLevel),
 		Font = Enum.Font.Gotham, TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = b })
+	-- the boss's own reward instead, when it has one (Config.BossRewards): what it is, what it does, your meter
+	local bossName = nil
+	for _, wave in info.Waves do
+		for _, group in ipairs(wave) do
+			if Config.BossRewards[group.Enemy] then
+				bossName = group.Enemy
+			end
+		end
+	end
+	if bossName then
+		local reward = Config.BossRewards[bossName]
+		local weapon = Items.WeaponTypes[reward.Item]
+		local function showReward()
+			local first = not player:GetAttribute("BossFirst_" .. bossName)
+			statsLine.Text = string.format("Boss reward: %s (cracks armor) · %s", weapon.Name,
+				first and "first win takes it" or string.format("meter %d/%d", player:GetAttribute("BossMeter_" .. bossName) or 0,
+					reward.Meter))
+			statsLine.TextColor3 = Items.Rarities[reward.Rarity].Color
+		end
+		showReward()
+		player:GetAttributeChangedSignal("BossMeter_" .. bossName):Connect(showReward)
+		player:GetAttributeChangedSignal("BossFirst_" .. bossName):Connect(showReward)
+	end
 	b.Activated:Connect(function()
 		Remotes.PickMap:FireServer(mapId)
 		mapPanel.Visible = false
@@ -545,7 +668,7 @@ local goalLabel = label({ Name = "NextGoal", Size = UDim2.fromOffset(440, 18), P
 	Text = "", TextColor3 = Color3.fromRGB(255, 235, 190), TextStrokeTransparency = 0.25, Parent = root })
 -- a small dark-wood chip behind it, so the line reads over bright signs and sky
 goalLabel.TextScaled = false
-goalLabel.TextSize = 15
+goalLabel.TextSize = 15 -- (touch: fitTaps below)
 goalLabel.AutomaticSize = Enum.AutomaticSize.X
 goalLabel.Size = UDim2.fromOffset(0, 22)
 goalLabel.BackgroundColor3 = Color3.fromRGB(58, 38, 24)
@@ -640,16 +763,19 @@ local shopPanel = make("Frame", {
 }, { corner(18), stroke(Ui.GEM, 3), make("UISizeConstraint", { MaxSize = Vector2.new(780, 480) }) })
 label({ Size = UDim2.new(1, -120, 0, 36), Position = UDim2.fromOffset(16, 10), Text = "Shop",
 	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21, Parent = shopPanel })
-local shopGems = label({ Size = UDim2.fromOffset(200, 30), Position = UDim2.new(1, -70, 0, 14), AnchorPoint = Vector2.new(1, 0),
+local shopGems = label({ Size = UDim2.fromOffset(200, 30), Position = UDim2.new(1, -20 - PANEL_TAP - 8, 0, 14), AnchorPoint = Vector2.new(1, 0),
 	Text = "0 gems", TextColor3 = Ui.GEM, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 21, Parent = shopPanel })
-local shopClose = button({ Size = UDim2.fromOffset(44, 44), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
+local shopClose = button({ Size = UDim2.fromOffset(PANEL_TAP, PANEL_TAP), Position = UDim2.new(1, -12, 0, 8), AnchorPoint = Vector2.new(1, 0),
 	Text = "X", BackgroundColor3 = Color3.fromRGB(140, 50, 50), ZIndex = 21, Parent = shopPanel })
-local tabBar = make("Frame", { Size = UDim2.new(1, -32, 0, 40), Position = UDim2.fromOffset(16, 56),
+local tabBar = make("Frame", { Size = UDim2.new(1, isTouch and -32 - PANEL_TAP - 8 or -32, 0, isTouch and PANEL_TAP or 40),
+	Position = UDim2.fromOffset(16, 56),
 	BackgroundTransparency = 1, ZIndex = 21, Parent = shopPanel },
-	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
+	-- (in LayoutOrder: by name the tabs came out Codes, Gear Looks, ... with Defenders last)
+	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder }) })
 local list = make("ScrollingFrame", {
-	Size = UDim2.new(1, -32, 1, -116),
-	Position = UDim2.fromOffset(16, 104),
+	Size = UDim2.new(1, -32, 1, -LIST_TOP - 12),
+	Position = UDim2.fromOffset(16, LIST_TOP),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	ScrollBarThickness = 6,
@@ -664,7 +790,7 @@ local TABS = { { Id = "Towers", Name = "Defenders" }, { Id = "GearLooks", Name =
 	{ Id = "Skins", Name = "Skins" }, { Id = "Robux", Name = "Robux" }, { Id = "Codes", Name = "Codes" } }
 local tabButtons = {}
 local gearSlot = GearLooks.Slots[1]
-local gearTabs = make("Frame", { Size = UDim2.new(1, -32, 0, 44), Position = UDim2.fromOffset(16, 104),
+local gearTabs = make("Frame", { Size = UDim2.new(1, -32, 0, PANEL_TAP), Position = UDim2.fromOffset(16, LIST_TOP),
 	BackgroundTransparency = 1, ZIndex = 21, Visible = false, Parent = shopPanel },
 	{ make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8),
 		SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -694,9 +820,9 @@ end
 local refreshShop -- defined below
 
 local function rowFor(kind, item, order, equippedId)
-	local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = order,
+	local row = make("Frame", { Size = UDim2.new(1, -10, 0, ROW_H), BackgroundColor3 = Ui.PANEL, LayoutOrder = order,
 		ZIndex = 22, Parent = list }, { corner(10) })
-	make("Frame", { Size = UDim2.fromOffset(10, 44), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = item.Color,
+	make("Frame", { Size = UDim2.fromOffset(10, ROW_H - 20), Position = UDim2.fromOffset(10, 10), BackgroundColor3 = item.Color,
 		ZIndex = 23, Parent = row }, { corner(4) })
 	label({ Size = UDim2.new(1, -200, 0, 26), Position = UDim2.fromOffset(30, 8), Text = item.Name,
 		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
@@ -716,7 +842,7 @@ local function rowFor(kind, item, order, equippedId)
 	else
 		text, color = "Equip", Color3.fromRGB(60, 130, 60)
 	end
-	local b = button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+	local b = button({ Size = UDim2.fromOffset(150, PANEL_TAP), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 		Text = text, BackgroundColor3 = color, ZIndex = 23, Parent = row })
 	b.Activated:Connect(function()
 		if (not isOwned and item.RebirthOnly) or (isOwned and (kind == "Towers" or equippedId == item.Id)) then
@@ -759,20 +885,20 @@ function refreshShop()
 		return
 	end
 	shopLooks.Hide()
-	list.Position = UDim2.fromOffset(16, 104)
-	list.Size = UDim2.new(1, -32, 1, -116)
+	list.Position = UDim2.fromOffset(16, LIST_TOP)
+	list.Size = UDim2.new(1, -32, 1, -LIST_TOP - 12)
 	if shopTab == "Robux" then
 		local order = 0
 		local function robuxRow(name, text, price, id, isPass, ownedAlready)
 			order += 1
-			local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = order, ZIndex = 22,
+			local row = make("Frame", { Size = UDim2.new(1, -10, 0, ROW_H), BackgroundColor3 = Ui.PANEL, LayoutOrder = order, ZIndex = 22,
 				Parent = list }, { corner(10) })
 			label({ Size = UDim2.new(1, -220, 0, 26), Position = UDim2.fromOffset(14, 8), Text = name,
 				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
 			label({ Size = UDim2.new(1, -220, 0, 18), Position = UDim2.fromOffset(14, 38), Text = text or "",
 				Font = Enum.Font.Gotham, TextColor3 = Ui.TEXT_DIM, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23, Parent = row })
 			local buttonText = ownedAlready and "Owned" or (id == 0 and "Coming soon" or ("R$ " .. price))
-			local b = button({ Size = UDim2.fromOffset(160, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+			local b = button({ Size = UDim2.fromOffset(160, PANEL_TAP), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 				Text = buttonText, ZIndex = 23, Parent = row,
 				BackgroundColor3 = (ownedAlready or id == 0) and Color3.fromRGB(70, 70, 80) or Color3.fromRGB(40, 150, 80) })
 			b.Activated:Connect(function()
@@ -797,11 +923,11 @@ function refreshShop()
 			end
 		end
 	elseif shopTab == "Codes" then
-		local row = make("Frame", { Size = UDim2.new(1, -10, 0, 64), BackgroundColor3 = Ui.PANEL, ZIndex = 22, Parent = list }, { corner(10) })
-		local box = make("TextBox", { Size = UDim2.new(1, -190, 0, 44), Position = UDim2.fromOffset(10, 10), PlaceholderText = "Type a code",
+		local row = make("Frame", { Size = UDim2.new(1, -10, 0, ROW_H), BackgroundColor3 = Ui.PANEL, ZIndex = 22, Parent = list }, { corner(10) })
+		local box = make("TextBox", { Size = UDim2.new(1, -190, 0, PANEL_TAP), Position = UDim2.fromOffset(10, 10), PlaceholderText = "Type a code",
 			Text = "", ClearTextOnFocus = false, Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Color3.new(1, 1, 1),
 			BackgroundColor3 = Color3.fromRGB(30, 25, 40), ZIndex = 23, Parent = row }, { corner(8) })
-		local go = button({ Size = UDim2.fromOffset(160, 44), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		local go = button({ Size = UDim2.fromOffset(160, PANEL_TAP), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 			Text = "Redeem", BackgroundColor3 = Color3.fromRGB(60, 130, 60), ZIndex = 23, Parent = row })
 		local hint = make("Frame", { Size = UDim2.new(1, -10, 0, 40), BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = 22, Parent = list })
 		local hintText = label({ Size = UDim2.fromScale(1, 1), Text = "New codes come with every update!", Font = Enum.Font.Gotham,
@@ -983,6 +1109,8 @@ local lastKills = GameState:GetAttribute("Kills") or 0
 local combo, lastKillTime, comboStep = 0, 0, 0
 
 local clearedJson, clearedMaps
+local GOAL_SECONDS = 5
+local goalShownText, goalHideAt = nil, 0
 local function refreshTop()
 	local gold = GameState:GetAttribute("Gold") or 0
 	goldLabel.Text = math.floor(gold) .. " mana"
@@ -1079,8 +1207,23 @@ local function refreshTop()
 	-- the weekly twist is announced when a run starts; on a phone its line only covered the hub
 	eventLabel.Visible = inLobby and not isTouch
 	goalLabel.Text = nextGoal()
-	goalLabel.Visible = goalLabel.Text ~= ""
-	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8) or UDim2.new(0.5, 0, 0, isTouch and 60 or 76)
+	local showGoal = goalLabel.Text ~= ""
+	-- phones in a run: the chip sits over the road ahead (a wall 30 studs down the road was hidden), so it shows
+	-- for GOAL_SECONDS when the goal changes, then leaves the road to the game (the wave bar still says the goal)
+	if isTouch and not inLobby and showGoal then
+		if goalLabel.Text ~= goalShownText then
+			goalShownText = goalLabel.Text
+			goalHideAt = os.clock() + GOAL_SECONDS
+			task.delay(GOAL_SECONDS + 0.1, refreshTop)
+		end
+		showGoal = os.clock() < goalHideAt
+	end
+	goalLabel.Visible = showGoal
+	-- (in a run on PC and controller: at the top, just left of the run bar in the corner; under it the chip lay on the
+	-- road ahead)
+	goalLabel.AnchorPoint = (inLobby or isTouch) and Vector2.new(0.5, 0) or Vector2.new(1, 0)
+	goalLabel.Position = inLobby and UDim2.new(0.5, 0, 0, 8)
+		or (isTouch and UDim2.new(0.5, 0, 0, 60) or UDim2.new(1, -10 - 600 - 10, 0, 8))
 	towerBar.Visible = not inLobby
 	top.Visible = not inLobby
 	portalBack.Visible = not inLobby
@@ -1154,6 +1297,7 @@ local function refreshTop()
 	for towerType, t in towerButtons do
 		local unlocked = isUnlocked(towerType)
 		t.lock.Visible = not unlocked
+		t.cost.Visible = unlocked -- (the lock shows the gem price in the same place; both at once were unreadable)
 		local affordable = gold >= Config.Towers[towerType].Cost
 		t.button.BackgroundColor3 = (affordable and unlocked) and Ui.PANEL or Color3.fromRGB(45, 40, 45)
 		t.cost.TextColor3 = affordable and Ui.MANA or Ui.BAD
@@ -1295,6 +1439,11 @@ local function canPlaceHere(position)
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
 		return false, "Too close to the edge"
 	end
+	-- the map's real outline (same rule as the server)
+	local map = Config.Maps[Config.CurrentMap]
+	if map and MapOutline.OutsideOf(map.Theme, position.X, position.Z) > -MapOutline.BuildStop then
+		return false, "Too close to the edge"
+	end
 	if Config.DistanceToPath(position) < Config.PathWidth / 2 + 3 then
 		return false, "Not on the path"
 	end
@@ -1319,7 +1468,7 @@ local function canPlaceHere(position)
 			local r = d:GetAttribute("BlockRadius")
 			local p = r and d:GetPivot().Position
 			if r and (Vector3.new(p.X, 0, p.Z) - Vector3.new(position.X, 0, position.Z)).Magnitude < r + 2.5 then
-				return false, "Something is in the way"
+				return false, d:GetAttribute("BlockWhy") or "Something is in the way"
 			end
 		end
 	end
@@ -1365,6 +1514,30 @@ local function groundUnder(screenPos)
 	if hit then
 		return Vector3.new(hit.Position.X, 0, hit.Position.Z)
 	end
+end
+
+local function snapPlacement(pos)
+	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
+end
+
+-- A tap (or a controller's ghost) that lands a little off a free spot takes the nearest free one within 4.5 studs
+-- (research briefs, 2026-11-24: a fresh phone player should get a defender down within 90 seconds, and a thumb is
+-- not a mouse). Rings of 8 spots at 1.5, 3 and 4.5 studs; nil when none is free. The mouse stays exact.
+local function nearestFree(pos)
+	pos = snapPlacement(pos)
+	if canPlaceHere(pos) then
+		return pos
+	end
+	for _, r in { 1.5, 3, 4.5 } do
+		for i = 0, 7 do
+			local a = i * math.pi / 4
+			local spot = snapPlacement(pos + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r))
+			if canPlaceHere(spot) then
+				return spot
+			end
+		end
+	end
+	return nil
 end
 
 local function startPlacing(towerType)
@@ -1413,26 +1586,28 @@ local function startPlacing(towerType)
 	if isTouch then
 		-- Show a legal preview as soon as a card is chosen. Players can move it before confirming.
 		local camera = workspace.CurrentCamera
-		if camera then
+		-- the map's designed first spot (MapOutline.Start, the one the tutorial points at) when it is near and free
+		local map = Config.Maps[Config.CurrentMap]
+		local start = map and MapOutline.Start[map.Theme]
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if start and start.FirstSpot and root and (root.Position * Vector3.new(1, 0, 1) - start.FirstSpot).Magnitude < 24
+			and canPlaceHere(start.FirstSpot) then
+			ghostPos = start.FirstSpot
+			confirmBar.Visible = true
+		elseif camera then
 			for _, x in { 0.5, 0.38, 0.62 } do
 				local viewport = camera.ViewportSize
 				local spot = groundUnder(Vector2.new(viewport.X * x, viewport.Y * 0.6))
+				spot = spot and nearestFree(spot)
 				if spot then
-					spot = Vector3.new(math.round(spot.X), 0, math.round(spot.Z))
-					if canPlaceHere(spot) then
-						ghostPos = spot
-						confirmBar.Visible = true
-						break
-					end
+					ghostPos = spot
+					confirmBar.Visible = true
+					break
 				end
 			end
 		end
 		tapHint.Visible = ghostPos == nil
 	end
-end
-
-local function snapPlacement(pos)
-	return Vector3.new(math.floor(pos.X + 0.5), 0, math.floor(pos.Z + 0.5))
 end
 
 local function visualGround(pos)
@@ -1485,6 +1660,7 @@ local function padSpot()
 end
 
 local placementElapsed = 0
+local padAsked, padFound = nil, nil -- the controller's last spot and the free one found for it
 RunService.Heartbeat:Connect(function(dt)
 	if not placing or not ghost then
 		return
@@ -1493,7 +1669,11 @@ RunService.Heartbeat:Connect(function(dt)
 	if placementElapsed >= (isTouch and 0.12 or 0.03) then
 		placementElapsed = 0
 		if placingWithPad then
-			ghostPos = padSpot()
+			local spot = padSpot()
+			if spot and (not padAsked or (spot - padAsked).Magnitude > 0.75) then
+				padAsked, padFound = spot, nearestFree(spot)
+			end
+			ghostPos = padFound or spot
 			refreshPlacement(ghostPos)
 		elseif isTouch then
 			refreshPlacement(ghostPos)
@@ -1571,7 +1751,9 @@ local function refreshInfo()
 		upgradeButton.Text = "Max level"
 		upgradeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 	end
-	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * Config.SellRefund) .. " mana)"
+	local full = (GameState:GetAttribute("Wave") or 0) == 0
+		or workspace:GetServerTimeNow() < (selected:GetAttribute("FullRefundUntil") or 0)
+	sellButton.Text = "Sell (+" .. math.floor((selected:GetAttribute("Spent") or 0) * (full and 1 or Config.SellRefund)) .. " mana)"
 	local base = selected.PrimaryPart and selected.PrimaryPart.Position or Vector3.zero
 	if not rangeCircle then
 		rangeCircle = makeDisc(stats.Range, Color3.fromRGB(150, 200, 255))
@@ -1623,7 +1805,8 @@ local function worldClick(screenPos)
 		if isTouch then
 			local pos = groundUnder(screenPos)
 			if pos then
-				ghostPos = pos
+				-- (a little off a free spot: the nearest free one; nowhere free near: where the thumb was, red, with why)
+				ghostPos = nearestFree(pos) or pos
 				refreshPlacement(ghostPos)
 				confirmBar.Visible = true
 				tapHint.Visible = false
@@ -1937,7 +2120,7 @@ Gamepad.Bind("Down", { Enum.KeyCode.DPadDown }, function()
 	end
 	return false
 end)
-lobbyBar.SelectionGroup = true
+Gamepad.Area(lobbyBar, Enum.KeyCode.DPadDown)
 Gamepad.OnBack(function()
 	if placing then
 		stopPlacing()
@@ -1988,5 +2171,44 @@ Remotes.OpenPanel.OnClientEvent:Connect(function(name)
 		mapPanel.Visible = true
 	end
 end)
+
+-- touch: buttons always on screen at least 44 px and the goal line at least 11 px on every phone, but no bigger
+-- than before where the phone is big enough (the mobile test keeps the run UI under 30% of an 800x360 phone)
+if isTouch then
+	local hudScale = root:FindFirstChildOfClass("UIScale")
+	local function fitTaps()
+		local scale = hudScale and hudScale.Scale > 0 and hudScale.Scale or 1
+		local function tap(base)
+			return math.max(base, math.ceil(44 / scale))
+		end
+		startButton.Size = UDim2.fromOffset(140, tap(66))
+		speedButton.Size = UDim2.fromOffset(88, tap(64))
+		controls.Size = UDim2.fromOffset(160, startButton.Size.Y.Offset + speedButton.Size.Y.Offset + 6)
+		for _, b in { attackButton, whirlButton, leapButton } do
+			local size = tap(72)
+			b.Size = UDim2.fromOffset(size, size)
+		end
+		-- (a phone: 170 from the right edge, clear of its jump button. A tablet: under the road ahead, the middle 18-45%
+		-- of the screen's height, where it covered 18-22% of the road on the iPads, and still left of the jump button)
+		local viewport = workspace.CurrentCamera.ViewportSize
+		local small = math.min(viewport.X, viewport.Y) <= 500
+		if small then
+			infoPanel.AnchorPoint = Vector2.new(1, 0)
+			infoPanel.Position = UDim2.new(1, -170, 0, 8 + controls.Size.Y.Offset + 8)
+		else
+			-- (just above the defender cards, which reach 114 up)
+			infoPanel.AnchorPoint = Vector2.new(1, 1)
+			infoPanel.Position = UDim2.new(1, -160, 1, -130)
+		end
+		goalLabel.TextSize = math.max(15, math.ceil(11 / scale))
+		goalLabel.Size = UDim2.fromOffset(0, goalLabel.TextSize + 7)
+	end
+	if hudScale then
+		hudScale:GetPropertyChangedSignal("Scale"):Connect(fitTaps)
+	end
+	-- (a turn or resize can leave the scale at its 1.3 cap and still change phone/tablet)
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitTaps)
+	fitTaps()
+end
 
 print("Welcome to Heroes Tower Defense!")

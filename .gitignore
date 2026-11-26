@@ -17,3 +17,4 @@ reviews/maps/img/*
 !reviews/maps/img/built-*.jpg
 test/maptour-only.project.json
 test/maptour-pc.project.json
+reviews/devices/*/*.png

@@ -1,0 +1,5 @@
+[ANIM] Shade walk side: height 7.9; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] Shade walk 3/4: height 7.9; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] Shade bashing true
+[ANIM] Shade bash: height 7.9; lowest ankle vs ground 0.00..0.00 (rest 0.00); planted-foot slide 0.000 studs per contact over 0 contacts (worst 0.000)
+[ANIM] Shade dead true removed true

@@ -13,7 +13,9 @@ local QuestService = require(script.Parent.QuestService)
 local ArtService = require(script.Parent.ArtService)
 local StoreService = require(script.Parent.StoreService)
 local SeasonService = require(script.Parent.SeasonService)
+local Telemetry = require(script.Parent.Telemetry)
 local Ground = require(ReplicatedStorage.Shared.Ground)
+local MapOutline = require(ReplicatedStorage.Shared.MapOutline)
 
 local TowerService = {}
 
@@ -278,6 +280,11 @@ function TowerService.CanPlace(position)
 	if math.abs(position.X) > half.X - 4 or math.abs(position.Z) > half.Y - 4 then
 		return false, "Too close to the edge"
 	end
+	-- the map's real outline (MapOutline): the valley side, crater wall or cave wall beyond it is scenery
+	local map = Config.Maps[Config.CurrentMap]
+	if map and MapOutline.OutsideOf(map.Theme, position.X, position.Z) > -MapOutline.BuildStop then
+		return false, "Too close to the edge"
+	end
 	if Config.DistanceToPath(position) < Config.PathWidth / 2 + 3 then
 		return false, "Can't build on the path"
 	end
@@ -295,7 +302,7 @@ function TowerService.CanPlace(position)
 		for _, d in decor:GetChildren() do
 			local r = d:GetAttribute("BlockRadius")
 			if r and (flat(d:GetPivot().Position) - flat(position)).Magnitude < r + 2.5 then
-				return false, "Something is in the way"
+				return false, d:GetAttribute("BlockWhy") or "Something is in the way"
 			end
 		end
 	end
@@ -364,6 +371,8 @@ function TowerService.Place(player, towerType, position)
 	model:SetAttribute("Level", 1)
 	model:SetAttribute("Range", info.Levels[1].Range)
 	model:SetAttribute("Spent", info.Cost)
+	-- (a full refund until then: Config.RefundWindow; server time, so the screen can show it too)
+	model:SetAttribute("FullRefundUntil", workspace:GetServerTimeNow() + Config.RefundWindow)
 	model:SetAttribute("Owner", player.UserId)
 	setLevelLabel(model, 1)
 	model.Parent = workspace.Towers
@@ -393,6 +402,7 @@ function TowerService.Place(player, towerType, position)
 	if typeof(player) == "Instance" then
 		QuestService.Add(player, "Build", 1)
 		SeasonService.Funnel(player, 3)
+		Telemetry.First(player, "FirstTower")
 	end
 	return true
 end
@@ -415,6 +425,7 @@ function TowerService.Upgrade(_player, model)
 	model:SetAttribute("Level", t.level)
 	model:SetAttribute("Range", nextLevel.Range)
 	model:SetAttribute("Spent", t.spent)
+	model:SetAttribute("FullRefundUntil", workspace:GetServerTimeNow() + Config.RefundWindow)
 	setLevelLabel(model, t.level)
 	local base = model.PrimaryPart
 	local name, height, muzzle = lookFor(t.type, t.level)
@@ -484,7 +495,9 @@ function TowerService.Sell(_player, model)
 	if not t then
 		return false, "That's not a defender"
 	end
-	local refund = math.floor(t.spent * Config.SellRefund)
+	-- everything back before the first wave and just after placing or upgrading (Config.RefundWindow)
+	local full = (State.Get("Wave") or 0) == 0 or workspace:GetServerTimeNow() < (model:GetAttribute("FullRefundUntil") or 0)
+	local refund = math.floor(t.spent * (full and 1 or Config.SellRefund))
 	State.AddGold(refund)
 	Effects.Text(t.position + Vector3.new(0, 6, 0), "+" .. refund .. " mana", Color3.fromRGB(170, 150, 255))
 	Effects.Burst(t.position + Vector3.new(0, 2, 0), 5, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
@@ -641,7 +654,7 @@ local function runTurrets(now)
 				tur.head.CFrame = CFrame.lookAt(from, Vector3.new(to.X, from.Y, to.Z))
 				Effects.Bolt(from, to, Color3.fromRGB(255, 200, 90), 0.25, 0.1)
 				local command = tur.owner.Parent and (tur.owner:GetAttribute("BonusCommand") or 0) / 100 or 0
-				EnemyService.Damage(target, tur.info.Damage * (1 + command))
+				EnemyService.Damage(target, tur.info.Damage * (1 + command), nil, nil, nil, tur.position)
 			end
 		end
 	end
@@ -678,7 +691,7 @@ local function shoot(t, now, model)
 			end
 		end
 		Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-		EnemyService.Damage(first, stats.Damage)
+		EnemyService.Damage(first, stats.Damage, nil, nil, nil, t.position)
 	elseif t.type == "FlameCannon" then
 		Effects.Kick(t.kicker, 0.5)
 		Effects.Bolt(t.muzzle, hitAt, Color3.fromRGB(255, 140, 40), 1, 0.2)
@@ -689,7 +702,7 @@ local function shoot(t, now, model)
 				Count = 16, Size = 2.2, EndSize = 0.4, Speed = stats.Radius * 2.2, Life = 0.45, Spread = 70 })
 			Sound.Play("Explosion", hitAt)
 			for _, e in EnemyService.InRange(hitAt, stats.Radius) do
-				EnemyService.Damage(e, stats.Damage)
+				EnemyService.Damage(e, stats.Damage, nil, nil, nil, hitAt)
 				EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
 			end
 		end)
@@ -698,7 +711,7 @@ local function shoot(t, now, model)
 		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
 		Sound.Play("Frost", t.position)
 		for _, e in targets do
-			EnemyService.Damage(e, stats.Damage)
+			EnemyService.Damage(e, stats.Damage, nil, nil, nil, t.position)
 			EnemyService.Slow(e, stats.Slow, stats.SlowTime)
 			if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
 				EnemyService.Freeze(e, 1)
@@ -715,7 +728,7 @@ local function shoot(t, now, model)
 			hit[current] = true
 			local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
 			Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
-			EnemyService.Damage(current, stats.Damage, nil, true)
+			EnemyService.Damage(current, stats.Damage, nil, true, nil, from)
 			from = to
 			local nextOne = nil
 			for _, e in EnemyService.InRange(current.position, 14) do
@@ -743,7 +756,7 @@ local function shoot(t, now, model)
 		Effects.Bolt(t.muzzle, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
 		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1)
 		task.delay(0.15, function()
-			EnemyService.Damage(target, damage, nil, true)
+			EnemyService.Damage(target, damage, nil, true, nil, t.position)
 			Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
 		end)
 	end

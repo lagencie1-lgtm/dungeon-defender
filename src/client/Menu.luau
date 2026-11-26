@@ -65,7 +65,7 @@ end
 -- controller), B leaves the menu
 local GuiService = game:GetService("GuiService")
 local Gamepad = Ui.Gamepad
-dock.SelectionGroup = true
+Gamepad.Area(dock, Enum.KeyCode.DPadUp)
 local function menuHasFocus()
 	local current = GuiService.SelectedObject
 	return current ~= nil and current:IsDescendantOf(dock)

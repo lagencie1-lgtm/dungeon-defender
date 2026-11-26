@@ -1,0 +1,3 @@
+[ANIM] hero 28 studs from the wall
+[ANIM] option final: goblin points above the wall 46%; pile 56 px tall on a 388 px screen (14.5%); camera pitch 40.0
+[ANIM] after the wall broke: camera pitch 32.0

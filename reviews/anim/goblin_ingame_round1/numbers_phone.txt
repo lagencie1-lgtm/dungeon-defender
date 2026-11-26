@@ -1,0 +1,13 @@
+[ANIM] rigged goblin loaded: 1 parts, 18 bones
+[ANIM] hero Swordmaster
+[ANIM] frame time before the wave (no monsters): mean 66.7 ms over 61 frames
+[ANIM] enemies 1 rigged 1
+[ANIM] rig forward vs walking direction: 0 degrees; pivot 2.07 above ground, feet bones 0.27 / 0.27 above ground
+[ANIM] walk 3/4: 27 steps, planted foot slid 1.09 studs over 15 planted frames (0.073 per frame, 0.040 per step); lowest ankle vs ground 0.10..0.45
+[ANIM] walk side: 28 steps, planted foot slid 0.43 studs over 15 planted frames (0.029 per frame, 0.015 per step); lowest ankle vs ground 0.10..0.45
+[ANIM] bashing: true
+[ANIM] bash 3/4: 16 steps, planted foot slid 0.75 studs over 9 planted frames (0.084 per frame, 0.047 per step); lowest ankle vs ground -0.02..0.44
+[ANIM] hit at 1795644252.047673 dead nil distance 25
+[ANIM] removed after fall: true
+[ANIM] frame time: 284 frames, mean 66.7 ms, worst 69.8 ms, rigged goblins at the end 8
+[ANIM] DONE

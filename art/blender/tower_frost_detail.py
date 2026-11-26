@@ -34,9 +34,10 @@ GEM = (0.45, 0.8, 1.0)
 rnd = random.Random(level)
 
 DEFAULTS = {
-    1: dict(foot_r=3.1, foot_h=0.8, foot_n=10, ped_r0=2.4, ped_r1=1.9, ped_h=2.9, shard_h=3.6, shard_r=0.75, lean=14),
-    2: dict(foot_r=3.1, foot_h=0.8, foot_n=10, ped_r0=2.4, ped_r1=1.9, ped_h=2.9, shard_h=3.2, shard_r=0.6, ring_r=2.2),
-    3: dict(foot_r=3.1, foot_h=0.8, foot_n=10, ped_r0=2.4, ped_r1=1.9, ped_h=2.9, shard_h=3.4, shard_r=0.5, crown_r=2.3, orb_r=0.8),
+    # (round 2: the drum tapers clearly, wide at the foot, as painted)
+    1: dict(foot_r=3.2, foot_h=0.8, foot_n=10, ped_r0=2.7, ped_r1=1.75, ped_h=3.0, shard_h=3.6, shard_r=0.75, lean=14),
+    2: dict(foot_r=3.2, foot_h=0.8, foot_n=10, ped_r0=2.7, ped_r1=1.75, ped_h=3.0, shard_h=3.2, shard_r=0.6, ring_r=2.1),
+    3: dict(foot_r=3.3, foot_h=0.8, foot_n=10, ped_r0=2.8, ped_r1=1.8, ped_h=3.0, shard_h=3.0, shard_r=0.5, crown_r=2.2, orb_r=0.85),
 }
 P = dict(DEFAULTS[level])
 saved = os.path.join(HERE, "params", f"tower_frost_l{level}.json")
@@ -71,8 +72,8 @@ K.grass(P["foot_r"] - 0.05, 22, h=0.75)
 # the pedestal: stone frustum, dark staves at four corners, a riveted brass band, brass corner brackets
 ped_top = fz + P["ped_h"]
 K.lathe("Pedestal", [(P["ped_r0"], fz), (P["ped_r1"], ped_top)], K.STONE, key=None, verts=24)
-for i in range(4):
-    a = rad(FRONT + 45 + i * 90)
+for i in range(8):   # (round 2: eight dark planks round the drum, as painted)
+    a = rad(FRONT + 22.5 + i * 45)
     r_mid = (P["ped_r0"] + P["ped_r1"]) / 2 + 0.12
     K.block(f"Stave{i}", K.at(a, r_mid, fz + P["ped_h"] / 2), (0.8, 0.35, P["ped_h"] * 1.02), K.WOOD_DARK,
             (math.atan2(P["ped_r0"] - P["ped_r1"], P["ped_h"]), 0, a + rad(90)), key="wood_dark", tile=1.0, bevel=0.1)
@@ -80,16 +81,32 @@ for i in range(4):
         rr = P["ped_r0"] + (P["ped_r1"] - P["ped_r0"]) * (zz - fz) / P["ped_h"] + 0.22
         K.block(f"Bracket{i}{zz:.1f}", K.at(a, rr, zz), (0.95, 0.22, 0.55), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.06)
 K.brass_band("Band", fz + P["ped_h"] * 0.58, (P["ped_r0"] + P["ped_r1"]) / 2 - 0.05, 0.45, 16)
-K.banner(FRONT, (P["ped_r0"] + P["ped_r1"]) / 2 + 0.05, fz + P["ped_h"] * 0.7, 1.3, 1.5, field=K.CREAM, trim=K.CREAM, mark=ICE_DEEP)
+K.banner(FRONT, (P["ped_r0"] + P["ped_r1"]) / 2 + 0.05, fz + P["ped_h"] * 0.7, 1.3, 1.5, emblem=False, field=K.CREAM, trim=K.CREAM, mark=ICE_DEEP)
+# the banner's snowflake (round 2, 2026-11-24: on every level, as painted; the kit's leaf emblem read as a figure):
+# six arms with side twigs, flat on the cloth
+_a = rad(FRONT)
+_n = Vector((math.cos(_a), math.sin(_a), 0))
+_t = Vector((-math.sin(_a), math.cos(_a), 0))
+_rb = (P["ped_r0"] + P["ped_r1"]) / 2 + 0.05
+_c = Vector(K.at(_a, _rb + 0.25, fz + P["ped_h"] * 0.7)) - Vector((0, 0, 1.5 * 0.55)) + _n * 0.13
+for _k in range(6):
+    _d = _t * math.cos(rad(_k * 60 + 90)) + Vector((0, 0, math.sin(rad(_k * 60 + 90))))
+    K.limb(f"Flake{_k}", tuple(_c), tuple(_c + _d * 0.42), 0.045, 0.035, ICE_DEEP, verts=4, end=False)
+    for _sgn in (-1, 1):
+        _side = _t * math.cos(rad(_k * 60 + 90 + _sgn * 45)) + Vector((0, 0, math.sin(rad(_k * 60 + 90 + _sgn * 45))))
+        K.limb(f"Twig{_k}{_sgn}", tuple(_c + _d * 0.24), tuple(_c + _d * 0.24 + _side * 0.16), 0.03, 0.025, ICE_DEEP, verts=4, end=False)
 K.lathe("Slab", [(P["ped_r1"] + 0.15, ped_top - 0.05), (P["ped_r1"] + 0.3, ped_top + 0.25), (P["ped_r1"] + 0.15, ped_top + 0.4), (0.3, ped_top + 0.45)],
         K.STONE, key=None, verts=24)
 top = ped_top + 0.45
-if level in (1, 2):
-    # snow on the slab with drips over the edge
-    K.lathe("Snow", [(P["ped_r1"] + 0.35, top - 0.15), (P["ped_r1"] + 0.3, top + 0.05), (P["ped_r1"] - 0.2, top + 0.2), (0.2, top + 0.22)], SNOW, key=None, verts=24)
-    for i in range(9):
-        a = rad(i * 40 + rnd.uniform(-8, 8))
-        K.ball(f"Drip{i}", K.at(a, P["ped_r1"] + 0.33, top - 0.35), 0.16, SNOW, (0.8, 0.8, 1.6), seg=8)
+# a heavy snow cap over the slab's edge, lumpy, with icicles hanging from it (round 2: heavier, on every level)
+K.lathe("Snow", [(P["ped_r1"] + 0.5, top - 0.3), (P["ped_r1"] + 0.45, top + 0.05), (P["ped_r1"] - 0.1, top + 0.3), (0.2, top + 0.34)], SNOW, key=None, verts=24)
+for i in range(12):
+    a = rad(i * 30 + rnd.uniform(-8, 8))
+    K.ball(f"SnowLump{i}", K.at(a, P["ped_r1"] + 0.35, top - 0.1), 0.32, SNOW, (1.2, 1.0, 0.7), seg=8)
+for i in range(14):
+    a = rad(i * 360 / 14 + rnd.uniform(-6, 6))
+    ln = rnd.uniform(0.35, 0.8)
+    K.cone(f"Icicle{i}", K.at(a, P["ped_r1"] + 0.45, top - 0.3 - ln / 2), 0.11, ln, (0.8, 0.93, 1.0), rot=(rad(180), 0, 0), verts=6)
 if level == 1:
     shard("Shard", (0, 0.25, top), P["shard_h"], P["shard_r"], (-P["lean"], 6))
     shard("ShardS1", (0.55, -0.45, top), P["shard_h"] * 0.3, P["shard_r"] * 0.45, (18, 12))
@@ -113,9 +130,9 @@ else:
     pts = []
     for k in range(9):
         t = math.pi * k / 8
-        p = side * (math.cos(t) * P["crown_r"] * 0.85) + Vector((0, 0, top + 0.4 + math.sin(t) * P["crown_r"] * 1.15))
+        p = side * (math.cos(t) * P["crown_r"] * 0.85) + Vector((0, 0, top + 0.4 + math.sin(t) * P["crown_r"] * 1.6))   # (a tall arch)
         pts.append(tuple(p))
-    K.chain("Arch", pts, [0.16] * 9, SILVER, seg=8)
+    K.chain("Arch", pts, [0.26] * 9, SILVER, seg=8)
     gem("GemTop", pts[4], 0.45, FRONT)
     for s in (-1, 1):
         base = side * (s * P["crown_r"] * 0.95) + Vector((0, 0, top + 0.3))
@@ -123,15 +140,20 @@ else:
         K.chain(f"Horn{s}", horn, [0.18, 0.15, 0.12, 0.08], SILVER, seg=8)
     for k in range(8):
         a = rad(k * 45 + 22.5)
-        rr = P["crown_r"] * 0.78
-        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.6, 0.85), P["shard_r"],
-              (math.degrees(math.sin(a)) * -0.25, math.degrees(math.cos(a)) * 0.25))
-    # the glowing orb with a thin ring round it (Neon)
-    S.glow_ball("Orb", (0, 0, top + P["crown_r"] * 0.75), P["orb_r"], (0.6, 0.92, 1.0), seg=16)
-    S.glow(K.lathe("OrbRing", [(P["orb_r"] * 1.45, -0.03), (P["orb_r"] * 1.5, 0.0), (P["orb_r"] * 1.45, 0.03)], (0.85, 0.97, 1.0), key=None, verts=24, cap=False), (0.85, 0.97, 1.0))
-    bpy.data.objects["OrbRing"].matrix_world = Matrix.Translation((0, 0, top + P["crown_r"] * 0.75)) @ Matrix.Rotation(rad(20), 4, "X")
+        rr = P["crown_r"] * 0.92   # (round the arch, not in front of it: the orb shows through)
+        if abs(((math.degrees(a) - FRONT) + 180) % 360 - 180) < 30:
+            continue   # (no crystal right in front of the orb)
+        shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.85, 1.15), P["shard_r"] * 1.1,
+              (math.degrees(math.sin(a)) * -0.3, math.degrees(math.cos(a)) * 0.3))   # (big crystals rising high)
+    # the glowing orb, round, floating inside the arch, with a thin ring round it (Neon)
+    oz = top + P["crown_r"] * 0.95
+    S.glow_ball("Orb", (0, 0, oz), P["orb_r"], (0.6, 0.92, 1.0), seg=20)
+    ring = [(math.cos(2 * math.pi * k / 24) * P["orb_r"] * 1.5, math.sin(2 * math.pi * k / 24) * P["orb_r"] * 1.5 * 0.35, oz + math.sin(2 * math.pi * k / 24) * P["orb_r"] * 0.3) for k in range(25)]
+    K.chain("OrbRing", ring, [0.05] * 25, (0.85, 0.97, 1.0), seg=6)
+    for o in [o for o in bpy.context.scene.objects if o.name.startswith("OrbRing")]:
+        S.glow(o, (0.85, 0.97, 1.0))
 
-print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % (top + (P["shard_h"] * 0.7 if level < 3 else P["crown_r"] * 0.75)))
+print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % (top + (P["shard_h"] * 0.7 if level < 3 else P["crown_r"] * 0.95)))
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

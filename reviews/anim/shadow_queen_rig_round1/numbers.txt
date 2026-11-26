@@ -1,0 +1,46 @@
+merged seams: 6404 -> 2731 vertices
+triangles 5108, vertices 2731, height 4.20
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\shadow_queen_rigged_paint.png (1024, 1024)
+no gap between the legs found: crotch at 30% of the height
+hand-marked key points from C:\Projects\RealmGuardians-anim\art\blender\rig_landmarks\shadow_queen.json
+landmarks: crotch 1.85 hips 1.90 chest 2.55 shoulders 2.85 neck 3.00 top 4.20
+  L hand (1.41, 0.0, 2.04) shoulder (0.4, 0.05, 2.85) foot (0.44, -0.6, 0.11)
+  R hand (-1.51, 0.0, 2.03) shoulder (-0.4, 0.05, 2.85) foot (-0.79, -0.71, 0.08)
+no weapon: nothing reaches out of either hand
+cloth chain SleeveL: 2 bones
+cloth chain SleeveR: 2 bones
+robe: 4 hem bones from the hips (1.90) to the hem
+cut 0 welded edges (arms to legs or body well below the armpits)
+cloth vertices: 218
+automatic weights: 42 vertices had no weight (given their nearest bone)
+test poses: real use (arms 60, head 25, swing 80)
+stretch after binding: arms_up max 49.63x (306 edges over 1.6x, 291 of them visible), swing max 28.82x (423 edges over 1.6x, 407 of them visible), head_turn max 6.67x (161 edges over 1.6x, 145 of them visible), hem_sway max 12.25x (44 edges over 1.6x, 42 of them visible)
+final (best round): arms_up max 49.63x (281 edges over 1.6x, 259 of them visible), swing max 28.82x (472 edges over 1.6x, 426 of them visible), head_turn max 3.43x (95 edges over 1.6x, 88 of them visible), hem_sway max 6.68x (24 edges over 1.6x, 18 of them visible)
+CHECK zero-weight vertices 0, over 4 bones 0, head vertices on another bone 0 of 586, weapon vertices on another bone n/a (no weapon)
+CHECK pose arms_up   max edge stretch 49.63x, edges over 1.6x: 281, of them grown more than 0.04 studs: 259
+CHECK pose swing     max edge stretch 28.82x, edges over 1.6x: 472, of them grown more than 0.04 studs: 426
+CHECK pose head_turn max edge stretch 3.43x, edges over 1.6x: 95, of them grown more than 0.04 studs: 88
+CHECK pose hem_sway  max edge stretch 6.68x, edges over 1.6x: 24, of them grown more than 0.04 studs: 18
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.50)
+  Hips        parent Root        head ( 0.00  0.10  1.90) tail ( 0.00  0.10  2.16)
+  Spine       parent Hips        head ( 0.00  0.10  2.16) tail ( 0.00  0.10  2.55)
+  Chest       parent Spine       head ( 0.00  0.10  2.55) tail ( 0.00  0.05  2.79)
+  Neck        parent Chest       head ( 0.00  0.05  2.79) tail ( 0.00  0.05  3.00)
+  Head        parent Neck        head ( 0.00  0.05  3.00) tail ( 0.00  0.10  4.20)
+  UpperArm.L  parent Chest       head ( 0.40  0.05  2.85) tail ( 0.95  0.05  2.50)
+  LowerArm.L  parent UpperArm.L  head ( 0.95  0.05  2.50) tail ( 1.33  0.00  2.10)
+  Hand.L      parent LowerArm.L  head ( 1.33  0.00  2.10) tail ( 1.50  0.00  1.98)
+  SleeveL1    parent LowerArm.L  head ( 1.00  0.05  2.45) tail ( 1.08  0.05  1.90)
+  SleeveL2    parent SleeveL1    head ( 1.08  0.05  1.90) tail ( 1.05  0.05  1.40)
+  UpperArm.R  parent Chest       head (-0.40  0.05  2.85) tail (-0.95  0.05  2.50)
+  LowerArm.R  parent UpperArm.R  head (-0.95  0.05  2.50) tail (-1.38  0.00  2.07)
+  Hand.R      parent LowerArm.R  head (-1.38  0.00  2.07) tail (-1.65  0.00  1.98)
+  SleeveR1    parent LowerArm.R  head (-1.00  0.05  2.45) tail (-1.08  0.05  1.90)
+  SleeveR2    parent SleeveR1    head (-1.08  0.05  1.90) tail (-1.05  0.05  1.40)
+  Hem.F       parent Hips        head ( 0.00  0.21  1.90) tail (-0.68 -1.07  0.08)
+  Hem.B       parent Hips        head ( 0.00  0.21  1.90) tail ( 0.01  1.85  0.55)
+  Hem.L       parent Hips        head ( 0.00  0.21  1.90) tail ( 1.28  0.36  0.50)
+  Hem.R       parent Hips        head ( 0.00  0.21  1.90) tail (-1.49  0.12  0.27)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\shadow_queen_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\shadow_queen_rigged.fbx 2440972 bytes

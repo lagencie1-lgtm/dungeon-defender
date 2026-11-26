@@ -1,0 +1,8 @@
+[ANIM] hero 28 studs from the wall
+[ANIM] option A: goblin points above the wall 27%; pile 37 px tall on a 388 px screen (9.4%); camera pitch 32.0
+[ANIM] hero 28 studs from the wall
+[ANIM] option B: goblin points above the wall 26%; pile 35 px tall on a 388 px screen (9.0%); camera pitch 25.0
+[ANIM] hero 28 studs from the wall
+[ANIM] option B2: goblin points above the wall 31%; pile 41 px tall on a 388 px screen (10.5%); camera pitch 40.0
+[ANIM] hero 28 studs from the wall
+[ANIM] option C2: goblin points above the wall 37%; pile 59 px tall on a 388 px screen (15.1%); camera pitch 40.0

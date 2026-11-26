@@ -1,0 +1,13 @@
+-17.3	server ready
+-0.1	film start
+0.0	StartRun
+11.0	SpawnGoblin
+11.5	run side
+17.6	run 3/4
+22.7	hit from the side
+22.7	HitEnemy
+23.4	HitEnemy
+23.9	knock out alone
+24.0	KillEnemy
+26.2	film end
+26.2	Done

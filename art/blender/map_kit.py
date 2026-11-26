@@ -14,6 +14,10 @@ Pieces (front faces -Y, the long side runs along X, studs):
             studs back over the bevel of the terrain
   stairs    a flight of five steps that runs along a retaining wall, in front of its face: 6.5 long, 2.8 deep, from
             5 high at one end down to 1, with an outer cheek and a newel at the foot
+  tower     (forest) the landmark: a broken keep tower 9 x 9, 21 high at its tall corner, an old tree grown up inside
+            it, its crown over the top and its roots over the walls and down into the ground (about 28 high)
+  pad       a build spot: a round of flat flagstones 7 across lying on the ground (blocks nothing)
+  flags     four flat stones of a footpath, 4 along by 3 across (laid in a row along a route; blocks nothing)
 Run: blender -b -P map_kit.py -- out.fbx <piece> <theme>
 """
 import math
@@ -322,10 +326,134 @@ elif piece == "stairs":
         paint.glow(lib.box("Lamp", (0.6, 0.6, 0.6), (-2.6 + steps * run - 0.1, -0.65 - depth - 0.1, 2.5), W, rotation=(0, 0, math.pi / 4)), T["glow"])
     if theme == "forest":
         moss((-2.4, -0.65 - depth - 0.2, 5.7), (1.2, 0.7, 0.2))
+elif piece == "tower":
+    # The map's landmark (Lemp's map audit, 2026-11-24: "one taller, root-wrapped keep tower that reads from the
+    # spawn"): a square keep tower, broken from 21 high at its back-left corner down to 12 at its front-right, a door
+    # in its front, slits, merlons on the high corner, and an old tree that grew up inside it: its crown over the top,
+    # its roots over the broken walls and down their faces into the ground. 9 x 9 at the foot.
+    import bpy
+    from mathutils import Vector
+
+    s, t = 4.5, 1.5            # half the outer size, wall thickness
+
+    def top_at(x, y):
+        h = 21.0 - 0.5 * (x + s) - 0.44 * (s - y)
+        if y < 0 and 0.4 < x < 2.8:
+            h -= 1.6               # a bite out of the front wall
+        return h
+
+    def gap_front(x, z):
+        return (abs(x) < 1.35 and z < 4.9) or (-3.0 < x < -2.1 and 9.0 < z < 11.4)
+
+    def gap_back(x, z):
+        return 1.5 < x < 2.4 and 8.0 < z < 10.4
+
+    def gap_left(y, z):
+        return -0.45 < y < 0.45 and 12.0 < z < 14.6
+
+    def tube(name, points, r0, r1, kind):
+        """a tapering bent tube through `points` (roots, the trunk, branches)"""
+        n = len(points) - 1
+        for i in range(n):
+            a, b = Vector(points[i]), Vector(points[i + 1])
+            ra, rb = r0 + (r1 - r0) * i / n, r0 + (r1 - r0) * (i + 1) / n
+            c = lib.cone(f"{name}{i}", ra, (b - a).length + ra * 0.6, tuple((a + b) / 2), W, vertices=7, radius_top=rb)
+            c.rotation_mode = "QUATERNION"
+            c.rotation_quaternion = Vector((0, 0, 1)).rotation_difference((b - a).normalized())
+            paint.paint(c, kind[0], kind[1], kind[2])
+
+    # the footing course, then the four walls in courses (front and back run along X, the sides between them)
+    for x, y, w, d in ((0, -s, 2 * s + 0.8, 0.8), (0, s, 2 * s + 0.8, 0.8), (-s, 0, 0.8, 2 * s), (s, 0, 0.8, 2 * s)):
+        block((w, d, 0.8), (x, y, 0.4), round_=0.1)
+    course_wall(2 * s, t, lambda x: top_at(x, -s), y=-s + t / 2, gap=gap_front, big=1.15)
+    course_wall(2 * s, t, lambda x: top_at(x, s), y=s - t / 2, gap=gap_back, big=1.15)
+    # the side walls: built along X like the others, then turned a quarter round about the tower's axis
+    before = set(bpy.context.scene.objects)
+    for side in (-1, 1):
+        course_wall(2 * s - 2 * t, t, lambda y, side=side: top_at(side * (s - t / 2), y), y=0, big=1.15,
+                    gap=(lambda y, z: gap_left(y, z)) if side < 0 else None)
+        for o in set(bpy.context.scene.objects) - before:
+            if "_side" not in o:
+                o["_side"] = side
+        before = set(bpy.context.scene.objects)
+    for o in bpy.context.scene.objects:
+        side = o.get("_side")
+        if side is not None:
+            # a quarter turn (not a mirror, which would turn the faces inside out): x along the wall becomes y, and
+            # the wall stands at x = side * (s - t/2)
+            for v in o.data.vertices:
+                x, y = v.co.x + o.location.x, v.co.y + o.location.y
+                v.co.x, v.co.y = side * (s - t / 2) - y - o.location.x, x - o.location.y
+    # a lintel over the door, a sill under the front slit
+    block((3.6, 1.7, 0.9), (0, -s + t / 2, 5.35), round_=0.12)
+    block((1.6, 1.7, 0.4), (-2.55, -s + t / 2, 8.8), round_=0.08)
+    # merlons along the high corner: back wall from the left, left wall from the back
+    for i, x in enumerate((-3.6, -1.4)):
+        block((1.3, 1.6, 1.1), (x, s - t / 2, top_at(x, s) + 0.5), round_=0.1)
+    block((1.6, 1.3, 1.1), (-s + t / 2, 1.6, top_at(-s, 1.6) + 0.5), round_=0.1)
+    # the fallen stones of the broken corner, and a few at the foot all round
+    for i in range(6):
+        r = rnd.uniform(0.5, 0.95)
+        block((r * 2.0, r * 1.5, r), (rnd.uniform(2.5, 6.8), rnd.uniform(-6.8, -2.0), r * 0.42), turn=rnd.uniform(0, 3),
+              tilt=(rnd.uniform(-0.3, 0.3), rnd.uniform(-0.3, 0.3)), round_=0.12)
+    rubble(5, 6.0, 1.2, y0=6.0)
+    # the tree inside: it grew out through the broken front-right corner, so the keep's high corner with its merlons
+    # stays clear; a trunk that leans that way, three limbs, a crown in four clumps
+    bark = ("bark", (0.72, 0.64, 0.56), 2.0)
+    tube("Trunk", [(0, 0.6, 0.0), (0.4, 0.4, 5.5), (1.0, -0.2, 10.5), (2.1, -1.2, 14.5)], 1.6, 1.0, bark)
+    for k, end in enumerate(((5.4, -3.4, 18.2), (2.6, -4.6, 19.0), (4.2, 0.6, 18.8))):
+        tube(f"Limb{k}", [(2.0, -1.1, 14.0), ((2.0 + end[0]) / 2, (-1.1 + end[1]) / 2, 16.8), end], 0.8, 0.38, bark)
+    leaves = ("leaves", (0.82, 0.95, 0.8), 2.5)
+    for k, (x, y, z, r) in enumerate(((5.2, -3.6, 19.8, 3.0), (2.4, -4.8, 20.6, 2.7), (4.6, 0.8, 20.4, 2.8),
+                                      (3.6, -1.8, 22.4, 3.1))):
+        m = lib.sphere(f"Crown{k}", 1.0, (x, y, z), W, segments=10)
+        m.scale = (r * 1.05, r, r * 0.72)
+        paint.paint(m, leaves[0], tuple(c * rnd.uniform(0.9, 1.06) for c in leaves[1]), leaves[2])
+    # roots: from the trunk over the broken walls, down the outer faces (hugging the stone) and spreading into the
+    # ground at the foot
+    face = s + 0.22
+    for k, pts in enumerate((
+            [(1.6, -0.6, 11.5), (3.4, -2.6, 12.2), (face, -3.3, 11.4), (face, -3.0, 7.0), (face, -3.6, 3.0), (face + 0.6, -4.2, 0.4)],
+            [(0.6, 0.4, 13.0), (-1.4, 1.8, 14.8), (-face, 2.4, 14.6), (-face, 2.0, 9.5), (-face, 2.8, 4.0), (-face - 0.6, 3.2, 0.4)],
+            [(1.2, 0.6, 12.5), (1.8, 2.8, 14.4), (2.2, face, 14.2), (2.6, face, 8.5), (1.8, face, 3.6), (2.2, face + 0.6, 0.4)],
+            [(1.4, -1.0, 10.0), (-0.4, -2.8, 10.2), (-1.2, -face, 9.6), (-1.4, -face, 6.6), (-1.2, -face, 1.6)],
+            [(2.6, -1.8, 12.8), (face, -0.2, 12.6), (face, 1.4, 8.0), (face, 0.8, 3.4), (face + 0.6, 1.4, 0.4)])):
+        tube(f"Root{k}", pts, 0.62, 0.3, bark)
+        fx, fy, _ = pts[-1]
+        for j, (dx, dy) in enumerate(((0.9, 0.5), (-0.4, 1.0))):
+            tip = (fx + (1.2 if fx > 0 else -1.2) * abs(dx), fy + (1.2 if fy > 0 else -1.2) * abs(dy), 0.05)
+            tube(f"Foot{k}_{j}", [(fx, fy, 0.5), tip], 0.32, 0.12, bark)
+    # moss on the broken tops
+    theme_touches([(-3.4, s - t / 2, top_at(-3.4, s) + 0.1), (3.6, -s + t / 2, top_at(3.6, -s) + 0.1),
+                   (-s + t / 2, -2.0, top_at(-s, -2.0) + 0.1), (s - t / 2, 2.4, top_at(s, 2.4) + 0.1)], front=0.75)
+elif piece == "pad":
+    # A build spot you can recognise (research briefs: "valid ground must be obvious on a phone"; Lemp's map audit:
+    # "a recognizable build position"): a round of flat flagstones 7 across, lying on the ground, a defender's
+    # footprint. Nothing stands up from it (it blocks nothing, it only says "a defender goes here").
+    paver = "cap" if theme == "magma" else "stone"
+    block((2.9, 2.9, 0.16), (0, 0, 0.08), paver, turn=0.4, round_=0.05)
+    for k in range(8):
+        a = k / 8 * math.pi * 2 + rnd.uniform(-0.04, 0.04)
+        r = 2.6 + rnd.uniform(-0.06, 0.06)
+        block((2.05, 1.6, 0.14), (math.cos(a) * r, math.sin(a) * r, 0.07), paver, turn=a + math.pi / 2, round_=0.05)
+    if theme == "forest":
+        for k in range(3):
+            a = k / 3 * math.pi * 2 + 0.5
+            moss((math.cos(a) * 3.3, math.sin(a) * 3.3, 0.16), (0.9, 0.6, 0.12))
+    elif theme == "crystal":
+        shard((3.2, -1.0, 0.0), 0.9, 0.22, (0.2, 0.1), glow=True)
+elif piece == "flags":
+    # A footpath of flat stones (4 along X, 3 wide), laid in a row along a route (MapLayouts.Paths with Stones). Painted
+    # earth beside the road merged with the road's own verge; light stones on the grass read as a path at once.
+    paver = "cap" if theme == "magma" else "stone"
+    for k, (x, y, w, d) in enumerate(((-1.0, -0.72, 1.75, 1.3), (1.0, -0.62, 1.6, 1.4), (-0.9, 0.72, 1.6, 1.35),
+                                      (1.05, 0.68, 1.7, 1.25))):
+        block((w + rnd.uniform(-0.12, 0.12), d + rnd.uniform(-0.1, 0.1), 0.13),
+              (x + rnd.uniform(-0.08, 0.08), y + rnd.uniform(-0.06, 0.06), 0.065), paver, turn=rnd.uniform(-0.12, 0.12), round_=0.05)
 else:
     raise SystemExit("unknown piece " + piece)
 
-size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512}.get(piece, 256)
+size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512, "tower": 1024}.get(piece, 256)
 parts = paint.bake(f"mapkit_{piece}_{theme}", out[:-4] + "_paint.png", size)
 print("TRIANGLES", lib.triangles(parts))
 lib.export_fbx(out)

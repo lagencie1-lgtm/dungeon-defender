@@ -7,13 +7,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local GameState = ReplicatedStorage:WaitForChild("GameState")
+local Config = require(ReplicatedStorage.Shared.Config)
 local player = Players.LocalPlayer
 
-local RUN_DISTANCE = 20.5 -- studs from the hero in a run: the hero is 12-15% of the screen height (film rig measures it)
+local RUN_DISTANCE = Config.RunCamera.Distance -- studs from the hero in a run: the hero is 12-15% of the screen height (film rig measures it)
 local HUB_DISTANCE = 14
 local MAX_DISTANCE = 60
 
-local PITCH = math.rad(42) -- in a run the camera looks down on the lane at 40 degrees, not along the ground
+local PITCH = math.rad(Config.RunCamera.Pitch) -- in a run the camera looks down on the lane, not along the ground
 
 local function zoomTo(distance, pitch, toward)
 	-- forcing the minimum to the wanted distance moves the camera out at once; letting it go next frame keeps it there
@@ -21,14 +22,24 @@ local function zoomTo(distance, pitch, toward)
 	player.CameraMinZoomDistance = distance
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local camera = workspace.CurrentCamera
+	local hum0 = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if hum0 and not pitch then
+		hum0.CameraOffset = Vector3.zero   -- (the hub: the normal aim)
+	end
 	if pitch and root and camera then
 		-- tilt the follow camera down once; the default camera keeps the angle it is given after a scripted frame
 		-- facing where the hero faces, or (at a wave's start) towards the wave
 		local look = (toward and (toward - root.Position) or root.CFrame.LookVector) * Vector3.new(1, 0, 1)
 		look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
-		local eye = root.Position - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
+		-- (aimed AimHeight above the hero: the follow camera keeps that through the humanoid's camera offset)
+		local aimUp = Vector3.new(0, Config.RunCamera.AimHeight, 0)
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.CameraOffset = aimUp
+		end
+		local eye = root.Position + aimUp - look * distance * math.cos(pitch) + Vector3.new(0, distance * math.sin(pitch), 0)
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = CFrame.lookAt(eye, root.Position)
+		camera.CFrame = CFrame.lookAt(eye, root.Position + aimUp)
 		RunService.RenderStepped:Wait()
 		camera.CameraType = Enum.CameraType.Custom
 	end
@@ -81,6 +92,65 @@ GameState:GetAttributeChangedSignal("State"):Connect(function()
 		zoomTo(RUN_DISTANCE, PITCH, centre)
 	end
 end)GameState:GetAttributeChangedSignal("State"):Connect(update)
+
+-- (Lemp 2026-11-26, option C2) while a wall the hero can see is under attack, the camera looks down WallTilt degrees
+-- more, so the pile shows above the wall; springs in and out. The player's own camera moves stay theirs: each frame
+-- only the change of the tilt is applied, about the camera's focus, after the camera has updated.
+local tilt, tiltVel, applied = 0, 0, 0
+local function wallUnderAttack()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local camera = workspace.CurrentCamera
+	local towers = workspace:FindFirstChild("Towers")
+	local enemies = workspace:FindFirstChild("Enemies")
+	if not (root and camera and towers and enemies) then
+		return false
+	end
+	for _, wall in towers:GetChildren() do
+		if wall:IsA("Model") and wall:GetAttribute("TowerType") == "Barricade" and not wall:GetAttribute("Broken") then
+			local at = wall:GetPivot().Position
+			local _, onScreen = camera:WorldToViewportPoint(at)
+			if onScreen and (at - root.Position).Magnitude < Config.RunCamera.WallRange then
+				for _, m in enemies:GetChildren() do
+					if m:GetAttribute("PileRow") ~= nil and m:GetAttribute("Bashing")
+						and (m:GetPivot().Position - at).Magnitude < 20 then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+local nextCheck, attacked = 0, false
+RunService:BindToRenderStep("WallTilt", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	local camera = workspace.CurrentCamera
+	if not camera or camera.CameraType ~= Enum.CameraType.Custom then
+		return
+	end
+	local now = os.clock()
+	if now >= nextCheck then
+		nextCheck = now + 0.25
+		local state = GameState:GetAttribute("State")
+		attacked = (state == "Break" or state == "Wave") and wallUnderAttack()
+	end
+	local goal = attacked and Config.RunCamera.WallTilt or 0
+	local w = 2 * math.pi / Config.RunCamera.TiltTime * 0.6
+	tiltVel += ((goal - tilt) * w * w - tiltVel * 2 * 0.9 * w) * dt
+	tilt += tiltVel * dt
+	local delta = tilt - applied
+	if math.abs(delta) < 1e-3 then
+		return
+	end
+	applied = tilt
+	local focus = camera.Focus.Position
+	local offset = camera.CFrame.Position - focus
+	local right = camera.CFrame.RightVector
+	-- (down more: the eye swings up about the focus; never past straight down)
+	local turned = CFrame.fromAxisAngle(right, math.rad(-delta)) * offset
+	if turned.Unit.Y < 0.97 then
+		camera.CFrame = CFrame.lookAt(focus + turned, focus)
+	end
+end)
 player.CharacterAdded:Connect(function()
 	last = nil
 	task.wait(0.5)

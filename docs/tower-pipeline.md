@@ -96,3 +96,21 @@ temporary mesh with one atlas (`art/blender/archer_project.py pack`), runs the p
 humanoid wording of the no-face prompt), `align` and `project` on it unchanged, then cuts the atlas back into the
 parts' own pictures. The bow and quiver are not sent to the painter and keep their paint. The face keeps the front
 painting only: eyes, brows and mouth are the `_keep.png` marks.
+
+**Towers: tried and stopped (coordinator 2026-11-24, round C).** The pets' pass lost to the towers' current paint on
+every level tried, on colour dE against the level's painting and on the detail measure:
+
+| Level | colour dE before -> after | detail ratio before -> after |
+|---|---|---|
+| Ranger 1 | 9.6 -> 15.9 | 1.07 -> 0.78 |
+| Ranger 2 | 10.5 -> 13.1 | 1.05 -> 0.94 |
+| Ranger 3 | 9.1 -> 12.8 | 0.98 -> 0.80 |
+| Flame Cannon 1 | 14.7 -> 17.3 | 1.27 -> 0.88 |
+| Flame Cannon 2 | 15.6 -> 16.9 | 1.23 -> 0.88 |
+
+Why: four views see too little of a tower straight on. Only 20 to 37 % of the surface got direct paint; the rest got
+the painter's tone (a colour grade of the old paint), which flattens it. Twelve views (8 round, 4 from above,
+`art/blender/project12.py`, `scripts/tower_painterly12.py`, checked with the renders themselves as the painting) still
+see only 13 % of Flame Cannon level 2's atlas within the facing needed: much of a tower's surface is under roofs,
+between parts and inside. Towers keep their paint; the pass stays a pet and archer tool. Results:
+`reviews/towers/painterly/`.

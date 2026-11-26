@@ -126,6 +126,23 @@ MonsterMoves.Pile = {
 	Reach = 25, -- extra overhead on the wind-up (degrees, the striking arm)
 	Hop = 0.07, -- the hoppers jump this high on the wind-up (share of height); about half of the back rows hop
 	Surge = 0.035, -- the push forward on each blow, on top of the strike's own lunge (share of height)
+	-- (Lemp 2026-11-26, option C2) the hoppers in the back rows climb onto the shoulders of the ones in front and
+	-- swing from up there, so the pile rises above the wall on a phone
+	Climb = 0.55, -- how high they stand (share of height)
+	ClimbIn = 0.33, -- seconds to climb up
+	ClimbTuck = 50, -- knees bent up there (degrees)
+}
+
+-- the wall reacts to each blow from the pile (WallFx.client.luau; option C2): a shudder at the base, the top boards
+-- flex back further, a few small chips on some blows, and its health bar flashes
+MonsterMoves.WallHit = {
+	Time = 0.12, -- seconds of the shudder
+	Base = 0.08, -- studs the base moves away from the blow
+	Top = 0.25, -- studs more at the top (grows with the square of the height)
+	ChipChance = 0.33, -- share of blows that knock chips off
+	Chips = { 2, 3 }, -- how many
+	ChipLife = 0.9, -- seconds
+	Flash = 0.07, -- seconds the health bar shows white
 }
 -- the wall breaks (Bashing goes off for the whole pile): a beat, then they burst forward as a running blob
 MonsterMoves.Burst = {

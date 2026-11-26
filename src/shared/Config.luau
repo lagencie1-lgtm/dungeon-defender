@@ -28,7 +28,11 @@ Config.HubVersion = "Keep"
 -- the camera at a run's start (src/client/RunCamera.client.luau): degrees down, studs from the hero, and how far above
 -- the hero it aims (raised, the hero sits lower on the screen and more of what is ahead shows). Was 42, 20.5, 0;
 -- 2026-11-24 the camera trial (reviews/camera/starting_views.png): 32 degrees aimed 3 studs up, in the test build.
-Config.RunCamera = { Pitch = 32, Distance = 20.5, AimHeight = 3 }
+Config.RunCamera = { Pitch = 32, Distance = 20.5, AimHeight = 3,
+	-- (Lemp 2026-11-26, option C2) while a wall the hero can see is under attack, the camera looks down this many
+	-- degrees more, so the pile shows above the wall (a flatter camera hid more of it: reviews/anim/barricade_options),
+	-- springing in and out over about TiltTime seconds; WallRange: studs from the hero to the wall
+	WallTilt = 8, TiltTime = 0.4, WallRange = 70 }
 
 Config.StartGold = 200
 Config.PortalHealth = 100

@@ -98,6 +98,10 @@ local function clipOf(spec)
 	return keys
 end
 local ATTACK = clipOf(Moves.Attack)
+-- a blow at a wall (WallFx.client.luau makes the wall react)
+local PILE_BLOW = ReplicatedStorage:FindFirstChild("PileBlow") or Instance.new("BindableEvent")
+PILE_BLOW.Name = "PileBlow"
+PILE_BLOW.Parent = ReplicatedStorage
 local HITRECOIL = clipOf(Moves.HitRecoil)
 local SLAM = clipOf(Moves.Slam)
 local SUMMON = clipOf(Moves.Summon)
@@ -554,6 +558,11 @@ local function animate(st, dt, now)
 	end
 	if hitting then
 		local t = (now + st.beat) % Moves.Attack.Every
+		-- each blow at a wall (it has a row in a wall's pile): the wall reacts (WallFx)
+		if model:GetAttribute("PileRow") ~= nil and st.lastAttackT and st.lastAttackT < 0.46 and t >= 0.46 then
+			PILE_BLOW:Fire(model)
+		end
+		st.lastAttackT = t
 		if st.joints.Top then
 			-- (a slime: the lunge with its top)
 			local A = Moves.Attack
@@ -585,11 +594,21 @@ local function animate(st, dt, now)
 			pose.Root += Vector3.new(P.Lean, 0, 0)
 			pose.UpperArmR += Vector3.new(P.Reach * wind, 0, 0)
 			if st.hopper then
-				pose.Lift += P.Hop * wind
+				-- up on the shoulders of the one in front, swinging from up there (a small hop on each wind-up)
+				st.climb = math.min(1, (st.climb or 0) + dt / P.ClimbIn)
+				local k = st.climb * st.climb * (3 - 2 * st.climb)
+				pose.Lift += P.Climb * k + P.Hop * 0.4 * wind
+				pose.LowerLegL += Vector3.new(-P.ClimbTuck * k, 0, 0)
+				pose.LowerLegR += Vector3.new(-P.ClimbTuck * k, 0, 0)
+				pose.UpperLegL += Vector3.new(P.ClimbTuck * 0.5 * k, 0, 0)
+				pose.UpperLegR += Vector3.new(P.ClimbTuck * 0.5 * k, 0, 0)
 			end
 			pose.Push += P.Surge * strike
 		elseif inPile then
 			pose.Push += Moves.Pile.Surge * ((t >= 0.4 and t < 0.58) and 1 or 0) * 0.5
+		end
+		if not (st.backRow and inPile) then
+			st.climb = nil -- (down again)
 		end
 	end
 

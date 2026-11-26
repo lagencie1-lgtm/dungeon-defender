@@ -111,7 +111,9 @@ def leaves(obj, height, top, bottom):
     mesh = obj.data
     mesh.materials.clear()
     for tint in bands:
-        mesh.materials.append(paint.material("leaves", tint, 7.0))
+        # (one leaf tile every 18 studs: broad patches; at 7 the bright flecks made every crown crunchy, the
+        # outside judge 2026-11-26)
+        mesh.materials.append(paint.material("leaves", tint, 18.0))
     for poly in mesh.polygons:
         d = poly.normal.dot(LIGHT)
         poly.material_index = 0 if d > 0.42 else 1 if d > -0.1 else 2

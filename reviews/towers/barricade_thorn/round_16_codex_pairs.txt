@@ -1,0 +1,4 @@
+Codex pairwise (HTD_JUDGE=codex-pair), Thornwall round 14 (first) vs round 16 (second), 3 runs:
+round 16 picked 3 of 3 (slight), in both image orders. Reasons: cleaner, smoother painted surfaces; fewer artifacts on
+the shield and stakes; warmer wood and metal; round 14 has stronger dark outlines and surface artifacts.
+Kept: round 16 (94.1 / 5.4 / 0.86).

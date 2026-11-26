@@ -72,3 +72,6 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
 - round 23: round 20 with a thicker trunk (1.15); round 18's paintings re-projected
   IoU 90.0%  width profile off 16.1%  region colour dE 9.5  (pixel dE 53.7)  detail 26.0% vs picture 23.4% (ratio 1.11)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 49/47)  lookout 3 (L 37/34)  wall 2 (L 36/36)  footing 8 (L 50/55)
+- round 24: bigger shield (1.15) lightened, fewer post winds (0.7), lighter canopy (12 leaves, smaller tufts); shape fit 91.0; fresh Codex repaint graded once
+  IoU 90.8%  width profile off 10.3%  region colour dE 9.2  (pixel dE 50.8)  detail 25.2% vs picture 23.4% (ratio 1.07)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 49/49)  lookout 4 (L 37/38)  wall 2 (L 36/38)  footing 3 (L 50/52)

@@ -50,6 +50,7 @@ DevService.Grants = {
 	{ Id = "Mana", Text = "+1000 Mana (in a run)" },
 	{ Id = "HeroLevel", Text = "Hero +1 level" },
 	{ Id = "SeasonLevel", Text = "Season pass +1 level" },
+	{ Id = "ResetSave", Text = "Reset my save (press twice)" }, -- "ResetSaveConfirm" is the second press
 }
 
 local function grant(player, id)
@@ -59,6 +60,10 @@ local function grant(player, id)
 	local profile = DataService.Get(player)
 	if not profile then
 		return false, "Still loading"
+	end
+	if id == "ResetSave" or id == "ResetSaveConfirm" then
+		-- deletes the whole save and sends the player out, so the next join is a brand-new player
+		return DataService.ResetSave(player, id == "ResetSaveConfirm")
 	end
 	if id == "Gems" then
 		DataService.AddGems(player, 1000)

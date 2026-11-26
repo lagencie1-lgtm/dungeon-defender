@@ -62,7 +62,13 @@ def aim_frame(z, tilt, side=0.0):
     return m @ tilt_m @ rot
 
 
+BORES = []   # (2026-11-26, the face-read rule: each barrel's axis and mouth in game coordinates, tools/tower_rules.py)
+
+
 def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=False, core=False):
+    ax = (frame.to_3x3() @ Vector((0, 0, 1))).normalized()
+    mouth = frame @ Vector((0, 0, length * 0.87))
+    BORES.append({"axis": [-ax.x, ax.z, ax.y], "mouth": [-mouth.x, mouth.z, mouth.y], "radius": r * 0.8})
     """a cannon barrel along its own +Z: a slightly tapering tube, a thick banded mouth, bands, a rivet row, the
     fire inside the mouth (a glowing disc)"""
     with K.atlas("barrel"):
@@ -247,6 +253,8 @@ else:
         barrel(f"Barrel{s}", fr, P["barrel_r"], P["barrel_len"], BRONZE_DARK, bands=3, rivets=False, thin=True)
         muzzles.append(fr @ Vector((0, 0, P["barrel_len"] * 0.85)))
 
+if not os.environ.get("HTD_FAST"):
+    json.dump(BORES, open(os.path.join(HERE, "..", "models", f"tower_flame_l{level}_bores.json"), "w"), indent=1)
 for m in muzzles:   # Blender (x, y, z) -> the game's (-x, z, y)
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
 if not os.environ.get("HTD_FAST"):

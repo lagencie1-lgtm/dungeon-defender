@@ -137,15 +137,16 @@ local LEVEL_LOOKS = {
 		-- (2026-11-26, the screen-fit rule: levels 2 and 3 lowered, the archers with the balcony; level 3 also narrower)
 		{ Name = "tower_ranger_l2", Height = 13.90, Muzzle = Vector3.new(-0.68, 7.0, -2.2),
 			Archers = { { Vector3.new(-0.68, 5.5, -1.64), 30, 3.2 } } },
-		{ Name = "tower_ranger_l3", Height = 14.05, Muzzle = Vector3.new(0.42, 8.2, -3.04),
+		{ Name = "tower_ranger_l3", Height = 14.05, Muzzle = Vector3.new(0.38, 8.2, -2.74),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
-			Archers = { { Vector3.new(0.42, 6.7, -2.61), 11, 3.2 }, { Vector3.new(-1.68, 6.7, -2.05), 39, 3.1 } } },
+			-- (2026-11-26, Codex: the archers barely read: a little larger; the tower 0.9 as wide, so they stand closer in)
+			Archers = { { Vector3.new(0.38, 6.7, -2.35), 11, 3.45 }, { Vector3.new(-1.51, 6.7, -1.85), 39, 3.35 } } },
 	},
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
 		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
-		{ Name = "tower_flame_l2", Height = 5.70, Muzzle = Vector3.new(-2.08, 4.53, 1.62) },
+		{ Name = "tower_flame_l2", Height = 5.95, Muzzle = Vector3.new(-1.97, 4.82, 1.53) },
 		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.01, 5.76, -2.81), Muzzles = { Vector3.new(-2.01, 5.76, -2.81), Vector3.new(-3.44, 5.76, -0.33) } },
 	},
 	FrostCrystal = {

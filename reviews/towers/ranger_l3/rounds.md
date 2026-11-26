@@ -40,3 +40,6 @@
 - round 14: screen fit: roof flatter (level 3 also a slightly lower wall)
   IoU 84.0%  width profile off 21.6%  region colour dE 11.0  (pixel dE 59.5)  detail 23.5% vs picture 24.6% (ratio 0.96)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 6 (L 49/48)  lookout 12 (L 54/55)  wall 1 (L 61/62)  footing 7 (L 64/70)
+- round 17: Codex notes: level 3 0.9 as wide, calmer smooth gold, archers larger; level 2 longer flag (levels 1-2 at 80.0 %)
+  IoU 88.7%  width profile off 15.3%  region colour dE 10.1  (pixel dE 59.5)  detail 24.4% vs picture 24.6% (ratio 0.99)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/46)  lookout 8 (L 54/53)  wall 1 (L 61/61)  footing 7 (L 64/71)

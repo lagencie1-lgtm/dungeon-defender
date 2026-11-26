@@ -165,6 +165,26 @@ def main():
         if others and h > 1.3 * max(others):
             res["fails"].append(f"{k} level 3 is {h:.2f} studs tall, {h / max(others):.2f} times the tallest other level 3 "
                                 f"(needs 1.3 or less)")
+    # no face read (coordinator 2026-11-26: the Flame Cannon's level 3 read as a face with goggles): at the run camera
+    # a bore opening is seen as an ellipse whose short-to-long ratio is |cos| of the angle between the barrel's axis
+    # and the view; two or more bores of one level above 0.8 (nearly face-on circles) side by side fail. The bores
+    # are written by the builder (art/models/tower_<kind>_l<n>_bores.json); the view is the film's run camera
+    # (horizontal direction 0.6, 0, 0.8; Config.RunCamera's pitch)
+    import glob as _g
+    import math as _m
+    cfg = open(os.path.join(ROOT, "src", "shared", "Config.luau"), encoding="utf-8").read()
+    pm = re.search(r"RunCamera\s*=\s*\{[^}]*Pitch\s*=\s*([\d.]+)", cfg)
+    pitch = _m.radians(float(pm.group(1)) if pm else 32)
+    hx, hz = 0.6, 0.8
+    view = (hx * _m.cos(pitch), -_m.sin(pitch), hz * _m.cos(pitch))
+    res["bore_ratio"] = {}
+    for f in sorted(_g.glob(os.path.join(ROOT, "art", "models", "tower_*_l*_bores.json"))):
+        name = os.path.basename(f)[len("tower_"):-len("_bores.json")]
+        ratios = [round(abs(sum(a * b for a, b in zip(bo["axis"], view))), 2) for bo in json.load(open(f))]
+        res["bore_ratio"][name] = ratios
+        if sum(r > 0.8 for r in ratios) >= 2:
+            res["fails"].append(f"{name}: {sum(r > 0.8 for r in ratios)} bores seen nearly face-on ({ratios}, needs at "
+                                f"most one above 0.8): it reads as a face")
     json.dump(res, open(os.path.join(out, "rules.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != "fails"}, indent=1))
     print("RULES", "PASS" if not res["fails"] else "FAIL", res["fails"])

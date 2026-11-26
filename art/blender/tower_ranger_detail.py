@@ -44,6 +44,7 @@ if os.environ.get("HTD_PARAMS_ONLY"):
     print("PARAMS " + json.dumps(P), flush=True)
     os._exit(0)
 S.start()
+K.GOLD_SMOOTH = (level == 3)   # (2026-11-26, Codex: the level 3 lookout looked busy with bright gold rails: smooth, calmer gold)
 
 
 def turn_all(deg):

@@ -49,3 +49,6 @@
 - round 16: levels apart: level 2 roof 10 % wider (levels 1 and 2 overlapped 80.5 %)
   IoU 82.2%  width profile off 24.2%  region colour dE 11.0  (pixel dE 51.8)  detail 22.2% vs picture 21.3% (ratio 1.04)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 4 (L 40/38)  wall 2 (L 58/59)  footing 7 (L 63/69)
+- round 17: Codex notes: level 3 0.9 as wide, calmer smooth gold, archers larger; level 2 longer flag (levels 1-2 at 80.0 %)
+  IoU 80.1%  width profile off 26.7%  region colour dE 11.6  (pixel dE 53.8)  detail 22.6% vs picture 21.3% (ratio 1.06)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 5 (L 40/39)  wall 3 (L 58/59)  footing 7 (L 63/69)

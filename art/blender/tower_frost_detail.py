@@ -128,6 +128,10 @@ elif level == 2:
         shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.6, 0.9), P["shard_r"] * 0.9,
               (math.degrees(math.sin(a)) * -0.35, math.degrees(math.cos(a)) * 0.35))
 else:
+    # (2026-11-25: the silver parts of level 3 in their own sheet, which scripts/silver_tone.py keeps a cool grey-white
+    # with a soft highlight after the repaint; the painter had turned the arch beige)
+    SIL = K.atlas("silver")
+    SIL.__enter__()
     K.lathe("Ring", [(P["crown_r"] - 0.25, top - 0.05), (P["crown_r"], top), (P["crown_r"], top + 0.45), (P["crown_r"] - 0.25, top + 0.5)], SILVER, key=None, verts=32)
     gem("GemFront", K.at(rad(FRONT), P["crown_r"] + 0.1, top + 0.25), 0.5, FRONT)
     # the arch over the top and the curled horns
@@ -144,11 +148,14 @@ else:
         base = side * (s * P["crown_r"] * 0.95) + Vector((0, 0, top + 0.3))
         horn = [tuple(base + side * (s * 0.35 * math.sin(t)) + Vector((0, 0, 0.9 * t))) for t in (0, 0.5, 1.0, 1.4)]
         K.chain(f"Horn{s}", horn, [0.18, 0.15, 0.12, 0.08], SILVER, seg=8)
+    SIL.__exit__()
     # (2026-11-25: crystals fanned round the arch as painted: tall ones at the sides rising above the arch, leaning
     # out; middling ones toward the back; small ones low at the front either side of the orb)
     for k, (da, hk, rk, lean) in enumerate(((90, 1.75, 1.2, 16), (-90, 1.75, 1.2, 16), (62, 1.3, 1.05, 12), (-62, 1.3, 1.05, 12),
                                             (125, 1.05, 1.0, 10), (-125, 1.05, 1.0, 10), (180, 0.95, 1.0, 6),
-                                            (36, 0.6, 0.8, 22), (-36, 0.6, 0.8, 22))):
+                                            (36, 0.6, 0.8, 22), (-36, 0.6, 0.8, 22),
+                                            # (2026-11-25: three more tall ones at the back so the crown fans as wide as painted)
+                                            (150, 1.5, 1.1, 18), (-150, 1.5, 1.1, 18), (108, 1.6, 1.15, 20))):
         a = rad(FRONT + da)
         rr = P["crown_r"] * 0.9
         shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * hk * rnd.uniform(0.95, 1.05), P["shard_r"] * rk,
@@ -157,9 +164,17 @@ else:
     # (2026-11-25: an all-Neon ball drew as a flat light-blue disc, like a mirror: the orb is a shaded pale ice sphere
     # with a small brighter core showing at its front, floating inside the arch)
     oz = top + 0.6 + P["crown_r"] * 1.0
-    K.ball("Orb", (0, 0, oz), P["orb_r"], (0.62, 0.86, 1.0), seg=20, key=None)
-    fw = Vector((math.cos(rad(FRONT)), math.sin(rad(FRONT)), 0))
-    S.glow_ball("OrbCore", tuple(Vector((0, 0, oz)) + fw * (P["orb_r"] * 0.62)), P["orb_r"] * 0.42, (0.85, 0.97, 1.0), seg=14)
+    # (2026-11-25: the pale sphere read like a map; as painted, a faceted ice diamond (an octahedron, taller than wide)
+    # floats inside the ring with a thin orbit ring round it)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=4, ring_count=2, radius=P["orb_r"] * 0.85, location=(0, 0, oz))
+    dia = bpy.context.active_object
+    dia.name = "Diamond"
+    dia.scale = (0.8, 0.8, 1.25)
+    dia.rotation_euler = (0, 0, rad(FRONT + 45))
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    dia["htd_atlas"] = "body"
+    K.paint.paint(dia, None, (0.55, 0.85, 1.0))
+    S.glow_ball("DiamondCore", (0, 0, oz), P["orb_r"] * 0.3, (0.85, 0.97, 1.0), seg=10)
     ring = [(math.cos(2 * math.pi * k / 24) * P["orb_r"] * 1.5, math.sin(2 * math.pi * k / 24) * P["orb_r"] * 1.5 * 0.35, oz + math.sin(2 * math.pi * k / 24) * P["orb_r"] * 0.3) for k in range(25)]
     K.chain("OrbRing", ring, [0.05] * 25, (0.85, 0.97, 1.0), seg=6)
     for o in [o for o in bpy.context.scene.objects if o.name.startswith("OrbRing")]:

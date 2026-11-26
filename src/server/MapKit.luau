@@ -16,6 +16,8 @@ MapKit.Boxes = {
 	mapkit_flags_crystal = { Min = Vector3.new(-2.006, -0, -1.402), Max = Vector3.new(1.958, 0.13, 1.415) },
 	mapkit_flags_forest = { Min = Vector3.new(-1.879, -0, -1.392), Max = Vector3.new(1.884, 0.13, 1.476) },
 	mapkit_flags_magma = { Min = Vector3.new(-1.88, -0, -1.438), Max = Vector3.new(1.859, 0.13, 1.457) },
+	mapkit_furnace_magma = { Min = Vector3.new(-6.3, -0.101, -12.6), Max = Vector3.new(6.843, 15.975, 4.8) },
+	mapkit_hoist_crystal = { Min = Vector3.new(-2.25, -0.067, -5.7), Max = Vector3.new(2.25, 8.697, 2.801) },
 	mapkit_low_crystal = { Min = Vector3.new(-5.926, 0.02, -0.762), Max = Vector3.new(5.98, 4.782, 0.75) },
 	mapkit_low_forest = { Min = Vector3.new(-6.636, -0.174, -2.557), Max = Vector3.new(6.432, 3.132, 1.176) },
 	mapkit_low_magma = { Min = Vector3.new(-5.98, -0.721, -0.82), Max = Vector3.new(5.98, 2.625, 0.774) },
@@ -31,7 +33,7 @@ MapKit.Boxes = {
 	mapkit_stairs_crystal = { Min = Vector3.new(-4.35, -1.5, -4.1), Max = Vector3.new(3.28, 5.6, -0.65) },
 	mapkit_stairs_forest = { Min = Vector3.new(-4.35, -1.5, -4.224), Max = Vector3.new(3.28, 6.011, -0.65) },
 	mapkit_stairs_magma = { Min = Vector3.new(-4.35, -1.5, -4.1), Max = Vector3.new(3.28, 5.6, -0.65) },
-	mapkit_tower_forest = { Min = Vector3.new(-8.196, -0.604, -7.5), Max = Vector3.new(6.542, 24.632, 7.969) },
+	mapkit_tower_forest = { Min = Vector3.new(-9.275, -0.604, -8.227), Max = Vector3.new(6.542, 25.431, 7.969) },
 	mapkit_wall_crystal = { Min = Vector3.new(-7.05, -0.275, -2.568), Max = Vector3.new(6.98, 7.961, 2.7) },
 	mapkit_wall_forest = { Min = Vector3.new(-7.05, -0.206, -3.217), Max = Vector3.new(6.98, 6.379, 2.7) },
 	mapkit_wall_magma = { Min = Vector3.new(-7.05, -0.199, -3.436), Max = Vector3.new(6.98, 5.697, 2.7) },
@@ -48,6 +50,8 @@ MapKit.Solid = {
 	set_crystal = { { Centre = Vector3.new(0, 1.4, 0), Size = Vector3.new(4, 2.8, 2.8) } },
 	face = { { Centre = Vector3.new(0, 1.55, 0), Size = Vector3.new(12, 6.1, 1.3) }, { Centre = Vector3.new(0, 4.87, 2.15), Size = Vector3.new(12, 0.55, 6.2) } },
 	tower = { { Centre = Vector3.new(0, 9, 0), Size = Vector3.new(9.6, 18, 9.6) } },
+	furnace = { { Centre = Vector3.new(0, 3.8, 0), Size = Vector3.new(12.4, 7.6, 9.4) } },
+	hoist = { { Centre = Vector3.new(0, 4, 1.2), Size = Vector3.new(4, 8, 2.6) } },
 }
 
 return MapKit

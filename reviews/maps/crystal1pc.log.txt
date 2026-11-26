@@ -1,0 +1,26 @@
+[MAPTOUR] 1795659351017 ok CrystalCaves first spot at 66, -20: free, 14 studs from the spawn, 8 of 8 spots 1.5 studs round it free too
+[MAPTOUR] 1795659351019 ok CrystalCaves West Terrace: top 4.00..4.00 (wanted 4)
+[MAPTOUR] 1795659351026 ok CrystalCaves East Terrace: top 4.00..4.00 (wanted 4)
+[MAPTOUR] 1795659351028 ok CrystalCaves Portal Ledge top is the lane's
+[MAPTOUR] 1795659351029 ok CrystalCaves West Canal: 24 of 24 spots are liquid, surface -1.41..-1.09 (Water 24)
+[MAPTOUR] 1795659351030 ok CrystalCaves Deep Canal: 24 of 24 spots are liquid, surface -1.35..-1.09 (Water 24)
+[MAPTOUR] 1795659351030 ok CrystalCaves Hall Stream: 14 of 14 spots are liquid, surface -1.40..-1.09 (Water 14)
+[MAPTOUR] 1795659351030 ok CrystalCaves placement: 32 things in 9 sets, 0 stand alone 
+[MAPTOUR] 1795659351103 ok CrystalCaves outline: the lane keeps 13 studs from it, 1565 spots of rise checked, least room under the camera's line 1.4 at 98, -76 (18 out, ground 16.3)
+[MAPTOUR] 1795659351110 ok CrystalCaves lane: ground 0.00..3.85, biggest step 0.81 per 2 studs, furthest from the plan 1.15
+[MAPTOUR] 1795659351905 ok CrystalCaves beside the lane (8.5 to 18 studs): 48% of the ground takes a defender, room for about 189
+[MAPTOUR] 1795659351905 CrystalCaves field: A column is in the way 0%, A mine cart is in the way 0%, A wall is in the way 8%, Can't build on the path 30%, Can't build on water 7%, Crystals are in the way 2%, The bridge is in the way 2%, The gate is in the way 0%, The hoist is in the way 0%, Too bumpy here 1%, Too close to another defender 1%, Too close to the edge 12%, Too close to the portal 1%, Too close to the water 1%, Too rocky here 7%, ok 27%
+[MAPTOUR] 1795659364361 shot CrystalCaves hero
+[MAPTOUR] 1795659364361 start CrystalCaves camera looks to bearing -180 hero faces bearing -180 at 77, 3.0136501789093018, -19
+[MAPTOUR] 1795659367196 shot CrystalCaves plan
+[MAPTOUR] 1795659369812 shot CrystalCaves overview
+[MAPTOUR] 1795659372430 shot CrystalCaves lane1
+[MAPTOUR] 1795659375029 shot CrystalCaves lane2
+[MAPTOUR] 1795659377643 shot CrystalCaves lane3
+[MAPTOUR] 1795659380261 shot CrystalCaves lane4
+[MAPTOUR] 1795659382863 shot CrystalCaves lane5
+[MAPTOUR] 1795659385462 shot CrystalCaves lane6
+[MAPTOUR] 1795659388096 shot CrystalCaves lane7
+[MAPTOUR] 1795659390757 DONE PASS 0 failures
+
+errors:

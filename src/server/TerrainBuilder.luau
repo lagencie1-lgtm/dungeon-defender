@@ -167,7 +167,7 @@ end
 --   banks   the top layer either side of the channel becomes `rim`
 --   trench  dug `c.Width` wide, with a `bed` whose surface lies at bedY
 --   liquid  filled up to liquidY (water shows exactly where it is filled to; nil = the bed itself is the lava)
-local function channel(c, bed, rim, bedY, liquid, liquidY)
+local function channel(c, bed, rim, bedY, liquid, liquidY, cutOnly)
 	local t = terrain()
 	local points = c.Points
 	local function all(width, top, bottom, material)
@@ -181,8 +181,10 @@ local function channel(c, bed, rim, bedY, liquid, liquidY)
 				Vector3.new(width, height, (b - a).Magnitude + width * 0.66), material)
 		end
 	end
-	all(c.Width + 6, 2, -4, M.Air)
-	all(c.Width + 6, 0, -4, rim)
+	if not cutOnly then
+		all(c.Width + 6, 2, -4, M.Air)
+		all(c.Width + 6, 0, -4, rim)
+	end
 	all(c.Width, 12, -9, M.Air)
 	all(c.Width + 4, bedY, -16, bed)
 	if liquid then
@@ -287,6 +289,13 @@ local function shapeLayout(layout, look)
 	end
 	for _, c in layout.Channels do
 		channel(c, look.Bed, look.Rim, look.BedY, look.Liquid, look.LiquidY)
+	end
+	-- a channel that runs INTO another (`Joins`, like the furnace's slag run into the lava river) is cut once more
+	-- after all of them, so the other's stone rim does not dam it where they meet
+	for _, c in layout.Channels do
+		if c.Joins then
+			channel(c, look.Bed, look.Rim, look.BedY, look.Liquid, look.LiquidY, true)
+		end
 	end
 	for _, b in layout.Bridges or {} do
 		abutment(b, look.Kerb)

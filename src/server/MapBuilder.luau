@@ -12,12 +12,24 @@ local Ground = require(ReplicatedStorage.Shared.Ground)
 
 -- puts a Blender model (from ArtService) into the map, scaled to `height`, standing on `cframe`
 -- (its front facing the cframe's look direction). Returns the model, or nil when it isn't loaded yet.
+-- painted wood and leaves are matte (Lemp 2026-11-25: the trees looked like bubble gum; the smooth plastic every
+-- model gets put white shine spots on their crowns, art/STYLE.md: "never glossy 3D-render plastic")
+local MATTE = { tree_oak = true, tree_dead = true, keep_field_bush = true }
+
 local function placeModel(parent, name, cframe, height)
 	local template = ArtService.Model(name)
 	if not template then
 		return nil
 	end
 	local look = template:Clone()
+	if MATTE[name] then
+		for _, p in look:GetDescendants() do
+			if p:IsA("MeshPart") and p.Material ~= Enum.Material.Neon then
+				p.Material = Enum.Material.Fabric
+				p.Reflectance = 0
+			end
+		end
+	end
 	local _, size = look:GetBoundingBox()
 	look:ScaleTo(look:GetScale() * height / size.Y)
 	-- stand the bottom centre on the spot, then turn it to face the right way
@@ -603,6 +615,7 @@ function MapBuilder.BuildBattlefield(mapId)
 			arch = "The gate is in the way", pillar = "A column is in the way", bridge = "The bridge is in the way",
 			set_forest = "The standing stones are in the way", set_magma = "A fire is in the way",
 			set_crystal = "A mine cart is in the way", stairs = "The stairs are in the way", tower = "The tower is in the way",
+			furnace = "The furnace is in the way", hoist = "The hoist is in the way",
 			keep_well = "The well is in the way", keep_field_bush = "A bush is in the way",
 			keep_field_mushrooms = "Mushrooms are in the way", keep_field_ruin = "The ruin is in the way",
 			tree_oak = "A tree is in the way", tree_dead = "A tree is in the way", crystal_cluster = "Crystals are in the way",

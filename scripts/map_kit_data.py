@@ -22,6 +22,10 @@ SOLID = {
     "face": [((0, 0, 1.55), (12.0, 1.3, 6.1)), ((0, 2.15, 4.87), (12.0, 6.2, 0.55))],
     # the keep tower: all of it (its door is a picture; nobody goes in)
     "tower": [((0, 0, 9.0), (9.6, 9.6, 18.0))],
+    # the furnace's body (the chimney stands on it, the slag trough is flat)
+    "furnace": [((0, 0, 3.8), (12.4, 9.4, 7.6))],
+    # the hoist's frame (the jib and its crate hang out over the edge)
+    "hoist": [((0, 1.2, 4.0), (4.0, 2.6, 8.0))],
 }
 
 

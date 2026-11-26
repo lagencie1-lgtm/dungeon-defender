@@ -1,0 +1,25 @@
+[MAPTOUR] 1795650591036 ok MagmaFortress first spot at 9, 2: free, 9 studs from the spawn, 8 of 8 spots 1.5 studs round it free too
+[MAPTOUR] 1795650591039 ok MagmaFortress Heart Bastion: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795650591047 ok MagmaFortress Gate Yard: top 4.02..4.02 (wanted 4)
+[MAPTOUR] 1795650591050 ok MagmaFortress Portal Keep: top 3.86..3.99 (wanted 4)
+[MAPTOUR] 1795650591051 ok MagmaFortress Furnace Run: 5 of 5 spots are liquid, surface -1.83..-0.92 (CrackedLava 5)
+[MAPTOUR] 1795650591052 ok MagmaFortress Lava River: 32 of 34 spots are liquid, surface -1.87..-1.16 (dry at 25, -23 (-1.3) 1, CrackedLava 32, Salt 2, dry at -73, -10 (-1.2) 1)
+[MAPTOUR] 1795650591052 ok MagmaFortress placement: 13 things in 5 sets, 0 stand alone 
+[MAPTOUR] 1795650591131 ok MagmaFortress outline: the lane keeps 16 studs from it, 1482 spots of rise checked, least room under the camera's line 1.6 at -6, 92 (16 out, ground 14.5)
+[MAPTOUR] 1795650591136 ok MagmaFortress lane: ground 0.00..3.40, biggest step 1.05 per 2 studs, furthest from the plan 1.25
+[MAPTOUR] 1795650591886 ok MagmaFortress beside the lane (8.5 to 18 studs): 54% of the ground takes a defender, room for about 180
+[MAPTOUR] 1795650591886 MagmaFortress field: A fire is in the way 0%, A wall is in the way 7%, Can't build on the path 21%, The bridge is in the way 1%, The furnace is in the way 1%, The gate is in the way 0%, Too bumpy here 5%, Too close to another defender 1%, Too close to the edge 29%, Too close to the lava 1%, Too close to the portal 1%, Too rocky here 6%, ok 25%
+[MAPTOUR] 1795650604299 shot MagmaFortress hero
+[MAPTOUR] 1795650604299 start MagmaFortress camera looks to bearing 157 hero faces bearing 157 at 16, 7.013649940490723, -5
+[MAPTOUR] 1795650607181 shot MagmaFortress plan
+[MAPTOUR] 1795650609785 shot MagmaFortress overview
+[MAPTOUR] 1795650612451 shot MagmaFortress lane1
+[MAPTOUR] 1795650615116 shot MagmaFortress lane2
+[MAPTOUR] 1795650617848 shot MagmaFortress lane3
+[MAPTOUR] 1795650620514 shot MagmaFortress lane4
+[MAPTOUR] 1795650623116 shot MagmaFortress lane5
+[MAPTOUR] 1795650625782 shot MagmaFortress lane6
+[MAPTOUR] 1795650628450 shot MagmaFortress lane7
+[MAPTOUR] 1795650631061 DONE PASS 0 failures
+
+errors:

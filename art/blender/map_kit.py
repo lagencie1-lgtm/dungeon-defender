@@ -20,6 +20,7 @@ Pieces (front faces -Y, the long side runs along X, studs):
   flags     four flat stones of a footpath, 4 along by 3 across (laid in a row along a route; blocks nothing)
   furnace   (magma) the landmark: a squat basalt furnace 12 x 9 with a glowing arched mouth, a chimney, and a slag
             trough 8 long out of its mouth
+  hoist     (crystal) a timber loading hoist: two posts, a beam 4.5 out over an edge, a crate of crystals on its rope
 Run: blender -b -P map_kit.py -- out.fbx <piece> <theme>
 """
 import math
@@ -496,10 +497,60 @@ elif piece == "furnace":
                    (1.0, 0.4, 0.1))
     rubble(5, 6.5, 1.0, y0=-hd - 1.4)
     theme_touches([(-4.0, -hd, h - 0.6), (4.2, -hd, h - 1.0), (0.0, -hd, h - 0.4)])
+elif piece == "hoist":
+    # The mine's loading hoist (Lemp's map audit: "make one terrace a recognizable loading platform ... add one
+    # timber hoist"): two leaning timber posts and a beam that reaches out over the platform's edge (-Y), a pulley
+    # at the beam's end, a rope with a crate of crystals hanging from it, a winch drum with a crank at the posts'
+    # foot. About 9 high, reaching 4.5 out.
+    timber = ("wood_dark", (1.15, 1.05, 1.0), 1.6)
+
+    def beam(name, a, b, w=0.55):
+        """a squared timber from a to b, built vertex by vertex (no object rotation to go wrong)"""
+        import bmesh
+        import bpy
+        from mathutils import Vector
+        a, b = Vector(a), Vector(b)
+        d = (b - a).normalized()
+        u = d.cross(Vector((0, 0, 1)) if abs(d.z) < 0.9 else Vector((1, 0, 0))).normalized() * (w / 2)
+        v = d.cross(u).normalized() * (w / 2)
+        bm = bmesh.new()
+        corners = [bm.verts.new(p + su * u + sv * v) for p in (a, b) for su, sv in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+        for f in ((0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)):
+            bm.faces.new([corners[i] for i in f])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        mesh = bpy.data.meshes.new(name)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return paint.paint(bevel(obj, 0.05, 1), *timber)
+
+    for side in (-1, 1):
+        beam(f"Post{side}", (side * 1.6, 1.0, 0.0), (side * 1.1, 0.4, 8.2), 0.7)
+        beam(f"Brace{side}", (side * 1.6, 2.6, 0.0), (side * 1.25, 0.9, 5.0), 0.45)
+        block((1.3, 1.3, 0.5), (side * 1.6, 1.0, 0.25), round_=0.08)                    # stone footings
+    beam("Cross", (-1.5, 0.45, 7.6), (1.5, 0.45, 7.6), 0.55)
+    beam("Jib", (0.0, 1.4, 8.1), (0.0, -4.6, 8.4), 0.6)                                  # the beam over the edge
+    beam("Strut", (0.0, 0.5, 5.6), (0.0, -2.6, 8.2), 0.4)
+    wheel = lib.cylinder("Pulley", 0.55, 0.3, (0.0, -4.3, 7.75), W, vertices=12, rotation=(0, math.pi / 2, 0))
+    paint.paint(wheel, "iron", (0.8, 0.8, 0.86), 1.2)
+    paint.paint(lib.cylinder("Rope", 0.07, 3.6, (0.0, -4.85, 5.75), W, vertices=6), "cloth", (0.85, 0.75, 0.6), 1.0)
+    paint.paint(lib.cylinder("Rope2", 0.07, 6.2, (0.0, -1.2, 4.6), W, vertices=6,
+                             rotation=(math.atan2(3.1, 6.2), 0, 0)), "cloth", (0.85, 0.75, 0.6), 1.0)
+    crate = lib.box("Crate", (1.9, 1.7, 1.4), (0.0, -4.85, 3.3), W)
+    paint.paint(bevel(crate, 0.06, 1), "wood", (0.9, 0.82, 0.86), 1.4)
+    for k in range(4):
+        shard((rnd.uniform(-0.6, 0.6), -4.85 + rnd.uniform(-0.5, 0.5), 4.0), rnd.uniform(0.8, 1.4), rnd.uniform(0.25, 0.4),
+              (rnd.uniform(-0.4, 0.4), rnd.uniform(-0.4, 0.4)), glow=(k == 0))
+    drum = lib.cylinder("Drum", 0.6, 2.4, (0.0, 1.9, 1.3), W, vertices=12, rotation=(0, math.pi / 2, 0))
+    paint.paint(bevel(drum, 0.05, 1), "wood", (0.95, 0.85, 0.8), 1.4)
+    for side in (-1, 1):
+        block((0.4, 0.9, 1.6), (side * 1.35, 1.9, 0.8), "trim", round_=0.05)
+    beam("Crank", (1.55, 1.9, 1.3), (1.9, 1.9, 0.4), 0.18)
 else:
     raise SystemExit("unknown piece " + piece)
 
-size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512, "tower": 1024, "furnace": 1024}.get(piece, 256)
+size = {"wall": 512, "arch": 512, "bridge": 512, "face": 512, "tower": 1024, "furnace": 1024, "hoist": 512}.get(piece, 256)
 parts = paint.bake(f"mapkit_{piece}_{theme}", out[:-4] + "_paint.png", size)
 print("TRIANGLES", lib.triangles(parts))
 lib.export_fbx(out)

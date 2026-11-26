@@ -227,7 +227,8 @@ MapLayouts.Crystal = {
 		{ Name = "East Terrace", X0 = 27, X1 = 43, Z0 = -22, Z1 = 50, H = 4, Parapet = "NS",
 			Stairs = { { Side = "W", At = 0.7 }, { Side = "E", At = 0.3 } } },
 		-- (cut into the cave wall: no wall of its own on the east)
-		{ Name = "Portal Ledge", X0 = 84, X1 = 112, Z0 = 30, Z1 = 50, H = 4, Walls = "NS", Parapet = "NS" },
+		-- (a round dais, Lemp's map audit: "give the portal ledge a different outline" from the square terraces)
+		{ Name = "Portal Ledge", X0 = 84, X1 = 112, Z0 = 30, Z1 = 50, H = 4, Round = 8, Walls = "NS", Parapet = "NS" },
 	},
 	-- a cave wall, so beyond the camera's reach it climbs steeply, to 50 studs
 	Rise = { { 0, 5 }, { 8, 10 }, { 18, 16 }, { 30, 26 }, { 38, 38 }, { 46, 50 } },
@@ -255,6 +256,20 @@ MapLayouts.Crystal = {
 				{ Piece = "pillar", At = v(66, 0, 29), Look = v(0, 0, 1) },
 				{ Piece = "pillar", At = v(73.5, 0, 29), Look = v(0, 0, 1) },
 			} },
+		-- Lemp's map audit: "make one terrace a recognizable loading platform. Reuse the carts and rail, add one timber
+		-- hoist". The east terrace's north end: two carts on a rail along it, the hoist over its north edge lifting
+		-- crates up from the cave floor. (Its middle and south stay free for defenders.)
+		{ Name = "The loading platform", Why = "the east terrace's north end: carts on a rail and a timber hoist over the edge",
+			Kit = {
+				{ Piece = "hoist", At = v(35, 0, -20), Look = v(0, 0, -1) },
+				{ Piece = "set", At = v(35, 0, -13), Look = v(1, 0, 0) },
+				{ Piece = "set", At = v(35, 0, -5.5), Look = v(1, 0, 0) },
+			} },
+		-- the research briefs: "can a high perch and a low route serve different roles?" The west terrace's middle is
+		-- the perch: a build spot whose Ranger covers both tunnels beside it, while the hero's way runs below along
+		-- the canal (its bridge at -84.6, -10)
+		{ Name = "The perch", Why = "a build spot in the middle of the west terrace, over both tunnels",
+			Kit = { { Piece = "pad", At = v(-45, 0, 4), Look = v(0, 0, 1), Sink = -0.02 } } },
 		{ Name = "The loading dock", Why = "the mine's one working place: three carts on one track along the dock wall, the crystals they were loading at its end",
 			Kit = {
 				{ Piece = "set", At = v(68, 0, -40), Look = v(0, 0, 1) },

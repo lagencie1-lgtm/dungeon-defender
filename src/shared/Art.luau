@@ -80,6 +80,7 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	mapkit_hoist_crystal = "126840556190658",
 	mapkit_furnace_magma = "124633741099339",
 	mapkit_pad_crystal = "129789847005303",
 	mapkit_pad_forest = "110105776393506",
@@ -216,6 +217,7 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
+	paint_mapkit_hoist_crystal = "118563941553615",
 	paint_mapkit_furnace_magma = "91813103640185",
 	paint_mapkit_pad_crystal = "75392412440588",
 	paint_mapkit_pad_forest = "104727760976707",

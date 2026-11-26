@@ -877,7 +877,7 @@ end
 
 -------------------------------------------------------------------------------
 -- Path defenders (the Oak Barricade): a wall with health on the path. EnemyService stops enemies in rows in front of
--- it and calls OnHit for the front row; heroes standing near repair it; Thornwall hurts whoever hits it, Rootwall
+-- it and calls OnHit for every enemy in the pile; heroes standing near repair it; Thornwall hurts whoever hits it, Rootwall
 -- slows the lane in front of it. When its health runs out it breaks (its Build Points come back, its mana does not).
 -------------------------------------------------------------------------------
 local WALL = Config.Barricade

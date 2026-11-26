@@ -594,8 +594,10 @@ end
 
 local WHITE = Color3.new(1, 1, 1)
 
--- path defenders (the Oak Barricade, TowerService): enemies that walk into one stop in rows in front of it, and the
--- front row hits it. [key] = { Key = key, Distance = studs along the path, Depth = half its thickness,
+-- path defenders (the Oak Barricade, TowerService): enemies that walk into one pile up in tight rows in front of it,
+-- and every one of them smashes it (the front row at full strength, the rows behind at Config.Barricade.PileShare).
+-- Per enemy: e.wall, e.blockSlot (1 = first in the pile), e.pileRow (0 = front row), e.bashing (true while smashing).
+-- [key] = { Key = key, Distance = studs along the path, Depth = half its thickness,
 -- OnHit = function(enemy, dt) }. Flying enemies (maps 4 and 5) pass over.
 EnemyService.Blockers = {}
 local BARRICADE = Config.Barricade
@@ -609,10 +611,24 @@ local function wallOf(e)
 	return nil
 end
 
--- where an enemy in `slot` waits in front of a wall: the front row against it, the next rows behind, three abreast
+-- the row of an enemy in `slot` of a wall's pile (0 = the front row, against the wall)
+local function rowOf(slot)
+	return (slot - 1) // BARRICADE.Abreast
+end
+
+-- where an enemy in `slot` waits in front of a wall: the front row against it, the next rows packed tight behind
 local function stopFor(wall, e, slot)
-	local row = (slot - 1) // BARRICADE.Attackers
-	return wall.Distance - wall.Depth - e.stats.Size * 0.45 - row * BARRICADE.RowDepth
+	return wall.Distance - wall.Depth - e.stats.Size * 0.45 - rowOf(slot) * BARRICADE.RowDepth
+end
+
+-- its side offset in the pile: Abreast per row, every second row shifted by half a gap, plus its own small jitter
+local function pileSide(e, slot)
+	local row = rowOf(slot)
+	local col = (slot - 1) % BARRICADE.Abreast - (BARRICADE.Abreast - 1) / 2 + (row % 2 == 1 and 0.5 or 0)
+	if not e.pileJitter then
+		e.pileJitter = (math.random() * 2 - 1) * BARRICADE.Jitter
+	end
+	return col * BARRICADE.SideGap + e.pileJitter
 end
 
 -- the first wall ahead of an enemy that is at `distance` (nil when none)
@@ -740,8 +756,9 @@ function EnemyService.Start()
 					e.distance += blink.Distance
 				end
 			end
-			-- a wall on the path: stop at your place in the queue; the front row hits it (a Shade can't blink past it)
+			-- a wall on the path: stop at your place in the pile and smash it (a Shade can't blink past it)
 			e.bashing = false
+			e.pileRow = nil
 			if not e.stats.Flying then
 				local wall = wallOf(e)
 				if not wall then
@@ -759,17 +776,19 @@ function EnemyService.Start()
 					local stop = stopFor(wall, e, e.blockSlot)
 					if e.distance >= stop then
 						e.distance = stop
-						if e.blockSlot <= BARRICADE.Attackers then
-							e.bashing = true
-							wall.OnHit(e, dt)
-						end
+						local row = rowOf(e.blockSlot)
+						e.pileRow = row
+						e.bashing = true
+						wall.OnHit(e, dt * (row == 0 and 1 or BARRICADE.PileShare))
 					end
 				end
 			end
-			-- spread across the path while waiting, back to the middle when walking again (1 - exp(-k*dt))
+			-- spread across the path in the pile; when the wall breaks, drift back to the middle slowly so the pile runs
+			-- on down the trail as one blob (1 - exp(-k*dt))
 			local slot = e.wall and e.blockSlot or nil
-			local sideTarget = slot and ((slot - 1) % BARRICADE.Attackers - (BARRICADE.Attackers - 1) / 2) * 2.6 or 0
-			e.sideNow = (e.sideNow or 0) + (sideTarget - (e.sideNow or 0)) * (1 - math.exp(-8 * dt))
+			local sideTarget = slot and pileSide(e, slot) or 0
+			local ease = slot and 8 or BARRICADE.BlobEase
+			e.sideNow = (e.sideNow or 0) + (sideTarget - (e.sideNow or 0)) * (1 - math.exp(-ease * dt))
 			-- the Shadow Queen calls helpers
 			local summon = e.stats.Summon
 			if summon then

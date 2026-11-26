@@ -521,15 +521,16 @@ Config.Towers.Barricade = {
 	Color = Color3.fromRGB(150, 105, 60),
 	OnPath = true, -- built across the path, not beside it
 	Levels = {
-		{ Health = 320, Range = 0 },
-		{ Cost = 80, Health = 560, Range = 0 },
-		{ Cost = 140, Health = 680, Range = 0 },
+		-- (every enemy in the pile hits it, Lemp 2026-11-26, so health is about 1.4x what a 3-attacker front row needed)
+		{ Health = 450, Range = 0 },
+		{ Cost = 80, Health = 780, Range = 0 },
+		{ Cost = 140, Health = 950, Range = 0 },
 	},
 	Branches = {
 		{ Id = "Thornwall", Name = "Thornwall", Text = "Hurts every enemy that hits it",
 			Color = Color3.fromRGB(196, 110, 70), Thorns = 9 },
 		{ Id = "Rootwall", Name = "Rootwall", Text = "Enemies near it walk at half speed",
-			Color = Color3.fromRGB(120, 170, 80), Health = 760, Range = 12, Slow = 0.5 },
+			Color = Color3.fromRGB(120, 170, 80), Health = 1060, Range = 12, Slow = 0.5 },
 	},
 }
 Config.Barricade = {
@@ -537,8 +538,14 @@ Config.Barricade = {
 	RepairRate = 0.07, -- share of its health repaired per second while a hero is near
 	HitScale = 0.5, -- enemies hit it with this share of the damage they deal to heroes (Config.ContactDamage)
 	BossSlam = 0.25, -- a boss slam takes this share of its full health
-	Attackers = 3, -- enemies in the front row hit it; the rest wait behind
-	RowDepth = 3.2, -- studs between the rows waiting behind it
+	-- the pile (Lemp 2026-11-26: "they should all attack the wall ... pile up before the barricade and smash onto it"):
+	-- every enemy queued at it smashes it; they pack tight, rows overlapping, and run on as one blob when it breaks
+	Abreast = 4, -- enemies side by side in one row of the pile
+	SideGap = 2.0, -- studs between two enemies in a row (every second row is shifted by half of it)
+	RowDepth = 1.5, -- studs between rows (less than a goblin's body: the rows overlap into a pile)
+	Jitter = 0.5, -- up to this many studs of random side offset per enemy, so the pile is not a grid
+	PileShare = 0.6, -- an enemy behind the front row hits with this share (it reaches over the ones in front)
+	BlobEase = 1.5, -- after the wall breaks, the pile drifts back to the middle of the path this slowly (1 - exp(-k*dt))
 	Spacing = 12, -- studs along the path between two barricades
 	FromStart = 14, -- studs from where enemies come in
 	FromPortal = 18, -- studs from the portal

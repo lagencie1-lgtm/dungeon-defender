@@ -164,16 +164,26 @@ function testBarricade()
 		waited += 0.25
 	end
 	task.wait(1)
-	local passed, stopped = 0, 0
+	local passed, stopped, smashing, backRow = 0, 0, 0, 0
 	for _, e in goblins do
 		if not e.dead then
 			if e.distance > d then
 				passed += 1
 			elseif e.wall then
 				stopped += 1
+				if e.bashing then
+					smashing += 1
+					if (e.pileRow or 0) > 0 then
+						backRow += 1
+					end
+				end
 			end
 		end
 	end
+	-- (Lemp 2026-11-26: every goblin in the pile smashes the wall, not only the front row)
+	log("barricade pile:", smashing, "of", stopped, "smashing,", backRow, "of them behind the front row")
+	assert(smashing >= math.max(3, stopped - 1), "not every goblin in the pile smashes the wall")
+	assert(stopped <= Config.Barricade.Abreast or backRow >= 1, "nobody behind the front row smashes the wall")
 	local hurt = wall:GetAttribute("Health")
 	log("barricade: health", hurt, "/", wall:GetAttribute("MaxHealth"), "stopped", stopped, "passed", passed, "after", waited, "s")
 	assert(passed == 0, "goblins walked through the barricade")
@@ -202,11 +212,11 @@ function testBarricade()
 	task.wait(1.5)
 	local thorned = 0
 	for _, e in goblins do
-		if e.wall and e.blockSlot and e.blockSlot <= Config.Barricade.Attackers and e.health < hp[e] then
+		if e.wall and e.bashing and e.health < hp[e] then
 			thorned += 1
 		end
 	end
-	log("thornwall hurt", thorned, "goblins in the front row")
+	log("thornwall hurt", thorned, "goblins in the pile")
 	assert(thorned >= 1, "the Thornwall did not hurt the goblins hitting it")
 	-- four boss slams break it, and its build points come back
 	local used = State.Get("BuildUsed")

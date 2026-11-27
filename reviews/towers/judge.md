@@ -1079,3 +1079,21 @@ The three biggest remaining flaws in **A**:
 2. **The archers dominate the balcony.** Their large heads and bright hoods compete with the tower’s silhouette. Scale them down slightly and recess them behind the railing.
 3. **The materials blur together.** The roof, wood and gold all read as similar warm highlights, while the stone is nearly white. Deepen the roof to brick red, darken the timber and give the stone a warmer, less luminous beige.
 
+## the Frost Crystal, level 3: a silver crown of big ice crystals round a silver ring with a floating diamond, on a pale stone drum
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall.** Its wider crystal crown and circular ring make it closer to the painting’s silhouette, though neither version captures the concept’s ornate centerpiece.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 7/10 | 5/10 |
+| Whole tower visible and well framed | 9/10 | 9/10 |
+| Shape and proportions true to the painting | 7/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**A’s three biggest remaining flaws:**
+
+1. **The centerpiece is too small and hard to read.** Enlarge the silver ring and floating diamond, and give the diamond a bright cyan glow with clear space around it.
+2. **The crown looks like a cluster of similar shards.** Make the outer crystals taller and more distinct, add the large top diamond, and expose more of the silver ring behind them.
+3. **The drum feels narrow and lacks the painting’s identity.** Widen the pale stone body, add the front snowflake banner, and make the dark wooden braces and gold fittings chunkier.
+

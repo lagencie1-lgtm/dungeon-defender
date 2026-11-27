@@ -3,7 +3,7 @@
 Items that lost the blind before/after Codex judge (painting + phone views) more than once. Left as they are until a
 clearly different idea comes up.
 
-## Frost Crystal level 3, the crown (lost three times)
+## Frost Crystal level 3, the crown (lost three times, then rebuilt from the painting: won)
 
 1. The crown turned halfway to the run camera, no crystals in the arch's opening so the arch and diamond show: lost
    5 vs 6 ("the crown feels hollow and exposes too much of the arch").
@@ -11,8 +11,9 @@ clearly different idea comes up.
    the crown and loses its icy form").
 3. A fresh Codex repaint of the level from the painting, no shape change: tied 6 vs 6, before marginally preferred.
 
-What the judge keeps asking for: a fuller crystal crown with a visible silver arch and a faceted centre crystal. A
-next try would rebuild the crown from the painting (crystal sizes and placement measured off it), not move parts.
+4. Rebuilt from the painting (2026-11-27): a wide silver band flaring over a shorter pedestal with a pointed front
+   frame and a big gem, curled horns, a thick silver ring with the diamond floating in it, big crystals fanned round it
+   (the tallest straight up behind): won 7 vs 5, kept. Codex still misses the painting's ornate centrepiece.
 
 ## Ballista level 3, the two weapons (lost twice, then a marginal win)
 

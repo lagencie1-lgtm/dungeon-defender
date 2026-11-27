@@ -1207,3 +1207,57 @@ A’s three biggest remaining flaws:
 2. **The signature lightning symbol is missing at this scale.** Add a large, bright purple lightning bolt to the front face, with enough contrast to read on a phone.
 3. **The silhouette is too thin and ring-heavy.** Widen the lower shaft, strengthen the chunky gold bands, and make the copper coils sit closer to the body. This will make the tower feel weighty instead of cage-like.
 
+## the flame tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+**B is better overall.** Its warmer wood and metal come closer to the painting, though both versions lose much of the concept’s character at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5 | 6 |
+| Whole tower visible and well framed | 6 | 6 |
+| Shape and proportions true to the painting | 5 | 5 |
+| Colours and materials | 5 | 6 |
+
+**B’s three biggest remaining flaws:**
+
+1. **The fire is missing.** The barrel reads as a metal tube, not a flame cannon. Give the muzzle a clearly visible orange inner opening with a bright yellow flame.
+2. **The barrel is too narrow and segmented.** The painting has a broad, heavy cannon with one dominant dark rim. Widen the barrel and muzzle, and reduce the prominence of the gold bands.
+3. **The wooden cradle is hard to read.** It collapses into a small orange block. Enlarge the angled supports and front brace, with darker gaps between them and one visible gold bolt.
+
+## the flame tower, level 2, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 6/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions true to the painting | 4/10 | 5/10 |
+| Colours and materials | 5/10 | 6/10 |
+
+**B is better overall.** Its warmer, darker barrel and stronger gold bands bring it closer to the painting. Neither version captures the concept’s chunky, distinctive silhouette.
+
+B’s three biggest remaining flaws:
+
+1. **The stone base reads as a white disc.** Replace it with a ring of large, irregular tan blocks, with dark gaps and a few visible grass tufts.
+2. **The support structure is lost in a tangle of small shapes.** Enlarge the two sloping wooden legs and their round gold pivot caps so they frame the barrel clearly at phone size.
+3. **The coal hopper barely reads.** Give it a wider, boxy silhouette behind the barrel, with a bright gold rim and a few large black coals separated by orange glow.
+
+## the flame tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall.** Its brighter gold and stronger furnace glow make the tower easier to recognize at phone size, though both versions lose much of the painted silhouette against the tree.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 7/10 | 6/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions true to the painting | 6/10 | 6/10 |
+| Colours and materials | 7/10 | 6/10 |
+
+A’s three biggest remaining flaws:
+
+1. **The cannons look thin and tangled.** Make both barrels wider and more distinctly separated, with larger, clearly visible gold muzzle rims.
+2. **The central pivot and supports disappear.** Enlarge the round gold pivot and give the supporting arch a clean, readable outline.
+3. **The base reads as a bright orange cylinder.** Darken the wooden panels, separate the glowing window slits, and make the pale stone footing chunkier and less uniformly white.
+

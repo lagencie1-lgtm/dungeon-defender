@@ -289,6 +289,8 @@ if not os.environ.get("HTD_FAST"):
     json.dump(BORES, open(os.path.join(HERE, "..", "models", f"tower_flame_l{level}_bores.json"), "w"), indent=1)
 for m in muzzles:   # Blender (x, y, z) -> the game's (-x, z, y)
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
+if level < 3:   # (level 3 decluttered won the judge but its re-projected gold came out 19.6 % bright yellow, over the gate)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

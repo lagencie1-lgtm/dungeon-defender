@@ -1097,3 +1097,59 @@ codex gpt-6.1-terra; A = after, B = before
 2. **The crown looks like a cluster of similar shards.** Make the outer crystals taller and more distinct, add the large top diamond, and expose more of the silver ring behind them.
 3. **The drum feels narrow and lacks the painting’s identity.** Widen the pale stone body, add the front snowflake banner, and make the dark wooden braces and gold fittings chunkier.
 
+## the ballista tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 6/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions | 4/10 | 5/10 |
+| Colours and materials | 4/10 | 5/10 |
+
+**B is better overall.** Its reddish-brown bow feels closer to the painted wood. Both versions read as a ballista, but neither captures the concept’s chunky, handcrafted construction.
+
+B’s three biggest remaining flaws:
+
+1. **The base reads as a glowing white blob.** Darken it to warm sandstone, separate the individual stones with stronger seams, and add small green tufts around the edge.
+2. **The support frame is too thin and tangled.** Thicken the angled legs and crossbeams, simplify their overlaps, and add a few oversized gold bolts so the trestle reads at phone size.
+3. **The weapon lacks the concept’s solid wooden body.** Make the central stock broader and deeper, keep the bow as a distinct dark-wood curve, and enlarge the red fletching to give the bolt a clear focal point.
+
+## the ballista tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is the second image; B is the third.**
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions true to the painting | 4/10 | 4/10 |
+| Colours and materials | 5/10 | 6/10 |
+
+**B is better overall**, narrowly. Its base is less washed out, so the wooden structure reads a little more clearly.
+
+The three biggest remaining flaws in B:
+
+1. **The silhouette is too thin and tangled.** The concept has a broad, solid timber frame and a substantial bow. Thicken the supports and bow limbs, and simplify the small crossing parts.
+2. **The stone foundation barely reads.** It looks like a bright fringe rather than a circular platform. Give it larger, distinct tan stone blocks and reduce the white highlights.
+3. **The signature hardware gets lost.** The painting’s gold fittings, side crank and large bolt make the tower recognisable. Enlarge and separate those shapes, with darker edges against the wood.
+
+## the ballista tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall, but only slightly.** Its warmer wood and gold accents read a little more clearly. Both versions lose much of the concept’s character at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 5/10 |
+
+The three biggest flaws in **A**:
+
+1. **The twin ballistae merge into a tangle.** Increase the gap between them and give each a clearer wooden stock and distinct bow silhouette.
+2. **The weapons dominate the base.** Broaden and raise the stone tower slightly, with chunkier battlements, to restore the concept’s sturdy proportions.
+3. **The banners and masonry lack definition.** Enlarge the central red banner, add its pale border and emblem, and use warmer shadows between the large stone blocks.
+

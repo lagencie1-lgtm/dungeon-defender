@@ -259,6 +259,8 @@ for g in LAYOUT:
 json.dump(BOWLINES, open(os.path.abspath(out)[:-4] + "_bow.json", "w"))
 for m in muzzles:
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
+if level != 2:   # (level 2 decluttered lost the blind judge, 5 = 5, before preferred: it keeps its parts)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

@@ -163,7 +163,7 @@ local LEVEL_LOOKS = {
 	Ballista = {
 		{ Name = "tower_ballista_l1", Height = 6.80, Muzzle = Vector3.new(-1.19, 6.28, 4.42) },
 		{ Name = "tower_ballista_l2", Height = 7.75, Muzzle = Vector3.new(-1.30, 7.19, 4.84) },
-		{ Name = "tower_ballista_l3", Height = 6.26, Muzzle = Vector3.new(-4.77, 5.84, 0.79), Muzzles = { Vector3.new(-4.77, 5.84, 0.79), Vector3.new(-0.79, 5.84, 4.77) } },
+		{ Name = "tower_ballista_l3", Height = 6.22, Muzzle = Vector3.new(-4.77, 5.84, 0.79), Muzzles = { Vector3.new(-4.77, 5.84, 0.79), Vector3.new(-0.79, 5.84, 4.77) } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS

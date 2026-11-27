@@ -250,3 +250,17 @@ codex gpt-6.1-terra; A = before, B = after
 **B is slightly better overall:** its bright shot effect is easier to notice, but neither version clearly reads as an archer firing. The strips show little discernible bow movement, and the impact is hard to distinguish from the shot effect.
 
 **Most important fix:** make a single arrow visibly travel from the bow to the target, with a clear silhouette and direction.
+
+## Ranger level 3 shot, round 5 arrow sticks in the goblin (r5a vs e404808)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 2/10 |
+| Projectile looks like an arrow | 2/10 | 2/10 |
+| Weapon anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 3/10 | 3/10 |
+
+**B is slightly better overall:** the debug label in A adds clutter. Neither shot has a clear firing gesture or a readable arrow path; the flashes look more like white blobs than convincing impacts.
+
+**Most important fix:** Make the arrow visible across multiple frames, with a clear path from the archer to the target.

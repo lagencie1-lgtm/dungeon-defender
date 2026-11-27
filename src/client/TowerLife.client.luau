@@ -270,7 +270,7 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 			m, place = bolt(math.clamp(dist * 0.12, 3.6, 5.1), 1.5)   -- (round 4: 1.5 times the bolt, bright steel tip, red fletching)
 		end
 		-- (2026-11-27: the bolt thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
-		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
+		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05), sticks = kind == "Ranger",
 			-- (round 3: a thin bright trail half the flight long; the 6A fifth limits an effect's width, not its length)
 			-- (the Ballista keeps round 2's trail: the long thin one lost its blind judge there)
 			trail = kind == "Ranger" and 0.5 or 0.3, trailW = kind == "Ranger" and 0.16 or 0.26, trailT = kind == "Ranger" and 0.1 or 0.25, trailC = kind == "Ranger" and Color3.fromRGB(215, 255, 150) or nil,
@@ -313,6 +313,7 @@ RunService.RenderStepped:Connect(function(dt)
 			local ahead = f.from:Lerp(f.to, math.min(a + 0.02, 1)) + Vector3.new(0, f.arc * 4 * math.min(a + 0.02, 1) * (1 - math.min(a + 0.02, 1)), 0)
 			if (ahead - pos).Magnitude > 1e-3 then
 				f.place(CFrame.lookAt(pos, ahead))
+				f.last = CFrame.lookAt(pos, ahead)
 				-- a short faint streak behind it (the old glowing box was what read at phone size; this keeps that read)
 				if not f.streak then
 					f.streak = part({ Size = Vector3.new(f.trailW, f.trailW, 1), Material = Enum.Material.Neon, Color = f.trailC or Color3.fromRGB(255, 244, 220), Transparency = f.trailT })
@@ -325,10 +326,46 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 			if a >= 1 then
 				spark(f.to, (f.to - f.from).Magnitude)
-				f.m:Destroy()
 				if f.streak then
 					f.streak:Destroy()
 				end
+				-- (round 5: the arrow's flight is hard to follow from the run camera, so the hit reads instead: the arrow
+				-- sticks in the goblin it hit for half a second, moving with it, then fades)
+				local target
+				if f.sticks and f.last then
+					local enemies = workspace:FindFirstChild("Enemies")
+					local bestD = 4
+					for _, mdl in enemies and enemies:GetChildren() or {} do
+						if mdl:IsA("Model") then
+							local d = (mdl:GetPivot().Position - f.to).Magnitude
+							if d < bestD then
+								target, bestD = mdl, d
+							end
+						end
+					end
+				end
+				if target then
+					local stuckAt = f.last * CFrame.new(0, 0, -0.6)   -- (a little way in)
+					table.insert(flights, { kind = "stuck", m = f.m, place = f.place, target = target,
+						offset = target:GetPivot():ToObjectSpace(stuckAt), t = 0, life = 0.5 })
+				else
+					f.m:Destroy()
+				end
+				table.remove(flights, i)
+			end
+		elseif f.kind == "stuck" then
+			if f.target.Parent then
+				f.place(f.target:GetPivot() * f.offset)
+			end
+			if a > 0.6 then   -- (fades over its last 0.2 s)
+				for _, q in f.m:GetChildren() do
+					if q:IsA("BasePart") then
+						q.Transparency = math.max(q.Transparency, (a - 0.6) / 0.4)
+					end
+				end
+			end
+			if a >= 1 or not f.target.Parent then
+				f.m:Destroy()
 				table.remove(flights, i)
 			end
 		elseif f.kind == "fireball" then

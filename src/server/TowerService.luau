@@ -771,6 +771,7 @@ local function shoot(t, now, model)
 					local flat = Vector3.new(first.position.X - t.position.X, 0, first.position.Z - t.position.Z)
 					if first.health and first.health > 0 and flat.Magnitude <= stats.Range then
 						EnemyService.Damage(first, share)
+						EnemyService.Knockback(first, 0.25)   -- (round 5: a small flinch where the arrow sticks)
 					end
 				end)
 			end)

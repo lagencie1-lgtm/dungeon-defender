@@ -552,6 +552,8 @@ Config.TowerShots = {
 				 Arc = 0.05, Pull = 0.7, Kick = 1.1, TurnSpeed = 70, TurnDamp = 14 },
 	-- the Flame Cannon: a short squash back (Pull) on the wind-up, a strong recoil along the raised barrel (Axis3D), a
 	-- fireball on a higher arc
+	-- the Storm Obelisk: the orb charges (a swelling glow and crackles) before the lightning strikes
+	StormObelisk = { WindUp = 0.2 },
 	FlameCannon = { WindUp = 0.12, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
 }
 -- Build Points: every defender uses some, each map has a limit for the whole team

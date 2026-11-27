@@ -149,6 +149,19 @@ end
 
 local function towerShot(kind, from, model, index, aim, windUp, travel)
 	local cfg = Config.TowerShots[kind]
+	if kind == "StormObelisk" then
+		-- the orb gathers power: a violet glow swells on it and a few short sparks crackle round it for the wind-up,
+		-- then a quick pulse as the bolt leaves (the strike itself is the server's lightning, at the end of the wind-up)
+		local glow = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.5, Position = from, Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(200, 160, 255), Transparency = 0.35 })
+		table.insert(flights, { kind = "charge", p = glow, at = from, t = 0, life = windUp, crackle = 0 })
+		task.delay(windUp, function()
+			local pulse = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 1.2, Position = from, Material = Enum.Material.Neon,
+				Color = Color3.fromRGB(235, 220, 255), Transparency = 0.2 })
+			table.insert(flights, { kind = "flash", p = pulse, t = 0, life = 0.14 })
+		end)
+		return
+	end
 	local p = weaponOf(model, index)
 	if p then
 		local st = stateOf(p, model, kind)
@@ -263,8 +276,27 @@ RunService.RenderStepped:Connect(function(dt)
 				f.p:Destroy()
 				table.remove(flights, i)
 			end
+		elseif f.kind == "charge" then
+			f.p.Size = Vector3.one * (0.5 + 1.1 * a)
+			f.p.Transparency = 0.35 - 0.2 * a
+			f.crackle += dt
+			if f.crackle > 0.05 then   -- (a short crackle spark at a random spot on the orb)
+				f.crackle = 0
+				local dir = Vector3.new(math.random() - 0.5, math.random() - 0.3, math.random() - 0.5).Unit
+				local p0 = f.at + dir * 0.7
+				local p1 = p0 + (dir + Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 0.8).Unit * 0.7
+				local seg = part({ Size = Vector3.new(0.07, 0.07, (p1 - p0).Magnitude), CFrame = CFrame.lookAt((p0 + p1) / 2, p1),
+					Material = Enum.Material.Neon, Color = Color3.fromRGB(225, 205, 255) })
+				table.insert(flights, { kind = "ember", p = seg, t = 0, life = 0.08, keepSize = true })
+			end
+			if a >= 1 then
+				f.p:Destroy()
+				table.remove(flights, i)
+			end
 		elseif f.kind == "ember" then
-			f.p.Size = Vector3.one * 0.55 * (1 - a)
+			if not f.keepSize then
+				f.p.Size = Vector3.one * 0.55 * (1 - a)
+			end
 			f.p.Transparency = 0.3 + 0.7 * a
 			if a >= 1 then
 				f.p:Destroy()

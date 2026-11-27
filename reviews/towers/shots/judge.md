@@ -40,3 +40,17 @@ codex gpt-6.1-terra; A = before, B = after
 **B is better overall.** The cannon moves and there’s a glimpse of orange fire, but the shot is still easy to miss. A barely reads as firing at all.
 
 **Most important fix:** Make the fireball larger and brighter, with a clear, sustained trail from muzzle to target.
+
+## Storm Obelisk level 3 shot (film sh9)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 1/10 | 3/10 |
+| Looks like lightning | 1/10 | 3/10 |
+| Anticipation and recoil | 1/10 | 2/10 |
+| Impact feedback | 1/10 | 2/10 |
+
+**B is better overall.** There’s a glimpse of a discharge and damage feedback, but the shot is still easy to miss.
+
+**Most important fix:** Give the lightning a thick, high-contrast, jagged silhouette from orb to target, held long enough to register on a phone.

@@ -802,30 +802,42 @@ local function shoot(t, now, model)
 			end
 		end
 	elseif t.type == "StormObelisk" then
-		Effects.Kick(t.kicker, -0.5)
-		Sound.Play("Zap", t.muzzle)
-		-- lightning jumps from goblin to goblin
-		local hit = {}
-		local from = t.muzzle
-		local current = first
-		for _ = 1, stats.Chains do
-			hit[current] = true
-			local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
-			Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
-			EnemyService.Damage(current, stats.Damage, nil, true)
-			from = to
-			local nextOne = nil
-			for _, e in EnemyService.InRange(current.position, 14) do
-				if not hit[e] then
-					nextOne = e
+		-- (2026-11-27, shot polish: the orb charges on the client first, TowerLife; the lightning and its damage follow
+		-- at the end of the wind-up, on the first goblin still in range then, so no damage is lost; delayed, never a
+		-- wait: shoot() runs inside the loop over every tower)
+		local windUp = Config.TowerShots.StormObelisk.WindUp
+		Remotes.CombatFx:FireAllClients("TowerShot", t.muzzle, model, "StormObelisk", 1, first.position, windUp, 0)
+		task.delay(windUp, function()
+			local current = first
+			if not current.health or current.health <= 0 or current.dead then
+				current = EnemyService.InRange(t.position, stats.Range)[1]
+			end
+			if not current then
+				return
+			end
+			Sound.Play("Zap", t.muzzle)
+			-- lightning jumps from goblin to goblin
+			local hit = {}
+			local from = t.muzzle
+			for _ = 1, stats.Chains do
+				hit[current] = true
+				local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
+				Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
+				EnemyService.Damage(current, stats.Damage, nil, true)
+				from = to
+				local nextOne = nil
+				for _, e in EnemyService.InRange(current.position, 14) do
+					if not hit[e] then
+						nextOne = e
+						break
+					end
+				end
+				if not nextOne then
 					break
 				end
+				current = nextOne
 			end
-			if not nextOne then
-				break
-			end
-			current = nextOne
-		end
+		end)
 	elseif t.type == "Ballista" then
 		-- aims at the toughest goblin in range
 		local target = first

@@ -5,13 +5,13 @@
 | ranger 3 | 79.1% | 27.4% | 10.1 | 1.03 |
 | ballista 1 | 68.6% | 24.8% | 20.2 | 0.72 |
 | ballista 2 | 70.1% | 19.6% | 17.0 | 0.65 |
-| ballista 3 | 78.2% | 24.9% | 12.6 | 0.60 |
-| storm 1 | 85.6% | 17.5% | 17.8 | 0.72 |
+| ballista 3 | 78.2% | 24.9% | 11.6 | 0.74 |
+| storm 1 | 85.6% | 17.5% | 15.7 | 0.86 |
 | storm 2 | 85.3% | 17.0% | 16.7 | 0.88 |
 | storm 3 | 82.3% | 16.7% | 17.8 | 0.91 |
-| flame 1 | 83.5% | 11.3% | 16.4 | 1.01 |
-| flame 2 | 78.9% | 16.0% | 18.9 | 0.79 |
-| flame 3 | 78.9% | 21.2% | 20.2 | 0.74 |
+| flame 1 | 83.5% | 11.3% | 16.3 | 1.10 |
+| flame 2 | 78.9% | 16.0% | 18.9 | 0.84 |
+| flame 3 | 78.9% | 21.2% | 20.2 | 0.78 |
 | frost 1 | 89.1% | 11.3% | 13.0 | 0.99 |
 | frost 2 | 86.6% | 12.5% | 10.6 | 0.94 |
 | frost 3 | 82.4% | 22.6% | 15.8 | 0.86 |
@@ -32,17 +32,17 @@ Codex as an outside art director: painting, 16-frame turntable and phone view pe
 
 | level | base and footing | trestle | stock and bolt | bow and string | level extras (gear, platform, bastion) | gold and iron fittings | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7.0 ±0.0 | 6.0 ±1.0 | 4.7 ±0.5 | 4.7 ±0.5 | 7.3 ±1.0 | 4.3 ±0.5 | 5.0 ±0.0 | The bow reads as a segmented orange bar rather than the painting’s substantial curved wooden limb; darken and thicken it, smooth the curve, and make the rope bindings visible at phone size. |
-| 2 | 4.3 ±0.5 | 6.0 ±0.0 | 5.7 ±0.5 | 6.0 ±0.0 | 4.0 ±0.0 | 4.7 ±0.5 | 5.0 ±0.0 | The solid wooden box obscures the concept’s open, braced footing and dominates the phone-sized silhouette; replace it with a lower stone base and clearly separated timber legs. |
-| 3 | 6.3 ±0.5 | 4.3 ±0.5 | 4.7 ±0.5 | 2.0 ±0.0 | 4.7 ±0.5 | 5.3 ±0.5 | 4.3 ±0.5 | The bows and strings flatten into an unreadable horizontal bar at phone size; enlarge and separate their curved silhouettes from the stocks. |
+| 1 | 7.0 ±0.0 | 6.0 ±0.0 | 4.7 ±0.5 | 4.7 ±0.5 | 7.7 ±0.5 | 4.0 ±0.0 | 5.0 ±0.0 | The oversized, orange segmented bow and stock merge into a rocket-like silhouette; restore the darker curved wooden bow, distinct central stock, and clearly readable slender bolt. |
+| 2 | 4.0 ±0.0 | 5.7 ±0.5 | 6.0 ±0.0 | 5.3 ±0.5 | 4.0 ±0.0 | 4.3 ±0.5 | 5.0 ±0.0 | The bulky rectangular wooden base overwhelms the open trestle and obscures the concept's stone footing; replace it with a low circular stone foundation and expose the braced legs. |
+| 3 | 6.0 ±0.0 | 5.0 ±0.0 | 6.0 ±0.0 | 3.0 ±0.0 | 5.0 ±0.0 | 5.0 ±0.0 | 5.0 ±0.0 | The bows and strings lose the concept’s bold curved silhouette and disappear at phone size; enlarge and thicken them so both weapons read clearly. |
 
 ### Storm Obelisk
 
 | level | base and footing | stone / skirt | obelisk body | runes | copper rings and horns | orb / rod | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7.0 ±0.0 | 5.3 ±0.5 | 5.3 ±0.5 | 3.0 ±0.0 | 3.3 ±1.0 | 2.0 ±0.0 | 4.0 ±0.0 | The rune looks like a floating purple sign rather than a glowing carving in the stone; embed the lightning and diamonds into the obelisk face and make them readable at phone size. |
-| 2 | 6.7 ±0.5 | 4.7 ±0.5 | 6.3 ±0.5 | 5.0 ±0.0 | 5.3 ±0.5 | 5.3 ±0.5 | 5.7 ±0.5 | The skirt reads as a cluttered ring of narrow posts instead of the concept’s broad stone arches and heavy timber braces; simplify and enlarge those shapes so they remain distinct on a phone. |
-| 3 | 6.0 ±0.0 | 4.0 ±0.0 | 4.7 ±0.5 | 3.3 ±0.5 | 4.3 ±0.5 | 4.7 ±0.5 | 4.3 ±0.5 | The obelisk body loses the concept's dark, bold silhouette and readable lightning rune; darken and simplify the body, then enlarge and brighten the rune so it reads clearly on a phone. |
+| 1 | 7.0 ±0.0 | 4.7 ±0.5 | 4.7 ±0.5 | 3.0 ±0.0 | 3.3 ±0.5 | 1.7 ±0.5 | 4.0 ±0.0 | The lightning rune reads as a floating purple sign rather than a glowing carving; embed it into a broader, flatter stone face and give it a luminous edge. |
+| 2 | 6.3 ±0.5 | 4.3 ±0.5 | 6.3 ±0.5 | 4.3 ±0.5 | 5.0 ±0.0 | 4.7 ±0.5 | 5.3 ±0.5 | The runes lose the concept’s bright, layered glow and become a flat purple mark at phone size; enlarge the bolt and diamonds and give them a luminous core with a restrained halo. |
+| 3 | 6.3 ±0.5 | 4.7 ±0.5 | 5.3 ±0.5 | 4.0 ±0.0 | 4.7 ±0.5 | 5.3 ±0.5 | 5.0 ±0.0 | The signature lightning rune is small and obscured by the copper rings; enlarge it, brighten it, and keep the rings clear of its silhouette. |
 
 ### Flame Cannon
 

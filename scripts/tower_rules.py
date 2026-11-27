@@ -86,6 +86,8 @@ def main():
         if box is None:
             box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
         masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])
+        # (2026-11-27: the outline saved too, for measurements on the phone pictures, scripts/phone_measure.py)
+        Image.fromarray(masks[(parts[1], int(parts[2]))].astype(np.uint8) * 255).save(os.path.join(out, f"{parts[1]}_l{parts[2]}_mask.png"))
         drift[(parts[1], int(parts[2]))] = best[1]
     for t, name in marks:
         parts = name.split()

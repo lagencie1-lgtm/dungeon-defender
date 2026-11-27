@@ -20,6 +20,8 @@ PARTS = {
     "frost": ("Frost Crystal", ["base and footing", "pedestal and planks", "snow and icicles", "crystals", "silver ring and arch", "banner and gems"]),
 }
 
+RUNS = int(os.environ.get("HTD_RATE_RUNS", "3"))   # (fresh Codex calls per level)
+
 PROMPT = """You are a harsh, independent art director for stylised fantasy tower defence games (Kingdom Rush,
 hand-painted Roblox games). Picture 1 is the concept painting of the {name}, level {level}. Picture 2 is a turntable of
 our 3D model (16 views around it). Picture 3 is an in-game phone screenshot with it built (look only at that tower).
@@ -46,17 +48,31 @@ def main():
                     os.path.join(ROOT, "reviews", "towers", "review", f"{kind}_l{level}_turntable16.png"),
                     os.path.join(ROOT, "reviews", "towers", "review", f"{kind}_l{level}_in_game_phone.png")]
             imgs = [p for p in imgs if os.path.exists(p)]
-            who, ans = codex(PROMPT.format(name=name, level=level, parts="\n".join("- " + p for p in parts)), imgs)
-            m = re.search(r"\{.*\}", ans, re.S)
-            try:
-                d = json.loads(m.group(0))
-            except Exception:
-                rows.append(f"| {level} | (no score: {ans[:80]!r}) |")
+            # (2026-11-27, coordinator: one call moved a point either way on levels that hadn't changed: each level is
+            # scored RUNS times by fresh calls; the table shows the mean ± half the spread (highest - lowest))
+            runs = []
+            for _ in range(RUNS):
+                who, ans = codex(PROMPT.format(name=name, level=level, parts="\n".join("- " + p for p in parts)), imgs)
+                m = re.search(r"\{.*\}", ans, re.S)
+                try:
+                    runs.append(json.loads(m.group(0)))
+                except Exception:
+                    continue
+            if not runs:
+                rows.append(f"| {level} | (no score) |")
                 continue
-            sc = [str((d.get("parts") or {}).get(p, "?")) for p in parts]
-            rows.append(f"| {level} | " + " | ".join(sc) + f" | {d.get('whole', '?')} | {d.get('weakest', '')} |")
-            print(kind, level, sc, d.get("whole"), flush=True)
-    head = ["", "## Per part (Codex)", "", "Codex as an outside art director: painting, 16-frame turntable and phone view per level, each part 1-10."]
+
+            def stat(vals):
+                vals = [float(v) for v in vals if isinstance(v, (int, float)) or str(v).replace(".", "").isdigit()]
+                if not vals:
+                    return "?"
+                mean = sum(vals) / len(vals)
+                return f"{mean:.1f} ±{(max(vals) - min(vals)) / 2:.1f}" if len(vals) > 1 else f"{mean:.1f}"
+            sc = [stat([(d.get("parts") or {}).get(p) for d in runs]) for p in parts]
+            whole = stat([d.get("whole") for d in runs])
+            rows.append(f"| {level} | " + " | ".join(sc) + f" | {whole} | {runs[0].get('weakest', '')} |")
+            print(kind, level, sc, whole, f"({len(runs)} runs)", flush=True)
+    head = ["", "## Per part (Codex)", "", "Codex as an outside art director: painting, 16-frame turntable and phone view per level, each part 1-10; mean of %d fresh calls ± half the spread." % RUNS]
     for name, _ in PARTS.values():
         if name in tables:
             head += ["", f"### {name}"] + tables[name]

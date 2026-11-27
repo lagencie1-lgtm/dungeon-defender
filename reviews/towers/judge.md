@@ -697,3 +697,275 @@ B’s three biggest remaining flaws:
 2. **The stone reads as a white cone.** Broaden and flatten its front face, add an irregular faceted outline, and use warm beige shading to match the concept’s hefty monolith.
 3. **The wooden supports barely register.** Make the dark brown posts taller and wider on both sides, with clear gold bands contrasting against the pale stone.
 
+## the ranger tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+**B is marginally better overall**, though the tower differences are too subtle at this resolution to make that a confident call.
+
+The three biggest flaws in B:
+
+1. **The roof reads pale pink and too bright.** Give it deeper terracotta-red shingles, with darker seams and warm highlights like the painting.
+2. **The tower feels too narrow and boxy.** Broaden the upper platform and roof, and give the supporting legs a clearer outward stance.
+3. **The ranger and ladder get lost.** Enlarge the ranger’s head and bow, simplify the ladder into thicker rails and rungs, and increase their contrast against the wood.
+
+## the ranger tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painting at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**Overall: A and B are effectively tied.** I can’t see a meaningful tower difference at this size that would justify picking a winner.
+
+The three biggest flaws in both:
+
+1. **The ranger barely reads.** The face looks like a small pale dot, and the bow and arrow are lost. Enlarge the head and bow slightly, and give the drawn arrow a clear, contrasting silhouette.
+2. **The tower is too squat.** The roof dominates while the stone base feels short and busy. Make the base taller and simplify its outline; reduce the roof overhang slightly.
+3. **The defining banner disappears.** The concept’s large green shield is a strong focal point; here the front is a jumble of tiny details. Add a broad, flat green banner with a simple cream emblem, clearly visible against the stone.
+
+## the ranger tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 7/10 | 7/10 |
+| Whole tower visible and well framed | 9/10 | 9/10 |
+| Shape and proportions true to the painting | 6/10 | 6/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**Overall: A, by a hair.** Both are very close at this size; neither has a decisive visual advantage.
+
+A’s three biggest remaining flaws:
+
+1. **The stone base is too squat.** The painting has a tall, substantial lower tower. Raise the balcony and lengthen the stone section, keeping the doorway and windows readable.
+2. **The roof is too wide and flat.** Narrow the eaves slightly and raise the peak to recover the painting’s more upright silhouette.
+3. **The green-and-cream identity gets lost in visual clutter.** Add larger, simpler hanging banners and strengthen the separation between pale stone, dark timber and red roof. Reduce tiny gold details so the main colour blocks read on a phone.
+
+## the ballista tower, level 1, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A wins by a hair**, though the towers look so similar at this size that I can’t confidently identify a meaningful improvement.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 7/10 | 7/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+The three biggest flaws in A:
+
+1. **The weapon reads as a bright hoop.** The concept has a thick wooden bow with a separate, taut string. Thicken and darken the bow limbs, then make the string thinner and cream-coloured.
+2. **The body is too spindly.** The painting has a broad, chunky stock and a sturdy timber A-frame. Widen the stock and legs, and add the prominent horizontal braces.
+3. **The base looks like a white ring.** The concept’s base is made of distinct warm stone blocks with grass between them. Model larger, irregular beige stones and add small green tufts around the edges.
+
+## the ballista tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Phone-size criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 5/10 | 5/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions | 4/10 | 4/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+**Overall: effectively tied.** I can’t confidently pick A or B from these screenshots; the towers look too similar at this size to justify a winner.
+
+The three biggest flaws in both are:
+
+1. **The mechanism reads as a jumble.** Make the curved bow arms thicker and more continuous, and separate the bolt clearly from the wooden bed.
+2. **The base lacks the painting’s sturdy silhouette.** Enlarge and spread the angled timber legs, with distinct metal footplates and visible gaps between supports.
+3. **The materials blur into orange.** Darken the wood, make the bow and brackets a cooler grey, and reserve bright gold for the fittings. Keep the red fletching as a clear accent.
+
+## the ballista tower, level 3, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions true to the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**Overall: tie.** The towers look too similar at this resolution to justify choosing A or B.
+
+The three biggest flaws in both:
+
+1. **The twin ballistas merge into a tangle.** Separate their silhouettes and simplify the bow arms and bolts so each weapon reads clearly.
+2. **The base feels squat and busy.** Make the stone tower taller and broader relative to the weapons, with larger, simpler blocks.
+3. **The red banners lack the concept’s impact.** Enlarge the central hanging banner and give it a clear gold border and emblem.
+
+## the storm tower, level 1, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A and B appear identical in the screenshots provided.** I can’t honestly choose a better one.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 4/10 | 4/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 4/10 | 4/10 |
+| Colours and materials | 4/10 | 4/10 |
+
+The whole tower is visible, but its defining features are too small and washed out to carry the design.
+
+The three biggest flaws in both versions:
+
+1. **The rune is a purple blotch.** Make the lightning bolt a single, clean, high-contrast shape, with a restrained glow and enough thickness to read on a phone.
+2. **The stone looks chalk-white and cone-shaped.** Warm it toward sandstone and give it the painting’s broad, irregular monolith silhouette with a flatter, faceted crown.
+3. **The timber supports and gold bands disappear.** Enlarge the dark wooden braces, separate them clearly from the stone, and use broader gold bands with visible round studs.
+
+## the storm tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A and B appear visually indistinguishable at this resolution**, so I can’t honestly pick a better one. Both get the same scores:
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 4/10 | 4/10 |
+| Shape and proportions true to the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+The three biggest flaws in either version:
+
+1. **The top gets lost against the tree.** The antenna and ball are hard to distinguish. Raise or clear the foliage behind the tower, and give the antenna a clean silhouette.
+2. **The body is too narrow and visually flat.** Broaden the tapered purple shaft and exaggerate its faceted sides; make the gold collar thicker and more angular.
+3. **The base reads as a noisy ring of sticks.** Use fewer, broader dark-wood braces with clear gold studs, and give the pale stone base larger, simpler shapes.
+
+## the storm tower, level 3, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+A and B appear identical in the supplied screenshots, so I can’t honestly pick a winner.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions true to the painting | 3/10 | 3/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+The three biggest flaws, and how to fix them:
+
+1. **The body looks like an open cage.** The painting has a broad, solid, tapering dark-stone shaft. Fill in the tower body and give it a wider base and narrower top.
+2. **The front has no readable lightning emblem.** Add one large, bright purple bolt on a dark front panel. Make it thick enough to survive at phone size.
+3. **The copper coils dominate the silhouette.** Reduce them to two tighter, thicker bands around the shaft, then add the painting’s substantial gold collar, lower braces and upward-pointing prongs around the orb.
+
+## the flame tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painting at phone size | 4/10 | 4/10 |
+| Whole tower visible and well framed | 7/10 | 7/10 |
+| Shape and proportions | 4/10 | 4/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+**Overall: tie.** I can’t see a meaningful difference in the tower between A and B at this size, so picking a winner would be arbitrary. The whole model is visible, but it’s small and its most distinctive feature—the glowing furnace mouth—doesn’t read.
+
+The three biggest flaws in both:
+
+1. **The barrel reads as a striped tube.** Make it shorter and stouter, with a broad, dark metal body and a much larger circular rim.
+2. **There’s no obvious fire.** Aim the opening toward the camera and give it a bright orange interior with a simple yellow flame shape.
+3. **The wooden support is too small and tangled.** Enlarge the angled timber legs and front crossbeam; use warm brown wood and a few prominent gold bolts to make the structure readable.
+
+## the flame tower, level 2, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+A and B look identical at the resolution provided. I can’t honestly pick one as better.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions true to the painting | 4/10 | 4/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+The three biggest flaws in both:
+
+1. **The silhouette is too thin and fussy.** The painting has a broad, powerful barrel and substantial wooden supports. Enlarge the barrel and thicken the angled legs so they read as the main shapes on a phone.
+2. **The rear coal hopper is hard to recognise.** It reads as a small cluster of flames rather than a box full of glowing coals. Make the box wider, give it a clear gold rim, and use a few large dark coals with orange gaps.
+3. **The base is too bright and smooth.** The near-white ring draws attention away from the cannon and loses the chunky masonry of the concept. Use warmer tan stone, larger individually defined blocks, and darker gaps.
+
+## the flame tower, level 3, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**Overall: tie.** I can’t see a meaningful tower-quality difference between A and B at this size, so choosing a winner would be guesswork. Both read as a brass flame cannon, but lose much of the painting’s distinctive structure.
+
+The three biggest flaws in either version:
+
+1. **The silhouette is muddy.** The twin barrels merge into the body and the tree behind them. Make the barrels thicker and more clearly separated, with brighter rims and darker gaps.
+2. **The painted tower’s stout base and support are lost.** Enlarge the tapered wooden base and make the central gold brace and curved barrel support much more prominent.
+3. **Materials blur together.** The tower becomes a patch of orange and brown. Give the stone base a cooler, lighter colour, darken the wood, and reserve the brightest gold and orange for metal edges and furnace openings.
+
+## the frost tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**Overall: tie.** The tower differences are too subtle at this size to justify choosing A or B.
+
+The three biggest flaws in both:
+
+1. **The banner doesn’t read.** The painting’s large cream banner and blue snowflake are defining features. Enlarge the front-facing banner and use a bold, high-contrast snowflake.
+2. **The crystal silhouette is muddled.** The extra blue chunks compete with the single dominant shard in the painting. Reduce the side crystals and give the main shard a taller, cleaner pointed silhouette.
+3. **The body looks cramped and flat.** The painting has a broad stone rim, tapered wooden supports and distinct gold fittings. Widen the rim and base, separate the supports visually, and use darker wood against brighter stone and gold.
+
+## the frost tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Tower-only assessment | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 6/10 | 6/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**A is my pick, but only marginally.** The two are so close at this resolution that I can’t confidently identify a meaningful improvement in the tower itself.
+
+The three biggest flaws in A:
+
+1. **The tower’s identity gets lost.** The snowflake banner and front diamond are barely readable. Enlarge both, simplify their shapes, and give them stronger contrast against the base.
+2. **The crystal crown looks like a pale cluster.** The painting has a dominant, tall central spear surrounded by distinct smaller shards. Make that central crystal taller and separate the side shards with darker blue edges.
+3. **The base feels busy and washed out.** The concept has a clear dark-wood body, pale stone rim and controlled gold accents. Darken and broaden the wooden supports, then reduce the bright gold to a few larger fittings.
+
+## the frost tower, level 3, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 9/10 | 9/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 7/10 | 7/10 |
+
+**Overall: tie.** I can’t see a meaningful tower difference at this size, so I can’t honestly pick A or B.
+
+The three biggest flaws in both:
+
+1. **The crown reads as a cluster of crystals, not a designed silhouette.** Make the two tall outer spires sweep upward and outward, with a larger, distinct diamond at the top.
+2. **The focal point is missing.** Add a bright central floating diamond and one bold orbit ring. Keep them simple and separated enough to read on a phone.
+3. **The base lacks the painting’s character.** Widen and shorten the lower body, then add a large cream banner with a clear blue snowflake and a prominent diamond crest above it.
+

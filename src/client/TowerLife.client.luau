@@ -44,9 +44,10 @@ end
 -- the look, when the part is a new one)
 local weapons = {}
 
-local function weaponOf(model)
+local function weaponOf(model, index)
 	local look = model and model:FindFirstChild("Look")
-	return look and look:FindFirstChild("Skin_barrel")
+	-- (level 3's second weapon is its own part since 2026-11-27, "Skin_barrel2")
+	return look and (index == 2 and look:FindFirstChild("Skin_barrel2") or look:FindFirstChild("Skin_barrel"))
 end
 
 local function stateOf(p, model)
@@ -54,8 +55,9 @@ local function stateOf(p, model)
 	if not st then
 		st = { home = p.CFrame, model = model, yaw = 0, yawVel = 0, goalYaw = 0, pull = 0, pullVel = 0, goalPull = 0,
 			kick = 0, kickVel = 0 }
-		-- (level 3 carries both weapons in one part: it doesn't turn, it only pulls and kicks)
-		st.turns = (model:GetAttribute("Level") or 1) < 3
+		-- (a look that carries both weapons in one part, the earlier level 3, doesn't turn: it only pulls and kicks)
+		local look = model:FindFirstChild("Look")
+		st.turns = (model:GetAttribute("Level") or 1) < 3 or (look and look:FindFirstChild("Skin_barrel2") ~= nil)
 		weapons[p] = st
 	end
 	return st
@@ -65,10 +67,10 @@ end
 local function bolt(len)
 	local m = Instance.new("Model")
 	m.Name = "Bolt"
-	local shaft = part({ Size = Vector3.new(0.16, 0.16, len), Color = Color3.fromRGB(92, 62, 40) })
-	local tip = part({ Size = Vector3.new(0.3, 0.3, 0.42), Color = Color3.fromRGB(205, 205, 212), Material = Enum.Material.Metal })
-	local f1 = part({ Size = Vector3.new(0.04, 0.32, 0.4), Color = Color3.fromRGB(200, 45, 40) })
-	local f2 = part({ Size = Vector3.new(0.32, 0.04, 0.4), Color = Color3.fromRGB(200, 45, 40) })
+	local shaft = part({ Size = Vector3.new(0.32, 0.32, len), Color = Color3.fromRGB(92, 62, 40) })
+	local tip = part({ Size = Vector3.new(0.52, 0.52, 0.7), Color = Color3.fromRGB(215, 215, 222), Material = Enum.Material.Metal })
+	local f1 = part({ Size = Vector3.new(0.06, 0.6, 0.7), Color = Color3.fromRGB(210, 45, 40) })
+	local f2 = part({ Size = Vector3.new(0.6, 0.06, 0.7), Color = Color3.fromRGB(210, 45, 40) })
 	for _, p in { shaft, tip, f1, f2 } do
 		p.Parent = m
 	end
@@ -76,15 +78,40 @@ local function bolt(len)
 	m.Parent = fx
 	return m, function(cf)
 		shaft.CFrame = cf
-		tip.CFrame = cf * CFrame.new(0, 0, -len / 2 - 0.15) * CFrame.Angles(0, 0, math.pi / 4)
-		f1.CFrame = cf * CFrame.new(0, 0, len / 2 - 0.25)
+		tip.CFrame = cf * CFrame.new(0, 0, -len / 2 - 0.3) * CFrame.Angles(0, 0, math.pi / 4)
+		f1.CFrame = cf * CFrame.new(0, 0, len / 2 - 0.4)
 		f2.CFrame = f1.CFrame
 	end
 end
 
 local flights = {}
 
+-- the goblin that was hit flashes white for a moment (Codex: no impact feedback, 1/10); a tint on its own parts, not
+-- a Highlight (they crash weak phones, 6A)
+local function hitFlash(at)
+	local enemies = workspace:FindFirstChild("Enemies")
+	local best, bestD = nil, 4
+	for _, m in enemies and enemies:GetChildren() or {} do
+		if m:IsA("Model") then
+			local d = (m:GetPivot().Position - at).Magnitude
+			if d < bestD then
+				best, bestD = m, d
+			end
+		end
+	end
+	if best then
+		local parts = {}
+		for _, d in best:GetDescendants() do
+			if d:IsA("BasePart") and d.Transparency < 1 and #parts < 16 then
+				table.insert(parts, { p = d, c = d.Color })
+			end
+		end
+		table.insert(flights, { kind = "tint", parts = parts, t = 0, life = 0.14 })
+	end
+end
+
 local function spark(at)
+	hitFlash(at)
 	-- small and short (6A): a few bright chips and a quick flash, under a fifth of the shot's distance
 	local flash = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6, Position = at, Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 236, 190), Transparency = 0.2 })
@@ -99,7 +126,7 @@ end
 
 local function ballistaShot(from, model, index, aim, windUp, travel)
 	local cfg = Config.TowerShots.Ballista
-	local p = weaponOf(model)
+	local p = weaponOf(model, index)
 	if p then
 		local st = stateOf(p, model)
 		if st.turns then
@@ -133,7 +160,7 @@ local function ballistaShot(from, model, index, aim, windUp, travel)
 			start = Vector3.new(c.X + turned.X, from.Y, c.Z + turned.Z)
 		end
 		local dist = (aim - start).Magnitude
-		local m, place = bolt(math.clamp(dist * 0.06, 1.4, 2.4))
+		local m, place = bolt(math.clamp(dist * 0.08, 2.4, 3.4))   -- (2026-11-27: thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
 			arc = dist * cfg.Arc })
 	end)
@@ -174,17 +201,37 @@ RunService.RenderStepped:Connect(function(dt)
 			local ahead = f.from:Lerp(f.to, math.min(a + 0.02, 1)) + Vector3.new(0, f.arc * 4 * math.min(a + 0.02, 1) * (1 - math.min(a + 0.02, 1)), 0)
 			if (ahead - pos).Magnitude > 1e-3 then
 				f.place(CFrame.lookAt(pos, ahead))
+				-- a short faint streak behind it (the old glowing box was what read at phone size; this keeps that read)
+				if not f.streak then
+					f.streak = part({ Size = Vector3.new(0.18, 0.18, 1), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 240, 210), Transparency = 0.45 })
+				end
+				local back = f.from:Lerp(f.to, math.max(a - 0.12, 0)) + Vector3.new(0, f.arc * 4 * math.max(a - 0.12, 0) * (1 - math.max(a - 0.12, 0)), 0)
+				local len = math.max((pos - back).Magnitude, 0.2)
+				f.streak.Size = Vector3.new(0.18, 0.18, len)
+				f.streak.CFrame = CFrame.lookAt((pos + back) / 2, pos)
 			end
 			if a >= 1 then
 				spark(f.to)
 				f.m:Destroy()
+				if f.streak then
+					f.streak:Destroy()
+				end
 				table.remove(flights, i)
 			end
 		elseif f.kind == "flash" then
-			f.p.Size = Vector3.one * (0.6 + 1.6 * a)
+			f.p.Size = Vector3.one * (0.8 + 2.4 * a)
 			f.p.Transparency = 0.2 + 0.8 * a
 			if a >= 1 then
 				f.p:Destroy()
+				table.remove(flights, i)
+			end
+		elseif f.kind == "tint" then
+			for _, q in f.parts do
+				if q.p.Parent then
+					q.p.Color = q.c:Lerp(Color3.new(1, 1, 1), 0.7 * (1 - a))
+				end
+			end
+			if a >= 1 then
 				table.remove(flights, i)
 			end
 		elseif f.kind == "chip" then

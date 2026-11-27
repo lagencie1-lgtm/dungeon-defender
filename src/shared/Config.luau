@@ -547,7 +547,9 @@ Config.Towers = {
 -- by spring. Projectiles fly at Speed (studs a second) on a slight arc (Arc of the distance); the server lands the
 -- damage when the projectile arrives (wind-up + distance / Speed), so damage per second is unchanged.
 Config.TowerShots = {
-	Ballista = { WindUp = 0.14, Speed = 95, Arc = 0.05, Pull = 0.35, Kick = 0.55, TurnSpeed = 70, TurnDamp = 14 },
+	-- (step 2: Codex saw no wind-up or recoil at phone size (2/10): a longer, deeper pull and a harder kick)
+	Ballista = { WindUp = 0.2, Speed = 65,   -- (Speed 65: the bolt in flight for at least 4 frames at 20 fps)
+				 Arc = 0.05, Pull = 0.7, Kick = 1.1, TurnSpeed = 70, TurnDamp = 14 },
 }
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30

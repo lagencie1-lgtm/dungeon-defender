@@ -11,6 +11,12 @@ local player = Players.LocalPlayer
 local function mark(name)
 	print("[FILM]", DateTime.now().UnixTimestampMillis, name)
 end
+-- (2026-11-27, shot polish) each animated shot marked when the client hears it, so the shot strips centre on a shot
+Remotes.CombatFx.OnClientEvent:Connect(function(name, _, _, kind)
+	if name == "TowerShot" then
+		mark("shot " .. tostring(kind))
+	end
+end)
 local waiting = {}
 cue.OnClientEvent:Connect(function(step)
 	waiting[step] = true
@@ -524,22 +530,35 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ran
 			mark(kind .. " level " .. level)
 			task.wait(1.6)
 			runViewShots(kind, level, tower, base)
-			if level == 3 then
-				-- (2026-11-27, Lemp: the shooting animations need polish: a short close clip of each level 3 tower firing,
+			do   -- (every level since step 2)
+				-- (2026-11-27, Lemp: the shooting animations need polish: a short close clip of each tower level firing,
 				-- the "before" for that work, scripts/shot_strips.py cuts it out by these marks) the camera held at the
 				-- run camera's angle but close, a wave running so the tower has targets, about three shots
-				local enemies = workspace:FindFirstChild("Enemies")
-				if not enemies or #enemies:GetChildren() == 0 then
-					Remotes.StartWave:FireServer()
-				end
+				-- (two standing training knights beside the tower, one each side of the view, so every clip has shots)
+				local right = Vector3.new(0.8, 0, -0.6)
+				local fwd = Vector3.new(0.6, 0, 0.8)
+				ask("Targets", { base + right * 13 + fwd * 15, base - right * 12 + fwd * 18 })   -- (behind the tower from the camera, so they stay small and the shot crosses the frame)
+				task.wait(0.3)
 				local held = CFrame.lookAt(base + Vector3.new(-9.5, 8.5, -12.5), base + Vector3.new(0, 4, 0))
 				game:GetService("RunService"):BindToRenderStep("FilmShots", Enum.RenderPriority.Last.Value + 5, function()
 					workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 					workspace.CurrentCamera.CFrame = held
 				end)
-				mark("shots " .. kind .. " start")
+				-- (the HUD off for the clip: a wave banner once covered the whole shot)
+				local hid = {}
+				for _, g in player.PlayerGui:GetChildren() do
+					if g:IsA("ScreenGui") and g.Enabled then
+						g.Enabled = false
+						table.insert(hid, g)
+					end
+				end
+				mark("shots " .. kind .. " " .. level .. " start")
 				task.wait(5)
-				mark("shots " .. kind .. " end")
+				mark("shots " .. kind .. " " .. level .. " end")
+				for _, g in hid do
+					g.Enabled = true
+				end
+				ask("ClearTargets")
 				game:GetService("RunService"):UnbindFromRenderStep("FilmShots")
 			end
 			if level < 3 then

@@ -82,7 +82,7 @@ def place_all(objs, m):
         o.matrix_world = m @ o.matrix_world
 
 
-def weapon(name, base, iron=False, scale=1.0):
+def weapon(name, base, iron=False, scale=1.0, atlas="barrel"):
     """stock, bow, string and bolt, built at the origin pointing along +Y, then turned to the aim and tilted up.
     Round 2 (coordinator 2026-11-24, "a real bow with two arms, a string and a bolt on every level"): the bow is a big
     C at the FRONT of the stock (its middle ahead of the stock's nose, both arms sweeping back to the stock's middle),
@@ -96,7 +96,7 @@ def weapon(name, base, iron=False, scale=1.0):
     # on top and the bolt lying in it, gold bands, a trigger block at the rear; small red fletching on the bolt's tail
     sw, sh = 0.12 * st, 0.11 * st
     ztop = sh / 2 + 0.04 * st          # top of the groove's rails
-    with K.atlas("barrel"):
+    with K.atlas(atlas):   # (2026-11-27: level 3's second weapon is its own part, "Skin_barrel2", so each one turns to its target)
         K.block(name + "Stock", (0, 0, 0), (sw, st, sh), WEAPON_WOOD, key=None, tile=1.2, bevel=0.04 * st)
         for e in (-1, 1):   # the groove: two rails along the top
             K.block(name + f"Rail{e}", (e * sw * 0.36, st * 0.02, sh / 2 + 0.02 * st), (sw * 0.28, st * 0.92, 0.05 * st), WEAPON_DARK, key=None, tile=1.0, bevel=0.01 * st)
@@ -248,7 +248,7 @@ else:
         for e in (-1, 1):   # the gold arched cradle each weapon sits in
             q = Vector((base.x, base.y, t2 - 0.35)) + SIDE * (e * 0.42)
             K.block(f"Cradle{s}{e}", tuple(q), (0.22, 0.9, 1.1), K.BRASS, (0, 0, A), key="brass", tile=0.6, bevel=0.1)
-        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4)))
+        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4), atlas="barrel" if s < 0 else "barrel2"))
 
 for g in LAYOUT:
     ok = (g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0

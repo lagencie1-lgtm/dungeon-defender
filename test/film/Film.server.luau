@@ -7,6 +7,7 @@ local GameService = require(Server.GameService)
 local TowerService = require(Server.TowerService)
 local DataService = require(Server.DataService)
 local State = require(Server.State)
+local EnemyService = require(Server.EnemyService)
 local Config = require(ReplicatedStorage.Shared.Config)
 local cue = ReplicatedStorage.FilmCue
 
@@ -26,6 +27,7 @@ local function profile()
 end
 profile()
 
+local filmTargets = {}
 cue.OnServerEvent:Connect(function(sender, step, arg)
 	if sender ~= player then
 		return
@@ -46,6 +48,20 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 				p.Owned.Towers[kind] = true
 			end
 		end
+	elseif step == "Targets" then
+		-- (2026-11-27, shot clips) standing targets beside the tower so every level's clip has shots: two training
+		-- knights at arg (a list of positions), cleared by "ClearTargets"
+		filmTargets = filmTargets or {}
+		for _, pos in arg do
+			table.insert(filmTargets, EnemyService.SpawnDummy(pos, Vector3.new(0, 0, 1)))
+		end
+	elseif step == "ClearTargets" then
+		for _, e in filmTargets or {} do
+			if not e.dead then
+				EnemyService.Damage(e, 1e6)
+			end
+		end
+		filmTargets = {}
 	elseif step == "Defenders" then
 		-- a few defenders along the path, near the hero, for the wave shot
 		local pts = Config.Path

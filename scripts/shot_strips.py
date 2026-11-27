@@ -18,18 +18,24 @@ def main():
     from film_screen import screen_box
     import numpy as np
     ff = next(os.path.join(dp, f) for dp, _, fs in os.walk(os.path.join(ROOT, "tools", "ffmpeg")) for f in fs if f == "ffmpeg.exe")
-    marks = {}
+    marks, shots = {}, {}
     for ln in open(film + ".marks.txt", encoding="utf-8"):
         t, _, name = ln.strip().partition("\t")
         if name.startswith("shots "):
             marks[name] = float(t)
+        elif name.startswith("shot "):   # (an animated shot heard by the client)
+            shots.setdefault(name[5:], []).append(float(t))
     out = os.path.join(ROOT, "reviews", "towers", "shots")
     os.makedirs(out, exist_ok=True)
+    jobs = []
     for kind, short in NAMES.items():
-        a, b = marks.get(f"shots {kind} start"), marks.get(f"shots {kind} end")
-        if a is None or b is None:
-            print("no shots for", kind)
-            continue
+        for lv in (1, 2, 3):
+            a, b = marks.get(f"shots {kind} {lv} start"), marks.get(f"shots {kind} {lv} end")
+            if a is None and lv == 3:   # (films before 2026-11-27 step 2 marked level 3 only)
+                a, b = marks.get(f"shots {kind} start"), marks.get(f"shots {kind} end")
+            if a is not None and b is not None:
+                jobs.append((kind, short, lv, a, b))
+    for kind, short, lv, a, b in jobs:
         tmp = os.path.join(out, "_f.png")
         subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{a + 0.5:.2f}", "-i", film + ".mp4", "-frames:v", "1", tmp])
         with Image.open(tmp) as f:
@@ -37,18 +43,21 @@ def main():
         # (the tower stands in the middle of the phone screen: the strip and clip keep its middle, without the HUD)
         bx0, by0, bx1, by1 = box
         w, h = bx1 - bx0, by1 - by0
-        box = (bx0 + int(w * 0.28), by0 + int(h * 0.12), bx0 + int(w * 0.72), by0 + int(h * 0.82))
+        box = (bx0 + int(w * 0.16), by0 + int(h * 0.1), bx0 + int(w * 0.84), by0 + int(h * 0.86))   # (wide enough for the shot's path)
         x0, y0, x1, y1 = box
         crop = f"crop={(x1 - x0) // 2 * 2}:{(y1 - y0) // 2 * 2}:{x0}:{y0}"
-        clip = os.path.join(out, f"{short}_l3.mp4")
+        clip = os.path.join(out, f"{short}_l{lv}.mp4")
         subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{a:.2f}", "-to", f"{b:.2f}", "-i", film + ".mp4", "-vf", crop,
                         "-c:v", "libx264", "-crf", "24", "-preset", "veryfast", "-an", clip])
         if os.path.getsize(clip) > 5 * 1024 * 1024:
             os.remove(clip)
         frames = []
-        mid = (a + b) / 2
+        # (centred on the first animated shot in the clip when the client marked one: from 0.3 s before it to 1.0 s
+        # after, the wind-up, the release, the flight and the hit; else the clip's middle 2 s)
+        first = next((x for x in shots.get(kind, []) if a <= x <= b - 0.5), None)
+        t0, span = (first - 0.3, 1.3) if first is not None else ((a + b) / 2 - 1.0, 2.0)
         for i in range(12):
-            t = mid - 1.0 + 2.0 * i / 11
+            t = t0 + span * i / 11
             subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", film + ".mp4", "-frames:v", "1", tmp])
             with Image.open(tmp) as f:
                 frames.append(f.convert("RGB").crop(box).resize((300, int(300 * (y1 - y0) / (x1 - x0)))))
@@ -56,9 +65,9 @@ def main():
         strip = Image.new("RGB", (w * 6, h * 2))
         for i, fr in enumerate(frames):
             strip.paste(fr, ((i % 6) * w, (i // 6) * h))
-        strip.save(os.path.join(out, f"{short}_l3_strip.png"))
+        strip.save(os.path.join(out, f"{short}_l{lv}_strip.png"))
         os.remove(tmp)
-        print("shots", short, "clip" if os.path.exists(clip) else "(clip over 5 MB, strip only)")
+        print("shots", short, lv, "clip" if os.path.exists(clip) else "(clip over 5 MB, strip only)")
 
 
 if __name__ == "__main__":

@@ -56,10 +56,11 @@ cue.OnServerEvent:Connect(function(sender, step, arg)
 			table.insert(filmTargets, EnemyService.SpawnDummy(pos, Vector3.new(0, 0, 1)))
 		end
 	elseif step == "ClearTargets" then
+		-- (training knights don't die from damage (they stand back up): marked dead, so the enemy loop removes them;
+		-- left standing they crept into the next towers' outline shots, film ar1b)
 		for _, e in filmTargets or {} do
-			if not e.dead then
-				EnemyService.Damage(e, 1e6)
-			end
+			e.health = 0
+			e.dead = true
 		end
 		filmTargets = {}
 	elseif step == "Defenders" then

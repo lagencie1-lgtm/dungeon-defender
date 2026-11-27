@@ -85,7 +85,15 @@ def main():
             centre = best[1]
         if box is None:
             box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
-        masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])
+        # (2026-11-27: the portal's pink glow at the top of the screen passed as outline on some takes and the
+        # tower seemed to touch the screen's edge: only the largest outline blob counts, the tower's)
+        mk = magenta(img[box[1]:box[3], box[0]:box[2]])
+        import cv2
+        n_, lab, st_, _ = cv2.connectedComponentsWithStats(mk.astype(np.uint8), 8)
+        if n_ > 2:
+            big = 1 + int(np.argmax(st_[1:, cv2.CC_STAT_AREA]))
+            mk = lab == big
+        masks[(parts[1], int(parts[2]))] = mk
         # (2026-11-27: the outline saved too, for measurements on the phone pictures, scripts/phone_measure.py)
         Image.fromarray(masks[(parts[1], int(parts[2]))].astype(np.uint8) * 255).save(os.path.join(out, f"{parts[1]}_l{parts[2]}_mask.png"))
         drift[(parts[1], int(parts[2]))] = best[1]

@@ -15,10 +15,17 @@ fx.Name = "LocalCombatEffects"
 fx.Parent = workspace
 
 -- a damped spring step (stiffness k, damping c) toward `goal`
+-- (in small steps: at the film's 20 fps the stiff draw spring (k 520, c 44) took steps of c * dt > 2, blew up and
+-- threw the Frost level 3 crystals off screen, film r4b0; stepped at 1/120 s it is stable at any frame rate)
 local function spring(x, v, goal, k, c, dt)
-	local a = (goal - x) * k - v * c
-	v += a * dt
-	return x + v * dt, v
+	local n = math.max(1, math.ceil(dt * 120))
+	local h = dt / n
+	for _ = 1, n do
+		local a = (goal - x) * k - v * c
+		v += a * h
+		x += v * h
+	end
+	return x, v
 end
 
 local function angleDiff(a, b)
@@ -86,7 +93,8 @@ local function bolt(len, k, fletch, shaftColor)
 	-- (round 3: a light glow round the projectile itself, so it separates from the ground and the tower)
 	-- (arrows only: on the Ballista bolt it lost the blind judge)
 	local glow = part({ Size = Vector3.new(0.42 * k + 0.3, 0.42 * k + 0.3, len + 0.4), Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(255, 248, 225), Transparency = (fletch.G > fletch.R) and 0.7 or 1 })   -- (arrows only)
+		Color = (fletch.G > fletch.R) and Color3.fromRGB(200, 255, 120) or Color3.fromRGB(255, 248, 225),
+		Transparency = (fletch.G > fletch.R) and 0.45 or 1 })   -- (arrows only; round 4b: a bright lime rim, the arrow still didn't read)
 	glow.Parent = m
 	m.PrimaryPart = shaft
 	m.Parent = fx
@@ -265,7 +273,7 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
 			-- (round 3: a thin bright trail half the flight long; the 6A fifth limits an effect's width, not its length)
 			-- (the Ballista keeps round 2's trail: the long thin one lost its blind judge there)
-			trail = kind == "Ranger" and 0.5 or 0.3, trailW = kind == "Ranger" and 0.12 or 0.26, trailT = kind == "Ranger" and 0.15 or 0.25,
+			trail = kind == "Ranger" and 0.5 or 0.3, trailW = kind == "Ranger" and 0.16 or 0.26, trailT = kind == "Ranger" and 0.1 or 0.25, trailC = kind == "Ranger" and Color3.fromRGB(215, 255, 150) or nil,
 			arc = dist * cfg.Arc })
 	end)
 end
@@ -307,7 +315,7 @@ RunService.RenderStepped:Connect(function(dt)
 				f.place(CFrame.lookAt(pos, ahead))
 				-- a short faint streak behind it (the old glowing box was what read at phone size; this keeps that read)
 				if not f.streak then
-					f.streak = part({ Size = Vector3.new(f.trailW, f.trailW, 1), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 244, 220), Transparency = f.trailT })
+					f.streak = part({ Size = Vector3.new(f.trailW, f.trailW, 1), Material = Enum.Material.Neon, Color = f.trailC or Color3.fromRGB(255, 244, 220), Transparency = f.trailT })
 				end
 				local b_ = math.max(a - (f.trail or 0.3), 0)   -- (a trail a third of the flight long: the benchmark's run 50-100 %, kept shorter for 6A)
 				local back = f.from:Lerp(f.to, b_) + Vector3.new(0, f.arc * 4 * b_ * (1 - b_), 0)

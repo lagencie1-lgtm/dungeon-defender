@@ -35,3 +35,10 @@ not solved.
 
 See shared_problems.md: an edge-preserving pass over every painted sheet tied on all 15 levels. The busy look comes from
 the many small parts and the lighting, so a fix has to cut or merge parts.
+
+## Busy-detail declutter retried with the colour grade (2026-11-27)
+
+Ballista level 2, Storm levels 1-2 and Flame level 3 had lost (or, Flame 3, failed the yellow gate) when decluttered;
+retried with the class colour grade the first rounds used and, on Flame 3, darker gold. Blind Codex: Ballista 2 4 = 4,
+Storm 1 5 = 5 (after marginally preferred), Storm 2 6 = 6, Flame 3 3 vs 4 (before preferred); Ballista 2 also came out
+16.3 % bright yellow. None kept: the levels stay as they were.

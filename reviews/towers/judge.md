@@ -1335,3 +1335,79 @@ A’s three biggest remaining flaws:
 2. **The bastion feels narrow and skeletal.** Widen the stone body and give it a solid, tapered silhouette with larger, simpler blocks.
 3. **The banners barely read.** Add one broad red banner to the front, with a thick gold border and a simple central emblem.
 
+## the Ballista, level 2: a big crossbow on a trestle on a raised timber platform, with a gold gear
+codex gpt-6.1-terra; A = before, B = after
+
+**A edges out B**, though the difference is very small at this screenshot size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 4/10 | 4/10 |
+| Whole tower visible and well framed | 6/10 | 6/10 |
+| Shape and proportions true to the painting | 3/10 | 3/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+A’s weapon is marginally easier to pick out above the platform. In both, the tower reads more as a glowing wooden box with machinery on top than as a crossbow on a trestle.
+
+The three biggest flaws in A:
+
+1. **The crossbow silhouette is lost.** Make the two bow limbs wider and more distinct, with a clearly visible bolt running between them.
+2. **The trestle is buried in the platform.** Expose and enlarge the angled support legs; reduce the solid box-like mass around them.
+3. **The gold gear doesn’t read as a gear.** Enlarge it on the camera-facing side and give it a dark centre and clearly separated teeth.
+
+## the Storm Obelisk, level 1: a pale rune stone with a violet lightning rune between dark wooden posts
+codex gpt-6.1-terra; A = after, B = before
+
+**A is marginally better overall**, though the two screenshots are so similar that the difference is hard to judge at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 5/10 | 5/10 |
+| Whole tower visible and well framed | 7/10 | 7/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+The tower reads as a pale stone with purple markings, but it loses much of the concept’s character. In both versions, the three biggest problems are:
+
+1. **The rune is muddy and broken up.** Make the lightning bolt one bold, continuous violet shape with a brighter edge.
+2. **The wooden posts look like small brown and gold lumps.** Raise and widen them so their dark vertical silhouettes frame the stone, with one clear gold band on each.
+3. **The stone reads as a white cone.** Give it a broader, irregular rock silhouette with a flatter top and a few large, warm beige facets. Reduce the glare so those planes stay visible.
+
+## the Storm Obelisk, level 2: a violet stone obelisk on a pale stone base with dark wooden posts and gold trim
+codex gpt-6.1-terra; A = after, B = before
+
+**A and B are effectively tied.** At phone size, I can’t see a meaningful difference in the tower itself; the lightning effect is the obvious change.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 6/10 | 6/10 |
+| Whole tower visible and well framed | 7/10 | 7/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**B wins narrowly overall:** its jagged lightning better communicates a storm attack without materially changing the tower’s readability.
+
+The three biggest flaws in B:
+
+1. **The top is a glowing blob.** The concept’s copper rod, ball and forked prongs give it a distinctive silhouette. Reduce the attack glow and make those shapes thicker and more separated.
+2. **The base reads as a thin ring around a narrow cage.** The painting has a broad, solid stone foundation and substantial timber posts. Widen the base, fill in the pale stone walls and thicken the dark posts.
+3. **The obelisk looks like a flat purple slab.** The concept has a tapered, faceted stone body with chunky gold edging. Strengthen the taper, add a clearly lit side face and make the lower gold trim broader and more angular.
+
+## the Flame Cannon, level 3: twin bronze cannons on a tall banded wooden drum with glowing windows
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 3/10 | 4/10 |
+| Whole tower visible and well framed | 3/10 | 3/10 |
+| Shape and proportions | 3/10 | 4/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+**B is slightly better overall.** Its upper structure reads more clearly, though neither version convincingly resembles the concept at phone size.
+
+B’s three biggest flaws:
+
+1. **The twin cannons are almost impossible to identify.** The visible red circle reads more like a glowing ornament than a barrel. Make both barrels thicker, separate their silhouettes, and give each a dark bronze rim around a bright muzzle.
+2. **The tower’s upper half is lost against the tree.** Shift the tower or camera framing so the cannons and chimney sit against clear background.
+3. **The drum looks squat and muddled.** Make the wooden body taller, simplify the gold bands into distinct broad rings, and enlarge the glowing window groups so they remain legible on a phone.
+

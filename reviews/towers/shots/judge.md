@@ -236,3 +236,17 @@ codex gpt-6.1-terra; A = before, B = after
 **B is better overall.** Its bright streak and damage number at least connect a shot to a target. Both weapons look almost static.
 
 **Most important fix:** Give the bolt a thick, readable silhouette and a clear flight path from the crossbow to the target.
+
+## Ranger level 3 shot, round 4b lime rim + green trail (r4c vs r4a)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 3/10 | 4/10 |
+| Projectile looks like an arrow | 2/10 | 2/10 |
+| Weapon anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 3/10 | 3/10 |
+
+**B is slightly better overall:** its bright shot effect is easier to notice, but neither version clearly reads as an archer firing. The strips show little discernible bow movement, and the impact is hard to distinguish from the shot effect.
+
+**Most important fix:** make a single arrow visibly travel from the bow to the target, with a clear silhouette and direction.

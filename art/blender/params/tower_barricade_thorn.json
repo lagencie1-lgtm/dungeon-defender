@@ -29,5 +29,7 @@
  "stake_lean": 0.595,
  "front_tilt": 41.2,
  "rail_h": 0.97,
- "stake_out": 0.15
+ "stake_out": 0.15,
+ "smooth": 2.0,
+ "rings": 1
 }

@@ -87,7 +87,7 @@ CROWN_DARK = (1.4, 1.5, 1.2)    # leaves.png -> the shaded inside of a tuft
 
 BASE = dict(length=10.4, log_r=0.62, logs=4, wing_logs=3, big_r=0.7, big_x=2.05, wing_r=0.5, wing_x=4.35, shield=1.3,
             post_up=0.4, overhang=0.75, single=1, post_fwd=0.25, tip=1.92,
-            shield_h=0.5, band_lo=0.2, step=1.66, lift=0.0, pair_y=1.0)
+            shield_h=0.5, band_lo=0.2, step=1.66, lift=0.0, pair_y=1.0, smooth=1.0, rings=0)
 DEFAULTS = {
     # length: logs end to end across the road (10 studs wide); logs/wing_logs: stacked in the centre and the wings;
     # big_*: the centre post pairs (radius, x; their points start 0.4 above the top log); wing_*: the small post
@@ -103,7 +103,7 @@ DEFAULTS = {
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
                   stake_lean=-0.3, front_tilt=38, rail_h=1.3, stake_out=0.3),
     "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0, pour_in=0.4, wind_drop=0.0, trunk_in=0.55, trunk=0.0, tuft_r=0.42,
-                 leaves=18, wind_turns=1.0),
+                 leaves=18, wind_turns=1.0, clear_shield=0, claw=1.0),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -251,8 +251,10 @@ def log(name, z, x0, x1, r, seed):
     for p, q, rr, s in ((pts[0], pts[1], radii[0], 0), (pts[-1], pts[-2], radii[-1], 1)):
         d = (p - q).normalized()
         # (a cap wider than the log showed as a pale crescent round the far end, seen past the log: round 6)
-        K.limb(f"{name}Cut{s}", p - d * 0.08, p + d * 0.05, rr * 1.005, rr * 0.96, CUT, verts=16, end=False)
-        K.limb(f"{name}Heart{s}", p + d * 0.04, p + d * 0.065, rr * 0.5, rr * 0.42, HEART, verts=10, end=False)
+        K.limb(f"{name}Cut{s}", p - d * 0.08, p + d * 0.05, rr * 1.005, rr * 0.96, CUT, verts=int(16 * P["smooth"]), end=False)
+        K.limb(f"{name}Heart{s}", p + d * 0.04, p + d * 0.065, rr * 0.5, rr * 0.42, HEART, verts=int(10 * P["smooth"]), end=False)
+        if P["rings"]:   # (tree rings on the sawn ends, like the picture's log ends: a thin darker ring between rim and heart)
+            K.limb(f"{name}Ring{s}", p + d * 0.05, p + d * 0.058, rr * 0.76, rr * 0.7, HEART, verts=int(16 * P["smooth"]), end=False)
     for k in range(g.randint(1, 2)):
         x = x0 + g.uniform(0.12, 0.88) * length
         face = 1 if g.random() < 0.5 else -1
@@ -266,9 +268,10 @@ def post(name, x, y, h, r):
     ~0.55, so a rope coil or a band hides only the faces it covers (see the notes above)"""
     shaft = h - r * (P["tip"] - 0.02)
     n = max(2, int(math.ceil(shaft / 0.55)))
+    # (P["smooth"]: more sides on the round parts; the Thornwall's judge saw jagged post tops, rims and hoops)
     tube(name, [(x, y, shaft * k / n) for k in range(n + 1)], [r * (1 - 0.03 * k / n) for k in range(n + 1)], POST, "wood", 2.4,
-         verts=16)
-    cone_to(name + "Tip", (x, y, h - r * P["tip"]), (x, y, h), r * 1.0, TIP, verts=8, facets=True)
+         verts=int(16 * P["smooth"]))
+    cone_to(name + "Tip", (x, y, h - r * P["tip"]), (x, y, h), r * 1.0, TIP, verts=int(8 * P["smooth"]), facets=True)
 
 
 def rope(name, x, y, z, r, thick=0.14, turns=2):
@@ -289,7 +292,7 @@ def rope(name, x, y, z, r, thick=0.14, turns=2):
 
 def iron_band(name, x, y, z, r, all_round=False):
     band = K.lathe(name, [(r + 0.05, z - 0.16), (r + 0.1, z - 0.11), (r + 0.1, z + 0.11), (r + 0.05, z + 0.16)], IRON_T, key="iron",
-                   verts=24, cap=False)
+                   verts=int(24 * P["smooth"]), cap=False)
     moved(band, (x, y, 0))
     for k in range(6 if all_round else 3):    # rivets on the outer half only (the inner half sits against the logs)
         a = rad(k * 60 + 30) if all_round else rad((k - 1) * 60 + 90 * (1 if y > 0 else -1))
@@ -300,9 +303,9 @@ def shield(name, z, facing, rr):
     """the centrepiece: a big solid round shield filling the centre bay, a thick disc of planks, a raised brass rim with
     studs and a brass boss on a brass plate"""
     y0, y1 = R * 0.78, R * 0.78 + 0.26
-    disc_y(name, y0, y1, z, rr, rr, facing, SHIELD, key="wood", tile=2.8, verts=32)["htd_keep"] = True
+    disc_y(name, y0, y1, z, rr, rr, facing, SHIELD, key="wood", tile=2.8, verts=int(32 * P["smooth"]))["htd_keep"] = True
     rim = K.lathe(name + "Rim", [(rr - 0.12, y0 + 0.02), (rr + 0.08, y0 + 0.02), (rr + 0.1, y1 + 0.07), (rr - 0.02, y1 + 0.12),
-                                 (rr - 0.15, y1 + 0.03)], RIM, verts=32, cap=False)
+                                 (rr - 0.15, y1 + 0.03)], RIM, verts=int(32 * P["smooth"]), cap=False)
     moved(rim, (0, 0, z), FACE_Y[facing])
     for k in range(14):
         a = 2 * math.pi * (k + 0.5) / 14
@@ -403,7 +406,8 @@ if stage == "thorn":
     (rail if rail is not None else bpy.data.objects["Rail"])["htd_keep"] = True
     front_y = 0.0
 
-    def stake(name, base, d, ln, r0, verts=10):
+    def stake(name, base, d, ln, r0, verts=None):
+        verts = verts or int(10 * P["smooth"])
         K.limb(name, base, base + d * (ln * 0.52), r0, r0 * 0.95, STAKE, verts=verts, end=False, key="wood", tile=2.4)
         K.limb(name + "Red", base + d * (ln * 0.515), base + d * (ln * 0.8), r0 * 0.96, r0 * 0.58, RED, verts=verts, end=False)
         cone_to(name + "Point", base + d * (ln * 0.795), base + d * ln, r0 * 0.59, CHAR, verts=verts)
@@ -478,7 +482,7 @@ if stage == "root":
             ln = rnd.uniform(0.8, 1.2) * P["fork_len"]   # (the post roots' forks: short; the fan in the middle is the big one)
             tip = fork + Vector((math.sin(a) * ln, s * math.cos(a) * ln, -0.12))
             bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
-            tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.46, r0 * 0.28, r0 * 0.03], ROOT_T, "bark", 1.6, verts=8)
+            tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.46 * P["claw"], r0 * 0.28 * P["claw"], r0 * 0.03], ROOT_T, "bark", 1.6, verts=8)
 
     def root(name, x0, s, phase, top, r0=0.5, w=0.14):
         pts = [(x0, -s * 0.2, top + 0.06), (x0 + w * 0.3, s * R * 0.5, top + 0.16), (x0 + w * 0.5, s * (R + 0.22), top - 0.45)]
@@ -525,19 +529,25 @@ if stage == "root":
             low = max(0.5, shield_low)   # (straight down beside the shield, then in toward the middle below it)
             # (Rootwall round 16, the judge: "the roots under the shield split into side legs" -> they meet in one
             # trunk under it, like the picture)
-            pts.append((x0 * (1.0 if z > low else P["trunk_in"] + (1 - P["trunk_in"]) * z / low) + g.uniform(-0.08, 0.08), y_face, z))
+            x = x0 * (1.0 if z > low else P["trunk_in"] + (1 - P["trunk_in"]) * z / low) + g.uniform(-0.08, 0.08)
+            y = y_face
+            # (Gemini, Rootwall round 24, all three runs: "roots reach across the front of the shield". Where a root
+            # would cross the shield it runs behind it, so the whole shield face stays clear like the picture)
+            if P["shield"] > 0 and P["clear_shield"] and abs(x) < P["shield"] + r0 * 0.9 and abs(z - shield_z) < P["shield"] + r0 * 0.6:
+                y = s * (R * 0.78 - r0 * 0.75)
+            pts.append((x, y, z))
             radii.append(r0 * (0.95 + 0.05 * g.random()))
         # the foot: out toward the viewer and in toward the middle, then the fan
         t = (k + 0.5) / n - 0.5                       # -0.5 .. 0.5 across the fan
         foot = Vector((x0 * P["trunk_in"] * 0.6, s * (R + 0.9), 0.3))
         end = Vector((t * 2 * P["fan"], s * (R + P["reach"] * 0.9), 0.06))
         pts += [tuple(foot), tuple(foot.lerp(end, 0.55) + Vector((0, 0, 0.05))), tuple(end)]
-        radii += [r0 * 0.85, r0 * 0.5, r0 * 0.05]   # (fine root ends: the judge saw blunt, coarse ones)
+        radii += [r0 * 0.85, r0 * 0.5 * P["claw"], r0 * 0.05]   # (fine root ends: the judge saw blunt, coarse ones)
         tube(name, pts, radii, ROOT_T, "bark", 1.6, verts=12)
         for f, side in enumerate((-1, 1)):            # two short forks off the fan's end
             a = Vector(pts[-2])
             tip = a + Vector((side * g.uniform(0.6, 1.0), s * g.uniform(0.4, 0.8), -0.1))
-            tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.36, r0 * 0.2, r0 * 0.025], ROOT_T,
+            tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.36 * P["claw"], r0 * 0.2 * P["claw"], r0 * 0.025], ROOT_T,
                  "bark", 1.6, verts=8)
 
     shield_low = (zs[0] + (zs[-1] - zs[0]) * P["shield_h"] - P["shield"] - 0.2) if P["shield"] > 0 else top_c * 0.4
@@ -547,6 +557,9 @@ if stage == "root":
         inner = min(P["shield"] + 0.25, BX - BR - 0.5)
         # (Rootwall round 3: along the inner edge of the big posts, so the whole shield shows between them)
         outer = max(BX - BR * P["pour_in"], P["shield"] + P["root_r"] * 0.85 + 0.1)
+        if P["clear_shield"]:   # (the bay between shield and posts is too narrow: the roots come down over the posts)
+            inner = P["shield"] + P["root_r"] * 0.9 + 0.1
+            outer = max(outer, inner + 0.2)
         for k in range(n):
             side = -1 if k < n / 2 else 1
             j = k if side < 0 else n - 1 - k
@@ -557,7 +570,8 @@ if stage == "root":
         for s, tag in ((1, "F"), (-1, "B")):
             tr = P["root_r"] * P["trunk"]
             y_face = s * (R + tr * 0.55)
-            tube(f"Trunk{tag}", [(0.0, s * R * 0.7, max(0.9, shield_low - 0.15)), (0.0, y_face, max(0.8, shield_low - 0.45)),
+            top = shield_z - P["shield"] - tr * 0.7 if P["clear_shield"] else shield_low   # (below the rim: the shield stays clear)
+            tube(f"Trunk{tag}", [(0.0, s * R * 0.7, max(0.9, top - 0.15)), (0.0, y_face, max(0.8, top - 0.45)),
                                  (0.0, s * (R + tr * 0.8), 0.5), (0.0, s * (R + tr * 1.5), 0.16)],
                  [tr * 0.8, tr, tr * 1.15, tr * 1.25], ROOT_T, "bark", 1.6, verts=14)
 

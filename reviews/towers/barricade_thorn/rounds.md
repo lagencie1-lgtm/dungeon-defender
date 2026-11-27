@@ -51,3 +51,24 @@ From round 5 on, the Thornwall is scored against art/ref3d/tower_barricade_thorn
 - round 16: round 15 graded once from the projection with sharpening 75
   IoU 94.1%  width profile off 8.7%  region colour dE 5.4  (pixel dE 43.6)  detail 19.4% vs picture 22.5% (ratio 0.86)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 0 (L 45/45)  lookout 2 (L 40/39)  wall 2 (L 30/30)  footing 11 (L 32/35)
+- round 17: twice the sides on posts, tips, hoops, shield rim, stakes and log ends; tree rings on the sawn ends; round 16's paintings re-projected; sharpening 75 once
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.5  (pixel dE 43.0)  detail 18.5% vs picture 22.5% (ratio 0.82)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 0 (L 45/45)  lookout 2 (L 40/39)  wall 2 (L 30/30)  footing 11 (L 32/36)
+- round 18: round 17 graded once with sharpening 95
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.5  (pixel dE 43.9)  detail 19.5% vs picture 22.5% (ratio 0.87)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 4 (L 40/38)  wall 2 (L 30/30)  footing 10 (L 32/34)
+- round 19: round 18 with the red stake tips softened (blur 2.5 on the red texels: a smooth gradient like the picture)
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.6  (pixel dE 37.7)  detail 8.3% vs picture 22.5% (ratio 0.37)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 5 (L 40/36)  wall 2 (L 30/29)  footing 8 (L 32/34)
+- round 19: round 18 with only the saturated red stake tips softened (blur 2.5): a smooth gradient like the picture
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.5  (pixel dE 38.1)  detail 9.2% vs picture 22.5% (ratio 0.41)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 2 (L 45/44)  lookout 5 (L 40/37)  wall 2 (L 30/29)  footing 8 (L 32/34)
+- round 19: round 18 with only the saturated red stake tips softened (blur 2.5): a smooth gradient like the picture
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.5  (pixel dE 38.2)  detail 9.3% vs picture 22.5% (ratio 0.41)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 5 (L 40/37)  wall 2 (L 30/29)  footing 7 (L 32/34)
+- round 20: round 18 with the red stake tips softened lightly (blur 1.0)
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.7  (pixel dE 40.5)  detail 10.9% vs picture 22.5% (ratio 0.48)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 1 (L 45/44)  lookout 4 (L 40/37)  wall 2 (L 30/29)  footing 10 (L 32/35)
+- round 21: check: round 18's paint unchanged, scored again
+  IoU 94.1%  width profile off 9.0%  region colour dE 5.5  (pixel dE 43.8)  detail 19.4% vs picture 22.5% (ratio 0.86)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 0 (L 45/45)  lookout 4 (L 40/38)  wall 2 (L 30/30)  footing 11 (L 32/36)

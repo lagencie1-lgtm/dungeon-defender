@@ -763,7 +763,7 @@ local function shoot(t, now, model)
 				if archer and archer.Parent then
 					archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
 				end
-				local travel = (hitAt - from).Magnitude / shot.Speed
+				local travel = math.max((hitAt - from).Magnitude / shot.Speed, shot.MinFlight or 0)   -- (round 4: at least 0.22 s on screen)
 				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ranger", i, hitAt, shot.WindUp, travel)
 				task.delay(shot.WindUp + travel, function()
 					-- (an arrow lands only on a goblin still near the tower's reach: one that ran on while it flew is
@@ -877,7 +877,7 @@ local function shoot(t, now, model)
 		for i, from in muzzles do
 			task.delay((i - 1) * 0.25, function()
 				local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-				local travel = (aim - from).Magnitude / shot.Speed
+				local travel = math.max((aim - from).Magnitude / shot.Speed, shot.MinFlight or 0)
 				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ballista", i, aim, shot.WindUp, travel)
 				task.delay(shot.WindUp + travel, function()
 					local flat = Vector3.new(target.position.X - t.position.X, 0, target.position.Z - t.position.Z)

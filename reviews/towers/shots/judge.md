@@ -194,3 +194,45 @@ codex gpt-6.1-terra; A = before, B = after
 **B wins narrowly.** The speech bubble in A adds clutter, but neither strip clearly sells a shot: I can’t confidently follow an arrow from archer to target, and the firing poses barely register.
 
 **Most important fix:** Give the arrow a bold, contrasting silhouette and a clear flight path from bow to target.
+
+## ranger level 3 shot, round 4 oversized projectile (run camera, r4a vs r4b0)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 2/10 |
+| Projectile looks like an arrow | 2/10 | 2/10 |
+| Anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 4/10 | 4/10 |
+
+**A is marginally better overall:** the shots look almost identical, but B’s extra water sparkle adds a little visual noise. The impact flash registers; the archers and arrow do not read clearly.
+
+**Most important fix:** Make the arrow’s path unmistakable with a high-contrast, directionally clear streak from the archer to the target.
+
+## ballista level 1 shot, round 4 oversized projectile (run camera, r4a vs r4b0)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 3/10 | 2/10 |
+| Projectile looks like a ballista bolt | 3/10 | 2/10 |
+| Anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 4/10 | 1/10 |
+
+**A is better overall:** the damage number gives the shot an outcome, though the bolt and weapon motion are still hard to read.
+
+**Most important fix:** Make the bolt larger and more distinct, with a brief, clear trail from the ballista to the target.
+
+## ballista level 3 shot, round 4 oversized projectile (run camera, r4a vs r4b0)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 5/10 |
+| Projectile looks like a ballista bolt | 2/10 | 4/10 |
+| Anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 1/10 | 5/10 |
+
+**B is better overall.** Its bright streak and damage number at least connect a shot to a target. Both weapons look almost static.
+
+**Most important fix:** Give the bolt a thick, readable silhouette and a clear flight path from the crossbow to the target.

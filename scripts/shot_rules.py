@@ -48,8 +48,8 @@ def main():
         p = name.split()
         if len(p) == 4 and p[0] == "shot":
             seen.setdefault(p[1], []).append((float(p[2]), float(p[3])))
-    rows = ["| tower | shots | wind-up s | settle s | flight frames at 60 fps (min) | damage on arrival | widest effect / shot distance | verdict |",
-            "|---|---|---|---|---|---|---|---|"]
+    rows = ["| tower | shots | wind-up s | settle s | flight frames at 60 fps (min) | damage on arrival | widest effect / shot distance | projectile px at 720p (run camera) | verdict |",
+            "|---|---|---|---|---|---|---|---|---|"]
     for kind, shots in sorted(seen.items()):
         c = cfg.get(kind, {})
         w = sorted(x[0] for x in shots)
@@ -63,10 +63,13 @@ def main():
         if eff == "fifth" and dist:   # (TowerLife grows the spark to 0.8 + clamp(d / 5 - 0.8, 0.6, 2.4))
             eff = 0.8 + max(0.6, min(dist / 5 - 0.8, 2.4))
         ratio = eff / dist if eff and dist else None
-        ok = (0.08 <= w[0] and w[-1] <= 0.2) and st <= 0.4 and (frames is None or frames >= 4) and (ratio is None or ratio <= 0.2)
-        rows.append("| %s | %d | %.2f-%.2f | %.2f | %s | yes (wind-up + travel on both sides) | %s | %s |" % (
+        # (round 4: the arrow and the bolt at least 12 px long on a 720p phone frame at the run camera: 20.5 studs, 70 deg)
+        LEN = {"Ranger": 3.8, "Ballista": 3.6}
+        px = LEN[kind] * 720 / (2 * 20.5 * 0.7002) if kind in LEN else None
+        ok = (0.08 <= w[0] and w[-1] <= 0.2) and st <= 0.4 and (frames is None or frames >= 4) and (ratio is None or ratio <= 0.2) and (px is None or px >= 12)
+        rows.append("| %s | %d | %.2f-%.2f | %.2f | %s | yes (wind-up + travel on both sides) | %s | %s | %s |" % (
             kind, len(shots), w[0], w[-1], st, "%.0f" % frames if frames is not None else "n/a (strikes at once / wave)",
-            "%.2f (%.1f of %.1f studs)" % (ratio, eff, dist) if ratio else "n/a", "PASS" if ok else "FAIL"))
+            "%.2f (%.1f of %.1f studs)" % (ratio, eff, dist) if ratio else "n/a", "%.0f" % px if px else "n/a", "PASS" if ok else "FAIL"))
     txt = "\n".join(rows)
     print(txt)
     if len(sys.argv) > 2:

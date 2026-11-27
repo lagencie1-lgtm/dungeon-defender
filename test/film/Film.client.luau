@@ -540,7 +540,11 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ran
 				local fwd = Vector3.new(0.6, 0, 0.8)
 				ask("Targets", { base + right * 13 + fwd * 15, base - right * 12 + fwd * 18 })   -- (behind the tower from the camera, so they stay small and the shot crosses the frame)
 				task.wait(0.3)
-				local held = CFrame.lookAt(base + Vector3.new(-9.5, 8.5, -12.5), base + Vector3.new(0, 4, 0))
+				-- (round 4: the run camera itself, as Lemp chose it: the shot as a player sees it)
+				local rcam = Config.RunCamera
+				local lookDir = Vector3.new(0.6, 0, 0.8).Unit
+				local aimAt = base + Vector3.new(0, rcam.AimHeight, 0)
+				local held = CFrame.lookAt(aimAt - lookDir * rcam.Distance * math.cos(math.rad(rcam.Pitch)) + Vector3.new(0, rcam.Distance * math.sin(math.rad(rcam.Pitch)), 0), aimAt)
 				game:GetService("RunService"):BindToRenderStep("FilmShots", Enum.RenderPriority.Last.Value + 5, function()
 					workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 					workspace.CurrentCamera.CFrame = held

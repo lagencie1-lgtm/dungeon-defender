@@ -70,13 +70,14 @@ local function stateOf(p, model, kind)
 end
 
 -- a ballista bolt: dark shaft, iron tip, red fletching (about the size the weapon's own bolt is drawn)
-local function bolt(len, k, fletch)
+local function bolt(len, k, fletch, shaftColor)
 	k = k or 1
-	fletch = fletch or Color3.fromRGB(210, 45, 40)
+	fletch = fletch or Color3.fromRGB(230, 40, 35)
+	shaftColor = shaftColor or Color3.fromRGB(70, 46, 30)
 	local m = Instance.new("Model")
 	m.Name = "Bolt"
-	local shaft = part({ Size = Vector3.new(0.42 * k, 0.42 * k, len), Color = Color3.fromRGB(70, 46, 30) })
-	local tip = part({ Size = Vector3.new(0.68 * k, 0.68 * k, 0.85 * k), Color = Color3.fromRGB(235, 235, 240), Material = Enum.Material.Metal })
+	local shaft = part({ Size = Vector3.new(0.42 * k, 0.42 * k, len), Color = shaftColor })
+	local tip = part({ Size = Vector3.new(0.68 * k, 0.68 * k, 0.85 * k), Color = Color3.fromRGB(245, 245, 250), Material = Enum.Material.Metal })
 	local f1 = part({ Size = Vector3.new(0.08, 0.8 * k, 0.8 * k), Color = fletch })
 	local f2 = part({ Size = Vector3.new(0.8 * k, 0.08, 0.8 * k), Color = fletch })
 	for _, p in { shaft, tip, f1, f2 } do
@@ -85,7 +86,7 @@ local function bolt(len, k, fletch)
 	-- (round 3: a light glow round the projectile itself, so it separates from the ground and the tower)
 	-- (arrows only: on the Ballista bolt it lost the blind judge)
 	local glow = part({ Size = Vector3.new(0.42 * k + 0.3, 0.42 * k + 0.3, len + 0.4), Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(255, 248, 225), Transparency = k < 0.6 and 0.7 or 1 })
+		Color = Color3.fromRGB(255, 248, 225), Transparency = (fletch.G > fletch.R) and 0.7 or 1 })   -- (arrows only)
 	glow.Parent = m
 	m.PrimaryPart = shaft
 	m.Parent = fx
@@ -254,9 +255,11 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		local m, place
 		if kind == "Ranger" then   -- (an arrow: about two thirds of the bolt, green fletching)
 			-- (round 2's chunkier arrow and longer trail lost the blind judge on the Ranger: the round 1 arrow stays)
-			m, place = bolt(1.9, 0.495, Color3.fromRGB(80, 170, 70))
+			-- (round 4: drawn oversized like game projectiles: twice the length, 2.5 times thicker, a cream shaft and bright
+			-- green fletching that stand out from the map)
+			m, place = bolt(3.8, 1.24, Color3.fromRGB(95, 230, 80), Color3.fromRGB(245, 235, 205))
 		else
-			m, place = bolt(math.clamp(dist * 0.08, 2.4, 3.4))
+			m, place = bolt(math.clamp(dist * 0.12, 3.6, 5.1), 1.5)   -- (round 4: 1.5 times the bolt, bright steel tip, red fletching)
 		end
 		-- (2026-11-27: the bolt thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),

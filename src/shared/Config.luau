@@ -558,7 +558,7 @@ Config.TowerShots = {
 	Ranger = { WindUp = 0.15, Speed = 80, Arc = 0.06 },
 	-- the Frost Crystal: its crystals rise (Pull, studs) and glow on the wind-up, then drop back as the wave spreads
 	FrostCrystal = { WindUp = 0.18, Pull = 0.45, Kick = 0.5, Part = "Skin_roof", Up = true, TurnSpeed = 60, TurnDamp = 13 },
-	FlameCannon = { WindUp = 0.12, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
+	FlameCannon = { WindUp = 0.18, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
 }
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30

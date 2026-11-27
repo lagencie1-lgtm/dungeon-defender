@@ -96,3 +96,73 @@ codex gpt-6.1-terra; A = before, B = after
 **B is better overall:** its translucent wave and broken edge suggest frost more clearly. Neither shot makes the direction or target easy to read.
 
 **Most important fix:** give the wave a distinct icy leading edge that travels visibly from the crystal to the target.
+
+## ballista level 3 shot, round 2 fixes (film sh13 vs sh12)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 2/10 |
+| Projectile looks like a ballista bolt | 2/10 | 2/10 |
+| Anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 3/10 | 3/10 |
+
+**A is marginally better overall:** the damage number appears sooner, but neither shot has a clear firing motion or readable projectile.
+
+**Most important fix:** Make a large, high-contrast bolt visibly travel from the crossbow to the target.
+
+## flame level 3 shot, round 2 fixes (film sh13 vs sh12)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 5/10 | 6/10 |
+| Projectile looks like a fireball | 4/10 | 6/10 |
+| Anticipation and recoil | 4/10 | 4/10 |
+| Impact feedback | 3/10 | 3/10 |
+
+**B is better overall.** Its orange projectile reads more clearly as fire, though both shots feel weak at the target.
+
+**Most important fix:** Give the projectile a short, bright flame trail and a distinct burst on impact, so the entire shot reads on a phone.
+
+## storm level 3 shot, round 2 fixes (film sh13 vs sh12)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 8/10 | 5/10 |
+| Looks like lightning | 7/10 | 5/10 |
+| Anticipation and recoil | 3/10 | 3/10 |
+| Impact feedback | 6/10 | 4/10 |
+
+**A is better overall.** Its thick, bright bolt is much easier to follow, though it reads more like a solid beam than crackling lightning.
+
+**Most important fix:** Give the orb a clear wind-up and a sharp recoil on firing. Right now, the lightning happens, but the tower barely seems to cause it.
+
+## frost level 3 shot, round 2 fixes (film sh13 vs sh12)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 3/10 | 3/10 |
+| Projectile feels like frost | 4/10 | 4/10 |
+| Anticipation and recoil | 1/10 | 1/10 |
+| Impact feedback | 1/10 | 1/10 |
+
+**A wins by a hair:** its pale ground sweep is slightly easier to spot. Neither shot clearly connects the crystal to a target.
+
+**Most important fix:** Give the frost wave a bright, directional ice-blue leading edge that travels visibly from the crown to the target.
+
+## ranger level 3 shot, round 2 fixes (film sh13 vs sh12)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 2/10 |
+| Projectile looks like an arrow | 2/10 | 2/10 |
+| Weapon anticipation and recoil | 2/10 | 3/10 |
+| Impact feedback | 1/10 | 2/10 |
+
+**B is slightly better overall**, but neither sells a clear archer attack. The tower, archers, enemies, and effects blend together; I can’t reliably follow an arrow or identify its impact.
+
+**Most important fix:** Give each shot one high-contrast, clearly arrow-shaped projectile with a readable path from the bow to the target.

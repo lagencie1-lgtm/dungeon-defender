@@ -75,10 +75,10 @@ local function bolt(len, k, fletch)
 	fletch = fletch or Color3.fromRGB(210, 45, 40)
 	local m = Instance.new("Model")
 	m.Name = "Bolt"
-	local shaft = part({ Size = Vector3.new(0.32 * k, 0.32 * k, len), Color = Color3.fromRGB(92, 62, 40) })
-	local tip = part({ Size = Vector3.new(0.52 * k, 0.52 * k, 0.7 * k), Color = Color3.fromRGB(215, 215, 222), Material = Enum.Material.Metal })
-	local f1 = part({ Size = Vector3.new(0.06, 0.6 * k, 0.7 * k), Color = fletch })
-	local f2 = part({ Size = Vector3.new(0.6 * k, 0.06, 0.7 * k), Color = fletch })
+	local shaft = part({ Size = Vector3.new(0.42 * k, 0.42 * k, len), Color = Color3.fromRGB(70, 46, 30) })
+	local tip = part({ Size = Vector3.new(0.68 * k, 0.68 * k, 0.85 * k), Color = Color3.fromRGB(235, 235, 240), Material = Enum.Material.Metal })
+	local f1 = part({ Size = Vector3.new(0.08, 0.8 * k, 0.8 * k), Color = fletch })
+	local f2 = part({ Size = Vector3.new(0.8 * k, 0.08, 0.8 * k), Color = fletch })
 	for _, p in { shaft, tip, f1, f2 } do
 		p.Parent = m
 	end
@@ -118,12 +118,13 @@ local function hitFlash(at)
 	end
 end
 
-local function spark(at)
+local function spark(at, dist)
 	hitFlash(at)
+	local grow = math.clamp((dist or 16) / 5 - 0.8, 0.6, 2.4)   -- (6A: the hit effect at most a fifth of the shot distance)
 	-- small and short (6A): a few bright chips and a quick flash, under a fifth of the shot's distance
 	local flash = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6, Position = at, Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 236, 190), Transparency = 0.2 })
-	table.insert(flights, { kind = "flash", p = flash, t = 0, life = 0.16 })
+	table.insert(flights, { kind = "flash", p = flash, t = 0, life = 0.16, grow = grow })
 	for i = 1, 4 do
 		local a = i * math.pi / 2 + math.random() * 0.6
 		local chip = part({ Size = Vector3.one * 0.16, Position = at, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 220, 150) })
@@ -135,9 +136,11 @@ end
 -- the Flame Cannon: a fireball (a hot core in an orange shell) that leaves small fading embers behind it, a short
 -- muzzle flash and a small smoke puff at the barrel
 local function fireball()
-	local shell = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 1.3, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 120, 30),
-		Transparency = 0.15 })
-	local core = part({ Name = "Core", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.7, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 225, 150) })
+	-- (round 2: larger, with a dark-red rim round the bright fire so it reads against the ground)
+	local shell = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 2.4, Color = Color3.fromRGB(120, 20, 10), Transparency = 0.35 })
+	local fire = part({ Name = "Fire", Shape = Enum.PartType.Ball, Size = Vector3.one * 1.9, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 110, 25) })
+	local core = part({ Name = "Core", Shape = Enum.PartType.Ball, Size = Vector3.one * 1.0, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 230, 160) })
+	fire.Parent = shell
 	core.Parent = shell
 	return shell
 end
@@ -244,12 +247,14 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		end
 		local m, place
 		if kind == "Ranger" then   -- (an arrow: about two thirds of the bolt, green fletching)
-			m, place = bolt(1.9, 0.65, Color3.fromRGB(80, 170, 70))
+			-- (round 2's chunkier arrow and longer trail lost the blind judge on the Ranger: the round 1 arrow stays)
+			m, place = bolt(1.9, 0.495, Color3.fromRGB(80, 170, 70))
 		else
 			m, place = bolt(math.clamp(dist * 0.08, 2.4, 3.4))
 		end
 		-- (2026-11-27: the bolt thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
+			trail = kind == "Ranger" and 0.12 or 0.3, trailW = kind == "Ranger" and 0.18 or 0.26, trailT = kind == "Ranger" and 0.45 or 0.25,
 			arc = dist * cfg.Arc })
 	end)
 end
@@ -272,8 +277,8 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		local cfg = st.cfg or Config.TowerShots.Ballista
 		st.yaw, st.yawVel = spring(st.yaw, st.yawVel, st.goalYaw, cfg.TurnSpeed, cfg.TurnDamp, dt)
-		st.pull, st.pullVel = spring(st.pull, st.pullVel, st.goalPull, 260, 26, dt)
-		st.kick, st.kickVel = spring(st.kick, st.kickVel, 0, 170, 16, dt)
+		st.pull, st.pullVel = spring(st.pull, st.pullVel, st.goalPull, 520, 44, dt)   -- (reaches the drawn pose early in the wind-up and holds it: benchmark, a held 0.1-0.3 s pose)
+		st.kick, st.kickVel = spring(st.kick, st.kickVel, 0, 220, 24, dt)   -- (settles in 0.33 s; was 0.53, shot_rules)
 		-- the turn about the weapon's own centre; the pull and the kick move it back along its aim (away from the tip)
 		local c = st.home.Position
 		local turn = CFrame.Angles(0, st.turns and st.yaw or 0, 0)
@@ -291,15 +296,16 @@ RunService.RenderStepped:Connect(function(dt)
 				f.place(CFrame.lookAt(pos, ahead))
 				-- a short faint streak behind it (the old glowing box was what read at phone size; this keeps that read)
 				if not f.streak then
-					f.streak = part({ Size = Vector3.new(0.18, 0.18, 1), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 240, 210), Transparency = 0.45 })
+					f.streak = part({ Size = Vector3.new(f.trailW, f.trailW, 1), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 244, 220), Transparency = f.trailT })
 				end
-				local back = f.from:Lerp(f.to, math.max(a - 0.12, 0)) + Vector3.new(0, f.arc * 4 * math.max(a - 0.12, 0) * (1 - math.max(a - 0.12, 0)), 0)
+				local b_ = math.max(a - (f.trail or 0.3), 0)   -- (a trail a third of the flight long: the benchmark's run 50-100 %, kept shorter for 6A)
+				local back = f.from:Lerp(f.to, b_) + Vector3.new(0, f.arc * 4 * b_ * (1 - b_), 0)
 				local len = math.max((pos - back).Magnitude, 0.2)
-				f.streak.Size = Vector3.new(0.18, 0.18, len)
+				f.streak.Size = Vector3.new(f.trailW, f.trailW, len)
 				f.streak.CFrame = CFrame.lookAt((pos + back) / 2, pos)
 			end
 			if a >= 1 then
-				spark(f.to)
+				spark(f.to, (f.to - f.from).Magnitude)
 				f.m:Destroy()
 				if f.streak then
 					f.streak:Destroy()
@@ -310,12 +316,13 @@ RunService.RenderStepped:Connect(function(dt)
 			local pos = f.from:Lerp(f.to, a) + Vector3.new(0, f.arc * 4 * a * (1 - a), 0)
 			f.p.Position = pos
 			f.p.Core.Position = pos
+			f.p.Fire.Position = pos
 			f.puffAt += dt
 			if f.puffAt > 0.03 then   -- (an ember left behind every few frames)
 				f.puffAt = 0
 				local e = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.55, Position = pos, Material = Enum.Material.Neon,
 					Color = Color3.fromRGB(255, 150, 50), Transparency = 0.3 })
-				table.insert(flights, { kind = "ember", p = e, t = 0, life = 0.22 })
+				table.insert(flights, { kind = "ember", p = e, t = 0, life = 0.35 })
 			end
 			if a >= 1 then
 				hitFlash(f.to)
@@ -374,7 +381,7 @@ RunService.RenderStepped:Connect(function(dt)
 				table.remove(flights, i)
 			end
 		elseif f.kind == "flash" then
-			f.p.Size = Vector3.one * (0.8 + 2.4 * a)
+			f.p.Size = Vector3.one * (0.8 + (f.grow or 2.4) * a)
 			f.p.Transparency = 0.2 + 0.8 * a
 			if a >= 1 then
 				f.p:Destroy()

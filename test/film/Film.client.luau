@@ -12,9 +12,10 @@ local function mark(name)
 	print("[FILM]", DateTime.now().UnixTimestampMillis, name)
 end
 -- (2026-11-27, shot polish) each animated shot marked when the client hears it, so the shot strips centre on a shot
-Remotes.CombatFx.OnClientEvent:Connect(function(name, _, _, kind)
+Remotes.CombatFx.OnClientEvent:Connect(function(name, _, _, kind, _, _, windUp, travel)
 	if name == "TowerShot" then
-		mark("shot " .. tostring(kind))
+		-- (with its wind-up and flight time, so the strip runs from the wind-up to the impact)
+		mark(string.format("shot %s %.3f %.3f", tostring(kind), windUp or 0, travel or 0))
 	end
 end)
 local waiting = {}

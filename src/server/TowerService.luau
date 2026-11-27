@@ -799,6 +799,7 @@ local function shoot(t, now, model)
 					Sound.Play("Explosion", aim)
 					for _, e in EnemyService.InRange(aim, stats.Radius) do
 						EnemyService.Damage(e, share)
+						EnemyService.Knockback(e, 0.4)   -- (round 2: the blast pushes them back a little)
 						EnemyService.Burn(e, stats.BurnDps, stats.BurnTime)
 					end
 				end)
@@ -882,6 +883,9 @@ local function shoot(t, now, model)
 					local flat = Vector3.new(target.position.X - t.position.X, 0, target.position.Z - t.position.Z)
 					if target.health and target.health > 0 and flat.Magnitude <= stats.Range + 3 then
 						EnemyService.Damage(target, damage, nil, true)
+						-- (round 2: a heavy hit: a small knockback that really moves it and a 60 ms hit-stop, Ballista only)
+						EnemyService.Knockback(target, 0.8)
+						EnemyService.HitStop(target, 0.06)
 					end
 				end)
 			end)

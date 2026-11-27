@@ -2,7 +2,7 @@
 #   powershell -ExecutionPolicy Bypass -File scripts/film.ps1 -Name before -Mode phone
 # Mode: phone (iPhone 13, graphics 1), phonehq (iPhone 13, graphics 8), pc. Output: tools/film/<Name>-<Mode>.mp4
 # and .marks.txt (each line: seconds into the clip, mark name). Closes that Studio afterwards.
-param([string]$Name = "take", [string]$Mode = "phone", [int]$Limit = 300)
+param([string]$Name = "take", [string]$Mode = "phone", [int]$Limit = 300, [int]$Fps = 20)   # (Fps: 60 for the shot clips, 2026-11-27)
 $ErrorActionPreference = "Stop"
 # one Studio run at a time on this PC (shared with the pets thread): tools\studio.lock, stale after 25 minutes
 $lockFile = Join-Path (Split-Path $PSScriptRoot -Parent) "tools\studio.lock"
@@ -55,7 +55,7 @@ $ffmpeg = (Get-ChildItem "$root\tools\ffmpeg\*\bin\ffmpeg.exe" | Select-Object -
 $startMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $ff = New-Object System.Diagnostics.Process
 $ff.StartInfo.FileName = $ffmpeg
-$ff.StartInfo.Arguments = "-y -loglevel error -f gdigrab -framerate 20 -i `"title=$title`" -t $Limit -vf crop=trunc(iw/2)*2:trunc(ih/2)*2 -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p `"$clip`""
+$ff.StartInfo.Arguments = "-y -loglevel error -f gdigrab -framerate $Fps -i `"title=$title`" -t $Limit -vf crop=trunc(iw/2)*2:trunc(ih/2)*2 -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p `"$clip`""
 $ff.StartInfo.UseShellExecute = $false
 $ff.StartInfo.RedirectStandardInput = $true
 $ff.Start() | Out-Null

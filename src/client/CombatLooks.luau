@@ -196,21 +196,30 @@ end
 -- a zig-zag lightning bolt
 function Effects.Lightning(from, to, color)
 	local points = { from }
-	local steps = 4 - tier
+	local steps = 6 - tier   -- (more corners: jagged)
 	for i = 1, steps - 1 do
 		local p = from:Lerp(to, i / steps)
 		table.insert(points, p + Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 2.5)
 	end
 	table.insert(points, to)
+	-- (2026-11-27, shot polish: a thicker jagged bolt with a bright core, held a little longer so it registers on a phone)
 	for i = 1, #points - 1 do
 		local a, b = points[i], points[i + 1]
-		local p = fxPart({
-			Size = Vector3.new(0.35, 0.35, (b - a).Magnitude),
+		local glow = fxPart({
+			Size = Vector3.new(0.75, 0.75, (b - a).Magnitude + 0.3),
 			CFrame = CFrame.lookAt((a + b) / 2, b),
 			Color = color,
+			Transparency = 0.35,
 		})
-		TweenService:Create(p, TweenInfo.new(0.2), { Transparency = 1 }):Play()
-		Debris:AddItem(p, 0.2)
+		local core = fxPart({
+			Size = Vector3.new(0.26, 0.26, (b - a).Magnitude + 0.2),
+			CFrame = CFrame.lookAt((a + b) / 2, b),
+			Color = Color3.fromRGB(250, 245, 255),
+		})
+		for _, p in { glow, core } do
+			TweenService:Create(p, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Transparency = 1 }):Play()
+			Debris:AddItem(p, 0.28)
+		end
 	end
 end
 

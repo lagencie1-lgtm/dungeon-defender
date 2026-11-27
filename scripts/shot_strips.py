@@ -23,8 +23,10 @@ def main():
         t, _, name = ln.strip().partition("\t")
         if name.startswith("shots "):
             marks[name] = float(t)
-        elif name.startswith("shot "):   # (an animated shot heard by the client)
-            shots.setdefault(name[5:], []).append(float(t))
+        elif name.startswith("shot "):   # (an animated shot heard by the client: kind [wind-up travel])
+            parts = name.split()
+            w, tr = (float(parts[2]), float(parts[3])) if len(parts) >= 4 else (0.2, 0.8)
+            shots.setdefault(parts[1], []).append((float(t), w, tr))
     out = os.path.join(ROOT, "reviews", "towers", "shots")
     os.makedirs(out, exist_ok=True)
     jobs = []
@@ -43,7 +45,7 @@ def main():
         # (the tower stands in the middle of the phone screen: the strip and clip keep its middle, without the HUD)
         bx0, by0, bx1, by1 = box
         w, h = bx1 - bx0, by1 - by0
-        box = (bx0 + int(w * 0.16), by0 + int(h * 0.1), bx0 + int(w * 0.84), by0 + int(h * 0.86))   # (wide enough for the shot's path)
+        box = (bx0 + int(w * 0.22), by0 + int(h * 0.12), bx0 + int(w * 0.78), by0 + int(h * 0.72))   # (the tower and the targets behind it: the flight path fills the frame)
         x0, y0, x1, y1 = box
         crop = f"crop={(x1 - x0) // 2 * 2}:{(y1 - y0) // 2 * 2}:{x0}:{y0}"
         clip = os.path.join(out, f"{short}_l{lv}.mp4")
@@ -54,8 +56,11 @@ def main():
         frames = []
         # (centred on the first animated shot in the clip when the client marked one: from 0.3 s before it to 1.0 s
         # after, the wind-up, the release, the flight and the hit; else the clip's middle 2 s)
-        first = next((x for x in shots.get(kind, []) if a <= x <= b - 0.5), None)
-        t0, span = (first - 0.3, 1.3) if first is not None else ((a + b) / 2 - 1.0, 2.0)
+        first = next((x for x in shots.get(kind, []) if a <= x[0] <= b - 0.5), None)
+        if first is not None:   # (from just before the wind-up to just after the impact)
+            t0, span = first[0] - 0.05, max(first[1] + first[2] + 0.25, 0.5)
+        else:
+            t0, span = (a + b) / 2 - 1.0, 2.0
         for i in range(12):
             t = t0 + span * i / 11
             subprocess.run([ff, "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", film + ".mp4", "-frames:v", "1", tmp])

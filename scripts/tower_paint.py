@@ -109,7 +109,10 @@ def main():
     tex, base = stem + "_paint.png", stem + "_base.png"
     views, painted = stem + "_views.png", stem + "_painted.png"
     front_painted = stem + "_front_painted.png"
-    if "--reuse" not in sys.argv or not os.path.exists(base):
+    # (a rebuilt model has new UVs: its fresh plain texture is the base even with --reuse; a stale base painted the
+    # uncovered faces of the barricade rounds with another build's colours)
+    fresh = not os.path.exists(base) or os.path.getmtime(fbx) > os.path.getmtime(base)
+    if "--reuse" not in sys.argv or fresh:
         shutil.copy(tex, base)      # a fresh build wrote a fresh plain texture: that is the base
         for skin in glob.glob(stem + "_paint_*.png"):   # the other parts' textures (tower kit atlases)
             shutil.copy(skin, stem + "_base_" + skin[len(stem + "_paint_"):])
@@ -126,6 +129,7 @@ def main():
         if f.size != (1024, 1024):
             f.resize((1024, 1024), Image.LANCZOS).save(front_painted)
     blender("project", fbx, base, painted, tex, strength, front_painted)
+    shutil.copy(tex, stem + "_projected.png")   # (scripts/tower_grade.py grades from this, so grading twice never compounds)
 
 
 if __name__ == "__main__":

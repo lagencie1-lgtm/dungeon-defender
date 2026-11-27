@@ -546,6 +546,24 @@ Config.Towers = {
 		},
 	},
 }
+-- How a defender's shot moves (Lemp 2026-11-27: the shooting animations need polish; src/client/TowerLife.client.luau).
+-- Three beats, all on the client with springs: a wind-up (seconds), the release in one frame, a recoil that settles
+-- by spring. Projectiles fly at Speed (studs a second) on a slight arc (Arc of the distance); the server lands the
+-- damage when the projectile arrives (wind-up + distance / Speed), so damage per second is unchanged.
+Config.TowerShots = {
+	-- (step 2: Codex saw no wind-up or recoil at phone size (2/10): a longer, deeper pull and a harder kick)
+	Ballista = { WindUp = 0.2, Speed = 65,   -- (Speed 65: the bolt in flight for at least 4 frames at 20 fps)
+				 Arc = 0.05, Pull = 0.7, Kick = 1.1, TurnSpeed = 70, TurnDamp = 14, MinFlight = 0.22 },
+	-- the Flame Cannon: a short squash back (Pull) on the wind-up, a strong recoil along the raised barrel (Axis3D), a
+	-- fireball on a higher arc
+	-- the Storm Obelisk: the orb charges (a swelling glow and crackles) before the lightning strikes
+	StormObelisk = { WindUp = 0.2 },
+	-- the Ranger: the arrow leaves when the archer lets go (ArcherLife releases 0.15 s after his shot)
+	Ranger = { WindUp = 0.2, Speed = 80, Arc = 0.06, MinFlight = 0.22 },   -- (round 4: on screen at least 0.22 s, however short the shot)   -- (round 3: the draw held about 0.1 s before the release)
+	-- the Frost Crystal: its crystals rise (Pull, studs) and glow on the wind-up, then drop back as the wave spreads
+	FrostCrystal = { WindUp = 0.18, Pull = 0.45, Kick = 0.5, Part = "Skin_roof", Up = true, TurnSpeed = 60, TurnDamp = 13 },
+	FlameCannon = { WindUp = 0.18, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
+}
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30
 Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObelisk = 4, Ballista = 5 }

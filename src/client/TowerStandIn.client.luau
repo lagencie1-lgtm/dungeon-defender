@@ -95,8 +95,11 @@ RunService.Heartbeat:Connect(function()
 			local done = ready(t:FindFirstChild("Look"))
 			if standIn:GetAttribute("Hidden") ~= done then
 				standIn:SetAttribute("Hidden", done)
-				show(standIn, not done)
 			end
+			-- (every frame, not only on a change: the camera's occlusion handling writes LocalTransparencyModifier
+			-- too and set a hidden stand-in visible again when the camera moved; 2026-11-25, the Flame Cannon's
+			-- level 3 showed its stand-in over the real model in the film's view shot)
+			show(standIn, not done)
 		end
 	end
 end)

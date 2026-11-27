@@ -132,35 +132,38 @@ local LEVEL_LOOKS = {
 		-- the yaw his front looks to, his height (the paintings make him about a third of the tower on level 1: oversized so he reads on a phone, and as
 		-- tall as the lookout allows under the roof; standing on a hidden step so chest and bow show above the rail,
 		-- as in the paintings)
-		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
-			Archers = { { Vector3.new(0.51, 4.4, -1.13), 4, 3.2 } } },
-		{ Name = "tower_ranger_l2", Height = 15.63, Muzzle = Vector3.new(-0.68, 8.0, -2.2),
-			Archers = { { Vector3.new(-0.68, 6.5, -1.64), 30, 3.2 } } },
-		{ Name = "tower_ranger_l3", Height = 19.64, Muzzle = Vector3.new(0.54, 12.3, -3.9),
+		{ Name = "tower_ranger_l1", Height = 11.36, Muzzle = Vector3.new(-1.75, 6.0, -0.75),
+			Archers = { { Vector3.new(-1.6, 4.0, -0.55), 30, 3.4 } } },   -- (2026-11-27: the box wall 1.0 high and the roof 0.4 higher; the archer beside the front post, not behind it: hood, face and bow show from the run camera)
+		-- (2026-11-26, the screen-fit rule: levels 2 and 3 lowered, the archers with the balcony; level 3 also narrower)
+		{ Name = "tower_ranger_l2", Height = 14.11, Muzzle = Vector3.new(-0.76, 7.0, -2.46),
+			Archers = { { Vector3.new(-1.03, 4.3, -2.5), 30, 3.9 } } },   -- (balcony 1.12 wider; walls 0.82 lower so the hood shows under the roof edge and the roof keeps its painted rise, 2026-11-26)
+		{ Name = "tower_ranger_l3", Height = 14.12, Muzzle = Vector3.new(0.38, 8.2, -2.74),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
-			Archers = { { Vector3.new(0.54, 10.8, -3.35), 11, 3.2 }, { Vector3.new(-2.15, 10.8, -2.63), 39, 3.1 } } },
+			-- (2026-11-26, Codex: the archers barely read: larger, at the front rail, the rail lower, the roof's start clear of
+			-- their hooded heads so chest, hood and bow show at phone size)
+			Archers = { { Vector3.new(0.46, 5.4, -2.87), 11, 4.1 }, { Vector3.new(-1.84, 5.4, -2.26), 39, 4.0 } } },   -- (walls 0.7 lower, the roof 0.2 lower: the hooded heads clear the roof edge, the top stays 5 % below the screen's edge)
 	},
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
 		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
-		{ Name = "tower_flame_l2", Height = 5.70, Muzzle = Vector3.new(-2.08, 4.53, 1.62) },
-		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-2.01, 5.76, -2.81), Muzzles = { Vector3.new(-2.01, 5.76, -2.81), Vector3.new(-3.44, 5.76, -0.33) } },
+		{ Name = "tower_flame_l2", Height = 7.20, Muzzle = Vector3.new(-3.52, 5.91, 0.94) },   -- (2026-11-27: 1.125 times bigger; it read small next to the other level 2s on the phone)
+		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-3.03, 6.42, -0.92), Muzzles = { Vector3.new(-3.03, 6.42, -0.92), Vector3.new(-2.54, 6.42, 1.90) } },
 	},
 	FrostCrystal = {
 		{ Name = "tower_frost_l1", Height = 9.82, Muzzle = Vector3.new(0.00, 8.05, 0.00) },
 		{ Name = "tower_frost_l2", Height = 9.16, Muzzle = Vector3.new(0.00, 6.87, 0.00) },
-		{ Name = "tower_frost_l3", Height = 11.81, Muzzle = Vector3.new(0.00, 8.04, 0.00) },
+		{ Name = "tower_frost_l3", Height = 10.83, Muzzle = Vector3.new(0.00, 7.65, 0.00) },
 	},
 	StormObelisk = {
 		{ Name = "tower_storm_l1", Height = 5.43, Muzzle = Vector3.new(0.00, 4.32, 0.00) },
 		{ Name = "tower_storm_l2", Height = 10.37, Muzzle = Vector3.new(0.00, 10.11, 0.00) },
-		{ Name = "tower_storm_l3", Height = 11.96, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
+		{ Name = "tower_storm_l3", Height = 11.94, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
 	},
 	Ballista = {
-		{ Name = "tower_ballista_l1", Height = 5.45, Muzzle = Vector3.new(-0.73, 5.12, 2.71) },
-		{ Name = "tower_ballista_l2", Height = 5.95, Muzzle = Vector3.new(-0.62, 5.70, 2.32) },
-		{ Name = "tower_ballista_l3", Height = 6.26, Muzzle = Vector3.new(-4.77, 5.84, 0.79), Muzzles = { Vector3.new(-4.77, 5.84, 0.79), Vector3.new(-0.79, 5.84, 4.77) } },
+		{ Name = "tower_ballista_l1", Height = 6.80, Muzzle = Vector3.new(-1.19, 6.28, 4.42) },
+		{ Name = "tower_ballista_l2", Height = 7.75, Muzzle = Vector3.new(-1.30, 7.19, 4.84) },
+		{ Name = "tower_ballista_l3", Height = 6.22, Muzzle = Vector3.new(-3.22, 5.84, -5.06), Muzzles = { Vector3.new(-3.22, 5.84, -5.06), Vector3.new(-3.22, 5.84, 5.06) } },
 	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
@@ -736,11 +739,12 @@ local function shoot(t, now, model)
 		-- tower's damage per second stays exactly what it was)
 		local look = model and model:FindFirstChild("Look")
 		local froms = {}
+		local archersList = {}
 		for _, archer in look and look:GetChildren() or {} do
 			if archer.Name == "Archer" then
 				archer:SetAttribute("AimX", hitAt.X)
 				archer:SetAttribute("AimZ", hitAt.Z)
-				archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
+				table.insert(archersList, archer)
 				local box, size = archer:GetBoundingBox()
 				local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
 				table.insert(froms, box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero))
@@ -750,12 +754,26 @@ local function shoot(t, now, model)
 			froms = { t.muzzle }
 		end
 		local share = stats.Damage / #froms
+		-- (2026-11-27, shot polish) each archer draws when his own shot comes (ArcherLife lets go 0.15 s after it), the
+		-- arrow leaves his bow at that moment (TowerLife: a real arrow on a slight arc) and the damage lands on arrival
+		local shot = Config.TowerShots.Ranger
 		for i, from in froms do
 			task.delay((i - 1) * 0.12, function()
-				Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-				if first.health and first.health > 0 then
-					EnemyService.Damage(first, share, nil, nil, nil, t.position)
+				local archer = archersList[i]
+				if archer and archer.Parent then
+					archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
 				end
+				local travel = math.max((hitAt - from).Magnitude / shot.Speed, shot.MinFlight or 0)   -- (round 4: at least 0.22 s on screen)
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ranger", i, hitAt, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
+					-- (an arrow lands only on a goblin still near the tower's reach: one that ran on while it flew is
+					-- missed, as before arrows took time; autotest's rescue: the Sneak that slipped past is the hero's)
+					local flat = Vector3.new(first.position.X - t.position.X, 0, first.position.Z - t.position.Z)
+					if first.health and first.health > 0 and flat.Magnitude <= stats.Range then
+						-- (the hit's source for the anim work's rock-back, MonsterAnim; our own knockback dropped: theirs reacts)
+						EnemyService.Damage(first, share, nil, nil, nil, t.position)
+					end
+				end)
 			end)
 		end
 	elseif t.type == "FlameCannon" then
@@ -769,9 +787,12 @@ local function shoot(t, now, model)
 				if i > 1 and first.position then
 					aim = first.position + Vector3.new(0, first.stats.Size * 0.6, 0)
 				end
-				Effects.Kick(t.kicker, 0.5)
-				Effects.Bolt(from, aim, Color3.fromRGB(255, 140, 40), 1, 0.2)
-				task.delay(0.2, function()
+				-- (2026-11-27, shot polish: the client turns the barrel, squashes, recoils and flies a fireball, TowerLife;
+				-- the blast and the damage land when the fireball arrives)
+				local shot = Config.TowerShots.FlameCannon
+				local travel = (aim - from).Magnitude / shot.Speed
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "FlameCannon", i, aim, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
 					-- fire and sparks instead of a solid ball
 					Effects.Ring(aim - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
 					Effects.Particles(aim, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),
@@ -785,41 +806,58 @@ local function shoot(t, now, model)
 			end)
 		end
 	elseif t.type == "FrostCrystal" then
-		Effects.Kick(t.kicker, -0.4)
-		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
-		Sound.Play("Frost", t.position)
-		for _, e in targets do
-			EnemyService.Damage(e, stats.Damage, nil, nil, nil, t.position)
-			EnemyService.Slow(e, stats.Slow, stats.SlowTime)
-			if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
-				EnemyService.Freeze(e, 1)
-			end
-		end
-	elseif t.type == "StormObelisk" then
-		Effects.Kick(t.kicker, -0.5)
-		Sound.Play("Zap", t.muzzle)
-		-- lightning jumps from goblin to goblin
-		local hit = {}
-		local from = t.muzzle
-		local current = first
-		for _ = 1, stats.Chains do
-			hit[current] = true
-			local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
-			Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
-			EnemyService.Damage(current, stats.Damage, nil, true, nil, from)
-			from = to
-			local nextOne = nil
-			for _, e in EnemyService.InRange(current.position, 14) do
-				if not hit[e] then
-					nextOne = e
-					break
+		-- (2026-11-27, shot polish: on the client the crystal rises and glows, then the frost wave spreads from the base
+		-- with an ease-out and fades, TowerLife (the "travel" slot carries the wave's radius); the chill lands at the
+		-- end of the wind-up on the goblins in range then)
+		local windUp = Config.TowerShots.FrostCrystal.WindUp
+		Remotes.CombatFx:FireAllClients("TowerShot", t.muzzle, model, "FrostCrystal", 1, t.position, windUp, stats.Range)
+		task.delay(windUp, function()
+			Sound.Play("Frost", t.position)
+			for _, e in EnemyService.InRange(t.position, stats.Range) do
+				EnemyService.Damage(e, stats.Damage, nil, nil, nil, t.position)
+				EnemyService.Slow(e, stats.Slow, stats.SlowTime)
+				if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
+					EnemyService.Freeze(e, 1)
 				end
 			end
-			if not nextOne then
-				break
+		end)
+	elseif t.type == "StormObelisk" then
+		-- (2026-11-27, shot polish: the orb charges on the client first, TowerLife; the lightning and its damage follow
+		-- at the end of the wind-up, on the first goblin still in range then, so no damage is lost; delayed, never a
+		-- wait: shoot() runs inside the loop over every tower)
+		local windUp = Config.TowerShots.StormObelisk.WindUp
+		Remotes.CombatFx:FireAllClients("TowerShot", t.muzzle, model, "StormObelisk", 1, first.position, windUp, 0)
+		task.delay(windUp, function()
+			local current = first
+			if not current.health or current.health <= 0 or current.dead then
+				current = EnemyService.InRange(t.position, stats.Range)[1]
 			end
-			current = nextOne
-		end
+			if not current then
+				return
+			end
+			Sound.Play("Zap", t.muzzle)
+			-- lightning jumps from goblin to goblin
+			local hit = {}
+			local from = t.muzzle
+			for _ = 1, stats.Chains do
+				hit[current] = true
+				local to = current.position + Vector3.new(0, current.stats.Size * 0.6, 0)
+				Effects.Lightning(from, to, Color3.fromRGB(190, 170, 255))
+				EnemyService.Damage(current, stats.Damage, nil, true, nil, from)
+				from = to
+				local nextOne = nil
+				for _, e in EnemyService.InRange(current.position, 14) do
+					if not hit[e] then
+						nextOne = e
+						break
+					end
+				end
+				if not nextOne then
+					break
+				end
+				current = nextOne
+			end
+		end)
 	elseif t.type == "Ballista" then
 		-- aims at the toughest goblin in range
 		local target = first
@@ -832,16 +870,22 @@ local function shoot(t, now, model)
 		-- (2026-11-24: level 3's two ballistae each loose a bolt, a quarter second apart, half the damage each)
 		local muzzles = t.muzzles or { t.muzzle }
 		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1) / #muzzles
+		-- (2026-11-27, Lemp: shot polish) the client animates the shot (TowerLife: the weapon turns to the target,
+		-- pulls, looses a real bolt that flies an arc, recoils); the server only says which weapon shoots where and
+		-- lands the damage when the bolt arrives
+		local shot = Config.TowerShots.Ballista
 		for i, from in muzzles do
 			task.delay((i - 1) * 0.25, function()
-				Effects.Kick(t.kicker, -0.6)
 				local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-				Effects.Bolt(from, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
-				task.delay(0.15, function()
-					if target.health and target.health > 0 then
+				local travel = math.max((aim - from).Magnitude / shot.Speed, shot.MinFlight or 0)
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ballista", i, aim, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
+					local flat = Vector3.new(target.position.X - t.position.X, 0, target.position.Z - t.position.Z)
+					if target.health and target.health > 0 and flat.Magnitude <= stats.Range then
 						EnemyService.Damage(target, damage, nil, true, nil, t.position)
+						-- (a heavy hit: a 60 ms hit-stop, Ballista only; the anim work's rock-back is the knock)
+						EnemyService.HitStop(target, 0.06)
 					end
-					Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
 				end)
 			end)
 		end

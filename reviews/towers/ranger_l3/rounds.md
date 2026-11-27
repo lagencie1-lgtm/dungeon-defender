@@ -34,3 +34,18 @@
 - round 12: chunky kit (fewer, bigger, thicker parts, soft bevels), roof/props in their own textures, the archer now its own model (not in this render); repaint, sharpen, grade
   IoU 90.8%  width profile off 14.5%  region colour dE 9.1  (pixel dE 55.5)  detail 24.2% vs picture 24.6% (ratio 0.98)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 7 (L 49/48)  lookout 4 (L 54/52)  wall 3 (L 61/62)  footing 2 (L 64/66)
+- round 13: height rule (coordinator 2026-11-26): lower to fit the phone screen at the run camera; fixed paint tools
+  IoU 86.6%  width profile off 17.6%  region colour dE 9.6  (pixel dE 57.1)  detail 24.0% vs picture 24.6% (ratio 0.98)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/47)  lookout 7 (L 54/53)  wall 1 (L 61/61)  footing 5 (L 64/68)
+- round 14: screen fit: roof flatter (level 3 also a slightly lower wall)
+  IoU 84.0%  width profile off 21.6%  region colour dE 11.0  (pixel dE 59.5)  detail 23.5% vs picture 24.6% (ratio 0.96)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 6 (L 49/48)  lookout 12 (L 54/55)  wall 1 (L 61/62)  footing 7 (L 64/70)
+- round 17: Codex notes: level 3 0.9 as wide, calmer smooth gold, archers larger; level 2 longer flag (levels 1-2 at 80.0 %)
+  IoU 88.7%  width profile off 15.3%  region colour dE 10.1  (pixel dE 59.5)  detail 24.4% vs picture 24.6% (ratio 0.99)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/46)  lookout 8 (L 54/53)  wall 1 (L 61/61)  footing 7 (L 64/71)
+- round 18: levels apart (75 % target): level 2 1.12 wider; level 3 wide overhanging roof and broader base, as painted
+  IoU 80.7%  width profile off 28.4%  region colour dE 10.6  (pixel dE 59.7)  detail 23.0% vs picture 24.6% (ratio 0.94)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/47)  lookout 6 (L 54/52)  wall 1 (L 61/62)  footing 8 (L 64/71)
+- round 19: archers read: walls lower, roof higher and slimmer so the hooded archers show under the roof edge
+  IoU 79.8%  width profile off 26.6%  region colour dE 10.9  (pixel dE 57.7)  detail 24.7% vs picture 24.6% (ratio 1.00)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 7 (L 49/51)  lookout 14 (L 54/47)  wall 1 (L 61/61)  footing 5 (L 64/69)

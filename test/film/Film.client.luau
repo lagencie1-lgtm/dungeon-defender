@@ -11,6 +11,13 @@ local player = Players.LocalPlayer
 local function mark(name)
 	print("[FILM]", DateTime.now().UnixTimestampMillis, name)
 end
+-- (2026-11-27, shot polish) each animated shot marked when the client hears it, so the shot strips centre on a shot
+Remotes.CombatFx.OnClientEvent:Connect(function(name, _, _, kind, _, _, windUp, travel)
+	if name == "TowerShot" then
+		-- (with its wind-up and flight time, so the strip runs from the wind-up to the impact)
+		mark(string.format("shot %s %.3f %.3f", tostring(kind), windUp or 0, travel or 0))
+	end
+end)
 local waiting = {}
 cue.OnClientEvent:Connect(function(step)
 	waiting[step] = true
@@ -456,7 +463,7 @@ local function runViewShots(kind, level, tower, base)
 end
 -- every other defender at its three levels (2026-11-23: the kit-built level looks), a close camera on each
 ask("Own")
-for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
+for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ranger" } do   -- (Ranger added 2026-11-25: its load time and the tower rules)
 	ask("Mana")
 	task.wait(0.4)
 	-- (2026-11-24, research brief: "towers must be visible while art loads"): from the tap to something tower-shaped
@@ -524,6 +531,41 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" } do
 			mark(kind .. " level " .. level)
 			task.wait(1.6)
 			runViewShots(kind, level, tower, base)
+			do   -- (every level since step 2)
+				-- (2026-11-27, Lemp: the shooting animations need polish: a short close clip of each tower level firing,
+				-- the "before" for that work, scripts/shot_strips.py cuts it out by these marks) the camera held at the
+				-- run camera's angle but close, a wave running so the tower has targets, about three shots
+				-- (two standing training knights beside the tower, one each side of the view, so every clip has shots)
+				local right = Vector3.new(0.8, 0, -0.6)
+				local fwd = Vector3.new(0.6, 0, 0.8)
+				ask("Targets", { base + right * 13 + fwd * 15, base - right * 12 + fwd * 18 })   -- (behind the tower from the camera, so they stay small and the shot crosses the frame)
+				task.wait(0.3)
+				-- (round 4: the run camera itself, as Lemp chose it: the shot as a player sees it)
+				local rcam = Config.RunCamera
+				local lookDir = Vector3.new(0.6, 0, 0.8).Unit
+				local aimAt = base + Vector3.new(0, rcam.AimHeight, 0)
+				local held = CFrame.lookAt(aimAt - lookDir * rcam.Distance * math.cos(math.rad(rcam.Pitch)) + Vector3.new(0, rcam.Distance * math.sin(math.rad(rcam.Pitch)), 0), aimAt)
+				game:GetService("RunService"):BindToRenderStep("FilmShots", Enum.RenderPriority.Last.Value + 5, function()
+					workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+					workspace.CurrentCamera.CFrame = held
+				end)
+				-- (the HUD off for the clip: a wave banner once covered the whole shot)
+				local hid = {}
+				for _, g in player.PlayerGui:GetChildren() do
+					if g:IsA("ScreenGui") and g.Enabled then
+						g.Enabled = false
+						table.insert(hid, g)
+					end
+				end
+				mark("shots " .. kind .. " " .. level .. " start")
+				task.wait(5)
+				mark("shots " .. kind .. " " .. level .. " end")
+				for _, g in hid do
+					g.Enabled = true
+				end
+				ask("ClearTargets")
+				game:GetService("RunService"):UnbindFromRenderStep("FilmShots")
+			end
 			if level < 3 then
 				Remotes.UpgradeTower:InvokeServer(tower)
 				task.wait(1.0)

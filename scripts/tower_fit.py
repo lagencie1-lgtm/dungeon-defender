@@ -115,7 +115,9 @@ def main():
     step = 0.06
     for rnd in range(rounds):
         moved = []
-        for name in SEARCH[key]:
+        # (HTD_FIT_ONLY=a,b,...: search only these, e.g. widths when the height is fixed by a rule)
+        only = [x for x in os.environ.get("HTD_FIT_ONLY", "").split(",") if x]
+        for name in (only or SEARCH[key]):
             for sign in (1, -1):
                 trial = dict(params)
                 trial[name] = round(params[name] * (1 + sign * step), 3)

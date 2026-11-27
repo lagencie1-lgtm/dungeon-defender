@@ -30,8 +30,11 @@ IRON = (0.42, 0.42, 0.45)
 IRON_DARK = (0.28, 0.28, 0.31)
 BRONZE = (0.62, 0.34, 0.2)
 BRONZE_DARK = (0.4, 0.24, 0.15)   # (level 3's dark bronze-brown barrels and rims, as painted)
+BARREL_L2 = (0.72, 0.44, 0.26)   # (a lighter bronze, so level 2's barrel stands out from the drum at phone size)
 FIRE = (1.0, 0.55, 0.12)
 COAL = (0.16, 0.15, 0.16)
+# (2026-11-26) layered flame tongues in the lit bores; HTD_FIRE_LAYERS=0 builds the earlier single core
+FIRE_LAYERS = os.environ.get("HTD_FIRE_LAYERS", "1") != "0"
 
 DEFAULTS = {
     1: dict(foot_r=3.2, foot_h=0.9, foot_n=10, cradle=2.2, barrel_r=1.15, barrel_len=3.0, tilt=38, barrel_z=2.4, aim=55),
@@ -62,7 +65,13 @@ def aim_frame(z, tilt, side=0.0):
     return m @ tilt_m @ rot
 
 
+BORES = []   # (2026-11-26, the face-read rule: each barrel's axis and mouth in game coordinates, tools/tower_rules.py)
+
+
 def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=False, core=False):
+    ax = (frame.to_3x3() @ Vector((0, 0, 1))).normalized()
+    mouth = frame @ Vector((0, 0, length * 0.87))
+    BORES.append({"axis": [-ax.x, ax.z, ax.y], "mouth": [-mouth.x, mouth.z, mouth.y], "radius": r * 0.8})
     """a cannon barrel along its own +Z: a slightly tapering tube, a thick banded mouth, bands, a rivet row, the
     fire inside the mouth (a glowing disc)"""
     with K.atlas("barrel"):
@@ -72,18 +81,22 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=
         o = K.lathe(name, prof, color, key=None, verts=24, tile=1.0, cap=False)
         o.matrix_world = frame
         if thin or core:
-            # (profile from the bottom up so its faces look INTO the bore: one-sided faces turned outward were not drawn
-            # from the front, and the barrel's painted inside showed through)
-            bore = K.lathe(name + "Bore", [(r * 0.8, length * 0.87), (r * 0.8, length * 0.62)], (0.1, 0.06, 0.05), key=None, verts=20, cap=False)
-            bore.matrix_world = frame
-            # (its own unlit dark part, not painted: the painter filled the bore with fire, a yellow disc on the phone)
-            S.glow(bore, (0.08, 0.05, 0.04))
-            # (and closed a little way in by a dark disc, faces both ways, so nothing painted shows inside the bore)
+            # (2026-11-25, coordinator: the fire is the bore's own inside, as painted: the inner wall glows warm
+            # orange deep in and darkens to red toward the rim. Three unpainted rings, the deepest glowing (Neon), the
+            # outer two plain so they don't bloom; profile top to bottom so the faces look INTO the bore)
+            # (deep red-orange, not yellow: a bore of bright yellow-orange filled the opening and failed the 15 %
+            # yellow gate on the phone; still lit, so it passes the 30 % near-black one)
+            # (and none of them glowing: the game's Neon turned even the red-orange ring yellow-bright; only the core glows)
+            for k_, (z0, z1, col) in enumerate(((0.62, 0.7, (0.9, 0.34, 0.07)), (0.7, 0.79, (0.62, 0.14, 0.05)), (0.79, 0.87, (0.36, 0.07, 0.05)))):
+                seg_ = K.lathe(name + f"Bore{k_}", [(r * 0.8, length * z1), (r * 0.8, length * z0)], col, key=None, verts=20, cap=False)
+                seg_.matrix_world = frame
+                S.glow(seg_, col)
+            # (closed a little way in by a lit disc, faces both ways, so nothing painted shows inside the bore)
             for k_, zz in enumerate((0.62, 0.621)):
                 plug = K.lathe(name + f"Plug{k_}", [(0.0, length * zz), (r * 0.82, length * zz)] if k_ else [(r * 0.82, length * zz), (0.0, length * zz)],
-                               (0.08, 0.05, 0.04), key=None, verts=20, cap=False)
+                               (0.9, 0.34, 0.07), key=None, verts=20, cap=False)
                 plug.matrix_world = frame
-                S.glow(plug, (0.08, 0.05, 0.04))
+                S.glow(plug, (0.9, 0.34, 0.07))
         if thin:
             # (2026-11-25, level 3 read as a yellow blob on the phone: a thin dark bronze rim with one gold band, a
             # dark bore lining, as painted; not a wide flat gold ring)
@@ -112,9 +125,36 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=
                 rv.matrix_world = frame @ rv.matrix_world
     if fire and (thin or core):
         # (the glow only deep in the bore: a small orange core about a third of the bore's width)
-        # (a plain orange ball, not a glowing one: in the game a glowing core's bloom filled the whole dark bore)
-        core = K.ball(name + "Core", (0, 0, length * 0.66), r * 0.27, (0.95, 0.45, 0.1), seg=10)
+        # (a small bright core deep inside, glowing)
+        # (2026-11-26, coordinator: layered fire, as painted: deep red tongues round the bore's wall, deep orange ones
+        # inside them, a small bright core; all inside the bore (the face-read and dark-bore gates see the same
+        # opening), the yellow kept to the small core for the 15 % gate)
+        if FIRE_LAYERS:
+            import random
+            frng = random.Random(len(name))
+            for layer, (n_, rr_, hh_, col) in enumerate(((6, 0.24, 0.2, (0.62, 0.09, 0.04)), (4, 0.17, 0.17, (0.86, 0.24, 0.04)))):
+                made_ = []
+                for k_ in range(n_):
+                    ang = 2 * math.pi * (k_ + 0.5 * layer) / n_ + frng.uniform(-0.2, 0.2)
+                    off = r * (0.45 if layer == 0 else 0.22)
+                    base_ = Vector((math.cos(ang) * off, math.sin(ang) * off, length * 0.625))
+                    tip = base_ + Vector((-math.cos(ang) * off * 0.35, -math.sin(ang) * off * 0.35, length * hh_ * frng.uniform(0.85, 1.1)))
+                    tn = name + f"Tongue{layer}{k_}"
+                    K.limb(tn, tuple(base_), tuple(tip), r * rr_, r * 0.02, col, verts=6, end=False)
+                    t_ = bpy.data.objects[tn]
+                    t_.matrix_world = frame @ t_.matrix_world
+                    made_.append(t_)
+                # (one glowing part per layer, not one per tongue)
+                bpy.ops.object.select_all(action="DESELECT")
+                for t_ in made_:
+                    t_.select_set(True)
+                bpy.context.view_layer.objects.active = made_[0]
+                bpy.ops.object.join()
+                made_[0].name = name + f"Tongues{layer}"
+                S.glow(made_[0], col)
+        core = K.ball(name + "Core", (0, 0, length * 0.64), r * (0.14 if FIRE_LAYERS else 0.22), (1.0, 0.78, 0.3), seg=10)
         core.matrix_world = frame @ core.matrix_world
+        S.glow(core, (1.0, 0.78, 0.3))
     elif fire:
         import bmesh
         bm = bmesh.new()
@@ -162,16 +202,19 @@ def drum(z0, r, h, vents=False, bands=1, taper=1.0):
             rr = r + (r * taper - r) * 0.32 + 0.04
             p = Vector(K.at(a, rr, zc))
             t = Vector((-math.sin(a), math.cos(a), 0))
-            for j in range(3):
-                q = p + t * ((j - 1) * 0.36)
-                K.ball(f"Arch{s}{j}", tuple(q + Vector((0, 0, 0.35))), 0.15, FIRE, (1, 0.6, 1), seg=8)
-                bpy.ops.mesh.primitive_cube_add(size=1, location=q)
+            n_out = Vector((math.cos(a), math.sin(a), 0))
+            for j in range(3):   # (2026-11-25: tall arched windows, as painted, each in a dark bronze frame)
+                q = p + t * ((j - 1) * 0.42)
+                K.block(f"WinFrame{s}{j}", tuple(q + Vector((0, 0, 0.12))), (0.42, 0.12, 1.3), BRONZE_DARK, (0, 0, a + rad(90)), key=None, bevel=0.04)
+                arch = K.ball(f"Arch{s}{j}", tuple(q + Vector((0, 0, 0.55)) + n_out * 0.02), 0.15, (1.0, 0.62, 0.2), (1, 0.6, 1), seg=10)
+                S.glow(arch, (1.0, 0.62, 0.2))
+                bpy.ops.mesh.primitive_cube_add(size=1, location=q + n_out * 0.04)
                 g = bpy.context.active_object
-                g.scale = (0.3, 0.16, 0.7)
+                g.scale = (0.3, 0.16, 1.1)
                 g.rotation_euler = (0, 0, a + rad(90))
                 bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
                 S.glow(g, FIRE)
-            K.block(f"ArchFrame{s}", tuple(p + Vector((0, 0, 0.62))), (1.0, 0.25, 0.2), K.BRASS, (0, 0, a + rad(90)), key=None, tile=0.6)
+            K.block(f"ArchFrame{s}", tuple(p + Vector((0, 0, 0.86))), (1.4, 0.25, 0.2), K.BRASS, (0, 0, a + rad(90)), key=None, tile=0.6)
 
 
 fz = P["foot_h"]
@@ -197,12 +240,15 @@ if level == 1:
 elif level == 2:
     drum(fz, P["drum_r"], P["drum_h"], bands=1)
     top = fz + P["drum_h"]
-    K.lathe("DrumLid", [(P["drum_r"] + 0.15, top - 0.1), (P["drum_r"] + 0.15, top + 0.15), (P["drum_r"] - 0.3, top + 0.2)], K.BRASS, key="brass", verts=32)
+    # (2026-11-26, phone view read as a gold ring/pot: the lid is dark wood with a thin gold rim, the cradle bronze, so
+    # the barrel, longer and in lighter bronze, is what reads)
+    K.lathe("DrumLid", [(P["drum_r"] + 0.15, top - 0.1), (P["drum_r"] + 0.15, top + 0.15), (P["drum_r"] - 0.3, top + 0.2)], K.WOOD_DARK, key="wood_dark", verts=32)
+    K.lathe("DrumLidRim", [(P["drum_r"] + 0.17, top + 0.05), (P["drum_r"] + 0.2, top + 0.1), (P["drum_r"] + 0.17, top + 0.17)], K.BRASS, key="brass", verts=32)
     a = rad(FRONT + P["aim"])
     side = Vector((-math.sin(a), math.cos(a), 0))
     for s in (-1, 1):
         c = side * (s * (P["barrel_r"] + 0.35))
-        K.block(f"Arm{s}", (c.x, c.y, top + 0.85), (0.9, 0.35, 1.8), K.BRASS, (0, 0, a), key="brass", tile=0.6, bevel=0.1)
+        K.block(f"Arm{s}", (c.x, c.y, top + 0.85), (0.9, 0.35, 1.8), BRONZE_DARK, (0, 0, a), key=None, tile=0.6, bevel=0.1)
         hub = c + side * (s * 0.22)
         K.lathe(f"Hub{s}", [(0.0, -0.18), (0.55, -0.18), (0.6, 0.0), (0.55, 0.18), (0.0, 0.2)], K.BRASS, key="brass", verts=20).matrix_world = \
             Matrix.Translation((hub.x, hub.y, P["barrel_z"])) @ Matrix.Rotation(rad(90), 4, Vector((math.cos(a), math.sin(a), 0)))
@@ -214,8 +260,8 @@ elif level == 2:
         c_ = K.ball(f"Coal{k}", (back.x + ((k % 3) - 1) * 0.42, back.y + (k // 3 - 0.5) * 0.45, top + 2.1), 0.26, COAL, (1, 1, 0.8), seg=7)
         if k % 2:
             S.glow(c_, FIRE)   # (glowing coals among the dark ones)
-    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"], BRONZE, core=True)   # (2026-11-25: glow only deep in the bore; 21.7 % bright yellow on the phone before)
-    muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 0.85))]
+    barrel("Barrel", aim_frame(P["barrel_z"], P["tilt"]), P["barrel_r"], P["barrel_len"] * 1.3, BARREL_L2, core=True)   # (2026-11-25: glow only deep in the bore; 21.7 % bright yellow on the phone before)
+    muzzles = [aim_frame(P["barrel_z"], P["tilt"]) @ Vector((0, 0, P["barrel_len"] * 1.3 * 0.85))]
 else:
     drum(fz, P["drum_r"], P["drum_h"], vents=True, bands=2, taper=0.72)
     top = fz + P["drum_h"]
@@ -239,8 +285,12 @@ else:
         barrel(f"Barrel{s}", fr, P["barrel_r"], P["barrel_len"], BRONZE_DARK, bands=3, rivets=False, thin=True)
         muzzles.append(fr @ Vector((0, 0, P["barrel_len"] * 0.85)))
 
+if not os.environ.get("HTD_FAST"):
+    json.dump(BORES, open(os.path.join(HERE, "..", "models", f"tower_flame_l{level}_bores.json"), "w"), indent=1)
 for m in muzzles:   # Blender (x, y, z) -> the game's (-x, z, y)
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
+if level < 3:   # (level 3 decluttered won the judge but its re-projected gold came out 19.6 % bright yellow, over the gate)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

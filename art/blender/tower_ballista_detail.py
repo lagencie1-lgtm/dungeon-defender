@@ -37,6 +37,13 @@ WEAPON_DARK = (0.42, 0.27, 0.19)
 # (round 5 weapon gate: level 1's wooden bow is a warm mid brown in the painting, the weapon came out greyer and
 # darker (Lab 34.5 15 21 against 38.8 24 28) with dark-wood arms)
 BOW_WOOD = (0.66, 0.34, 0.16)
+# (2026-11-27, round 2 of the phone-read order: the weapon is what makes the Ballista; it is 1.3 times bigger and
+# raised, the wooden limbs a lighter warm wood with dark tips, the string a pale cream line, the bolt's iron tip larger)
+BOW_WOOD_LIGHT = (0.86, 0.58, 0.32)
+TIP_DARK = (0.22, 0.14, 0.1)
+STRING_CREAM = (1.0, 0.95, 0.82)
+STEEL = (0.72, 0.72, 0.76)
+WEAPON_UP = 1.3
 LAYOUT = []
 BOWLINES = []
 # round 2 (2026-11-24): the paintings' wood is a warm mid-dark brown (about 130, 72, 38), not the kit's pale pine
@@ -75,20 +82,21 @@ def place_all(objs, m):
         o.matrix_world = m @ o.matrix_world
 
 
-def weapon(name, base, iron=False, scale=1.0):
+def weapon(name, base, iron=False, scale=1.0, atlas="barrel", yaw_off=0.0, half_arc=100):
     """stock, bow, string and bolt, built at the origin pointing along +Y, then turned to the aim and tilted up.
     Round 2 (coordinator 2026-11-24, "a real bow with two arms, a string and a bolt on every level"): the bow is a big
     C at the FRONT of the stock (its middle ahead of the stock's nose, both arms sweeping back to the stock's middle),
     as thick as the paintings draw it; the string runs from both tips back to the notch at the stock's rear; the bolt
     lies on top, iron head out front, red fletching at the back"""
     before = set(bpy.context.scene.objects)
+    scale *= WEAPON_UP if level < 3 else 1.0   # (level 3's pair at 1.2 lost the blind judge, 5 against 6: it keeps its size)
     st = P["stock"] * scale
     span = st * 0.9   # (round 4: the bow spans about 0.9 of the stock)
     # round 5 (coordinator 2026-11-24): the stock is a long slender beam (width about 0.12 of its length) with a groove
     # on top and the bolt lying in it, gold bands, a trigger block at the rear; small red fletching on the bolt's tail
     sw, sh = 0.12 * st, 0.11 * st
     ztop = sh / 2 + 0.04 * st          # top of the groove's rails
-    with K.atlas("barrel"):
+    with K.atlas(atlas):   # (2026-11-27: level 3's second weapon is its own part, "Skin_barrel2", so each one turns to its target)
         K.block(name + "Stock", (0, 0, 0), (sw, st, sh), WEAPON_WOOD, key=None, tile=1.2, bevel=0.04 * st)
         for e in (-1, 1):   # the groove: two rails along the top
             K.block(name + f"Rail{e}", (e * sw * 0.36, st * 0.02, sh / 2 + 0.02 * st), (sw * 0.28, st * 0.92, 0.05 * st), WEAPON_DARK, key=None, tile=1.0, bevel=0.01 * st)
@@ -103,10 +111,10 @@ def weapon(name, base, iron=False, scale=1.0):
         nose = st * 0.5
         # (a C a little past a half circle, +-100 degrees, like the paintings' bows: a flat arc cut at +-80 degrees reads
         # as an arc (sagitta >= 0.3 chord) from only 10 of 16 directions at 32 degrees, even drawn as a thin line)
-        R = span / (2 * math.sin(rad(100)))
+        R = span / (2 * math.sin(rad(half_arc)))
         pts = []
         for k in range(17):
-            th_ = rad(-100 + 200 * k / 16)
+            th_ = rad(-half_arc + 2 * half_arc * k / 16)
             pts.append(Vector((R * math.sin(th_), nose - R * (1 - math.cos(th_)), ztop)))
         depth = nose - pts[0].y
         for i in range(len(pts) - 1):
@@ -119,19 +127,19 @@ def weapon(name, base, iron=False, scale=1.0):
             if iron:   # flat, tapered iron
                 K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.6), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
             else:      # squared timber
-                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD_LIGHT, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
         K.block(name + "BowBlock", (0, nose, ztop), (0.2 * span, 0.12 * span, 0.13 * span), K.BRASS if iron else WEAPON_DARK, key=None, bevel=0.02 * span)
         notch = (0, -st * 0.38, ztop + 0.01 * st)
         for tip in (pts[0], pts[-1]):
             if iron:
-                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
+                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), TIP_DARK if level < 3 else K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
             else:
-                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.085 * span, 0.09 * span, 0.09 * span), ROPE, key=None, bevel=0.015 * span)
-            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.012 * st, 0.012 * st, ROPE, verts=6, end=False)
+                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.1 * span), TIP_DARK, key=None, bevel=0.015 * span)
+            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, (0.02 if level < 3 else 0.012) * st, (0.02 if level < 3 else 0.012) * st, STRING_CREAM if level < 3 else ROPE, verts=8 if level < 3 else 6, end=False)
         # the bolt in the groove, iron head out front, small red fletching at its tail
         zb = sh / 2 + 0.03 * st
         K.limb(name + "Bolt", (0, -st * 0.38, zb), (0, st * 0.6, zb), 0.025 * st, 0.025 * st, WEAPON_DARK, verts=6, end=False)
-        K.cone(name + "Head", (0, st * 0.66, zb), 0.06 * st, 0.14 * st, IRON, rot=(rad(-90), 0, 0), verts=4)
+        K.cone(name + "Head", (0, st * (0.68 if level < 3 else 0.66), zb), (0.085 if level < 3 else 0.06) * st, (0.2 if level < 3 else 0.14) * st, STEEL if level < 3 else IRON, rot=(rad(-90), 0, 0), verts=4)
         for s_ in (-1, 1):
             K.block(name + f"Fletch{s_}", (s_ * 0.03 * st, -st * 0.3, zb + 0.035 * st), (0.012 * st, 0.13 * st, 0.07 * st), RED, (0, s_ * rad(32), 0), key=None, bevel=0.0)
     # the layout gate (docs/tower-pipeline.md "pose against the object's layout"): the bow's tips level with each
@@ -142,10 +150,10 @@ def weapon(name, base, iron=False, scale=1.0):
     LAYOUT.append({"weapon": name, "bow_plane_deg": round(plane, 1), "asymmetry": round(sym, 3), "span_over_stock": round(span / st, 2),
                    "arc_depth_over_span": round(depth / span, 2)})
     made = [o for o in set(bpy.context.scene.objects) - before]
-    m = Matrix.Translation(base) @ Matrix.Rotation(A - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
+    m = Matrix.Translation(base) @ Matrix.Rotation(A + rad(yaw_off) - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
     place_all(made, m)
     BOWLINES.append([list(m @ q) for q in pts])   # (the bow's centre line in the world, for scripts/bow_gate.py)
-    return m @ Vector((0, st * 0.72, zb))   # (the bolt's iron head)
+    return m @ Vector((0, st * (0.78 if level < 3 else 0.72), zb))   # (the bolt's iron head)
 
 
 def trestle(base_z, h, spread, iron=False, scale=1.0):
@@ -193,17 +201,19 @@ muzzles = []
 if level in (1, 2):
     if level == 2:   # (coordinator 2026-11-24: level 2 stands on a raised timber platform, so it reads apart from level 1)
         # (round 4: 1.2 tall, not 0.6: at 0.6 levels 1 and 2 were the same height and overlapped 84 % on the phone)
-        K.block("Platform", (0, 0, fz + 0.6), (3.6, 3.6, 1.2), K.WOOD_DARK, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
+        pw = P.get("plat_w", 3.6)   # (2026-11-26: wider, so level 2 reads apart from level 1 at phone size)
+        K.block("Platform", (0, 0, fz + 0.6), (pw, pw, 1.2), K.WOOD, (0, 0, A), key="wood_dark", tile=1.2, bevel=0.1)
         for k in range(4):
-            q = FWD * (1.55 * (1 if k % 2 else -1)) + SIDE * (1.55 * (1 if k < 2 else -1))
+            q = FWD * ((pw / 2 - 0.25) * (1 if k % 2 else -1)) + SIDE * ((pw / 2 - 0.25) * (1 if k < 2 else -1))
             K.block(f"PlatformCap{k}", (q.x, q.y, fz + 1.22), (0.5, 0.5, 0.14), K.BRASS, (0, 0, A), key=None, bevel=0.03)
         fz += 1.2
     top = trestle(fz, P["leg_h"], P["leg_spread"], iron=(level == 2))
-    muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2)))
+    # (2026-11-26: level 2's weapon larger than level 1's, so at phone size the weapon is the biggest readable thing)
+    muzzles.append(weapon("W", Vector((0, 0, top)), iron=(level == 2), scale=P.get("wscale", 1.0) if level == 2 else 1.0))
     if level == 2:
         # round 5 (coordinator 2026-11-24, as painted): a small gold gear with teeth beside the stock's pivot, about a
         # third of the trestle's height across, on the side the camera sees, with two crank handles on its axle
-        r = (P["leg_h"] + 0.75) / 6
+        r = (P["leg_h"] + 0.75) / 4.3   # (2026-11-26: larger, the painting's level 2 mark that level 1 doesn't have)
         c = -SIDE * (P["leg_spread"] * 0.75 + 0.45) - FWD * 0.15 + Vector((0, 0, top - 0.45))   # (outside the A-frame on that side)
         ax = Matrix.Translation(c) @ Matrix.Rotation(rad(90), 4, Vector((FWD.x, FWD.y, 0)))
         g = K.lathe("Gear", [(0.0, -0.12), (r, -0.12), (r, 0.12), (0.0, 0.12)], K.BRASS, key="brass", verts=24)
@@ -238,7 +248,10 @@ else:
         for e in (-1, 1):   # the gold arched cradle each weapon sits in
             q = Vector((base.x, base.y, t2 - 0.35)) + SIDE * (e * 0.42)
             K.block(f"Cradle{s}{e}", tuple(q), (0.22, 0.9, 1.1), K.BRASS, (0, 0, A), key="brass", tile=0.6, bevel=0.1)
-        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4)))
+        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4), atlas="barrel" if s < 0 else "barrel2",
+                              # (2026-11-27: at the run camera the two parallel deep bows read as one halo ring:
+                              # the weapons splay apart and the bows are shallower, so each reads as a crossbow)
+                              yaw_off=P.get("splay", 0.0) * s, half_arc=P.get("half_arc", 100)))
 
 for g in LAYOUT:
     ok = (g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0
@@ -249,6 +262,8 @@ for g in LAYOUT:
 json.dump(BOWLINES, open(os.path.abspath(out)[:-4] + "_bow.json", "w"))
 for m in muzzles:
     print("MUZZLE Vector3.new(%.2f, %.2f, %.2f)" % (-m.x, m.z, m.y))
+if level != 2:   # (level 2 decluttered lost the blind judge, 5 = 5, before preferred: it keeps its parts)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

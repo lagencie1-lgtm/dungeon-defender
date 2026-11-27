@@ -2,7 +2,7 @@
  "foot_r": 2.632,
  "foot_h": 0.8,
  "foot_n": 10,
- "leg_h": 1.994,
+ "leg_h": 2.494,
  "leg_spread": 1.373,
  "bow_w": 4.496,
  "stock": 5.598,
@@ -10,5 +10,7 @@
  "pitch": 5.618,
  "bend": 1.0,
  "thick": 1.549,
- "roll": 40.0
+ "roll": 40.0,
+ "plat_w": 4.2,
+ "wscale": 1.25
 }

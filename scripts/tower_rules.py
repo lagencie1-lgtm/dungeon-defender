@@ -50,25 +50,52 @@ def main():
     # outline frames. Each mask is the frame with the most magenta in a window round its mark; that frame's offset
     # from the mark is then used for the same tower's view picture)
     drift = {}
+    # (2026-11-27: one film ran 5.5 s off its marks and every picture showed the next level: the first mask is
+    # searched in a wide window, the others round the offset it found)
+    centre = None
     for t, name in marks:
         parts = name.split()
         if parts[0] != "mask":
             continue
         best, seen = None, []
-        for dt in np.arange(-2.4, 1.01, 0.15):   # (drift seen up to -1.5 s, 2026-11-25)
+        window = np.arange(-8.0, 3.01, 0.15) if centre is None else np.arange(centre - 1.5, centre + 1.51, 0.15)
+        for dt in window:   # (drift seen up to -1.5 s, 2026-11-25)
             img = frame(ff, base + ".mp4", t + dt, os.path.join(out, "_frame.png"))
             n = int(magenta(img).sum())
             seen.append((dt, n))
             if best is None or n > best[0]:
                 best = (n, dt, img)
+        if centre is None:
+            # (the wide window can hold the next level's outline too: the film's first outline is the earliest run)
+            first = next(i for i, (dt, n) in enumerate(seen) if n >= 0.5 * best[0])
+            run = []
+            for dt, n in seen[first:]:
+                if n < 0.5 * best[0]:
+                    break
+                run.append((dt, n))
+            top = max(n for _, n in run)
+            best = (top, next(dt for dt, n in run if n == top), frame(ff, base + ".mp4", t + next(dt for dt, n in run if n == top), os.path.join(out, "_frame.png")))
+            seen = run
         img = best[2]
         # (the drift is the middle of the run of outline frames, not its first frame: the first one put the view
         # picture before the view shot began)
         full = [dt for dt, n in seen if n >= 0.9 * best[0]]
         best = (best[0], float(np.mean(full)), img)
+        if centre is None:
+            centre = best[1]
         if box is None:
             box = screen_box(frame(ff, base + ".mp4", t - 3, os.path.join(out, "_frame.png")))
-        masks[(parts[1], int(parts[2]))] = magenta(img[box[1]:box[3], box[0]:box[2]])
+        # (2026-11-27: the portal's pink glow at the top of the screen passed as outline on some takes and the
+        # tower seemed to touch the screen's edge: only the largest outline blob counts, the tower's)
+        mk = magenta(img[box[1]:box[3], box[0]:box[2]])
+        import cv2
+        n_, lab, st_, _ = cv2.connectedComponentsWithStats(mk.astype(np.uint8), 8)
+        if n_ > 2:
+            big = 1 + int(np.argmax(st_[1:, cv2.CC_STAT_AREA]))
+            mk = lab == big
+        masks[(parts[1], int(parts[2]))] = mk
+        # (2026-11-27: the outline saved too, for measurements on the phone pictures, scripts/phone_measure.py)
+        Image.fromarray(masks[(parts[1], int(parts[2]))].astype(np.uint8) * 255).save(os.path.join(out, f"{parts[1]}_l{parts[2]}_mask.png"))
         drift[(parts[1], int(parts[2]))] = best[1]
     for t, name in marks:
         parts = name.split()
@@ -144,6 +171,56 @@ def main():
         res["bright"][f"{key[0]} {key[1]}"] = share
         if share > 15:
             res["fails"].append(f"{key[0]} level {key[1]}: {share}% of it is bright yellow-orange (needs 15% or less)")
+    # gold share in the phone view (measured, not a gate; coordinator 2026-11-26: the Flame Cannon's level 2 read as a
+    # gold ring/pot): vivid gold-hued pixels of the tower's outline
+    res["gold"] = {}
+    for key, m in masks.items():
+        if key not in views or m.sum() < 50:
+            continue
+        hsv = cv2.cvtColor(views[key], cv2.COLOR_RGB2HSV)
+        gold = (hsv[..., 0] >= 15) & (hsv[..., 0] <= 30) & (hsv[..., 1] > 100) & (hsv[..., 2] > 110)
+        res["gold"][f"{key[0]} {key[1]}"] = round(100 * float((gold & m).sum() / m.sum()), 1)
+    # fits the phone screen (coordinator 2026-11-26, the Ranger's level 3 roof was cut off at the run camera): in the
+    # phone view the top of the tower's outline stays at least 5 % of the screen's height below its top edge
+    res["top_margin"] = {}
+    for key, m in masks.items():
+        rows = np.where(m.any(1))[0]
+        if not len(rows):
+            continue
+        margin = round(100 * rows.min() / m.shape[0], 1)
+        res["top_margin"][f"{key[0]} {key[1]}"] = margin
+        if margin < 5:
+            res["fails"].append(f"{key[0]} level {key[1]}: its top is {margin}% below the screen's top edge (needs 5% or more)")
+    # no tower's level 3 more than 1.3 times as tall as the tallest other tower's level 3 (TowerService LEVEL_LOOKS)
+    import re
+    src = open(os.path.join(ROOT, "src", "server", "TowerService.luau"), encoding="utf-8").read()
+    h3 = {m.group(1): float(m.group(2)) for m in re.finditer(r'Name = "tower_(\w+)_l3", Height = ([\d.]+)', src)}
+    res["level3_height"] = h3
+    for k, h in h3.items():
+        others = [v for kk, v in h3.items() if kk != k]
+        if others and h > 1.3 * max(others):
+            res["fails"].append(f"{k} level 3 is {h:.2f} studs tall, {h / max(others):.2f} times the tallest other level 3 "
+                                f"(needs 1.3 or less)")
+    # no face read (coordinator 2026-11-26: the Flame Cannon's level 3 read as a face with goggles): at the run camera
+    # a bore opening is seen as an ellipse whose short-to-long ratio is |cos| of the angle between the barrel's axis
+    # and the view; two or more bores of one level above 0.8 (nearly face-on circles) side by side fail. The bores
+    # are written by the builder (art/models/tower_<kind>_l<n>_bores.json); the view is the film's run camera
+    # (horizontal direction 0.6, 0, 0.8; Config.RunCamera's pitch)
+    import glob as _g
+    import math as _m
+    cfg = open(os.path.join(ROOT, "src", "shared", "Config.luau"), encoding="utf-8").read()
+    pm = re.search(r"RunCamera\s*=\s*\{[^}]*Pitch\s*=\s*([\d.]+)", cfg)
+    pitch = _m.radians(float(pm.group(1)) if pm else 32)
+    hx, hz = 0.6, 0.8
+    view = (hx * _m.cos(pitch), -_m.sin(pitch), hz * _m.cos(pitch))
+    res["bore_ratio"] = {}
+    for f in sorted(_g.glob(os.path.join(ROOT, "art", "models", "tower_*_l*_bores.json"))):
+        name = os.path.basename(f)[len("tower_"):-len("_bores.json")]
+        ratios = [round(abs(sum(a * b for a, b in zip(bo["axis"], view))), 2) for bo in json.load(open(f))]
+        res["bore_ratio"][name] = ratios
+        if sum(r > 0.8 for r in ratios) >= 2:
+            res["fails"].append(f"{name}: {sum(r > 0.8 for r in ratios)} bores seen nearly face-on ({ratios}, needs at "
+                                f"most one above 0.8): it reads as a face")
     json.dump(res, open(os.path.join(out, "rules.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != "fails"}, indent=1))
     print("RULES", "PASS" if not res["fails"] else "FAIL", res["fails"])

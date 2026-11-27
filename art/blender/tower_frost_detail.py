@@ -73,14 +73,16 @@ K.grass(P["foot_r"] - 0.05, 22, h=0.75)
 # the pedestal: stone frustum, dark staves at four corners, a riveted brass band, brass corner brackets
 ped_top = fz + P["ped_h"]
 K.lathe("Pedestal", [(P["ped_r0"], fz), (P["ped_r1"], ped_top)], K.STONE, key=None, verts=24)
-for i in range(8):   # (round 2: eight dark planks round the drum, as painted)
-    a = rad(FRONT + 22.5 + i * 45)
+# (2026-11-26, coordinator: calmer planks on levels 1-2: four wide dark boards, as painted, not eight thin stripes)
+STAVES = [FRONT + 45 + i * 90 for i in range(4)] if level < 3 else [FRONT + 22.5 + i * 45 for i in range(8)]
+for i, ang in enumerate(STAVES):   # (round 2: dark planks round the drum, as painted)
+    a = rad(ang)
     r_mid = (P["ped_r0"] + P["ped_r1"]) / 2 + 0.12
-    K.block(f"Stave{i}", K.at(a, r_mid, fz + P["ped_h"] / 2), (0.8, 0.35, P["ped_h"] * 1.02), K.WOOD_DARK,
+    K.block(f"Stave{i}", K.at(a, r_mid, fz + P["ped_h"] / 2), (1.3 if level < 3 else 0.8, 0.35, P["ped_h"] * 1.02), K.WOOD_DARK,
             (math.atan2(P["ped_r0"] - P["ped_r1"], P["ped_h"]), 0, a + rad(90)), key="wood_dark", tile=1.0, bevel=0.1)
     for zz in (fz + 0.4, ped_top - 0.4):
         rr = P["ped_r0"] + (P["ped_r1"] - P["ped_r0"]) * (zz - fz) / P["ped_h"] + 0.22
-        K.block(f"Bracket{i}{zz:.1f}", K.at(a, rr, zz), (0.95, 0.22, 0.55), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.06)
+        K.block(f"Bracket{i}{zz:.1f}", K.at(a, rr, zz), (1.45 if level < 3 else 0.95, 0.22, 0.55), K.BRASS, (0, 0, a + rad(90)), key="brass", tile=0.6, bevel=0.06)
 K.brass_band("Band", fz + P["ped_h"] * 0.58, (P["ped_r0"] + P["ped_r1"]) / 2 - 0.05, 0.45, 16)
 K.banner(FRONT, (P["ped_r0"] + P["ped_r1"]) / 2 + 0.05, fz + P["ped_h"] * 0.7, 1.3, 1.5, emblem=False, field=K.CREAM, trim=K.CREAM, mark=ICE_DEEP)
 # the banner's snowflake (round 2, 2026-11-24: on every level, as painted; the kit's leaf emblem read as a figure):
@@ -127,7 +129,63 @@ elif level == 2:
         rr = P["ring_r"] * 0.55
         shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * rnd.uniform(0.6, 0.9), P["shard_r"] * 0.9,
               (math.degrees(math.sin(a)) * -0.35, math.degrees(math.cos(a)) * 0.35))
-else:
+elif P.get("crown_v2", 1):
+    # (2026-11-27, coordinator: the crown rebuilt from the painting, gaps.md: a wide silver band flaring over the
+    # pedestal with a pointed front frame and a big front gem, curled silver horns, a thick silver RING (not a gate)
+    # standing on the band with the faceted diamond floating in it, and big crystals fanned out round the ring: the
+    # tallest straight up behind it, three each side leaning out, two small ones low at the front. Sizes from the
+    # painting: the crown about as tall as the pedestal, the crystals spreading about 1.4 times the pedestal's top)
+    cr, sh, rr_ = P.get("crown_r2", 2.3), P.get("shard_h2", 2.6), P.get("ring_r", 1.25)
+    side = Vector((-math.sin(rad(FRONT)), math.cos(rad(FRONT)), 0))
+    fwd = Vector((math.cos(rad(FRONT)), math.sin(rad(FRONT)), 0))
+    rz = top + 0.55 + rr_ + 0.15
+    # crystals first (in the ice sheet), behind and round the ring
+    for k, (da, hk, rk, lean, rf) in enumerate(((180, 1.55, 1.35, 0, 0.35),
+                                                (100, 1.35, 1.25, 22, 0.85), (-100, 1.35, 1.25, 22, 0.85),
+                                                (128, 1.2, 1.15, 16, 0.8), (-128, 1.2, 1.15, 16, 0.8),
+                                                (72, 1.05, 1.1, 30, 0.9), (-72, 1.05, 1.1, 30, 0.9),
+                                                (152, 1.1, 1.1, 10, 0.75), (-152, 1.1, 1.1, 10, 0.75),
+                                                (38, 0.5, 0.9, 34, 0.9), (-38, 0.5, 0.9, 34, 0.9))):
+        a = rad(FRONT + da)
+        shard(f"Shard{k}", (math.cos(a) * cr * rf, math.sin(a) * cr * rf, top + 0.1), sh * hk * rnd.uniform(0.96, 1.04), P["shard_r"] * rk,
+              (math.degrees(math.sin(a)) * -lean / 45, math.degrees(math.cos(a)) * lean / 45))
+    SIL = K.atlas("silver")
+    SIL.__enter__()
+    K.lathe("Ring", [(P["ped_r1"] + 0.05, top - 0.15), (cr, top + 0.05), (cr + 0.1, top + 0.35), (cr - 0.05, top + 0.6), (cr * 0.6, top + 0.62)], SILVER, key=None, verts=32)
+    # the pointed front frame and its big gem
+    fp = fwd * (cr + 0.05) + Vector((0, 0, top + 0.35))
+    K.block("GemFrame", tuple(fp), (1.25, 0.22, 1.25), SILVER, (0, rad(45), rad(FRONT) + rad(90)), key=None, tile=0.6, bevel=0.1)
+    gem("GemFront", tuple(fp + fwd * 0.05), 0.72, FRONT)
+    # the ring: a thick silver circle standing on the band, facing the front
+    ring_pts = [tuple(side * (math.sin(2 * math.pi * k / 28) * rr_) + Vector((0, 0, rz + math.cos(2 * math.pi * k / 28) * rr_))) for k in range(29)]
+    K.chain("Arch", ring_pts, [0.26] * 29, SILVER, seg=10)
+    for s in (-1, 1):   # the curled horns at the band's sides
+        base = side * (s * cr * 0.95) + Vector((0, 0, top + 0.4))
+        horn = [tuple(base + side * (s * 0.45 * math.sin(t)) + Vector((0, 0, 0.8 * t)) - fwd * (0.25 * t * t)) for t in (0, 0.5, 1.0, 1.4)]
+        K.chain(f"Horn{s}", horn, [0.22, 0.18, 0.14, 0.09], SILVER, seg=8)
+    SIL.__exit__()
+    # the faceted diamond floating in the ring, with a thin glowing orbit
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=4, ring_count=2, radius=rr_ * 0.55, location=(0, 0, rz))
+    dia = bpy.context.active_object
+    dia.name = "Diamond"
+    dia.scale = (0.8, 0.8, 1.25)
+    dia.rotation_euler = (0, 0, rad(FRONT + 45))
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    dia["htd_atlas"] = "body"
+    K.paint.paint(dia, None, (0.55, 0.85, 1.0))
+    S.glow_ball("DiamondCore", tuple(Vector((0, 0, rz)) + fwd * 0.2), rr_ * 0.18, (0.85, 0.97, 1.0), seg=10)
+    orbit = [tuple(side * (math.cos(2 * math.pi * k / 24) * rr_ * 0.85) + fwd * (math.sin(2 * math.pi * k / 24) * rr_ * 0.3) + Vector((0, 0, rz + math.sin(2 * math.pi * k / 24) * 0.2))) for k in range(25)]
+    K.chain("OrbRing", orbit, [0.05] * 25, (0.85, 0.97, 1.0), seg=6)
+    for o in [o for o in bpy.context.scene.objects if o.name.startswith("OrbRing")]:
+        S.glow(o, (0.85, 0.97, 1.0))
+    P["crown_r"] = (rz - top) / 0.95   # (the muzzle line below: the ring's centre)
+else:   # (the earlier crown: crown_v2 = 0)
+    # (2026-11-27: the crown turned to the run camera with no crystals in the arch read as hollow in the blind
+    # Codex judge, 5 against 6: the earlier fuller crown stays)
+    # (2026-11-25: the silver parts of level 3 in their own sheet, which scripts/silver_tone.py keeps a cool grey-white
+    # with a soft highlight after the repaint; the painter had turned the arch beige)
+    SIL = K.atlas("silver")
+    SIL.__enter__()
     K.lathe("Ring", [(P["crown_r"] - 0.25, top - 0.05), (P["crown_r"], top), (P["crown_r"], top + 0.45), (P["crown_r"] - 0.25, top + 0.5)], SILVER, key=None, verts=32)
     gem("GemFront", K.at(rad(FRONT), P["crown_r"] + 0.1, top + 0.25), 0.5, FRONT)
     # the arch over the top and the curled horns
@@ -144,11 +202,14 @@ else:
         base = side * (s * P["crown_r"] * 0.95) + Vector((0, 0, top + 0.3))
         horn = [tuple(base + side * (s * 0.35 * math.sin(t)) + Vector((0, 0, 0.9 * t))) for t in (0, 0.5, 1.0, 1.4)]
         K.chain(f"Horn{s}", horn, [0.18, 0.15, 0.12, 0.08], SILVER, seg=8)
+    SIL.__exit__()
     # (2026-11-25: crystals fanned round the arch as painted: tall ones at the sides rising above the arch, leaning
     # out; middling ones toward the back; small ones low at the front either side of the orb)
     for k, (da, hk, rk, lean) in enumerate(((90, 1.75, 1.2, 16), (-90, 1.75, 1.2, 16), (62, 1.3, 1.05, 12), (-62, 1.3, 1.05, 12),
                                             (125, 1.05, 1.0, 10), (-125, 1.05, 1.0, 10), (180, 0.95, 1.0, 6),
-                                            (36, 0.6, 0.8, 22), (-36, 0.6, 0.8, 22))):
+                                            (36, 0.6, 0.8, 22), (-36, 0.6, 0.8, 22),
+                                            # (2026-11-25: three more tall ones at the back so the crown fans as wide as painted)
+                                            (150, 1.5, 1.1, 18), (-150, 1.5, 1.1, 18), (108, 1.6, 1.15, 20))):
         a = rad(FRONT + da)
         rr = P["crown_r"] * 0.9
         shard(f"Shard{k}", (math.cos(a) * rr, math.sin(a) * rr, top), P["shard_h"] * hk * rnd.uniform(0.95, 1.05), P["shard_r"] * rk,
@@ -157,15 +218,25 @@ else:
     # (2026-11-25: an all-Neon ball drew as a flat light-blue disc, like a mirror: the orb is a shaded pale ice sphere
     # with a small brighter core showing at its front, floating inside the arch)
     oz = top + 0.6 + P["crown_r"] * 1.0
-    K.ball("Orb", (0, 0, oz), P["orb_r"], (0.62, 0.86, 1.0), seg=20, key=None)
-    fw = Vector((math.cos(rad(FRONT)), math.sin(rad(FRONT)), 0))
-    S.glow_ball("OrbCore", tuple(Vector((0, 0, oz)) + fw * (P["orb_r"] * 0.62)), P["orb_r"] * 0.42, (0.85, 0.97, 1.0), seg=14)
+    # (2026-11-25: the pale sphere read like a map; as painted, a faceted ice diamond (an octahedron, taller than wide)
+    # floats inside the ring with a thin orbit ring round it)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=4, ring_count=2, radius=P["orb_r"] * 0.85, location=(0, 0, oz))
+    dia = bpy.context.active_object
+    dia.name = "Diamond"
+    dia.scale = (0.8, 0.8, 1.25)
+    dia.rotation_euler = (0, 0, rad(FRONT + 45))
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    dia["htd_atlas"] = "body"
+    K.paint.paint(dia, None, (0.55, 0.85, 1.0))
+    S.glow_ball("DiamondCore", (0, 0, oz), P["orb_r"] * 0.3, (0.85, 0.97, 1.0), seg=10)
     ring = [(math.cos(2 * math.pi * k / 24) * P["orb_r"] * 1.5, math.sin(2 * math.pi * k / 24) * P["orb_r"] * 1.5 * 0.35, oz + math.sin(2 * math.pi * k / 24) * P["orb_r"] * 0.3) for k in range(25)]
     K.chain("OrbRing", ring, [0.05] * 25, (0.85, 0.97, 1.0), seg=6)
     for o in [o for o in bpy.context.scene.objects if o.name.startswith("OrbRing")]:
         S.glow(o, (0.85, 0.97, 1.0))
 
 print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % (top + (P["shard_h"] * 0.7 if level < 3 else P["crown_r"] * 0.95)))
+if level < 3:   # (level 3 decluttered: before very slightly preferred, it keeps its parts)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

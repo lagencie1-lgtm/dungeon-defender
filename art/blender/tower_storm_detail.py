@@ -54,17 +54,18 @@ FWD = Vector((math.cos(a0), math.sin(a0), 0))
 SIDE = Vector((-math.sin(a0), math.cos(a0), 0))
 
 
-def rune(name, center, normal, size):
-    """the glowing lightning rune: a zigzag plate standing just off a face (Neon), with two small diamonds"""
+def rune(name, center, normal, size, inset=False):
+    """the glowing lightning rune: a zigzag plate standing just off a face (Neon), with two small diamonds; inset: set
+    into a flat cut face, barely proud of it, the dark cut flush round it (level 1, 2026-11-26)"""
     n = Vector(normal).normalized()
     up = Vector((0, 0, 1))
     side = up.cross(n).normalized()
     up = n.cross(side).normalized()
     zig = [(-0.15, 0.5), (0.25, 0.5), (0.02, 0.08), (0.28, 0.08), (-0.2, -0.5), (0.0, -0.08), (-0.26, -0.08)]
     bm = bmesh.new()
-    vs = [bm.verts.new(tuple(Vector(center) + n * 0.06 + side * (x * size) + up * (y * size))) for x, y in zig]
+    vs = [bm.verts.new(tuple(Vector(center) + n * (0.015 if inset else 0.06) + side * (x * size) + up * (y * size))) for x, y in zig]
     bm.faces.new(vs)
-    bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.06)
+    bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.02 if inset else 0.06)
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
@@ -76,7 +77,7 @@ def rune(name, center, normal, size):
     cx = sum(x for x, _ in zig) / len(zig)
     cy = sum(y for _, y in zig) / len(zig)
     bm = bmesh.new()
-    vs = [bm.verts.new(tuple(Vector(center) + n * 0.035 + side * ((cx + (x - cx) * 1.22) * size) + up * ((cy + (y - cy) * 1.14) * size)))
+    vs = [bm.verts.new(tuple(Vector(center) + n * (0.006 if inset else 0.035) + side * ((cx + (x - cx) * 1.22) * size) + up * ((cy + (y - cy) * 1.14) * size)))
           for x, y in zig]
     bm.faces.new(vs)
     bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.03)
@@ -89,7 +90,7 @@ def rune(name, center, normal, size):
     K.paint.paint(cut, None, (0.16, 0.12, 0.2))
     from mathutils import Quaternion
     for k, dy in enumerate((0.78, -0.78)):
-        p = Vector(center) + n * 0.05 + up * (dy * size)
+        p = Vector(center) + n * (0.0 if inset else 0.05) + up * (dy * size)
         for sz, glow in ((size * 0.3, False), (size * 0.22, True)):
             bpy.ops.mesh.primitive_cube_add(size=sz, location=p - n * (0.0 if glow else 0.03), rotation=(0, 0, 0))
             d = bpy.context.active_object
@@ -101,6 +102,26 @@ def rune(name, center, normal, size):
             else:
                 d["htd_atlas"] = "body"
                 K.paint.paint(d, None, (0.16, 0.12, 0.2))
+
+
+def niche(name, a, fz, ph, ra, rb, w=0.95):
+    """a recessed arched niche on the leaning stone drum: a darker stone arch shape lying on the drum's face"""
+    n = Vector((math.cos(a), math.sin(a), 0))
+    t = Vector((-math.sin(a), math.cos(a), 0))
+    h = ph * 0.62
+    pts = [(-w / 2, 0.0), (w / 2, 0.0)] + [(w / 2 * math.cos(rad(k * 15)), h - w / 2 + w / 2 * math.sin(rad(k * 15))) for k in range(13)] + [(-w / 2, 0.0)]
+    pts = pts[:-1]
+    bm = bmesh.new()
+    vs = []
+    for x, z in pts:
+        r = ra + (rb - ra) * (z + 0.05) / ph
+        vs.append(bm.verts.new(tuple(n * (r + 0.02) + t * x + Vector((0, 0, fz + 0.05 + z)))))
+    bm.faces.new(vs)
+    bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.04)
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    K._link(name, mesh, K.MORTAR, None, 1.0)
 
 
 def footing():
@@ -171,6 +192,7 @@ if level == 1:
             v.co.x *= k
             v.co.y *= k
             v.co.z += (t - 0.5) * 0.35
+    # (2026-11-27: a rune set into a flat cut face lost the blind Codex judge, 4 against 5: it stands off the stone)
     rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.48)), FWD, 2.0)
     # (2026-11-24 review, from the painting: two thick short posts at each front corner of the stone, about 0.4 of its
     # height, gold bands round each pair; at the sides behind it they hid and the stone looked too big for them)
@@ -189,18 +211,19 @@ else:
     # (2026-11-25 review, from the paintings: the skirt is dark wooden planks standing round a tapering drum, gold
     # strapped, with one cut-stone arched door at the front and one at the back; a pale stone drum with arches all
     # round read as a different tower and pulled the colour off)
-    K.lathe("Skirt", [(pr * 1.12, fz), (pr * 0.86, fz + ph)], K.WOOD_DARK, key="wood_dark", verts=16)
-    for i in range(16):
-        a = a0 + rad(i * 22.5 + 11.25)
-        if min(abs(((i * 22.5 + 11.25) - d + 180) % 360 - 180) for d in (0, 180)) < 20:
-            continue   # (the doors)
-        ra, rb = pr * 1.12 + 0.04, pr * 0.86 + 0.04
-        lean = math.atan2(ra - rb, ph)
-        K.block(f"Plank{i}", K.at(a, (ra + rb) / 2, fz + ph / 2), (0.75, 0.22, ph / math.cos(lean)), K.WOOD if i % 2 else K.WOOD_DARK,
-                (lean, 0, a + rad(90)), key="wood", tile=1.0, bevel=0.06)
-    for d in (0, 180):
-        K.arched_door(FRONT + d, pr * 1.0, fz + 0.02, 0.95, ph * 0.7, steps=0, arch_stones=5)
-    K.brass_band("SkirtBand", fz + ph * 0.45, pr * 0.99 + 0.06, 0.3, 10)
+    # (2026-11-26, coordinator from the per-part ratings: back to the paintings' pale stone base: a cream cut-stone drum
+    # flaring at the foot with recessed arched niches all round, six thick dark wooden posts with gold rivets between
+    # them, the scalloped gold collar on top; no mid band)
+    K.lathe("Skirt", [(pr * 1.12, fz), (pr * 0.86, fz + ph)], K.STONE, key="stone", verts=24)
+    ra, rb = pr * 1.12, pr * 0.86
+    lean = math.atan2(ra - rb, ph)
+    for i in range(6):
+        a = a0 + rad(i * 60 + 30)
+        K.block(f"Plank{i}", K.at(a, (ra + rb) / 2 + 0.06, fz + ph / 2 - 0.05), (0.95, 0.34, ph / math.cos(lean) - 0.1), K.WOOD if i % 2 else K.WOOD_DARK,
+                (lean, 0, a + rad(90)), key="wood", tile=1.0, bevel=0.08)
+        K.ball(f"Rivet{i}", K.at(a, (ra + rb) / 2 + 0.3, fz + ph * 0.4), 0.13, K.BRASS, seg=8)
+    for i in range(6):   # the arched niches between the posts
+        niche(f"Niche{i}", a0 + rad(i * 60), fz, ph, ra, rb)
     K.brass_band("Collar", fz + ph + 0.05, pr * 0.84, 0.55, 14)
     for i in range(12):   # the gold band's pointed scallops, as painted
         a = a0 + rad(i * 30 + 15)
@@ -229,6 +252,8 @@ else:
         muzzle_z = top + 0.5 + P["orb_r"]
 
 print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % muzzle_z)
+if level == 3:   # (levels 1 and 2 decluttered lost the blind judge: they keep their parts)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

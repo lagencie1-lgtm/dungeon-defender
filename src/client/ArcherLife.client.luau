@@ -5,6 +5,11 @@
 -- the other arm, lets go (a small kick back), and lowers the bow again a while after the last shot; between shots he
 -- breathes. Springs, no linear tweens (6A). Nothing here changes the game; it is how it looks.
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage.Shared.Config)
+-- (2026-11-27, shot polish round 3: he lets go at the shot's wind-up, Config.TowerShots.Ranger.WindUp, when TowerLife's
+-- arrow leaves: the bow is drawn within about 0.1 s and the drawn pose is held until then)
+local RELEASE = Config.TowerShots.Ranger.WindUp
 
 local archers = {} -- [model] = state
 
@@ -121,7 +126,7 @@ RunService.RenderStepped:Connect(function(dt)
 		local goalDraw = since < 1.4 and 1 or 0
 		st.draw, st.drawVel = spring(st.draw, st.drawVel, goalDraw, 160, 22, dt)
 		-- the release: the string hand flies back a little 0.15 s after each shot, then settles (overshoot)
-		if since > 0.15 and since < 0.17 and st.kick < 0.5 then
+		if since > RELEASE and since < RELEASE + 0.02 and st.kick < 0.5 then
 			st.kickVel = 9
 		end
 		st.kick, st.kickVel = spring(st.kick, st.kickVel, 0, 220, 14, dt)

@@ -550,6 +550,9 @@ Config.TowerShots = {
 	-- (step 2: Codex saw no wind-up or recoil at phone size (2/10): a longer, deeper pull and a harder kick)
 	Ballista = { WindUp = 0.2, Speed = 65,   -- (Speed 65: the bolt in flight for at least 4 frames at 20 fps)
 				 Arc = 0.05, Pull = 0.7, Kick = 1.1, TurnSpeed = 70, TurnDamp = 14 },
+	-- the Flame Cannon: a short squash back (Pull) on the wind-up, a strong recoil along the raised barrel (Axis3D), a
+	-- fireball on a higher arc
+	FlameCannon = { WindUp = 0.12, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
 }
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30

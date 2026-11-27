@@ -772,9 +772,12 @@ local function shoot(t, now, model)
 				if i > 1 and first.position then
 					aim = first.position + Vector3.new(0, first.stats.Size * 0.6, 0)
 				end
-				Effects.Kick(t.kicker, 0.5)
-				Effects.Bolt(from, aim, Color3.fromRGB(255, 140, 40), 1, 0.2)
-				task.delay(0.2, function()
+				-- (2026-11-27, shot polish: the client turns the barrel, squashes, recoils and flies a fireball, TowerLife;
+				-- the blast and the damage land when the fireball arrives)
+				local shot = Config.TowerShots.FlameCannon
+				local travel = (aim - from).Magnitude / shot.Speed
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "FlameCannon", i, aim, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
 					-- fire and sparks instead of a solid ball
 					Effects.Ring(aim - Vector3.new(0, 0.8, 0), stats.Radius, Color3.fromRGB(255, 120, 40), 0.35)
 					Effects.Particles(aim, { Texture = "Fire", Color = Color3.fromRGB(255, 190, 80), Color2 = Color3.fromRGB(255, 70, 20),

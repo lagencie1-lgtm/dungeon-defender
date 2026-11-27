@@ -235,6 +235,8 @@ else:   # (the earlier crown: crown_v2 = 0)
         S.glow(o, (0.85, 0.97, 1.0))
 
 print("MUZZLE Vector3.new(0.00, %.2f, 0.00)" % (top + (P["shard_h"] * 0.7 if level < 3 else P["crown_r"] * 0.95)))
+if level < 3:   # (level 3 decluttered: before very slightly preferred, it keeps its parts)
+    K.declutter()   # (2026-11-27, busy-detail round)
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()
 K.finish_check()

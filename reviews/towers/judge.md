@@ -1261,3 +1261,59 @@ A’s three biggest remaining flaws:
 2. **The central pivot and supports disappear.** Enlarge the round gold pivot and give the supporting arch a clean, readable outline.
 3. **The base reads as a bright orange cylinder.** Darken the wooden panels, separate the glowing window slits, and make the pale stone footing chunkier and less uniformly white.
 
+## the frost tower, level 1, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 7/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 7/10 |
+
+**B is better overall.** Its brighter cyan crystal and more visible blue banner detail make the frost identity easier to read. The improvement is modest: both still look more like a snowy turret than the painted tower.
+
+The three biggest flaws in B:
+
+1. **The crystal is too small and narrow.** Make the main shard taller and broader, with a strong angled point. Reduce the smaller shards so the silhouette has one clear focal point.
+2. **The body is too upright and boxy.** Taper it more noticeably, with chunky dark wooden supports leaning outward toward a wider base.
+3. **The banner is too small and low-contrast.** Enlarge the cream cloth, give it the painting’s pointed bottom, and use a bold blue snowflake that survives at phone size.
+
+## the frost tower, level 2, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+**B is better overall, but only slightly.** Its brighter base separates the tower a little more clearly from the ground. Both versions capture the blue crystal crown, but neither yet has the painting’s strong, readable silhouette.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6 | 6 |
+| Whole tower visible and well framed | 7 | 7 |
+| Shape and proportions true to the painting | 5 | 5 |
+| Colours and materials | 6 | 6 |
+
+The three biggest flaws in B:
+
+1. **The body is too narrow and column-like.** Widen the lower half and angle the timber supports outward to give it the painting’s squat, tapered shape.
+2. **The banner and snowflake barely read.** Make the front banner larger and flatter, with a darker blue snowflake and a cleaner cream field.
+3. **The crown feels like a cluster of thin shards.** Give it one dominant, broad central crystal and fewer, chunkier side crystals; preserve dark gaps between them so the silhouette survives at phone size.
+
+## the frost tower, level 3, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+**A is very slightly better overall**, though the screenshots are so similar that the difference is marginal.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+The three biggest flaws in A:
+
+1. **The focal point reads like a clock or cage.** The painting has a luminous floating crystal inside a dark open arch. Remove the central bars, enlarge the crystal and give it a simple glowing halo.
+
+2. **The crown reads as a bunch of spikes.** The concept has a clear hierarchy: one tall top crystal, two large outer crystals and smaller inner shards. Reduce the number of competing shards and exaggerate those three main points.
+
+3. **The base is too narrow and visually busy.** The painting has a broad, sturdy wooden body with a prominent pale banner. Widen the base, simplify the gold fittings and add a larger snowflake banner that reads at phone size.
+

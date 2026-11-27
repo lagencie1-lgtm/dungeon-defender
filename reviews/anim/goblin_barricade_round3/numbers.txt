@@ -1,0 +1,4 @@
+[ANIM] barricade placed true nil 73.5, 0, 42
+[ANIM] hero at 86.5, 4, 46 wall at 73.5, 0, 42
+[ANIM] goblins bashing the wall: 1
+[ANIM] most goblins bashing at once: 3; closest two bodies 3.17 studs apart (5 goblins)

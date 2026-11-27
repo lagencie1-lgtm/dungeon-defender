@@ -1,0 +1,22 @@
+[ANIM] hero Swordmaster
+[ANIM] outpost walk   frames 120  feet gap (grounded frames) min -1.16 max 0.56  torso up min 0.86  head above ground min 2.73  lowest body part -1.16
+[ANIM] idle           frames 181  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.87  lowest body part -1.03
+[ANIM] rest start: LeftAnkle 17(+0) LeftElbow 8(+0) LeftHip 21(+0) LeftKnee 33(+0) LeftShoulder 5(+0) LeftWrist 0(+0) Neck 4(+0) RightAnkle 8(+0) RightElbow 14(+0) RightHip 27(+0) RightKnee 27(+0) RightShoulder 8(+0) RightWrist 0(+0) Root 0(+0) Waist 3(+0)
+[ANIM] combo side     frames 199  feet gap (grounded frames) min -1.03 max -0.92  torso up min 0.87  head above ground min 2.03  lowest body part -1.13
+[ANIM] ready stance   frames 121  feet gap (grounded frames) min -1.00 max -0.95  torso up min 0.99  head above ground min 2.67  lowest body part -1.10
+[ANIM] rest after combo 1: LeftAnkle 17(-0) LeftElbow 24(+16) LeftHip 25(+4) LeftKnee 39(+6) LeftShoulder 27(+21) LeftWrist 0(+0) Neck 56(+52) RightAnkle 10(+2) RightElbow 22(+7) RightHip 37(+11) RightKnee 40(+13) RightShoulder 10(+3) RightWrist 0(+0) Root 3(+3) Waist 7(+4)
+[ANIM] combo 3/4      frames 198  feet gap (grounded frames) min -1.03 max -0.92  torso up min 0.86  head above ground min 2.00  lowest body part -1.13
+[ANIM] ready stance   frames 121  feet gap (grounded frames) min -1.00 max -0.95  torso up min 0.99  head above ground min 2.60  lowest body part -1.10
+[ANIM] rest after combo 2: LeftAnkle 17(-0) LeftElbow 14(+5) LeftHip 25(+4) LeftKnee 39(+6) LeftShoulder 22(+17) LeftWrist 0(+0) Neck 54(+51) RightAnkle 10(+2) RightElbow 19(+4) RightHip 37(+11) RightKnee 40(+13) RightShoulder 7(-1) RightWrist 0(+0) Root 3(+3) Waist 6(+4)
+[ANIM] whirlwind 3/4  frames  97  feet gap (grounded frames) min -1.00 max -0.95  torso up min 0.98  head above ground min 2.49  lowest body part -1.12
+[ANIM] rest after whirlwind 1: LeftAnkle 18(+0) LeftElbow 9(+0) LeftHip 21(+1) LeftKnee 34(+1) LeftShoulder 5(-1) LeftWrist 0(+0) Neck 5(+1) RightAnkle 9(+0) RightElbow 15(+0) RightHip 27(+1) RightKnee 29(+1) RightShoulder 8(+0) RightWrist 0(+0) Root 0(+0) Waist 3(+0)
+[ANIM] whirlwind side frames  97  feet gap (grounded frames) min -1.00 max -0.95  torso up min 0.98  head above ground min 2.49  lowest body part -1.12
+[ANIM] rest after whirlwind 2: LeftAnkle 32(+15) LeftElbow 34(+25) LeftHip 40(+19) LeftKnee 66(+33) LeftShoulder 14(+9) LeftWrist 0(+0) Neck 8(+4) RightAnkle 21(+12) RightElbow 50(+36) RightHip 47(+20) RightKnee 61(+34) RightShoulder 24(+16) RightWrist 0(+0) Root 13(+13) Waist 12(+10)
+[ANIM] leap           frames 133  feet gap (grounded frames) min -1.00 max 3.33  torso up min 0.54  head above ground min 2.72  lowest body part -1.10
+[ANIM] rest after leap: LeftAnkle 17(-0) LeftElbow 8(-0) LeftHip 20(-0) LeftKnee 32(-1) LeftShoulder 6(+0) LeftWrist 0(+0) Neck 4(+0) RightAnkle 8(-0) RightElbow 14(-0) RightHip 26(-0) RightKnee 27(-1) RightShoulder 8(+0) RightWrist 0(+0) Root 0(+0) Waist 3(-0)
+[ANIM] hurt           frames 133  feet gap (grounded frames) min 0.24 max 0.59  torso up min 0.93  head above ground min 3.34  lowest body part -0.07
+[ANIM] goblin hits taken 5
+[ANIM] long idle      frames 721  feet gap (grounded frames) min -0.24 max 0.30  torso up min 0.91  head above ground min 3.64  lowest body part -0.24
+[ANIM] rest end: LeftAnkle 17(+0) LeftElbow 11(+3) LeftHip 21(+0) LeftKnee 33(+0) LeftShoulder 4(-1) LeftWrist 0(+0) Neck 4(+0) RightAnkle 8(+0) RightElbow 18(+4) RightHip 27(+0) RightKnee 28(+0) RightShoulder 8(+1) RightWrist 0(+0) Root 0(+0) Waist 3(-0)
+[ANIM] knock out      frames 241  feet gap (grounded frames) min 0.01 max 0.03  torso up min -0.08  head above ground min -0.80  lowest body part -0.80
+[ANIM] DONE

@@ -1,0 +1,19 @@
+merged seams: 2723 -> 1595 vertices
+triangles 3235, vertices 1595, height 2.20
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\slime_rigged_paint.png (1024, 1024)
+CHECK zero-weight vertices 0, over 4 bones 0
+CHECK pose squash   max edge stretch 1.92x (over 1.6x: 10), most squeezed 0.80x (under 1/1.6: 0), lowest point -0.000
+CHECK pose stretch  max edge stretch 1.22x (over 1.6x: 0), most squeezed 0.67x (under 1/1.6: 0), lowest point -0.000
+CHECK pose wobble   max edge stretch 1.31x (over 1.6x: 0), most squeezed 0.75x (under 1/1.6: 0), lowest point -0.000
+BONES (rest, studs, front -Y, left +X):
+  Root     parent -      head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.22)
+  Body1    parent Root   head (-0.00  0.00  0.11) tail ( 0.03  0.29  0.77)
+  Body2    parent Body1  head ( 0.03  0.29  0.77) tail (-0.02 -0.04  1.43)
+  Body3    parent Body2  head (-0.02 -0.04  1.43) tail ( 0.06  0.41  1.98)
+  Top      parent Body3  head ( 0.06  0.41  1.98) tail ( 0.06  0.41  2.20)
+  Bulge.F  parent Body1  head ( 0.03  0.03  0.22) tail (-0.40 -1.01  0.22)
+  Bulge.B  parent Body1  head ( 0.03  0.03  0.22) tail ( 0.29  1.88  0.22)
+  Bulge.L  parent Body1  head ( 0.03  0.03  0.22) tail ( 1.54  0.58  0.22)
+  Bulge.R  parent Body1  head ( 0.03  0.03  0.22) tail (-1.38  0.03  0.22)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\slime_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\slime_rigged.fbx 1703612 bytes

@@ -1,0 +1,15 @@
+[ANIM] GoblinKing leg rest 8.7 deg, 2.89 studs
+[ANIM] GoblinKing walk side: height 18.4; lowest ankle vs ground 0.39..1.12 (rest 0.93); planted-foot slide 0.001 studs per contact over 6 contacts (worst 0.004)
+[ANIM] GoblinKing walk 3/4: height 18.4; lowest ankle vs ground 0.46..1.42 (rest 0.93); planted-foot slide 0.001 studs per contact over 3 contacts (worst 0.004)
+[ANIM] GoblinKing bashing nil
+[ANIM] GoblinKing bash: height 18.4; lowest ankle vs ground 0.44..1.41 (rest 0.93); planted-foot slide 0.005 studs per contact over 2 contacts (worst 0.010)
+[ANIM] GoblinKing tell charge
+[ANIM] GoblinKing tell charge: on screen 130 px at rest, 110..126 px in the tell (-16% / -3%); top -27..-5% of its height
+[MONSTERANIM] GoblinKing slid 0.75: w 1.00, back false, hit 0.0, bashing false, tell , turn 0.69
+[MONSTERANIM] GoblinKing slid 0.26: w 1.00, back false, hit 0.0, bashing false, tell , turn 0.39
+[MONSTERANIM] GoblinKing slid 0.11: w 1.00, back false, hit 0.0, bashing false, tell , turn 0.06
+[MONSTERANIM] GoblinKing slid 0.12: w 1.00, back false, hit 0.0, bashing false, tell , turn 0.01
+[ANIM] GoblinKing tell slam
+[ANIM] GoblinKing tell slam: on screen 157 px at rest, 150..174 px in the tell (-4% / +11%); top -9..+13% of its height
+[MONSTERANIM] GoblinKing slid 0.25: w 1.00, back false, hit 0.0, bashing false, tell , turn 0.00
+[ANIM] GoblinKing dead true removed true

@@ -1,0 +1,46 @@
+merged seams: 2520 -> 1670 vertices
+triangles 3320, vertices 1670, height 2.80
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\imp_rigged_paint.png (1024, 1024)
+landmarks: crotch 0.45 hips 0.57 chest 1.01 shoulders 1.37 neck 1.51 top 2.80
+  L hand (1.14, -0.01, 0.82) shoulder (0.77, 0.11, 1.37) foot (0.51, -0.03, 0.05)
+  R hand (-1.11, -0.04, 0.82) shoulder (-0.77, 0.11, 1.37) foot (-0.51, -0.03, 0.05)
+no weapon: nothing reaches out of the right hand
+tail: 74 vertices, 3 bones
+wing L: 34 vertices
+wing R: 34 vertices
+cut 34 welded edges (arms to legs or body well below the armpits)
+automatic weights: 19 vertices had no weight (given their nearest bone)
+test poses: real use (arms 60, head 25, swing 100)
+stretch after binding: arms_up max 12.44x (89 edges over 1.6x, 87 of them visible), swing max 16.99x (47 edges over 1.6x, 43 of them visible), knees_45 max 1.37x (0 edges over 1.6x, 0 of them visible), head_turn max 2.03x (9 edges over 1.6x, 9 of them visible)
+final (best round): arms_up max 12.44x (78 edges over 1.6x, 72 of them visible), swing max 16.99x (46 edges over 1.6x, 38 of them visible), knees_45 max 1.37x (0 edges over 1.6x, 0 of them visible), head_turn max 1.81x (6 edges over 1.6x, 5 of them visible)
+CHECK zero-weight vertices 0, over 4 bones 0, head vertices on another bone 0 of 623, weapon vertices on another bone n/a (no weapon)
+CHECK pose arms_up   max edge stretch 12.44x, edges over 1.6x: 78, of them grown more than 0.03 studs: 72
+CHECK pose swing     max edge stretch 16.99x, edges over 1.6x: 46, of them grown more than 0.03 studs: 38
+CHECK pose knees_45  max edge stretch 1.37x, edges over 1.6x: 0, of them grown more than 0.03 studs: 0
+CHECK pose head_turn max edge stretch 1.81x, edges over 1.6x: 6, of them grown more than 0.03 studs: 5
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.34)
+  Hips        parent Root        head ( 0.00  0.37  0.57) tail ( 0.00  0.48  0.69)
+  Spine       parent Hips        head ( 0.00  0.48  0.69) tail ( 0.00  0.29  1.01)
+  Chest       parent Spine       head ( 0.00  0.29  1.01) tail ( 0.00 -0.11  1.40)
+  Neck        parent Chest       head ( 0.00 -0.11  1.40) tail ( 0.00 -0.11  1.51)
+  Head        parent Neck        head ( 0.00 -0.11  1.51) tail ( 0.00 -0.11  2.80)
+  UpperArm.L  parent Chest       head ( 0.77  0.11  1.37) tail ( 0.94  0.13  1.16)
+  LowerArm.L  parent UpperArm.L  head ( 0.94  0.13  1.16) tail ( 1.11 -0.01  0.94)
+  Hand.L      parent LowerArm.L  head ( 1.11 -0.01  0.94) tail ( 1.14 -0.01  0.73)
+  UpperArm.R  parent Chest       head (-0.77  0.11  1.37) tail (-0.93  0.12  1.16)
+  LowerArm.R  parent UpperArm.R  head (-0.93  0.12  1.16) tail (-1.09 -0.04  0.94)
+  Hand.R      parent LowerArm.R  head (-1.09 -0.04  0.94) tail (-1.11 -0.04  0.73)
+  Wing.L      parent Chest       head ( 0.94  0.27  1.25) tail ( 1.00  0.14  1.77)
+  Wing.R      parent Chest       head (-0.94  0.27  1.25) tail (-1.00  0.14  1.77)
+  UpperLeg.L  parent Hips        head ( 0.39  0.37  0.46) tail ( 0.45  0.11  0.30)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.45  0.11  0.30) tail ( 0.51  0.03  0.14)
+  Foot.L      parent LowerLeg.L  head ( 0.51  0.03  0.14) tail ( 0.51 -0.26  0.03)
+  UpperLeg.R  parent Hips        head (-0.39  0.37  0.46) tail (-0.45  0.11  0.30)
+  LowerLeg.R  parent UpperLeg.R  head (-0.45  0.11  0.30) tail (-0.51  0.03  0.14)
+  Foot.R      parent LowerLeg.R  head (-0.51  0.03  0.14) tail (-0.51 -0.26  0.03)
+  Tail1       parent Hips        head ( 0.00  0.84  0.57) tail (-0.45  1.47  0.43)
+  Tail2       parent Tail1       head (-0.45  1.47  0.43) tail (-0.60  1.69  0.56)
+  Tail3       parent Tail2       head (-0.60  1.69  0.56) tail (-0.78  1.93  0.63)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\imp_rig_round1
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\imp_rigged.fbx 1997724 bytes

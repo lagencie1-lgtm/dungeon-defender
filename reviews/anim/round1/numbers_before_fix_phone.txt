@@ -1,0 +1,22 @@
+[ANIM] hero Swordmaster
+[ANIM] outpost walk   frames 118  feet gap (grounded frames) min -1.15 max 0.48  torso up min 0.91  head above ground min 2.87  lowest body part -1.15
+[ANIM] idle           frames 180  feet gap (grounded frames) min -1.00 max -0.95  torso up min 1.00  head above ground min 2.81  lowest body part -1.03
+[ANIM] rest start: 
+[ANIM] combo side     frames 199  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.87  lowest body part -1.03
+[ANIM] ready stance   frames 121  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.88  lowest body part -1.03
+[ANIM] rest after combo 1: 
+[ANIM] combo 3/4      frames 198  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.87  lowest body part -1.03
+[ANIM] ready stance   frames 121  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.87  lowest body part -1.03
+[ANIM] rest after combo 2: 
+[ANIM] whirlwind 3/4  frames  97  feet gap (grounded frames) min -0.99 max -0.97  torso up min 1.00  head above ground min 2.87  lowest body part -1.03
+[ANIM] rest after whirlwind 1: 
+[ANIM] whirlwind side frames  96  feet gap (grounded frames) min -1.00 max -0.97  torso up min 1.00  head above ground min 2.88  lowest body part -1.03
+[ANIM] rest after whirlwind 2: 
+[ANIM] leap           frames 133  feet gap (grounded frames) min -0.99 max 2.68  torso up min 0.92  head above ground min 2.88  lowest body part -1.03
+[ANIM] rest after leap: 
+[ANIM] hurt           frames 133  feet gap (grounded frames) min 2.42 max 2.68  torso up min 1.00  head above ground min 3.87  lowest body part -0.03
+[ANIM] goblin hits taken 3
+[ANIM] long idle      frames 721  feet gap (grounded frames) min -0.24 max 0.22  torso up min 0.95  head above ground min 3.75  lowest body part -0.24
+[ANIM] rest end: 
+[ANIM] knock out      frames 241  feet gap (grounded frames) min 0.01 max 0.03  torso up min -0.04  head above ground min -0.75  lowest body part -0.75
+[ANIM] DONE

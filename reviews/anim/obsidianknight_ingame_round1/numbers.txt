@@ -1,0 +1,6 @@
+[ANIM] ObsidianKnight leg rest 3.0 deg, 2.50 studs
+[ANIM] ObsidianKnight walk side: height 10.5; lowest ankle vs ground 0.55..0.69 (rest 0.64); planted-foot slide 0.000 studs per contact over 12 contacts (worst 0.000)
+[ANIM] ObsidianKnight walk 3/4: height 10.5; lowest ankle vs ground 0.53..0.69 (rest 0.64); planted-foot slide 0.000 studs per contact over 10 contacts (worst 0.000)
+[ANIM] ObsidianKnight bashing true
+[ANIM] ObsidianKnight bash: height 10.5; lowest ankle vs ground 0.36..0.72 (rest 0.64); planted-foot slide 0.087 studs per contact over 8 contacts (worst 0.323)
+[ANIM] ObsidianKnight dead true removed true

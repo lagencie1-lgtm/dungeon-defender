@@ -222,7 +222,8 @@ local function hit(player, enemy, base, knock)
 	if not enemy.stats.Dummy then
 		Telemetry.First(player, "FirstHeroHit")
 	end
-	EnemyService.Damage(enemy, damage, player, true, crit)
+	local root = rootOf(player)
+	EnemyService.Damage(enemy, damage, player, true, crit, root and root.Position)
 	EnemyService.HitStop(enemy, crit and 0.11 or 0.06)
 	EnemyService.Knockback(enemy, knock or 1.5)
 end
@@ -643,7 +644,21 @@ local function onCharacter(player, character)
 		local maxHealth = player:GetAttribute("HeroMaxHealth") or Config.HeroBaseHealth
 		humanoid.MaxHealth = maxHealth
 		humanoid.Health = maxHealth
+		-- the body stays in one piece and in place when knocked out: HeroAnim plays the fall (knees buckle, over backwards)
+		humanoid.BreakJointsOnDeath = false
 		humanoid.Died:Connect(function()
+			local r = character:FindFirstChild("HumanoidRootPart")
+			if r then
+				r.Anchored = true
+			end
+			-- bodies with Roblox's upgraded joints go limp on death (a ragdoll that sank into the ground,
+			-- 2026-11-25): keep every joint driven so HeroAnim's fall is what players see
+			for _, joint in character:GetDescendants() do
+				if joint:IsA("AnimationConstraint") then
+					joint.IsKinematic = true
+					joint.Enabled = true
+				end
+			end
 			Remotes.Notify:FireAllClients(player.DisplayName .. " got bonked by goblins! Back in a few seconds",
 				Color3.fromRGB(255, 140, 140))
 		end)
@@ -1257,8 +1272,9 @@ function HeroService.Start()
 				rainbowParts[part] = nil
 			end
 		end
-		-- goblins hurt heroes that stand in their way
+		-- goblins hurt heroes that stand in their way (and swing at them: Bashing, for MonsterAnim)
 		local gameDt = dt * Clock.scale
+		local bashing = {}
 		for _, player in Players:GetPlayers() do
 			local root = rootOf(player)
 			if root then
@@ -1272,11 +1288,19 @@ function HeroService.Start()
 					if not e.dead and not opening
 						and (Vector3.new(e.position.X, 0, e.position.Z) - flat).Magnitude < 2.5 + e.stats.Size * 0.6 then
 						hurt += (Config.ContactDamage[e.name] or 5) * gameDt
+						bashing[e] = true
 					end
 				end
 				if hurt > 0 then
 					humanoid:TakeDamage(hurt)
 				end
+			end
+		end
+		for _, e in EnemyService.GetActive() do
+			if e.rigged then
+				-- (a hero in its way, or the wall it is stopped at: the barricade branch sets e.bashing)
+				EnemyService.SetBashing(e, bashing[e] or e.bashing == true)
+				EnemyService.SetPileRow(e, e.pileRow)
 			end
 		end
 	end)

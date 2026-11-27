@@ -1,0 +1,7 @@
+[ANIM] MoltenGolem leg rest 2.6 deg, 5.80 studs
+[ANIM] MoltenGolem walk side: height 21.1; lowest ankle vs ground 1.20..1.43 (rest 1.43); planted-foot slide 0.002 studs per contact over 3 contacts (worst 0.006)
+[ANIM] MoltenGolem walk 3/4: height 21.1; lowest ankle vs ground -0.33..1.83 (rest 1.43); planted-foot slide 0.019 studs per contact over 2 contacts (worst 0.037)
+[ANIM] MoltenGolem bashing nil
+[ANIM] MoltenGolem bash: height 21.1; lowest ankle vs ground -0.39..1.85 (rest 1.43); planted-foot slide 0.068 studs per contact over 2 contacts (worst 0.103)
+[ANIM] MoltenGolem tell slam
+[ANIM] MoltenGolem dead true removed true

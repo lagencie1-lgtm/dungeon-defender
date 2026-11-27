@@ -1,0 +1,32 @@
+-17.2	server ready
+-0.1	film start
+-0.1	outpost walk
+1.8	run start
+1.8	StartRun
+8.9	idle side
+12.5	combo side
+12.5	attack 1
+13.1	attack 2
+13.7	attack 3
+15.9	stance side
+21.0	combo 3/4
+21.0	attack 1
+21.6	attack 2
+22.1	attack 3
+24.3	stance 3/4
+29.5	whirlwind 3/4
+39.2	whirlwind side
+42.8	leap
+47.0	hurt
+47.0	Hit
+48.1	Hit
+49.2	wave
+49.2	Heal
+50.9	goblin hit
+51.1	Heal
+52.3	long idle
+64.3	knock out
+64.3	KO
+68.3	back
+74.3	film end
+74.3	Done

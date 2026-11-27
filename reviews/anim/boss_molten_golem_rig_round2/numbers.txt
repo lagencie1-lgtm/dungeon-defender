@@ -1,0 +1,34 @@
+merged seams: 7732 -> 2734 vertices
+triangles 5465, vertices 2734, height 4.00
+texture C:\Projects\RealmGuardians-anim\art\models\rigged\boss_molten_golem_rigged_paint.png (1024, 1024)
+rigid pieces: 16 bones own pieces, 0 border edges cut, 0 cap faces; vertices per bone Chest 30, Foot.L 109, Foot.R 102, Hand.L 270, Hand.R 270, Head 446, Hips 101, LowerArm.L 103, LowerArm.R 101, LowerLeg.L 141, LowerLeg.R 139, Spine 115, UpperArm.L 240, UpperArm.R 225, UpperLeg.L 174, UpperLeg.R 168
+CHECK zero-weight vertices 0, vertices blended between bones (on joined seams) 418
+CHECK pose arms_up   joined seams: max edge stretch 6.17x, edges over 1.6x: 149
+CHECK pose arms_up   widest gap at a cut 0.000 studs; cut points opening more than 0.30 studs: 0 of 0
+CHECK pose swing     joined seams: max edge stretch 8.84x, edges over 1.6x: 143
+CHECK pose swing     widest gap at a cut 0.000 studs; cut points opening more than 0.30 studs: 0 of 0
+CHECK pose knees_45  joined seams: max edge stretch 3.51x, edges over 1.6x: 62
+CHECK pose knees_45  widest gap at a cut 0.000 studs; cut points opening more than 0.30 studs: 0 of 0
+CHECK pose head_turn joined seams: max edge stretch 3.44x, edges over 1.6x: 75
+CHECK pose head_turn widest gap at a cut 0.000 studs; cut points opening more than 0.30 studs: 0 of 0
+BONES (rest, studs, front -Y, left +X):
+  Root        parent -           head ( 0.00  0.00  0.00) tail ( 0.00  0.00  0.48)
+  Hips        parent Root        head ( 0.00  0.05  1.50) tail ( 0.00  0.05  1.88)
+  Spine       parent Hips        head ( 0.00  0.05  1.88) tail ( 0.00  0.05  2.45)
+  Chest       parent Spine       head ( 0.00  0.05  2.45) tail ( 0.00 -0.05  2.65)
+  Neck        parent Chest       head ( 0.00 -0.05  2.65) tail ( 0.00 -0.05  2.85)
+  Head        parent Neck        head ( 0.00 -0.05  2.85) tail ( 0.00 -0.10  4.00)
+  UpperArm.L  parent Chest       head ( 0.90  0.00  2.75) tail ( 1.29 -0.10  2.16)
+  LowerArm.L  parent UpperArm.L  head ( 1.29 -0.10  2.16) tail ( 1.43 -0.40  1.78)
+  Hand.L      parent LowerArm.L  head ( 1.43 -0.40  1.78) tail ( 1.48 -0.60  0.90)
+  UpperArm.R  parent Chest       head (-0.90  0.00  2.75) tail (-1.29 -0.10  2.16)
+  LowerArm.R  parent UpperArm.R  head (-1.29 -0.10  2.16) tail (-1.43 -0.40  1.78)
+  Hand.R      parent LowerArm.R  head (-1.43 -0.40  1.78) tail (-1.48 -0.60  0.90)
+  UpperLeg.L  parent Hips        head ( 0.45  0.05  1.40) tail ( 0.50 -0.05  0.75)
+  LowerLeg.L  parent UpperLeg.L  head ( 0.50 -0.05  0.75) tail ( 0.55  0.00  0.30)
+  Foot.L      parent LowerLeg.L  head ( 0.55  0.00  0.30) tail ( 0.55 -0.60  0.05)
+  UpperLeg.R  parent Hips        head (-0.45  0.05  1.40) tail (-0.50 -0.05  0.75)
+  LowerLeg.R  parent UpperLeg.R  head (-0.50 -0.05  0.75) tail (-0.55  0.00  0.30)
+  Foot.R      parent LowerLeg.R  head (-0.55  0.00  0.30) tail (-0.55 -0.60  0.05)
+sheets in C:\Projects\RealmGuardians-anim\reviews\anim\boss_molten_golem_rig_round2
+EXPORTED C:\Projects\RealmGuardians-anim\art\models\rigged\boss_molten_golem_rigged.fbx 3256044 bytes

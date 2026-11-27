@@ -1,0 +1,38 @@
+{
+  "name": "htd-film",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "../src/shared"
+      },
+      "AnimCue": {
+        "$className": "RemoteEvent",
+        "$attributes": {
+          "Mode": "ko"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "../src/server"
+      },
+      "AnimServer": {
+        "$path": "anim/Anim.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "../src/client"
+        },
+        "AnimClient": {
+          "$path": "anim/Anim.client.luau"
+        }
+      }
+    },
+    "MaterialService": {
+      "$path": "../src/materials"
+    }
+  }
+}

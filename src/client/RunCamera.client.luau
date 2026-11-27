@@ -92,6 +92,65 @@ GameState:GetAttributeChangedSignal("State"):Connect(function()
 		zoomTo(RUN_DISTANCE, PITCH, centre)
 	end
 end)GameState:GetAttributeChangedSignal("State"):Connect(update)
+
+-- (Lemp 2026-11-26, option C2) while a wall the hero can see is under attack, the camera looks down WallTilt degrees
+-- more, so the pile shows above the wall; springs in and out. The player's own camera moves stay theirs: each frame
+-- only the change of the tilt is applied, about the camera's focus, after the camera has updated.
+local tilt, tiltVel, applied = 0, 0, 0
+local function wallUnderAttack()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local camera = workspace.CurrentCamera
+	local towers = workspace:FindFirstChild("Towers")
+	local enemies = workspace:FindFirstChild("Enemies")
+	if not (root and camera and towers and enemies) then
+		return false
+	end
+	for _, wall in towers:GetChildren() do
+		if wall:IsA("Model") and wall:GetAttribute("TowerType") == "Barricade" and not wall:GetAttribute("Broken") then
+			local at = wall:GetPivot().Position
+			local _, onScreen = camera:WorldToViewportPoint(at)
+			if onScreen and (at - root.Position).Magnitude < Config.RunCamera.WallRange then
+				for _, m in enemies:GetChildren() do
+					if m:GetAttribute("PileRow") ~= nil and m:GetAttribute("Bashing")
+						and (m:GetPivot().Position - at).Magnitude < 20 then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+local nextCheck, attacked = 0, false
+RunService:BindToRenderStep("WallTilt", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	local camera = workspace.CurrentCamera
+	if not camera or camera.CameraType ~= Enum.CameraType.Custom then
+		return
+	end
+	local now = os.clock()
+	if now >= nextCheck then
+		nextCheck = now + 0.25
+		local state = GameState:GetAttribute("State")
+		attacked = (state == "Break" or state == "Wave") and wallUnderAttack()
+	end
+	local goal = attacked and Config.RunCamera.WallTilt or 0
+	local w = 2 * math.pi / Config.RunCamera.TiltTime * 0.6
+	tiltVel += ((goal - tilt) * w * w - tiltVel * 2 * 0.9 * w) * dt
+	tilt += tiltVel * dt
+	local delta = tilt - applied
+	if math.abs(delta) < 1e-3 then
+		return
+	end
+	applied = tilt
+	local focus = camera.Focus.Position
+	local offset = camera.CFrame.Position - focus
+	local right = camera.CFrame.RightVector
+	-- (down more: the eye swings up about the focus; never past straight down)
+	local turned = CFrame.fromAxisAngle(right, math.rad(-delta)) * offset
+	if turned.Unit.Y < 0.97 then
+		camera.CFrame = CFrame.lookAt(focus + turned, focus)
+	end
+end)
 player.CharacterAdded:Connect(function()
 	last = nil
 	task.wait(0.5)

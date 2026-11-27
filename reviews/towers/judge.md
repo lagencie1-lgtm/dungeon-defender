@@ -589,3 +589,111 @@ A’s three biggest remaining flaws:
 2. **The lookout is too busy and open.** Add a more solid, dark wooden balcony front, then use broader green-and-cream drapes to simplify the silhouette.
 3. **The stone base is washed out and cluttered.** Darken the mortar and recesses, simplify the scattered stones, and give the doorway a stronger dark opening and gold trim.
 
+## the Ballista, level 1: a big crossbow with a curved bow and taut string on a wooden trestle
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 7/10 |
+| Whole tower visible and well framed | 6/10 | 7/10 |
+| Shape and proportions true to the painting | 4/10 | 5/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+**B is better overall.** Its larger bow makes the ballista easier to recognize, though the silhouette still falls short of the concept.
+
+1. **The bow dominates the trestle.** It reads as a large golden hoop rather than a thick, curved wooden bow. Reduce its span slightly, darken it to warm brown, and give it a clear tapered shape.
+2. **The firing mechanism is hard to understand.** The string and bolt merge into a bright tangle. Use one pale, taut string and one thicker, dark shaft with a distinct arrowhead, separated clearly from the bow.
+3. **The support looks thin and cramped.** The painting has a broad, sturdy A-frame with substantial cross-bracing; B’s legs disappear into the base. Widen and thicken the legs, raise the crossbar, and keep their silhouette clear against the pale stone.
+
+## the Ballista, level 2: a big crossbow with a curved bow and taut string on a wooden trestle
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 4/10 | 6/10 |
+| Whole tower visible and well framed | 6/10 | 7/10 |
+| Shape and proportions match the painting | 4/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+**B is better overall.** Its larger bow makes the weapon easier to recognise, though it still feels cluttered and unlike the sturdy, compact machine in the painting.
+
+The three biggest remaining flaws in B:
+
+1. **The bow and string are hard to untangle.** The bright, almost horizontal string competes with the limbs and frame. Make it a thinner, warm rope colour and connect it clearly between the two bow tips.
+2. **The trestle is buried in visual noise.** The painting has broad, readable timber legs; B looks like a tangle on a solid box. Use four thicker, splayed legs with clear gaps between them, and reduce the box-like base.
+3. **The weapon lacks the painting’s strong proportions.** The bow dominates while the wooden stock and bolt are difficult to distinguish. Thicken and lengthen the stock, then give the bolt one clear, contrasting arrowhead and red fletching.
+
+## the Ballista, level 3: a big crossbow with a curved bow and taut string on a wooden trestle
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions true to the painting | 4/10 | 5/10 |
+| Colours and materials | 5/10 | 6/10 |
+
+**B is better overall.** Its darker wood and clearer red banners give the tower more contrast. Neither version captures the painting’s strong, readable silhouette.
+
+B’s three biggest remaining flaws:
+
+1. **The weapons read as a tangle of rings and sticks.** Enlarge and simplify each curved bow, make the strings taut and distinct, and give each bolt a clear point and red fletching.
+2. **The two ballistae look stacked rather than side by side.** Spread them across the platform and lower their profiles so the twin weapons form one broad, powerful silhouette.
+3. **The base is too pale and visually busy.** Use fewer, larger stone blocks, deepen the brown timber bands, and enlarge the central red banner to match the painting’s colour hierarchy.
+
+## the Flame Cannon, level 2: a bronze cannon on a banded wooden drum, a coal hopper behind
+codex gpt-6.1-terra; A = after, B = before
+
+**A is picture 2; B is picture 3.**
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 5/10 |
+| Whole tower visible and well framed | 5/10 | 5/10 |
+| Shape and proportions match the painting | 5/10 | 4/10 |
+| Colours and materials | 6/10 | 5/10 |
+
+**A is better overall.** Its broader, rounder base and more substantial cannon get closer to the concept. Neither version makes the coal hopper or wooden supports easy to read at phone size.
+
+The three biggest flaws in A:
+
+1. **The hopper disappears into the background.** Raise and widen it behind the barrel, with a distinct gold rim and a few large, dark coal shapes.
+2. **The cannon looks like a small tube on a pedestal.** Enlarge and thicken the barrel, and give its muzzle a wider orange-lit opening with a bold bronze rim.
+3. **The base reads as stacked gold rings on a white slab.** Make the wooden drum taller and darker, add two broad angled timber supports, and break the pale foundation into chunky stone blocks.
+
+## the Frost Crystal, level 3: a silver crown of ice crystals with a glowing central gem on a pale stone drum
+codex gpt-6.1-terra; A = before, B = after
+
+**A is better overall.** Its visible silver arch and faceted central crystal give it a closer resemblance to the painting. B’s bright cyan gem grabs attention, but it overwhelms the crown and loses its icy form.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 5/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions true to the painting | 5/10 | 4/10 |
+| Colours and materials | 6/10 | 5/10 |
+
+**A’s three biggest remaining flaws:**
+
+1. **The crown reads as a cluster of shards, not an ornate silver setting.** Thicken and brighten the circular arch, and add the prominent curled silver arms around the front.
+2. **The silhouette is too narrow and upright.** Spread the outer ice spires wider and angle them outward; give the stone drum a broader, heavier base.
+3. **The signature front details disappear.** Enlarge the central diamond-shaped silver mount and blue inset, then add a readable pale banner with a simple snowflake. Use stronger light–dark separation so they survive at phone size.
+
+## the Storm Obelisk, level 1: a pale rune stone with a glowing violet lightning rune between dark wooden posts
+codex gpt-6.1-terra; A = after, B = before
+
+**B is better overall.** Its purple rune reads more naturally; A’s cyan-edged rectangular mark draws attention away from the lightning shape.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 5/10 | 6/10 |
+
+B’s three biggest remaining flaws:
+
+1. **The rune is too small and fragmented.** Enlarge the violet lightning bolt and give it a clean, continuous silhouette with a restrained glow.
+2. **The stone reads as a white cone.** Broaden and flatten its front face, add an irregular faceted outline, and use warm beige shading to match the concept’s hefty monolith.
+3. **The wooden supports barely register.** Make the dark brown posts taller and wider on both sides, with clear gold bands contrasting against the pale stone.
+

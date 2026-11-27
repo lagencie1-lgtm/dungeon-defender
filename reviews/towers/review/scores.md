@@ -3,9 +3,9 @@
 | ranger 1 | 84.7% | 15.1% | 11.1 | 1.13 |
 | ranger 2 | 74.0% | 32.4% | 9.7 | 1.12 |
 | ranger 3 | 79.1% | 27.4% | 10.1 | 1.03 |
-| ballista 1 | 73.8% | 18.6% | 17.8 | 0.80 |
-| ballista 2 | 67.2% | 23.6% | 17.7 | 0.78 |
-| ballista 3 | 78.2% | 24.9% | 12.7 | 0.62 |
+| ballista 1 | 68.6% | 24.8% | 20.2 | 0.72 |
+| ballista 2 | 70.1% | 19.6% | 17.0 | 0.65 |
+| ballista 3 | 78.2% | 24.9% | 12.6 | 0.60 |
 | storm 1 | 85.6% | 17.5% | 17.8 | 0.72 |
 | storm 2 | 85.3% | 17.0% | 16.7 | 0.88 |
 | storm 3 | 82.3% | 16.7% | 17.8 | 0.91 |
@@ -24,38 +24,38 @@ Codex as an outside art director: painting, 16-frame turntable and phone view pe
 
 | level | base and footing | walls / stilts | lookout and rails | roof | archers | flag, banners, ivy | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7 | 6 | 6 | 6 | 4 | 7 | 6 | The archer is too small and visually lost inside the tower; enlarge the figure and give it the painting’s clear, outward-facing drawn-bow pose. |
-| 2 | 7 | 6 | 6 | 8 | 4 | 6 | 6 | The archer reads as a tiny green face rather than a bow-wielding defender; enlarge the figure and give the bow and aiming pose a clear silhouette at phone size. |
-| 3 | 7 | 6 | 6 | 8 | 5 | 4 | 6 | The side banners are missing and the central flag is too small to read on a phone; add the two large hanging banners and enlarge their leaf emblems. |
+| 1 | 8 | 7 | 6 | 7 | 4 | 6 | 6 | The archer is too small and obscured to read at phone size; enlarge the figure and bow and give them a clearer silhouette above the rail. |
+| 2 | 7 | 7 | 6 | 7 | 4 | 6 | 6 | The archer reads as a tiny green face rather than a bow-wielding defender; enlarge the figure and exaggerate the bow and aiming pose for phone-size readability. |
+| 3 | 7 | 5 | 6 | 7 | 4 | 3 | 5 | The archers read as tiny green faces instead of bow-wielding defenders; enlarge their silhouettes and make the bows and drawn arms clearly visible at phone size. |
 
 ### Ballista
 
 | level | base and footing | trestle | stock and bolt | bow and string | level extras (gear, platform, bastion) | gold and iron fittings | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7 | 6 | 5 | 5 | 7 | 4 | 5 | The firing assembly collapses into a thin, indistinct shape at phone size; enlarge the curved bow, stock, and bolt and give each a clearer silhouette. |
-| 2 | 5 | 6 | 5 | 4 | 4 | 6 | 5 | The oversized wooden box base replaces the concept's open footing and dominates the phone-size silhouette; remove it and expose the braced legs on the stone foundation. |
-| 3 | 7 | 5 | 5 | 2 | 5 | 5 | 5 | The bows and strings read as flat horizontal bars at phone size; give each bow a pronounced curved silhouette and a clearly visible taut string. |
+| 1 | 7 | 6 | 5 | 5 | 7 | 4 | 5 | The bow reads as a chunky orange bar instead of a powerful curved wooden limb; give it a continuous dark wood silhouette, thicker rope bindings, and a clearly visible string. |
+| 2 | 4 | 6 | 5 | 5 | 3 | 4 | 5 | The bulky wooden box base hides the open, metal-braced footing that gives the concept its character; replace it with a low stone ring and clearly separated timber feet. |
+| 3 | 6 | 4 | 5 | 2 | 5 | 5 | 4 | The bows and strings collapse into thin, nearly invisible horizontal shapes; enlarge and thicken the curved limbs and strings so both ballistae read clearly at phone size. |
 
 ### Storm Obelisk
 
 | level | base and footing | stone / skirt | obelisk body | runes | copper rings and horns | orb / rod | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7 | 5 | 6 | 4 | 4 | 2 | 5 | The lightning rune floats off the stone as a bulky purple sign; embed a thinner glowing rune in the obelisk face and remove the protruding dark gems. |
-| 2 | 7 | 4 | 6 | 5 | 6 | 5 | 5 | The skirt reads as a clutter of thin wooden stakes rather than the concept’s solid cream stone base with heavy dark buttresses and bold gold trim; simplify and enlarge those forms. |
-| 3 | 6 | 5 | 5 | 4 | 5 | 5 | 5 | The signature lightning rune is too small and obscured by the rings to read on a phone; enlarge it, increase its contrast, and keep the rings clear of its silhouette. |
+| 1 | 7 | 6 | 5 | 3 | 4 | 2 | 4 | The lightning rune and diamond accents float in front of the stone and read as a separate rod at phone size; embed them into a flatter obelisk face and give them the concept's soft purple glow. |
+| 2 | 6 | 4 | 6 | 4 | 5 | 6 | 5 | The skirt is cluttered with narrow posts and small stones instead of the concept’s broad, readable stone arches and heavy timber supports; simplify and enlarge those shapes for phone-sized play. |
+| 3 | 6 | 4 | 5 | 4 | 5 | 6 | 5 | The obelisk’s central lightning rune is too small and obscured by the copper rings; enlarge it and keep the rings behind the front face so it reads clearly on a phone. |
 
 ### Flame Cannon
 
 | level | base and footing | drum / boiler | barrel(s) | bore and fire | gold and bronze fittings | hopper, chimney, windows | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 7 | 5 | 5 | 3 | 4 | 9 | 5 | The fire reads as a flat orange disc instead of a deep, glowing flame; add a dark recessed bore with a bright, layered flame that remains visible at phone size. |
-| 2 | 6 | 5 | 6 | 3 | 5 | 4 | 5 | The fire-filled muzzle is too dark and small to read on a phone; enlarge the opening and give it a bright yellow-orange glow. |
-| 3 | 6 | 5 | 6 | 4 | 5 | 4 | 5 | The barrels read as dark, banded tubes rather than glowing flame cannons; enlarge the openings and fill them with bright yellow-orange fire that remains visible at phone size. |
+| 1 | 7 | 5 | 5 | 3 | 4 | 8 | 5 | The bore reads as a flat orange disk instead of a deep, flame-filled opening; darken the inner walls and add a few bold, layered flame shapes that remain visible at phone size. |
+| 2 | 6 | 4 | 5 | 3 | 5 | 3 | 4 | The cannon reads as a small dark barrel on a wooden drum rather than the concept’s dominant glowing weapon; enlarge the barrel and bore, brighten the fire, and give it the prominent wooden support frame. |
+| 3 | 7 | 5 | 6 | 4 | 5 | 4 | 5 | The tower loses the concept’s bold glowing furnace identity at phone size; enlarge and brighten the barrel fire and windows, and simplify the surrounding dark geometry. |
 
 ### Frost Crystal
 
 | level | base and footing | pedestal and planks | snow and icicles | crystals | silver ring and arch | banner and gems | whole | weakest |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 6 | 5 | 6 | 7 | 3 | 4 | 5 | The oversized, ladder-like planks dominate the pedestal at phone size; replace them with fewer, smoother tapered supports that frame the larger front banner. |
-| 2 | 7 | 4 | 6 | 7 | 5 | 6 | 6 | The dark horizontal plank stacks read as ladders and overwhelm the pedestal; replace them with broad, tapered vertical timber supports matching the concept. |
-| 3 | 7 | 6 | 4 | 6 | 3 | 4 | 5 | The crystal crown hides the central floating gem and turns the distinctive open arch into a generic blue cluster; open up the silhouette and restore the large top crystal and visible central gem. |
+| 1 | 7 | 5 | 6 | 5 | 2 | 4 | 5 | The main crystal reads as a small cluster instead of the painting's dominant, sweeping shard; enlarge and simplify it into one tall, asymmetrical focal crystal. |
+| 2 | 7 | 5 | 7 | 8 | 5 | 5 | 6 | The pedestal's broad, ladder-like planks obscure the tapered structure and compete with the banner; replace them with fewer angled timber supports and enlarge the front banner and central gem. |
+| 3 | 7 | 6 | 3 | 5 | 3 | 4 | 5 | The dense crystal crown hides the concept’s defining open silver arch and floating central gem; simplify and lower the surrounding crystals, enlarge the arch, and give the central gem clear space. |

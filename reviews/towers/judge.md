@@ -1023,3 +1023,59 @@ The three biggest flaws in A:
 2. **The lightning rune is too small and broken up.** Enlarge it into one bold, continuous purple zigzag on the front face, with enough contrast to read without relying on glow.
 3. **The supports look like small gold lumps.** Make the dark wooden posts taller and clearly separated from the stone, then wrap each with a broad gold band.
 
+## the ranger tower, level 1, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is marginally better overall**, though the screenshots are so similar that the difference is hard to judge at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 6/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 5/10 | 5/10 |
+| Colours and materials | 5/10 | 5/10 |
+
+A gets the edge because its front structure and ladder appear slightly clearer. Both show the whole tower, but neither captures the concept’s sturdy, chunky silhouette.
+
+The three biggest flaws in A:
+
+1. **The roof is too pale and delicate.** Make the shingles thicker, darker terracotta, and more irregular, with a heavier timber ridge and gold-capped ends.
+2. **The lower tower reads as a thin cage.** Widen the posts and cross-braces, deepen the wooden platform, and give the stone base larger, more uneven blocks.
+3. **The ranger and ladder get lost in visual noise.** Enlarge the ranger’s hood and face slightly; simplify the ladder into two thick dark rails with a few broad, clearly separated rungs.
+
+## the ranger tower, level 2, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+A is slightly better overall: its warmer, brighter tower is a little easier to read. The difference is small; both look very similar at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 6/10 | 6/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 7/10 | 7/10 |
+| Colours and materials | 7/10 | 6/10 |
+
+A’s three biggest remaining flaws:
+
+1. **The ranger reads as a green face, not an archer.** Enlarge the bow and arrow and silhouette them against the open side of the tower.
+2. **The painted tower’s green flag and front banner barely register.** Give both larger, simpler green shapes with pale trim, and place the flag where it separates from the trees.
+3. **The base and balcony turn into busy, pale detail.** Simplify the vines and stonework into larger shapes, darken the balcony supports, and give the doorway a clearer dark arch.
+
+## the ranger tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall**, though the difference is small. Its base reads a little more cleanly at phone size; B’s scattered pale stones make the bottom look busier.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 7/10 | 7/10 |
+| Whole tower visible and well framed | 9/10 | 9/10 |
+| Shape and proportions | 6/10 | 6/10 |
+| Colours and materials | 7/10 | 6/10 |
+
+The three biggest remaining flaws in **A**:
+
+1. **The stone body is too short and squat.** The painting has a tall, substantial cylinder beneath the balcony. Extend the masonry section and give the arched windows and door more vertical separation.
+2. **The archers dominate the balcony.** Their large heads and bright hoods compete with the tower’s silhouette. Scale them down slightly and recess them behind the railing.
+3. **The materials blur together.** The roof, wood and gold all read as similar warm highlights, while the stone is nearly white. Deepen the roof to brick red, darken the timber and give the stone a warmer, less luminous beige.
+

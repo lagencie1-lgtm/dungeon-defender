@@ -17,6 +17,7 @@ like the picture before any paint goes on.
 Everything is placed around the tower axis; FRONT is the angle (degrees) the door looks to (-90 = -Y, the game's
 front). Units are studs. Colours are the pictures' palette; textures come from art/textures via sculpt/paint."""
 import math
+import os
 import random
 
 import bmesh
@@ -850,3 +851,30 @@ def anchors_report():
         bpy.data.objects.remove(e, do_unlink=True)
     for ln in lines:
         print(ln)
+
+
+def declutter(drop=("Grass", "Pebble", "Rivet", "BandStud", "Knob"), thin=(("Tuft", 2),)):
+    """(2026-11-27, busy-detail round) the phone shows 1.26 times the paintings' fine contrast: parts far under 2 %
+    of the phone silhouette that the painting doesn't clearly show are removed (grass blades, pebbles, rivets, band
+    studs, knobs; their gold dots stay painted in the texture), and the grass clumps thinned to every other one.
+    Called by a builder before cull/bake when HTD_DECLUTTER is not "0"."""
+    import re as _re
+    if os.environ.get("HTD_DECLUTTER", "1") == "0":
+        return 0
+    gone = []
+    for o in list(bpy.context.scene.objects):
+        if o.type != "MESH":
+            continue
+        base = _re.sub(r"[\d.\-]+$", "", o.name)
+        if any(base.startswith(p) or base.endswith(p) for p in drop):
+            gone.append(o)
+            continue
+        for p, k in thin:
+            if base == p:
+                m = _re.search(r"(\d+)", o.name)
+                if m and int(m.group(1)) % k:
+                    gone.append(o)
+    for o in gone:
+        bpy.data.objects.remove(o, do_unlink=True)
+    print("DECLUTTER removed %d parts" % len(gone), flush=True)
+    return len(gone)

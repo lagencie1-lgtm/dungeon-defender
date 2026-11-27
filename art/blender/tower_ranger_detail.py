@@ -164,6 +164,7 @@ else:
         # big, at the rail, leaning over it like the picture's archers (they are what makes level 3 read)
         K.archer_anchor(math.cos(a) * (P["look_r"] - 1.05), math.sin(a) * (P["look_r"] - 1.05), z2 + 0.4, FRONT + s * 14 + 10, 3.1)
 
+K.declutter()   # (2026-11-27, busy-detail round)
 K.anchors_report()
 if not os.environ.get("HTD_FAST"):
     K.cull_hidden()

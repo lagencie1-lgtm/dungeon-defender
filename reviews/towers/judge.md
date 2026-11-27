@@ -969,3 +969,57 @@ The three biggest flaws in both:
 2. **The focal point is missing.** Add a bright central floating diamond and one bold orbit ring. Keep them simple and separated enough to read on a phone.
 3. **The base lacks the painting’s character.** Widen and shorten the lower body, then add a large cream banner with a clear blue snowflake and a prominent diamond crest above it.
 
+## the ballista tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is slightly better overall.** Its two weapons read a little more clearly, though the difference is small.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 5/10 | 4/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions match the painting | 4/10 | 4/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+The three biggest flaws in A:
+
+1. **The ballistas merge into a tangle.** In the painting, two distinct weapons sit side by side. Separate them laterally and simplify the strings and fittings so each has a clear silhouette.
+2. **The tower is too tall and spindly.** The concept has a squat, heavy stone base. Widen the base, shorten the upper assembly, and give the battlements larger, chunkier blocks.
+3. **The focal colours are too fragmented.** The painting has broad dark-wood weapons and one dominant red banner; the game model reads as small flashes of white, gold and red. Enlarge the central banner, deepen the wood colour, and use gold more sparingly on major fittings.
+
+## the frost tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**B is marginally better overall**, mainly because the blue marking on its front banner is a little more visible. The screenshots are extremely close, so the difference is small.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 6/10 |
+| Whole tower visible and well framed | 9/10 | 9/10 |
+| Shape and proportions match the painting | 5/10 | 5/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+B’s three biggest remaining flaws:
+
+1. **The crown reads as a cluster of ice, not the painting’s distinctive composition.** Make the two outer crystals taller and more swept outward, with a clearly separate diamond at the top of the arch.
+2. **The central floating crystal and its magic rings disappear.** Enlarge the inner diamond, darken the space behind it, and use one bold, thin cyan ring that remains visible at phone size.
+3. **The base is too narrow and column-like.** Widen the lower body and stone footing, give the timber supports a stronger outward taper, and make the cream banner and blue snowflake larger.
+
+## the storm tower, level 1, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 4/10 | 4/10 |
+| Whole tower visible and well framed | 7/10 | 7/10 |
+| Shape and proportions | 3/10 | 3/10 |
+| Colours and materials | 4/10 | 3/10 |
+
+**A is slightly better overall.** Its warmer gold and brown supports are easier to distinguish, though both versions lose much of the concept’s character at phone size.
+
+The three biggest flaws in A:
+
+1. **The stone reads as a white cone.** Give it the concept’s broad, irregular upright silhouette, flatter shoulders and warmer beige planes.
+2. **The lightning rune is too small and broken up.** Enlarge it into one bold, continuous purple zigzag on the front face, with enough contrast to read without relying on glow.
+3. **The supports look like small gold lumps.** Make the dark wooden posts taller and clearly separated from the stone, then wrap each with a broad gold band.
+

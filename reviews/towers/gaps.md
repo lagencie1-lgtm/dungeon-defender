@@ -1,0 +1,36 @@
+# Tower gaps: tried, did not win (2026-11-27)
+
+Items that lost the blind before/after Codex judge (painting + phone views) more than once. Left as they are until a
+clearly different idea comes up.
+
+## Frost Crystal level 3, the crown (lost three times)
+
+1. The crown turned halfway to the run camera, no crystals in the arch's opening so the arch and diamond show: lost
+   5 vs 6 ("the crown feels hollow and exposes too much of the arch").
+2. The crown kept, its centre gem 1.3 times bigger, glowing cyan, in front of the crystals: lost 5 vs 6 ("overwhelms
+   the crown and loses its icy form").
+3. A fresh Codex repaint of the level from the painting, no shape change: tied 6 vs 6, before marginally preferred.
+
+What the judge keeps asking for: a fuller crystal crown with a visible silver arch and a faceted centre crystal. A
+next try would rebuild the crown from the painting (crystal sizes and placement measured off it), not move parts.
+
+## Ballista level 3, the two weapons (lost twice, then a marginal win)
+
+1. Smooth swept bows, thicker brighter strings: lost 5 vs 6.
+2. Both weapons 1.2 times bigger: lost 5 vs 6 (the earlier one has more contrast).
+3. A fresh Codex repaint of the level, the weapons' sheet painted too: won 5 vs 4, kept (marginal).
+
+## Storm Obelisk level 1, the rune (lost twice, then a marginal win)
+
+1. The rune set into a flat cut face of the stone: lost 4 vs 5.
+2. A raised carved rune plate with a cyan glowing edge: lost 5 vs 6 (the frame pulls attention from the rune).
+3. A fresh Codex repaint of the level: tied on reading (4 vs 4), after preferred overall (warmer gold and brown
+   supports easier to tell apart); kept.
+
+The per-part rating still names the rune ("a floating purple sign rather than a glowing carving"): the rune itself is
+not solved.
+
+## Shared: busy small detail on the phone
+
+See shared_problems.md: an edge-preserving pass over every painted sheet tied on all 15 levels. The busy look comes from
+the many small parts and the lighting, so a fix has to cut or merge parts.

@@ -6,11 +6,13 @@
  "wall_h": 2.53,
  "bow_w": 3.286,
  "stock": 2.6,
- "aim": 120.0,
+ "aim": 75,
  "pitch": 0.0,
  "gap": 2.81,
  "bend": 1.0,
  "thick": 1.2,
  "roll": 50.749,
- "wscale": 2.1
+ "wscale": 2.1,
+ "splay": 35,
+ "half_arc": 80
 }

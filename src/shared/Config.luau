@@ -555,7 +555,7 @@ Config.TowerShots = {
 	-- the Storm Obelisk: the orb charges (a swelling glow and crackles) before the lightning strikes
 	StormObelisk = { WindUp = 0.2 },
 	-- the Ranger: the arrow leaves when the archer lets go (ArcherLife releases 0.15 s after his shot)
-	Ranger = { WindUp = 0.15, Speed = 80, Arc = 0.06 },
+	Ranger = { WindUp = 0.2, Speed = 80, Arc = 0.06 },   -- (round 3: the draw held about 0.1 s before the release)
 	-- the Frost Crystal: its crystals rise (Pull, studs) and glow on the wind-up, then drop back as the wave spreads
 	FrostCrystal = { WindUp = 0.18, Pull = 0.45, Kick = 0.5, Part = "Skin_roof", Up = true, TurnSpeed = 60, TurnDamp = 13 },
 	FlameCannon = { WindUp = 0.18, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },

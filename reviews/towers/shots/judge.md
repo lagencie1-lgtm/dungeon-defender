@@ -166,3 +166,31 @@ codex gpt-6.1-terra; A = after, B = before
 **B is slightly better overall**, but neither sells a clear archer attack. The tower, archers, enemies, and effects blend together; I can’t reliably follow an arrow or identify its impact.
 
 **Most important fix:** Give each shot one high-contrast, clearly arrow-shaped projectile with a readable path from the bow to the target.
+
+## Ballista level 1 shot, round 3 trail + glow (film r3b vs sh13)
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 3/10 | 4/10 |
+| Projectile looks like a ballista bolt | 3/10 | 3/10 |
+| Anticipation and recoil | 2/10 | 6/10 |
+| Impact feedback | 4/10 | 4/10 |
+
+**B is better overall.** Its weapon movement gives the shot more life, though the bolt is still almost impossible to follow.
+
+**Most important fix:** Make a thick, high-contrast bolt visibly travel from the bow to the target.
+
+## Ranger level 3 shot, round 3 trail + glow + held draw (film r3b vs sh12)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 3/10 |
+| Projectile reads as an arrow | 2/10 | 2/10 |
+| Weapon anticipation and recoil | 2/10 | 2/10 |
+| Impact feedback | 2/10 | 2/10 |
+
+**B wins narrowly.** The speech bubble in A adds clutter, but neither strip clearly sells a shot: I can’t confidently follow an arrow from archer to target, and the firing poses barely register.
+
+**Most important fix:** Give the arrow a bold, contrasting silhouette and a clear flight path from bow to target.

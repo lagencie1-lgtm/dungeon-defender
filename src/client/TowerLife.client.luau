@@ -82,9 +82,15 @@ local function bolt(len, k, fletch)
 	for _, p in { shaft, tip, f1, f2 } do
 		p.Parent = m
 	end
+	-- (round 3: a light glow round the projectile itself, so it separates from the ground and the tower)
+	-- (arrows only: on the Ballista bolt it lost the blind judge)
+	local glow = part({ Size = Vector3.new(0.42 * k + 0.3, 0.42 * k + 0.3, len + 0.4), Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 248, 225), Transparency = k < 0.6 and 0.7 or 1 })
+	glow.Parent = m
 	m.PrimaryPart = shaft
 	m.Parent = fx
 	return m, function(cf)
+		glow.CFrame = cf
 		shaft.CFrame = cf
 		tip.CFrame = cf * CFrame.new(0, 0, -len / 2 - 0.3) * CFrame.Angles(0, 0, math.pi / 4)
 		f1.CFrame = cf * CFrame.new(0, 0, len / 2 - 0.4)
@@ -254,7 +260,9 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		end
 		-- (2026-11-27: the bolt thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
-			trail = kind == "Ranger" and 0.12 or 0.3, trailW = kind == "Ranger" and 0.18 or 0.26, trailT = kind == "Ranger" and 0.45 or 0.25,
+			-- (round 3: a thin bright trail half the flight long; the 6A fifth limits an effect's width, not its length)
+			-- (the Ballista keeps round 2's trail: the long thin one lost its blind judge there)
+			trail = kind == "Ranger" and 0.5 or 0.3, trailW = kind == "Ranger" and 0.12 or 0.26, trailT = kind == "Ranger" and 0.15 or 0.25,
 			arc = dist * cfg.Arc })
 	end)
 end

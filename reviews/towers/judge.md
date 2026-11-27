@@ -1317,3 +1317,21 @@ The three biggest flaws in A:
 
 3. **The base is too narrow and visually busy.** The painting has a broad, sturdy wooden body with a prominent pale banner. Widen the base, simplify the gold fittings and add a larger snowflake banner that reads at phone size.
 
+## the Ballista, level 3: a stone bastion with red banners and two big crossbows on top
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall.** Its two weapons spread across the top, giving it a stronger ballista silhouette. B’s weapons overlap into a tangled shape that is harder to identify at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 6/10 | 4/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 5/10 | 4/10 |
+| Colours and materials | 6/10 | 6/10 |
+
+A’s three biggest remaining flaws:
+
+1. **The crossbows are spindly and busy.** Enlarge the wooden stocks and curved bow arms, and remove small strings and fittings that merge into visual noise.
+2. **The bastion feels narrow and skeletal.** Widen the stone body and give it a solid, tapered silhouette with larger, simpler blocks.
+3. **The banners barely read.** Add one broad red banner to the front, with a thick gold border and a simple central emblem.
+

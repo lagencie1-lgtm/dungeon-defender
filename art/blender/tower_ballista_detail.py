@@ -82,7 +82,7 @@ def place_all(objs, m):
         o.matrix_world = m @ o.matrix_world
 
 
-def weapon(name, base, iron=False, scale=1.0, atlas="barrel"):
+def weapon(name, base, iron=False, scale=1.0, atlas="barrel", yaw_off=0.0, half_arc=100):
     """stock, bow, string and bolt, built at the origin pointing along +Y, then turned to the aim and tilted up.
     Round 2 (coordinator 2026-11-24, "a real bow with two arms, a string and a bolt on every level"): the bow is a big
     C at the FRONT of the stock (its middle ahead of the stock's nose, both arms sweeping back to the stock's middle),
@@ -111,10 +111,10 @@ def weapon(name, base, iron=False, scale=1.0, atlas="barrel"):
         nose = st * 0.5
         # (a C a little past a half circle, +-100 degrees, like the paintings' bows: a flat arc cut at +-80 degrees reads
         # as an arc (sagitta >= 0.3 chord) from only 10 of 16 directions at 32 degrees, even drawn as a thin line)
-        R = span / (2 * math.sin(rad(100)))
+        R = span / (2 * math.sin(rad(half_arc)))
         pts = []
         for k in range(17):
-            th_ = rad(-100 + 200 * k / 16)
+            th_ = rad(-half_arc + 2 * half_arc * k / 16)
             pts.append(Vector((R * math.sin(th_), nose - R * (1 - math.cos(th_)), ztop)))
         depth = nose - pts[0].y
         for i in range(len(pts) - 1):
@@ -150,7 +150,7 @@ def weapon(name, base, iron=False, scale=1.0, atlas="barrel"):
     LAYOUT.append({"weapon": name, "bow_plane_deg": round(plane, 1), "asymmetry": round(sym, 3), "span_over_stock": round(span / st, 2),
                    "arc_depth_over_span": round(depth / span, 2)})
     made = [o for o in set(bpy.context.scene.objects) - before]
-    m = Matrix.Translation(base) @ Matrix.Rotation(A - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
+    m = Matrix.Translation(base) @ Matrix.Rotation(A + rad(yaw_off) - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
     place_all(made, m)
     BOWLINES.append([list(m @ q) for q in pts])   # (the bow's centre line in the world, for scripts/bow_gate.py)
     return m @ Vector((0, st * (0.78 if level < 3 else 0.72), zb))   # (the bolt's iron head)
@@ -248,7 +248,10 @@ else:
         for e in (-1, 1):   # the gold arched cradle each weapon sits in
             q = Vector((base.x, base.y, t2 - 0.35)) + SIDE * (e * 0.42)
             K.block(f"Cradle{s}{e}", tuple(q), (0.22, 0.9, 1.1), K.BRASS, (0, 0, A), key="brass", tile=0.6, bevel=0.1)
-        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4), atlas="barrel" if s < 0 else "barrel2"))
+        muzzles.append(weapon(f"W{s}", Vector((base.x, base.y, t2)), iron=True, scale=P.get("wscale", 1.4), atlas="barrel" if s < 0 else "barrel2",
+                              # (2026-11-27: at the run camera the two parallel deep bows read as one halo ring:
+                              # the weapons splay apart and the bows are shallower, so each reads as a crossbow)
+                              yaw_off=P.get("splay", 0.0) * s, half_arc=P.get("half_arc", 100)))
 
 for g in LAYOUT:
     ok = (g["bow_plane_deg"] <= 15 and g["asymmetry"] < 0.02 and 0.8 <= g["span_over_stock"] <= 1.0

@@ -75,36 +75,6 @@ def place_all(objs, m):
         o.matrix_world = m @ o.matrix_world
 
 
-STRING = (1.0, 0.95, 0.8)
-
-
-def swept(name, pts, sizes, color):
-    """one smooth bow stretch: a rounded-rectangle section (width across the arc, height up) swept along pts, its
-    rings shared so the arc has no seams or steps"""
-    import bmesh
-    bm = bmesh.new()
-    ring = [(math.cos(rad(a)), math.sin(rad(a))) for a in range(0, 360, 30)]
-    ring = [(math.copysign(abs(c) ** 0.6, c), math.copysign(abs(s) ** 0.6, s)) for c, s in ring]   # (squarish)
-    rings = []
-    for i, p in enumerate(pts):
-        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
-        side = Vector((-t.y, t.x, 0)).normalized()
-        w_, h_ = sizes[i]
-        rings.append([bm.verts.new(p + side * (c * w_ / 2) + Vector((0, 0, s * h_ / 2))) for c, s in ring])
-    for a, b in zip(rings, rings[1:]):
-        n = len(a)
-        for j in range(n):
-            bm.faces.new((a[j], a[(j + 1) % n], b[(j + 1) % n], b[j]))
-    bm.faces.new(list(reversed(rings[0])))
-    bm.faces.new(rings[-1])
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    mesh = bpy.data.meshes.new(name)
-    bm.to_mesh(mesh)
-    bm.free()
-    mesh.shade_smooth()
-    return K._link(name, mesh, color, None, 0.8)
-
-
 def weapon(name, base, iron=False, scale=1.0):
     """stock, bow, string and bolt, built at the origin pointing along +Y, then turned to the aim and tilted up.
     Round 2 (coordinator 2026-11-24, "a real bow with two arms, a string and a bolt on every level"): the bow is a big
@@ -139,16 +109,17 @@ def weapon(name, base, iron=False, scale=1.0):
             th_ = rad(-100 + 200 * k / 16)
             pts.append(Vector((R * math.sin(th_), nose - R * (1 - math.cos(th_)), ztop)))
         depth = nose - pts[0].y
-        # (2026-11-26, Codex: the bow read as a chain of boxes: smooth swept arms along a finer arc, 1.2 times
-        # thicker, a rounded-rectangle section; the same arc, so the layout and arc gates see the same bow)
-        fine = [Vector((R * math.sin(rad(-100 + 5 * k)), nose - R * (1 - math.cos(rad(-100 + 5 * k))), ztop)) for k in range(41)]
-        for i in range(0, 40, 4):   # (one named part per stretch of the arc, as the gates expect)
-            seg_ = fine[i:i + 5]
-            sizes = []
-            for p in seg_:
-                w_ = 0.216 * span * (1.0 - 0.55 * abs(p.x) / (span / 2))
-                sizes.append((w_, w_ * (0.6 if iron else 0.9)))
-            swept(name + f"Arm{i // 4}", seg_, sizes, IRON if iron else BOW_WOOD)
+        for i in range(len(pts) - 1):
+            p0, p1 = pts[i], pts[i + 1]
+            d = p1 - p0
+            mid = (p0 + p1) / 2
+            taper = 1.0 - 0.55 * abs(mid.x) / (span / 2)
+            yaw = math.atan2(d.y, d.x)
+            w_ = 0.18 * span * taper   # (round 5b: 1.5 times thicker, so the arc reads at phone size)
+            if iron:   # flat, tapered iron
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.6), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
+            else:      # squared timber
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
         K.block(name + "BowBlock", (0, nose, ztop), (0.2 * span, 0.12 * span, 0.13 * span), K.BRASS if iron else WEAPON_DARK, key=None, bevel=0.02 * span)
         notch = (0, -st * 0.38, ztop + 0.01 * st)
         for tip in (pts[0], pts[-1]):
@@ -156,8 +127,7 @@ def weapon(name, base, iron=False, scale=1.0):
                 K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
             else:
                 K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.085 * span, 0.09 * span, 0.09 * span), ROPE, key=None, bevel=0.015 * span)
-            # (2026-11-26: the strings twice as thick and a brighter cord, so they read on a phone)
-            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.024 * st, 0.024 * st, STRING, verts=8, end=False)
+            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.012 * st, 0.012 * st, ROPE, verts=6, end=False)
         # the bolt in the groove, iron head out front, small red fletching at its tail
         zb = sh / 2 + 0.03 * st
         K.limb(name + "Bolt", (0, -st * 0.38, zb), (0, st * 0.6, zb), 0.025 * st, 0.025 * st, WEAPON_DARK, verts=6, end=False)

@@ -192,19 +192,8 @@ if level == 1:
             v.co.x *= k
             v.co.y *= k
             v.co.z += (t - 0.5) * 0.35
-    # (2026-11-26, coordinator: the rune set INTO the stone, as painted: the stone's front is cut flat where the rune
-    # goes, and the rune lies in that cut face, barely proud, its dark groove flush round it)
-    vs_ = o.data.vertices
-    mw = o.matrix_world
-    zc = fz + P["stone_h"] * 0.48
-    dmax = max((mw @ v.co).dot(FWD) for v in vs_)
-    face_d = dmax * 0.86
-    inv = mw.inverted()
-    for v in vs_:
-        w_ = mw @ v.co
-        if w_.dot(FWD) > face_d and abs(w_.z - zc) < P["stone_h"] * 0.38:
-            v.co = inv @ (w_ - FWD * (w_.dot(FWD) - face_d))
-    rune("Rune", FWD * face_d + Vector((0, 0, zc)), FWD, 2.0, inset=True)
+    # (2026-11-27: a rune set into a flat cut face lost the blind Codex judge, 4 against 5: it stands off the stone)
+    rune("Rune", FWD * (P["stone_d"] * 1.0) + Vector((0, 0, fz + P["stone_h"] * 0.48)), FWD, 2.0)
     # (2026-11-24 review, from the painting: two thick short posts at each front corner of the stone, about 0.4 of its
     # height, gold bands round each pair; at the sides behind it they hid and the stone looked too big for them)
     for s_ in (-1, 1):

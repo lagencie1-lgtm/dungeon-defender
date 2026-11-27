@@ -54,3 +54,17 @@ codex gpt-6.1-terra; A = before, B = after
 **B is better overall.** There’s a glimpse of a discharge and damage feedback, but the shot is still easy to miss.
 
 **Most important fix:** Give the lightning a thick, high-contrast, jagged silhouette from orb to target, held long enough to register on a phone.
+
+## Frost Crystal level 3 shot (film sh10)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 1/10 | 5/10 |
+| Projectile fits the frost tower | 1/10 | 5/10 |
+| Anticipation and recoil | 1/10 | 1/10 |
+| Impact feedback | 1/10 | 2/10 |
+
+**B is better overall:** the expanding frost wave is visible, though it reads as a flat white disc and overwhelms the scene. A’s shot is effectively invisible.
+
+**Most important fix:** Give B a smaller, directional icy wave with a crisp leading edge, so players can see where the attack is going.

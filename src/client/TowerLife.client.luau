@@ -44,8 +44,12 @@ end
 -- the look, when the part is a new one)
 local weapons = {}
 
-local function weaponOf(model, index)
+local function weaponOf(model, index, kind)
 	local look = model and model:FindFirstChild("Look")
+	local named = kind and Config.TowerShots[kind] and Config.TowerShots[kind].Part
+	if named then   -- (the Frost's crystals: "Skin_roof")
+		return look and look:FindFirstChild(named)
+	end
 	-- (level 3's second weapon is its own part since 2026-11-27, "Skin_barrel2")
 	return look and (index == 2 and look:FindFirstChild("Skin_barrel2") or look:FindFirstChild("Skin_barrel"))
 end
@@ -149,6 +153,27 @@ end
 
 local function towerShot(kind, from, model, index, aim, windUp, travel)
 	local cfg = Config.TowerShots[kind]
+	if kind == "FrostCrystal" then
+		-- the crystal glows as it rises; on release the frost wave spreads from the base with an ease-out and fades
+		-- (the radius comes in the travel slot), a few small ice glints along its edge
+		local radius = travel
+		local glow = part({ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6, Position = from, Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(170, 235, 255), Transparency = 0.4 })
+		table.insert(flights, { kind = "charge", p = glow, at = from, t = 0, life = windUp, crackle = -1e9 })
+		task.delay(windUp, function()
+			local p = weaponOf(model, index, kind)
+			local st = p and weapons[p]
+			if st then
+				st.goalPull = 0
+				st.kickVel -= cfg.Kick * 18
+			end
+			local base = aim
+			local ring = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 1, 1),
+				CFrame = CFrame.new(base + Vector3.new(0, 0.35, 0)) * CFrame.Angles(0, 0, math.pi / 2), Material = Enum.Material.Neon,
+				Color = Color3.fromRGB(165, 225, 255), Transparency = 0.35 })
+			table.insert(flights, { kind = "wave", p = ring, base = base, r = radius, t = 0, life = 0.45 })
+		end)
+	end
 	if kind == "StormObelisk" then
 		-- the orb gathers power: a violet glow swells on it and a few short sparks crackle round it for the wind-up,
 		-- then a quick pulse as the bolt leaves (the strike itself is the server's lightning, at the end of the wind-up)
@@ -162,7 +187,7 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		end)
 		return
 	end
-	local p = weaponOf(model, index)
+	local p = weaponOf(model, index, kind)
 	if p then
 		local st = stateOf(p, model, kind)
 		if st.turns then
@@ -173,6 +198,10 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 				st.goalYaw = angleDiff(math.atan2(-want.X, -want.Z), math.atan2(-rest.X, -rest.Z))
 			end
 		end
+		if cfg.Up then   -- (it rises instead of turning)
+			st.turns = false
+			st.backDir = Vector3.new(0, 1, 0)
+		end
 		if not st.backDir then
 			-- (back along the weapon: flat for the Ballista, along the raised barrel for the Flame)
 			local r = cfg.Axis3D and (from - st.home.Position) or Vector3.new(from.X - st.home.Position.X, 0, from.Z - st.home.Position.Z)
@@ -180,6 +209,9 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 		end
 		st.goalPull = cfg.Pull
 		st.releaseAt = os.clock() + windUp
+	end
+	if kind == "FrostCrystal" then
+		return
 	end
 	-- the bolt leaves on release, from where the (turned) weapon's tip is
 	task.delay(windUp, function()
@@ -289,6 +321,15 @@ RunService.RenderStepped:Connect(function(dt)
 					Material = Enum.Material.Neon, Color = Color3.fromRGB(225, 205, 255) })
 				table.insert(flights, { kind = "ember", p = seg, t = 0, life = 0.08, keepSize = true })
 			end
+			if a >= 1 then
+				f.p:Destroy()
+				table.remove(flights, i)
+			end
+		elseif f.kind == "wave" then
+			local e = 1 - (1 - a) ^ 3   -- (ease-out)
+			local d = math.max(f.r * 2 * e, 1)
+			f.p.Size = Vector3.new(0.25, d, d)
+			f.p.Transparency = 0.35 + 0.65 * a
 			if a >= 1 then
 				f.p:Destroy()
 				table.remove(flights, i)

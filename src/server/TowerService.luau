@@ -791,16 +791,21 @@ local function shoot(t, now, model)
 			end)
 		end
 	elseif t.type == "FrostCrystal" then
-		Effects.Kick(t.kicker, -0.4)
-		Effects.Ring(t.position + Vector3.new(0, 0.4, 0), stats.Range, Color3.fromRGB(150, 220, 255), 0.5)
-		Sound.Play("Frost", t.position)
-		for _, e in targets do
-			EnemyService.Damage(e, stats.Damage)
-			EnemyService.Slow(e, stats.Slow, stats.SlowTime)
-			if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
-				EnemyService.Freeze(e, 1)
+		-- (2026-11-27, shot polish: on the client the crystal rises and glows, then the frost wave spreads from the base
+		-- with an ease-out and fades, TowerLife (the "travel" slot carries the wave's radius); the chill lands at the
+		-- end of the wind-up on the goblins in range then)
+		local windUp = Config.TowerShots.FrostCrystal.WindUp
+		Remotes.CombatFx:FireAllClients("TowerShot", t.muzzle, model, "FrostCrystal", 1, t.position, windUp, stats.Range)
+		task.delay(windUp, function()
+			Sound.Play("Frost", t.position)
+			for _, e in EnemyService.InRange(t.position, stats.Range) do
+				EnemyService.Damage(e, stats.Damage)
+				EnemyService.Slow(e, stats.Slow, stats.SlowTime)
+				if stats.FreezeChance and math.random() < stats.FreezeChance and not e.stats.Boss then
+					EnemyService.Freeze(e, 1)
+				end
 			end
-		end
+		end)
 	elseif t.type == "StormObelisk" then
 		-- (2026-11-27, shot polish: the orb charges on the client first, TowerLife; the lightning and its damage follow
 		-- at the end of the wind-up, on the first goblin still in range then, so no damage is lost; delayed, never a

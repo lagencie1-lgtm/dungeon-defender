@@ -554,6 +554,8 @@ Config.TowerShots = {
 	-- fireball on a higher arc
 	-- the Storm Obelisk: the orb charges (a swelling glow and crackles) before the lightning strikes
 	StormObelisk = { WindUp = 0.2 },
+	-- the Frost Crystal: its crystals rise (Pull, studs) and glow on the wind-up, then drop back as the wave spreads
+	FrostCrystal = { WindUp = 0.18, Pull = 0.45, Kick = 0.5, Part = "Skin_roof", Up = true, TurnSpeed = 60, TurnDamp = 13 },
 	FlameCannon = { WindUp = 0.12, Speed = 55, Arc = 0.1, Pull = 0.25, Kick = 1.0, TurnSpeed = 60, TurnDamp = 13, Axis3D = true },
 }
 -- Build Points: every defender uses some, each map has a limit for the whole team

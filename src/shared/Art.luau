@@ -3,9 +3,9 @@
 local Art = {}
 
 Art.Icons = {
-	tower_ranger_l1 = "130931983527828",
-	tower_ranger_l2 = "117415260801109",
-	tower_ranger_l3 = "82999558687225",
+	tower_ranger_l1 = "118703978125392",
+	tower_ranger_l2 = "104610686037522",
+	tower_ranger_l3 = "89886234665497",
 	ab_bolt = "119832190117032",
 	ab_leap = "86946605393438",
 	ab_meteor = "101177442088402",
@@ -124,9 +124,9 @@ Art.Models = {
 	tower_ballista_l2 = "97922570716032",
 	tower_ballista_l1 = "89738862611740",
 	ranger_archer = "90480618477536",
-	tower_ranger_l3 = "117884356732151",
-	tower_ranger_l2 = "137701065964597",
-	tower_ranger_l1 = "103645933473298",
+	tower_ranger_l3 = "82999558687225",
+	tower_ranger_l2 = "117415260801109",
+	tower_ranger_l1 = "130931983527828",
 	keep_field_stump = "134816274889515",
 	keep_field_ruin = "127713057153295",
 	keep_field_rock = "82713901015455",

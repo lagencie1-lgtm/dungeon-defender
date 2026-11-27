@@ -855,7 +855,7 @@ local ABILITIES = {
 				Sound.Play("Explosion", spot)
 				for _, e in EnemyService.InRange(spot, info.Radius) do
 					hit(player, e, info.Damage, 5)
-					EnemyService.Burn(e, 6, 3)
+					EnemyService.Burn(e, 6, 3, player)
 				end
 			end)
 		end,

@@ -111,7 +111,7 @@ function MOVES.Power(player, pet, info, move, root)
 		if info.MoveSlow then
 			EnemyService.Slow(enemy, 0.6, 1.5)
 		elseif info.MoveBurn then
-			EnemyService.Burn(enemy, damage * 0.15, 3)
+			EnemyService.Burn(enemy, damage * 0.15, 3, player)
 		end
 	end)
 	return true

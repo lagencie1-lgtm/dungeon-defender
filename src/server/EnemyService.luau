@@ -445,6 +445,7 @@ function EnemyService.Spawn(name, healthMultiplier, startDistance)
 		frozenUntil = 0,
 		burnUntil = 0,
 		burnDps = 0,
+		burnPlayer = nil, -- who lit the burn (a pet's or hero's), so a burn kill counts for them
 		flashUntil = 0,
 		saidHurt = false,
 		nextQuote = Clock.now + 3,
@@ -595,12 +596,14 @@ function EnemyService.Freeze(enemy, seconds)
 	enemy.frozenUntil = math.max(enemy.frozenUntil, Clock.now + seconds)
 end
 
-function EnemyService.Burn(enemy, dps, seconds)
+-- player: whose pet or hero lit it (nil for a tower: it keeps an earlier owner, so a pet's or hero's burn still counts)
+function EnemyService.Burn(enemy, dps, seconds, player)
 	if enemy.stats.FireImmune then
 		return
 	end
 	enemy.burnDps = math.max(enemy.burnDps, dps)
 	enemy.burnUntil = math.max(enemy.burnUntil, Clock.now + seconds)
+	enemy.burnPlayer = player or enemy.burnPlayer
 end
 
 function EnemyService.GetActive()
@@ -663,7 +666,9 @@ function EnemyService.Start()
 		for i = #active, 1, -1 do
 			local e = active[i]
 			if not e.dead and now < e.burnUntil then
-				EnemyService.Damage(e, e.burnDps * dt)
+				-- (a player who has left gets no credit: the burn then counts as the defenders')
+				local owner = e.burnPlayer
+				EnemyService.Damage(e, e.burnDps * dt, owner and owner.Parent and owner or nil)
 			end
 			if e.dead then
 				table.remove(active, i)

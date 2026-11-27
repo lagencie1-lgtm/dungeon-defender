@@ -70,13 +70,15 @@ local function stateOf(p, model, kind)
 end
 
 -- a ballista bolt: dark shaft, iron tip, red fletching (about the size the weapon's own bolt is drawn)
-local function bolt(len)
+local function bolt(len, k, fletch)
+	k = k or 1
+	fletch = fletch or Color3.fromRGB(210, 45, 40)
 	local m = Instance.new("Model")
 	m.Name = "Bolt"
-	local shaft = part({ Size = Vector3.new(0.32, 0.32, len), Color = Color3.fromRGB(92, 62, 40) })
-	local tip = part({ Size = Vector3.new(0.52, 0.52, 0.7), Color = Color3.fromRGB(215, 215, 222), Material = Enum.Material.Metal })
-	local f1 = part({ Size = Vector3.new(0.06, 0.6, 0.7), Color = Color3.fromRGB(210, 45, 40) })
-	local f2 = part({ Size = Vector3.new(0.6, 0.06, 0.7), Color = Color3.fromRGB(210, 45, 40) })
+	local shaft = part({ Size = Vector3.new(0.32 * k, 0.32 * k, len), Color = Color3.fromRGB(92, 62, 40) })
+	local tip = part({ Size = Vector3.new(0.52 * k, 0.52 * k, 0.7 * k), Color = Color3.fromRGB(215, 215, 222), Material = Enum.Material.Metal })
+	local f1 = part({ Size = Vector3.new(0.06, 0.6 * k, 0.7 * k), Color = fletch })
+	local f2 = part({ Size = Vector3.new(0.6 * k, 0.06, 0.7 * k), Color = fletch })
 	for _, p in { shaft, tip, f1, f2 } do
 		p.Parent = m
 	end
@@ -170,8 +172,14 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 			local base = aim
 			local ring = part({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 1, 1),
 				CFrame = CFrame.new(base + Vector3.new(0, 0.35, 0)) * CFrame.Angles(0, 0, math.pi / 2), Material = Enum.Material.Neon,
-				Color = Color3.fromRGB(165, 225, 255), Transparency = 0.35 })
-			table.insert(flights, { kind = "wave", p = ring, base = base, r = radius, t = 0, life = 0.45 })
+				Color = Color3.fromRGB(165, 225, 255), Transparency = 0.72 })
+			-- (Codex: a flat white disc that covered too much: the disc faint, the wave's edge a ring of small ice shards)
+			local shards = {}
+			for k = 1, 16 do
+				shards[k] = part({ Size = Vector3.new(0.35, 0.7, 0.35), Material = Enum.Material.Neon, Color = Color3.fromRGB(205, 245, 255),
+					Transparency = 0.1 })
+			end
+			table.insert(flights, { kind = "wave", p = ring, base = base, r = radius, t = 0, life = 0.45, shards = shards })
 		end)
 	end
 	if kind == "StormObelisk" then
@@ -234,7 +242,13 @@ local function towerShot(kind, from, model, index, aim, windUp, travel)
 			table.insert(flights, { kind = "fireball", p = fireball(), from = start, to = aim, t = 0, life = math.max(travel, 0.05), arc = dist * cfg.Arc, puffAt = 0 })
 			return
 		end
-		local m, place = bolt(math.clamp(dist * 0.08, 2.4, 3.4))   -- (2026-11-27: thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
+		local m, place
+		if kind == "Ranger" then   -- (an arrow: about two thirds of the bolt, green fletching)
+			m, place = bolt(1.9, 0.65, Color3.fromRGB(80, 170, 70))
+		else
+			m, place = bolt(math.clamp(dist * 0.08, 2.4, 3.4))
+		end
+		-- (2026-11-27: the bolt thicker and longer: at phone distance the first one was 3 pixels wide and Codex never saw it)
 		table.insert(flights, { kind = "bolt", m = m, place = place, from = start, to = aim, t = 0, life = math.max(travel, 0.05),
 			arc = dist * cfg.Arc })
 	end)
@@ -329,9 +343,17 @@ RunService.RenderStepped:Connect(function(dt)
 			local e = 1 - (1 - a) ^ 3   -- (ease-out)
 			local d = math.max(f.r * 2 * e, 1)
 			f.p.Size = Vector3.new(0.25, d, d)
-			f.p.Transparency = 0.35 + 0.65 * a
+			f.p.Transparency = 0.72 + 0.28 * a
+			for k, sh in f.shards do
+				local ang = k * math.pi * 2 / #f.shards
+				sh.CFrame = CFrame.new(f.base + Vector3.new(math.cos(ang) * d / 2, 0.5, math.sin(ang) * d / 2)) * CFrame.Angles(0, -ang, math.rad(20))
+				sh.Transparency = 0.1 + 0.9 * a
+			end
 			if a >= 1 then
 				f.p:Destroy()
+				for _, sh in f.shards do
+					sh:Destroy()
+				end
 				table.remove(flights, i)
 			end
 		elseif f.kind == "ember" then

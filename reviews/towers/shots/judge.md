@@ -68,3 +68,31 @@ codex gpt-6.1-terra; A = before, B = after
 **B is better overall:** the expanding frost wave is visible, though it reads as a flat white disc and overwhelms the scene. A’s shot is effectively invisible.
 
 **Most important fix:** Give B a smaller, directional icy wave with a crisp leading edge, so players can see where the attack is going.
+
+## Ranger level 3 shot (film sh11)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 2/10 | 4/10 |
+| Projectile looks like an arrow | 2/10 | 3/10 |
+| Weapon anticipation and recoil | 1/10 | 2/10 |
+| Impact feedback | 1/10 | 3/10 |
+
+**B is better overall**, but neither shot reads clearly on a phone. B has more visible action, though the arrow and bow motion are still hard to pick out.
+
+**Most important fix:** Give the arrow a clear, high-contrast silhouette and a brief directional trail from the bow to the target.
+
+## Frost Crystal level 3 shot, icy edge instead of a disc (film sh11)
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Shot reads at phone size | 3/10 | 4/10 |
+| Looks like a frost attack | 5/10 | 6/10 |
+| Anticipation and recoil | 1/10 | 1/10 |
+| Impact feedback | 2/10 | 3/10 |
+
+**B is better overall:** its translucent wave and broken edge suggest frost more clearly. Neither shot makes the direction or target easy to read.
+
+**Most important fix:** give the wave a distinct icy leading edge that travels visibly from the crystal to the target.

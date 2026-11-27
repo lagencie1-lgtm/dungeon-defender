@@ -739,11 +739,12 @@ local function shoot(t, now, model)
 		-- tower's damage per second stays exactly what it was)
 		local look = model and model:FindFirstChild("Look")
 		local froms = {}
+		local archersList = {}
 		for _, archer in look and look:GetChildren() or {} do
 			if archer.Name == "Archer" then
 				archer:SetAttribute("AimX", hitAt.X)
 				archer:SetAttribute("AimZ", hitAt.Z)
-				archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
+				table.insert(archersList, archer)
 				local box, size = archer:GetBoundingBox()
 				local flat = Vector3.new(hitAt.X - box.Position.X, 0, hitAt.Z - box.Position.Z)
 				table.insert(froms, box.Position + Vector3.new(0, size.Y * 0.12, 0) + (flat.Magnitude > 0.1 and flat.Unit * size.Y * 0.35 or Vector3.zero))
@@ -753,12 +754,22 @@ local function shoot(t, now, model)
 			froms = { t.muzzle }
 		end
 		local share = stats.Damage / #froms
+		-- (2026-11-27, shot polish) each archer draws when his own shot comes (ArcherLife lets go 0.15 s after it), the
+		-- arrow leaves his bow at that moment (TowerLife: a real arrow on a slight arc) and the damage lands on arrival
+		local shot = Config.TowerShots.Ranger
 		for i, from in froms do
 			task.delay((i - 1) * 0.12, function()
-				Effects.Bolt(from, hitAt, Color3.fromRGB(230, 255, 200), 0.3, 0.12)
-				if first.health and first.health > 0 then
-					EnemyService.Damage(first, share)
+				local archer = archersList[i]
+				if archer and archer.Parent then
+					archer:SetAttribute("Shots", (archer:GetAttribute("Shots") or 0) + 1)
 				end
+				local travel = (hitAt - from).Magnitude / shot.Speed
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ranger", i, hitAt, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
+					if first.health and first.health > 0 then
+						EnemyService.Damage(first, share)
+					end
+				end)
 			end)
 		end
 	elseif t.type == "FlameCannon" then

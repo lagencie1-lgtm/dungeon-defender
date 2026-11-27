@@ -524,6 +524,24 @@ for _, kind in { "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Ran
 			mark(kind .. " level " .. level)
 			task.wait(1.6)
 			runViewShots(kind, level, tower, base)
+			if level == 3 then
+				-- (2026-11-27, Lemp: the shooting animations need polish: a short close clip of each level 3 tower firing,
+				-- the "before" for that work, scripts/shot_strips.py cuts it out by these marks) the camera held at the
+				-- run camera's angle but close, a wave running so the tower has targets, about three shots
+				local enemies = workspace:FindFirstChild("Enemies")
+				if not enemies or #enemies:GetChildren() == 0 then
+					Remotes.StartWave:FireServer()
+				end
+				local held = CFrame.lookAt(base + Vector3.new(-9.5, 8.5, -12.5), base + Vector3.new(0, 4, 0))
+				game:GetService("RunService"):BindToRenderStep("FilmShots", Enum.RenderPriority.Last.Value + 5, function()
+					workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+					workspace.CurrentCamera.CFrame = held
+				end)
+				mark("shots " .. kind .. " start")
+				task.wait(5)
+				mark("shots " .. kind .. " end")
+				game:GetService("RunService"):UnbindFromRenderStep("FilmShots")
+			end
 			if level < 3 then
 				Remotes.UpgradeTower:InvokeServer(tower)
 				task.wait(1.0)

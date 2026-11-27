@@ -835,16 +835,19 @@ local function shoot(t, now, model)
 		-- (2026-11-24: level 3's two ballistae each loose a bolt, a quarter second apart, half the damage each)
 		local muzzles = t.muzzles or { t.muzzle }
 		local damage = stats.Damage * (target.stats.Boss and stats.BossBonus or 1) / #muzzles
+		-- (2026-11-27, Lemp: shot polish) the client animates the shot (TowerLife: the weapon turns to the target,
+		-- pulls, looses a real bolt that flies an arc, recoils); the server only says which weapon shoots where and
+		-- lands the damage when the bolt arrives
+		local shot = Config.TowerShots.Ballista
 		for i, from in muzzles do
 			task.delay((i - 1) * 0.25, function()
-				Effects.Kick(t.kicker, -0.6)
 				local aim = target.position + Vector3.new(0, target.stats.Size * 0.6, 0)
-				Effects.Bolt(from, aim, Color3.fromRGB(220, 220, 230), 0.6, 0.15)
-				task.delay(0.15, function()
+				local travel = (aim - from).Magnitude / shot.Speed
+				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ballista", i, aim, shot.WindUp, travel)
+				task.delay(shot.WindUp + travel, function()
 					if target.health and target.health > 0 then
 						EnemyService.Damage(target, damage, nil, true)
 					end
-					Effects.Burst(aim, 3, Color3.fromRGB(255, 255, 255), 0.2)
 				end)
 			end)
 		end

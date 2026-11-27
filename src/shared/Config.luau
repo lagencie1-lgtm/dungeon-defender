@@ -542,6 +542,13 @@ Config.Towers = {
 		},
 	},
 }
+-- How a defender's shot moves (Lemp 2026-11-27: the shooting animations need polish; src/client/TowerLife.client.luau).
+-- Three beats, all on the client with springs: a wind-up (seconds), the release in one frame, a recoil that settles
+-- by spring. Projectiles fly at Speed (studs a second) on a slight arc (Arc of the distance); the server lands the
+-- damage when the projectile arrives (wind-up + distance / Speed), so damage per second is unchanged.
+Config.TowerShots = {
+	Ballista = { WindUp = 0.14, Speed = 95, Arc = 0.05, Pull = 0.35, Kick = 0.55, TurnSpeed = 70, TurnDamp = 14 },
+}
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30
 Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObelisk = 4, Ballista = 5 }

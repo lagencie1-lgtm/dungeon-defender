@@ -766,7 +766,10 @@ local function shoot(t, now, model)
 				local travel = (hitAt - from).Magnitude / shot.Speed
 				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ranger", i, hitAt, shot.WindUp, travel)
 				task.delay(shot.WindUp + travel, function()
-					if first.health and first.health > 0 then
+					-- (an arrow lands only on a goblin still near the tower's reach: one that ran on while it flew is
+					-- missed, as before arrows took time; autotest's rescue: the Sneak that slipped past is the hero's)
+					local flat = Vector3.new(first.position.X - t.position.X, 0, first.position.Z - t.position.Z)
+					if first.health and first.health > 0 and flat.Magnitude <= stats.Range + 3 then
 						EnemyService.Damage(first, share)
 					end
 				end)
@@ -876,7 +879,8 @@ local function shoot(t, now, model)
 				local travel = (aim - from).Magnitude / shot.Speed
 				Remotes.CombatFx:FireAllClients("TowerShot", from, model, "Ballista", i, aim, shot.WindUp, travel)
 				task.delay(shot.WindUp + travel, function()
-					if target.health and target.health > 0 then
+					local flat = Vector3.new(target.position.X - t.position.X, 0, target.position.Z - t.position.Z)
+					if target.health and target.health > 0 and flat.Magnitude <= stats.Range + 3 then
 						EnemyService.Damage(target, damage, nil, true)
 					end
 				end)

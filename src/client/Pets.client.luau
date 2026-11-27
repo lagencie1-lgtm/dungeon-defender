@@ -25,6 +25,10 @@ local TweenService = game:GetService("TweenService")
 local PET_TAP = Ui.isTouch and 74 or 44
 local LIST_TOP = Ui.isTouch and 96 or 66 -- (touch: the pet list starts under the bigger close button)
 local ROW_DROP = Ui.isTouch and 12 or 0 -- (touch: the lines under the taller row buttons move down)
+-- the Fuse card and Dust shop on touch: their buttons are PET_TAP tall like every other button here
+local FUSE_TOP = Ui.isTouch and PET_TAP + 16 or 66 -- where the Fuse card's rows start (under Fuse all)
+local FUSE_ROW = Ui.isTouch and PET_TAP + 8 or 58 -- a Fuse card row, tall enough for its Fuse button
+local SHOP_H = PET_TAP + 4 -- the Dust shop bar under the Pet Index
 local petButton = require(script.Parent.Menu).Add("Pets", "Pets", 6)
 
 local function rarityColor(kind)
@@ -346,7 +350,7 @@ local function buildIndex()
 		end
 	end
 	local rows = math.ceil(#kinds / 6)
-	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 70 + rows * 68 + 58), BackgroundColor3 = Ui.PANEL,
+	local card = make("Frame", { Name = "IndexCard", Size = UDim2.fromOffset(428, 70 + rows * 68 + SHOP_H + 10), BackgroundColor3 = Ui.PANEL,
 		LayoutOrder = 0, ZIndex = 32, Parent = eggColumn }, { corner(12), stroke(Ui.GOLD, 2) })
 	label({ Size = UDim2.fromOffset(200, 26), Position = UDim2.fromOffset(12, 6), Text = string.format("Pet Index %d/%d", found, #kinds),
 		TextColor3 = Ui.GOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
@@ -358,11 +362,11 @@ local function buildIndex()
 		{ make("UIGridLayout", { CellSize = UDim2.fromOffset(62, 62), CellPadding = UDim2.fromOffset(6, 6),
 			SortOrder = Enum.SortOrder.LayoutOrder }) })
 	-- the Dust shop along the bottom: tap a pet above, then Buy
-	local shop = make("Frame", { Size = UDim2.new(1, -20, 0, 48), Position = UDim2.new(0, 10, 1, -54),
+	local shop = make("Frame", { Size = UDim2.new(1, -20, 0, SHOP_H), Position = UDim2.new(0, 10, 1, -(SHOP_H + 6)),
 		BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(10) })
 	local shopText = label({ Size = UDim2.new(1, -138, 0, 28), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
 		TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 34, Parent = shop })
-	local buy = button({ Size = UDim2.fromOffset(120, 44), Position = UDim2.new(1, -2, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+	local buy = button({ Size = UDim2.fromOffset(120, PET_TAP), Position = UDim2.new(1, -2, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 		Text = "Buy", BackgroundColor3 = Color3.fromRGB(120, 90, 170), ZIndex = 34, Parent = shop })
 	local picks = {} -- [kind] = the rim shown round the picked tile
 	local function showShop()
@@ -466,14 +470,14 @@ local function buildFuse()
 		return Config.Pets[a.kind].Rarity > Config.Pets[b.kind].Rarity
 	end)
 	local shown = math.min(#list2, 6)
-	local card = make("Frame", { Size = UDim2.new(1, -12, 0, 72 + shown * 64), BackgroundColor3 = Ui.PANEL, LayoutOrder = -2,
+	local card = make("Frame", { Size = UDim2.new(1, -12, 0, FUSE_TOP + 6 + shown * (FUSE_ROW + 6)), BackgroundColor3 = Ui.PANEL, LayoutOrder = -2,
 		ZIndex = 32, Parent = list }, { corner(8), stroke(Config.PetTiers[1].Color, 2) })
 	label({ Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(10, 8), Text = "Fuse " .. need .. " of a kind",
 		TextColor3 = Config.PetTiers[1].Color, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
 	-- (phone check 2026-11-24: 20-unit Gotham lines were about 6 px tall on an iPhone 13; lines here are 26 and bold)
 	label({ Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(10, 36), Font = Enum.Font.GothamBold, TextColor3 = Ui.TEXT_DIM,
 		Text = "Always works · Dust " .. dust, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-	local all = button({ Size = UDim2.fromOffset(130, 44), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0),
+	local all = button({ Size = UDim2.fromOffset(130, PET_TAP), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0),
 		Text = sets > 0 and ("Fuse all (" .. sets .. ")") or "Fuse all", AutoButtonColor = sets > 0,
 		BackgroundColor3 = sets > 0 and Color3.fromRGB(170, 125, 30) or Color3.fromRGB(70, 60, 55), ZIndex = 33, Parent = card })
 	all.Activated:Connect(function()
@@ -493,16 +497,16 @@ local function buildFuse()
 		end
 	end)
 	if shown == 0 then
-		label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 66), Font = Enum.Font.GothamBold, TextColor3 = Ui.TEXT_DIM,
+		label({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, FUSE_TOP), Font = Enum.Font.GothamBold, TextColor3 = Ui.TEXT_DIM,
 			Text = "Get " .. need .. " of one pet to fuse a Golden", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, Parent = card })
-		card.Size = UDim2.new(1, -12, 0, 100)
+		card.Size = UDim2.new(1, -12, 0, FUSE_TOP + 34)
 		return
 	end
 	for n = 1, shown do
 		local g = list2[n]
 		local ready = g.count >= need
 		local into = { kind = g.kind, tier = g.tier + 1 }
-		local row = make("Frame", { Size = UDim2.new(1, -16, 0, 58), Position = UDim2.fromOffset(8, 66 + (n - 1) * 64),
+		local row = make("Frame", { Size = UDim2.new(1, -16, 0, FUSE_ROW), Position = UDim2.fromOffset(8, FUSE_TOP + (n - 1) * (FUSE_ROW + 6)),
 			BackgroundColor3 = Ui.DARK, ZIndex = 33, Parent = card }, { corner(8) })
 		petTile(row, g.kind, 50, 34, { Position = UDim2.fromOffset(4, 4) }, g.tier)
 		local title = label({ Size = UDim2.new(1, -170, 0, 26), Position = UDim2.fromOffset(62, 3),
@@ -519,7 +523,7 @@ local function buildFuse()
 			ZIndex = 35, Parent = bar }, { corner(7) })
 		label({ Size = UDim2.new(1, 0, 1, 2), Text = math.min(g.count, need) .. "/" .. need, TextColor3 = Color3.new(1, 1, 1),
 			ZIndex = 36, Parent = bar })
-		local go = button({ Size = UDim2.fromOffset(96, 44), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+		local go = button({ Size = UDim2.fromOffset(96, PET_TAP), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
 			Text = ready and "Fuse" or (need - g.count) .. " more", AutoButtonColor = ready,
 			BackgroundColor3 = ready and Color3.fromRGB(170, 125, 30) or Color3.fromRGB(70, 60, 55), ZIndex = 34, Parent = row })
 		go.Activated:Connect(function()

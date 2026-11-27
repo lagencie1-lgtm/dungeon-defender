@@ -37,6 +37,13 @@ WEAPON_DARK = (0.42, 0.27, 0.19)
 # (round 5 weapon gate: level 1's wooden bow is a warm mid brown in the painting, the weapon came out greyer and
 # darker (Lab 34.5 15 21 against 38.8 24 28) with dark-wood arms)
 BOW_WOOD = (0.66, 0.34, 0.16)
+# (2026-11-27, round 2 of the phone-read order: the weapon is what makes the Ballista; it is 1.3 times bigger and
+# raised, the wooden limbs a lighter warm wood with dark tips, the string a pale cream line, the bolt's iron tip larger)
+BOW_WOOD_LIGHT = (0.86, 0.58, 0.32)
+TIP_DARK = (0.22, 0.14, 0.1)
+STRING_CREAM = (1.0, 0.95, 0.82)
+STEEL = (0.72, 0.72, 0.76)
+WEAPON_UP = 1.3
 LAYOUT = []
 BOWLINES = []
 # round 2 (2026-11-24): the paintings' wood is a warm mid-dark brown (about 130, 72, 38), not the kit's pale pine
@@ -82,6 +89,7 @@ def weapon(name, base, iron=False, scale=1.0):
     as thick as the paintings draw it; the string runs from both tips back to the notch at the stock's rear; the bolt
     lies on top, iron head out front, red fletching at the back"""
     before = set(bpy.context.scene.objects)
+    scale *= WEAPON_UP if level < 3 else 1.0   # (level 3's pair at 1.2 lost the blind judge, 5 against 6: it keeps its size)
     st = P["stock"] * scale
     span = st * 0.9   # (round 4: the bow spans about 0.9 of the stock)
     # round 5 (coordinator 2026-11-24): the stock is a long slender beam (width about 0.12 of its length) with a groove
@@ -119,19 +127,19 @@ def weapon(name, base, iron=False, scale=1.0):
             if iron:   # flat, tapered iron
                 K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.6), IRON, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
             else:      # squared timber
-                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
+                K.block(name + f"Arm{i}", tuple(mid), (d.length * 1.1, w_, w_ * 0.9), BOW_WOOD_LIGHT, (0, 0, yaw), key=None, tile=0.8, bevel=0.02 * span)
         K.block(name + "BowBlock", (0, nose, ztop), (0.2 * span, 0.12 * span, 0.13 * span), K.BRASS if iron else WEAPON_DARK, key=None, bevel=0.02 * span)
         notch = (0, -st * 0.38, ztop + 0.01 * st)
         for tip in (pts[0], pts[-1]):
             if iron:
-                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
+                K.block(name + f"Cap{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.08 * span), TIP_DARK if level < 3 else K.BRASS, key=None, tile=0.6, bevel=0.015 * span)
             else:
-                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.085 * span, 0.09 * span, 0.09 * span), ROPE, key=None, bevel=0.015 * span)
-            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, 0.012 * st, 0.012 * st, ROPE, verts=6, end=False)
+                K.block(name + f"Lash{tip.x:.1f}", tuple(tip), (0.1 * span, 0.1 * span, 0.1 * span), TIP_DARK, key=None, bevel=0.015 * span)
+            K.limb(name + f"String{tip.x:.1f}", tuple(tip), notch, (0.02 if level < 3 else 0.012) * st, (0.02 if level < 3 else 0.012) * st, STRING_CREAM if level < 3 else ROPE, verts=8 if level < 3 else 6, end=False)
         # the bolt in the groove, iron head out front, small red fletching at its tail
         zb = sh / 2 + 0.03 * st
         K.limb(name + "Bolt", (0, -st * 0.38, zb), (0, st * 0.6, zb), 0.025 * st, 0.025 * st, WEAPON_DARK, verts=6, end=False)
-        K.cone(name + "Head", (0, st * 0.66, zb), 0.06 * st, 0.14 * st, IRON, rot=(rad(-90), 0, 0), verts=4)
+        K.cone(name + "Head", (0, st * (0.68 if level < 3 else 0.66), zb), (0.085 if level < 3 else 0.06) * st, (0.2 if level < 3 else 0.14) * st, STEEL if level < 3 else IRON, rot=(rad(-90), 0, 0), verts=4)
         for s_ in (-1, 1):
             K.block(name + f"Fletch{s_}", (s_ * 0.03 * st, -st * 0.3, zb + 0.035 * st), (0.012 * st, 0.13 * st, 0.07 * st), RED, (0, s_ * rad(32), 0), key=None, bevel=0.0)
     # the layout gate (docs/tower-pipeline.md "pose against the object's layout"): the bow's tips level with each
@@ -145,7 +153,7 @@ def weapon(name, base, iron=False, scale=1.0):
     m = Matrix.Translation(base) @ Matrix.Rotation(A - rad(90), 4, "Z") @ Matrix.Rotation(rad(P["pitch"]), 4, "X")
     place_all(made, m)
     BOWLINES.append([list(m @ q) for q in pts])   # (the bow's centre line in the world, for scripts/bow_gate.py)
-    return m @ Vector((0, st * 0.72, zb))   # (the bolt's iron head)
+    return m @ Vector((0, st * (0.78 if level < 3 else 0.72), zb))   # (the bolt's iron head)
 
 
 def trestle(base_z, h, spread, iron=False, scale=1.0):

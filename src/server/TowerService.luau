@@ -147,7 +147,7 @@ local LEVEL_LOOKS = {
 	-- scaled so each one is a step taller than the last)
 	FlameCannon = {
 		{ Name = "tower_flame_l1", Height = 5.54, Muzzle = Vector3.new(-1.63, 4.16, 1.94) },
-		{ Name = "tower_flame_l2", Height = 6.40, Muzzle = Vector3.new(-3.13, 5.25, 0.84) },
+		{ Name = "tower_flame_l2", Height = 7.20, Muzzle = Vector3.new(-3.52, 5.91, 0.94) },   -- (2026-11-27: 1.125 times bigger; it read small next to the other level 2s on the phone)
 		{ Name = "tower_flame_l3", Height = 8.47, Muzzle = Vector3.new(-3.03, 6.42, -0.92), Muzzles = { Vector3.new(-3.03, 6.42, -0.92), Vector3.new(-2.54, 6.42, 1.90) } },
 	},
 	FrostCrystal = {

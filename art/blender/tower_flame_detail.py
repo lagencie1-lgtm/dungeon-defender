@@ -33,6 +33,8 @@ BRONZE_DARK = (0.4, 0.24, 0.15)   # (level 3's dark bronze-brown barrels and rim
 BARREL_L2 = (0.72, 0.44, 0.26)   # (a lighter bronze, so level 2's barrel stands out from the drum at phone size)
 FIRE = (1.0, 0.55, 0.12)
 COAL = (0.16, 0.15, 0.16)
+# (2026-11-26) layered flame tongues in the lit bores; HTD_FIRE_LAYERS=0 builds the earlier single core
+FIRE_LAYERS = os.environ.get("HTD_FIRE_LAYERS", "1") != "0"
 
 DEFAULTS = {
     1: dict(foot_r=3.2, foot_h=0.9, foot_n=10, cradle=2.2, barrel_r=1.15, barrel_len=3.0, tilt=38, barrel_z=2.4, aim=55),
@@ -124,7 +126,33 @@ def barrel(name, frame, r, length, color, bands=3, rivets=True, fire=True, thin=
     if fire and (thin or core):
         # (the glow only deep in the bore: a small orange core about a third of the bore's width)
         # (a small bright core deep inside, glowing)
-        core = K.ball(name + "Core", (0, 0, length * 0.63), r * 0.22, (1.0, 0.78, 0.3), seg=10)
+        # (2026-11-26, coordinator: layered fire, as painted: deep red tongues round the bore's wall, deep orange ones
+        # inside them, a small bright core; all inside the bore (the face-read and dark-bore gates see the same
+        # opening), the yellow kept to the small core for the 15 % gate)
+        if FIRE_LAYERS:
+            import random
+            frng = random.Random(len(name))
+            for layer, (n_, rr_, hh_, col) in enumerate(((6, 0.24, 0.2, (0.62, 0.09, 0.04)), (4, 0.17, 0.17, (0.86, 0.24, 0.04)))):
+                made_ = []
+                for k_ in range(n_):
+                    ang = 2 * math.pi * (k_ + 0.5 * layer) / n_ + frng.uniform(-0.2, 0.2)
+                    off = r * (0.45 if layer == 0 else 0.22)
+                    base_ = Vector((math.cos(ang) * off, math.sin(ang) * off, length * 0.625))
+                    tip = base_ + Vector((-math.cos(ang) * off * 0.35, -math.sin(ang) * off * 0.35, length * hh_ * frng.uniform(0.85, 1.1)))
+                    tn = name + f"Tongue{layer}{k_}"
+                    K.limb(tn, tuple(base_), tuple(tip), r * rr_, r * 0.02, col, verts=6, end=False)
+                    t_ = bpy.data.objects[tn]
+                    t_.matrix_world = frame @ t_.matrix_world
+                    made_.append(t_)
+                # (one glowing part per layer, not one per tongue)
+                bpy.ops.object.select_all(action="DESELECT")
+                for t_ in made_:
+                    t_.select_set(True)
+                bpy.context.view_layer.objects.active = made_[0]
+                bpy.ops.object.join()
+                made_[0].name = name + f"Tongues{layer}"
+                S.glow(made_[0], col)
+        core = K.ball(name + "Core", (0, 0, length * 0.64), r * (0.14 if FIRE_LAYERS else 0.22), (1.0, 0.78, 0.3), seg=10)
         core.matrix_world = frame @ core.matrix_world
         S.glow(core, (1.0, 0.78, 0.3))
     elif fire:

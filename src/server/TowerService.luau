@@ -158,7 +158,7 @@ local LEVEL_LOOKS = {
 	StormObelisk = {
 		{ Name = "tower_storm_l1", Height = 5.43, Muzzle = Vector3.new(0.00, 4.32, 0.00) },
 		{ Name = "tower_storm_l2", Height = 10.37, Muzzle = Vector3.new(0.00, 10.11, 0.00) },
-		{ Name = "tower_storm_l3", Height = 11.96, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
+		{ Name = "tower_storm_l3", Height = 11.94, Muzzle = Vector3.new(0.00, 10.84, 0.00) },
 	},
 	Ballista = {
 		{ Name = "tower_ballista_l1", Height = 6.80, Muzzle = Vector3.new(-1.19, 6.28, 4.42) },

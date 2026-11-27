@@ -1153,3 +1153,57 @@ The three biggest flaws in **A**:
 2. **The weapons dominate the base.** Broaden and raise the stone tower slightly, with chunkier battlements, to restore the concept’s sturdy proportions.
 3. **The banners and masonry lack definition.** Enlarge the central red banner, add its pale border and emblem, and use warmer shadows between the large stone blocks.
 
+## the storm tower, level 1, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 4/10 | 4/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions true to the painting | 4/10 | 4/10 |
+| Colours and materials | 4/10 | 5/10 |
+
+**B is slightly better overall.** The two are very close, but B’s base reads a little more cleanly. Neither yet captures the heavy, carved-stone character of the painting.
+
+The three biggest flaws in B:
+
+1. **The obelisk looks like a white triangle.** The concept has a broad, irregular stone with a blunt, faceted top. Widen the upper body, flatten the peak, and add a few large, uneven stone planes.
+2. **The lightning rune breaks into purple fragments.** Make it one bold, continuous zigzag down the front, with a darker purple border and a restrained glow. It should remain recognisable at phone size.
+3. **The materials are too pale and indistinct.** Shift the stone toward warm sandstone, make the supports visibly dark brown wood, and enlarge the gold bands. Use stronger shadows where the supports meet the stone.
+
+## the storm tower, level 2, as in the painting
+codex gpt-6.1-terra; A = before, B = after
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower at phone size | 6/10 | 5/10 |
+| Whole tower visible and well framed | 5/10 | 5/10 |
+| Shape and proportions match the painting | 6/10 | 6/10 |
+| Colours and materials | 6/10 | 4/10 |
+
+**A is better overall.** Its darker, muted purple feels closer to the painted stone. B’s bright magenta makes the obelisk look flat and plastic.
+
+The three biggest flaws in A:
+
+1. **The crown disappears into the tree.** Give the tower a clear silhouette against the background; brighten and thicken the prongs and central finial so they remain legible on a phone.
+2. **The lightning symbol is too small and thin.** Enlarge it, widen the bolt and add the two diamond marks from the painting. Use a controlled pale-violet glow.
+3. **The lower structure is cramped and noisy.** Enlarge the cream stone base, simplify the gold trim, and make the dark wooden supports broader and more distinct. This will restore the painting’s sturdy foundation.
+
+## the storm tower, level 3, as in the painting
+codex gpt-6.1-terra; A = after, B = before
+
+**A is better overall.** Its lighter stone base comes closer to the painting and is easier to read at phone size.
+
+| Criterion | A | B |
+|---|---:|---:|
+| Reads as the painted tower | 4/10 | 3/10 |
+| Whole tower visible and well framed | 8/10 | 8/10 |
+| Shape and proportions | 4/10 | 4/10 |
+| Colours and materials | 5/10 | 4/10 |
+
+A’s three biggest remaining flaws:
+
+1. **The main body looks hollow and skeletal.** The painting has a solid, broad, dark tapered obelisk. Fill in the central shaft and give it continuous stone faces.
+2. **The signature lightning symbol is missing at this scale.** Add a large, bright purple lightning bolt to the front face, with enough contrast to read on a phone.
+3. **The silhouette is too thin and ring-heavy.** Widen the lower shaft, strengthen the chunky gold bands, and make the copper coils sit closer to the body. This will make the tower feel weighty instead of cage-like.
+

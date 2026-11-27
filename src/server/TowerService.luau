@@ -132,15 +132,16 @@ local LEVEL_LOOKS = {
 		-- the yaw his front looks to, his height (the paintings make him about a third of the tower on level 1: oversized so he reads on a phone, and as
 		-- tall as the lookout allows under the roof; standing on a hidden step so chest and bow show above the rail,
 		-- as in the paintings)
-		{ Name = "tower_ranger_l1", Height = 10.92, Muzzle = Vector3.new(0.51, 5.7, -1.6),
-			Archers = { { Vector3.new(0.51, 4.4, -1.13), 4, 3.2 } } },
+		{ Name = "tower_ranger_l1", Height = 11.36, Muzzle = Vector3.new(-1.75, 6.0, -0.75),
+			Archers = { { Vector3.new(-1.6, 4.0, -0.55), 30, 3.4 } } },   -- (2026-11-27: the box wall 1.0 high and the roof 0.4 higher; the archer beside the front post, not behind it: hood, face and bow show from the run camera)
 		-- (2026-11-26, the screen-fit rule: levels 2 and 3 lowered, the archers with the balcony; level 3 also narrower)
-		{ Name = "tower_ranger_l2", Height = 13.90, Muzzle = Vector3.new(-0.76, 7.0, -2.46),
-			Archers = { { Vector3.new(-0.76, 5.5, -1.84), 30, 3.2 } } },   -- (balcony 1.12 wider, 2026-11-26)
-		{ Name = "tower_ranger_l3", Height = 14.05, Muzzle = Vector3.new(0.38, 8.2, -2.74),
+		{ Name = "tower_ranger_l2", Height = 14.11, Muzzle = Vector3.new(-0.76, 7.0, -2.46),
+			Archers = { { Vector3.new(-1.03, 4.3, -2.5), 30, 3.9 } } },   -- (balcony 1.12 wider; walls 0.82 lower so the hood shows under the roof edge and the roof keeps its painted rise, 2026-11-26)
+		{ Name = "tower_ranger_l3", Height = 14.12, Muzzle = Vector3.new(0.38, 8.2, -2.74),
 			-- two archers, not mirror copies: different turns, and the game gives them different breathing
-			-- (2026-11-26, Codex: the archers barely read: a little larger; the tower 0.9 as wide, so they stand closer in)
-			Archers = { { Vector3.new(0.38, 6.7, -2.35), 11, 3.45 }, { Vector3.new(-1.51, 6.7, -1.85), 39, 3.35 } } },
+			-- (2026-11-26, Codex: the archers barely read: larger, at the front rail, the rail lower, the roof's start clear of
+			-- their hooded heads so chest, hood and bow show at phone size)
+			Archers = { { Vector3.new(0.46, 5.4, -2.87), 11, 4.1 }, { Vector3.new(-1.84, 5.4, -2.26), 39, 4.0 } } },   -- (walls 0.7 lower, the roof 0.2 lower: the hooded heads clear the roof edge, the top stays 5 % below the screen's edge)
 	},
 	-- the other four, built with the tower kit (art/blender/tower_<kind>_detail.py prints HEIGHT and MUZZLE; levels
 	-- scaled so each one is a step taller than the last)

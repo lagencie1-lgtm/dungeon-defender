@@ -55,3 +55,6 @@
 - round 18: levels apart (75 % target): level 2 1.12 wider; level 3 wide overhanging roof and broader base, as painted
   IoU 75.0%  width profile off 35.3%  region colour dE 11.2  (pixel dE 51.9)  detail 21.4% vs picture 21.3% (ratio 1.00)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 9 (L 45/48)  lookout 6 (L 40/39)  wall 3 (L 58/58)  footing 6 (L 63/69)
+- round 19: archers read: walls lower, roof higher and slimmer so the hooded archers show under the roof edge
+  IoU 72.9%  width profile off 34.9%  region colour dE 10.3  (pixel dE 48.5)  detail 22.1% vs picture 21.3% (ratio 1.04)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 45/47)  lookout 9 (L 40/41)  wall 3 (L 58/58)  footing 7 (L 63/70)

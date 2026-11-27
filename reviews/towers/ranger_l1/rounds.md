@@ -16,3 +16,6 @@
 - round 6: chunky kit (fewer, bigger, thicker parts, soft bevels), roof/props in their own textures, the archer now its own model (not in this render); repaint, sharpen, grade
   IoU 88.4%  width profile off 11.3%  region colour dE 9.6  (pixel dE 42.5)  detail 17.0% vs picture 15.9% (ratio 1.07)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 2 (L 43/42)  lookout 9 (L 37/40)  wall 4 (L 45/48)  footing 3 (L 63/64)
+- round 20: archer reads: box wall 1.0 high, roof 0.4 higher, archer at the front between the posts
+  IoU 84.7%  width profile off 15.1%  region colour dE 10.4  (pixel dE 42.4)  detail 18.1% vs picture 15.9% (ratio 1.13)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 3 (L 43/43)  lookout 7 (L 37/40)  wall 4 (L 45/49)  footing 6 (L 63/67)

@@ -64,7 +64,7 @@ cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
 scene.collection.objects.link(cam)
 scene.camera = cam
 cam.data.lens = 50
-d = radius * 3.0
+d = radius * float(os.environ.get("HTD_CAM_DIST", "3.0"))   # closer = stronger perspective (a painting's wide angle)
 cam.location = center + Vector((math.cos(az) * math.cos(el) * d, math.sin(az) * math.cos(el) * d, math.sin(el) * d))
 cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
 scene.render.filepath = out

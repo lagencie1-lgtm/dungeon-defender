@@ -53,6 +53,44 @@ Use your image generation tool with both images as references and save the resul
 Reply only with the file path."""
 
 
+# the Oak Barricade (on the path; its pictures show the side the enemies come from, +Y, azimuth 105)
+BARRICADE_PROMPT = """Image 1 is a model sheet: the same 3D wooden barricade (a log wall that blocks a road) seen from four
+sides in a 2 by 2 grid (top left the three-quarter view of the side the enemies come from, top right and bottom right
+its two ends, bottom left the other face) on a white ground. Image 2 is the concept painting of this barricade, seen
+from the same angle as the top left view.
+
+Repaint image 1 as a finished hand-painted model sheet in the exact painting style, colours and surface of image 2:
+warm oak logs with long painted wood grain, darker gaps between the logs and soft round shading (light tops, darker
+undersides), pale sawn log ends with growth rings and a darker heart, posts with vertical grain and pale carved pencil
+points with knife-cut facets, dark iron bands with round brass rivets, a round wooden shield of dark planks with a
+polished brass rim, brass studs and a shining brass boss, twisted cream rope, red-brown fire-hardened stakes with
+charred black points, a dark wooden rail, living brown roots with bark, soft green moss, fresh green leaves, rich soft
+shading with light from the top left, small painted details like image 2 shows them (only paint the parts image 1 has).
+
+Hard rules: keep the 2 by 2 layout. Every view stays in exactly the same place, at the same size, with exactly the
+same outline as in image 1: do not move, turn, resize, add or remove any part (every log, post, band, rivet, stake,
+root and leaf stays where it is). Plain pure white background, no ground, no road, no grass, no shadows on the ground,
+no text, no border, no extra objects. Square image.
+
+Use your image generation tool with both images as references and save the result as {name} in the current folder.
+Reply only with the file path."""
+
+BARRICADE_FRONT_PROMPT = """Image 1 is a render of a 3D wooden barricade (a log wall that blocks a road) on a white ground. Image 2
+is the concept painting of this barricade from the same angle. Repaint image 1 as a finished hand-painted picture in
+the exact painting style, colours and surface of image 2, with all the small painted detail image 2 has: warm oak logs
+with long painted grain and soft round shading, pale sawn log ends with growth rings, posts with pale carved pencil
+points with knife-cut facets, dark iron bands with brass rivets, the round wooden shield with its polished brass rim,
+studs and shining boss, twisted rope, red-brown stakes with charred points, roots with bark, moss and leaves (only the
+parts image 1 has).
+
+Hard rules: keep exactly the outline, size, position and every part of image 1: do not move, turn, resize, add or
+remove anything. Plain pure white background, no ground, no road, no grass, no ground shadow, no text, no border.
+Square image.
+
+Use your image generation tool with both images as references and save the result as {name} in the current folder.
+Reply only with the file path."""
+
+
 def codex_paint(prompt, name, folder, images):
     cmd = [find_codex(), "exec", "--skip-git-repo-check", "--sandbox", "workspace-write"]
     try:   # the default model in the owner's Codex config is not always served: name one from Codex's own list
@@ -93,9 +131,14 @@ def find_codex():
     return found[-1]
 
 
+VIEW_AZ = {"barricade": "105"}   # the picture's azimuth per tower kind (scripts/tower_stage.py)
+
+
 def blender(*a):
+    kind = os.path.basename(a[1]).split("_")[1] if os.path.basename(a[1]).startswith("tower_") else ""
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "tower_project.py"), "--", *a],
-                       capture_output=True, text=True, encoding="utf-8", errors="ignore")
+                       capture_output=True, text=True, encoding="utf-8", errors="ignore",
+                       env=dict(os.environ, HTD_VIEW_AZ=VIEW_AZ.get(kind, "-75")))
     lines = [ln for ln in r.stdout.splitlines() if ln.startswith(("SHEET", "PROJECTED", "VIEW")) or "Error" in ln or "Traceback" in ln]
     print("\n".join(lines), flush=True)
     if not any(ln.startswith(("SHEET", "PROJECTED")) for ln in lines):
@@ -109,15 +152,20 @@ def main():
     tex, base = stem + "_paint.png", stem + "_base.png"
     views, painted = stem + "_views.png", stem + "_painted.png"
     front_painted = stem + "_front_painted.png"
-    if "--reuse" not in sys.argv or not os.path.exists(base):
+    # (a rebuilt model has new UVs: its fresh plain texture is the base even with --reuse; a stale base painted the
+    # uncovered faces of the barricade rounds with another build's colours)
+    fresh = not os.path.exists(base) or os.path.getmtime(fbx) > os.path.getmtime(base)
+    if "--reuse" not in sys.argv or fresh:
         shutil.copy(tex, base)      # a fresh build wrote a fresh plain texture: that is the base
         for skin in glob.glob(stem + "_paint_*.png"):   # the other parts' textures (tower kit atlases)
             shutil.copy(skin, stem + "_base_" + skin[len(stem + "_paint_"):])
     if "--reuse" not in sys.argv:
         blender("views", fbx, base, views)
         folder = os.path.dirname(fbx)
-        codex_paint(PROMPT, os.path.basename(painted), folder, [views, target])
-        codex_paint(FRONT_PROMPT, os.path.basename(front_painted), folder, [views[:-4] + "_front.png", target])
+        barricade = "_barricade_" in os.path.basename(fbx)
+        codex_paint(BARRICADE_PROMPT if barricade else PROMPT, os.path.basename(painted), folder, [views, target])
+        codex_paint(BARRICADE_FRONT_PROMPT if barricade else FRONT_PROMPT, os.path.basename(front_painted), folder,
+                    [views[:-4] + "_front.png", target])
     im = Image.open(painted).convert("RGB")
     if im.size != (1024, 1024):
         im.resize((1024, 1024), Image.LANCZOS).save(painted)
@@ -126,6 +174,7 @@ def main():
         if f.size != (1024, 1024):
             f.resize((1024, 1024), Image.LANCZOS).save(front_painted)
     blender("project", fbx, base, painted, tex, strength, front_painted)
+    shutil.copy(tex, stem + "_projected.png")   # (scripts/tower_grade.py grades from this, so grading twice never compounds)
 
 
 if __name__ == "__main__":

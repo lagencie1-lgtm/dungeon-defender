@@ -1,0 +1,3 @@
+Codex pairwise (HTD_JUDGE=codex-pair), Rootwall round 24 vs round 26, each order twice:
+round 26 picked 4 of 4, in both orders. Reasons: the shield is fully visible as in the picture, the roots wrap more
+like the reference, the canopy and moss have finer detail. Kept: round 26 (91.0 / 9.3 / 1.12).

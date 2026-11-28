@@ -1,0 +1,36 @@
+== thorn r18
+GEMINI gemini-3.5-flash: score 8 (A was the painting)
+  - painting has a clean, high-resolution render with smooth lines, whereas model exhibits low-resolution texture pixelation and compression artifacts.
+  - The metallic rivets and shield details are crisp in painting, but distorted and blurred in model.
+  - model has jagged, pixelated outer edges compared to the smooth outline of painting.
+== thorn r18
+GEMINI gemini-3.8-flash: score 8 (A was the painting)
+  - model is a 3D model reconstruction with visible UV projection stretching and texture distortion, notably on the right post, background logs, and stake tips.
+  - The spikes in model have polygonal faceting and rougher, darker painted gradient shading compared to the smooth digital painting in painting.
+  - The bottom ends of the angled stakes in model show slightly different lengths and rougher cut-off geometry.
+  - Overall texture sharpness and painted surface detailing are lower and more pixelated in model.
+== thorn r18
+GEMINI gemini-3.7-flash: score 7 (A was the painting)
+  - model is a 3D model reconstruction exhibiting visible texture stretching, seam artifacts, and distortion (notably on the right pillar and along occluded surfaces).
+  - model has lower texture fidelity with pixelated, jagged edges along the wood grain, metal bands, and spikes compared to the clean illustrated lines in painting.
+  - The lighting and contrast in model are harsher with blown-out highlights on the metal rivets and shield rim.
+  - The bottoms of the diagonal stakes in model show slightly altered geometry and angled cuts compared to painting.
+== root r26
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - Render style and detail level: painting is a smooth, high-resolution 2D illustration, whereas model is a low-poly 3D model with pixelated textures.
+  - Root structure beneath the shield: painting features vertical root tendrils flowing directly down, while model has a large central root projecting forward at the bottom.
+  - Tree on top: painting shows a detailed tree with distinct leaves and branches, while model uses blocky, low-poly foliage clusters.
+  - Hardware and studs: The metal bands and golden studs on the palisade posts in painting are detailed and prominent, but simplified or less distinct in model.
+  - Root tips: The claw-like footing in model consists of sharp, geometric spikes, unlike the organic root feet in painting.
+== root r26
+GEMINI gemini-3.5-flash: score 8 (A was the painting)
+  - painting is a high-resolution 2D illustration, while model is a low-polygon 3D model.
+  - The tree foliage on top is rendered with detailed individual leaves in painting, but appears as blocky low-poly clusters in model.
+  - The surface textures, wood grain, and bark shading are sharp and smooth in painting, but pixelated and simplified in model.
+  - The root wrapping and claw feet are angular and chunkier in model due to low-poly geometry compared to the organic curves in painting.
+== root r26
+GEMINI gemini-3.5-flash: score 8 (A was the painting)
+  - painting is a high-resolution 2D illustration with detailed textures and smooth organic shapes, whereas model is a low-polygon 3D model with pixelated textures and blocky geometry.
+  - The tree foliage on top in painting is rendered with detailed individual leaves, while model uses simplified, faceted green planes.
+  - The central roots underneath the shield hang vertically in painting, but form a protruding, bulky mass in model.
+  - Metal studs and bands around the wooden posts are cleanly detailed in painting, but flattened into low-resolution textures in model.

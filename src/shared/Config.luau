@@ -510,19 +510,97 @@ Config.Towers = {
 		},
 	},
 }
+-- The Oak Barricade (2026-11-24, Lemp's pick from the skins and towers plan): the first defender that stands ON the
+-- path. Enemies stop at it and hit it; heroes standing near repair it; at level 3 you pick one of two branches you can
+-- tell apart by shape (Thornwall: stakes pointing out, hurts what hits it; Rootwall: roots on the path, slows the lane).
+-- Levels hold what every branch shares; Branches add to level 3 (Config.TowerStats merges them).
+Config.Towers.Barricade = {
+	DisplayName = "Oak Barricade",
+	Description = "A wall on the path. Enemies stop to hit it. Stand near it to repair it",
+	Cost = 70,
+	Color = Color3.fromRGB(150, 105, 60),
+	OnPath = true, -- built across the path, not beside it
+	Levels = {
+		-- (every enemy in the pile hits it, Lemp 2026-11-26, so health is about 1.4x what a 3-attacker front row needed)
+		{ Health = 450, Range = 0 },
+		{ Cost = 80, Health = 780, Range = 0 },
+		{ Cost = 140, Health = 950, Range = 0 },
+	},
+	Branches = {
+		{ Id = "Thornwall", Name = "Thornwall", Text = "Hurts every enemy that hits it",
+			Color = Color3.fromRGB(196, 110, 70), Thorns = 9 },
+		{ Id = "Rootwall", Name = "Rootwall", Text = "Enemies near it walk at half speed",
+			Color = Color3.fromRGB(120, 170, 80), Health = 1060, Range = 12, Slow = 0.5 },
+	},
+}
+Config.Barricade = {
+	RepairRange = 9, -- a hero this close (studs, flat) repairs it
+	RepairRate = 0.07, -- share of its health repaired per second while a hero is near
+	HitScale = 0.5, -- enemies hit it with this share of the damage they deal to heroes (Config.ContactDamage)
+	BossSlam = 0.25, -- a boss slam takes this share of its full health
+	-- the pile (Lemp 2026-11-26: "they should all attack the wall ... pile up before the barricade and smash onto it"):
+	-- every enemy queued at it smashes it; they pack tight, rows overlapping, and run on as one blob when it breaks
+	Abreast = 4, -- enemies side by side in one row of the pile
+	SideGap = 2.0, -- studs between two enemies in a row (every second row is shifted by half of it)
+	RowDepth = 1.5, -- studs between rows (less than a goblin's body: the rows overlap into a pile)
+	Jitter = 0.5, -- up to this many studs of random side offset per enemy, so the pile is not a grid
+	PileShare = 0.6, -- an enemy behind the front row hits with this share (it reaches over the ones in front)
+	-- broken, not gone (Lemp 2026-11-26): at 0 health it falls into a stump the enemies walk over; the player pays a
+	-- little mana to rebuild it, which takes RebuildTime seconds of game time (so 15 s at 2x speed, 10 s at 3x)
+	RebuildCost = 20, -- mana
+	RebuildTime = 30, -- seconds of game time
+	StumpShare = 0.3, -- share of its height that still shows above the ground while broken
+	BlobEase = 1.5, -- after the wall breaks, the pile drifts back to the middle of the path this slowly (1 - exp(-k*dt))
+	Spacing = 12, -- studs along the path between two barricades
+	FromStart = 14, -- studs from where enemies come in
+	FromPortal = 18, -- studs from the portal
+	FromBend = 4, -- studs from a bend in the path
+}
+
+-- the numbers of a defender at a level, with the level 3 branch merged in (nil branch = the shared numbers)
+function Config.TowerStats(towerType, level, branchId)
+	local info = Config.Towers[towerType]
+	local stats = info and info.Levels[level]
+	if not stats or not branchId or not info.Branches or level < #info.Levels then
+		return stats
+	end
+	for _, branch in info.Branches do
+		if branch.Id == branchId then
+			local merged = table.clone(stats)
+			for k, v in branch do
+				if k ~= "Id" and k ~= "Name" and k ~= "Text" and k ~= "Color" then
+					merged[k] = v
+				end
+			end
+			return merged
+		end
+	end
+	return stats
+end
+
+function Config.TowerBranch(towerType, branchId)
+	local info = Config.Towers[towerType]
+	for _, branch in (info and info.Branches) or {} do
+		if branch.Id == branchId then
+			return branch
+		end
+	end
+	return nil
+end
+
 -- Build Points: every defender uses some, each map has a limit for the whole team
 Config.BuildLimit = 30
-Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObelisk = 4, Ballista = 5 }
+Config.BuildPoints = { Ranger = 2, FlameCannon = 3, FrostCrystal = 3, StormObelisk = 4, Ballista = 5, Barricade = 2 }
 -- more players = tougher goblins (+35% health for each extra player)
 Config.HealthPerExtraPlayer = 0.35
 
 -- which painted icon belongs to which defender / hero (src/shared/Art.luau)
 Config.TowerIcons = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
-	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
+	StormObelisk = "tower_storm", Ballista = "tower_ballista", Barricade = "tower_barricade" }
 Config.HeroIcons = { Swordmaster = "hero_swordmaster", BeastHunter = "hero_hunter", RuneMage = "hero_mage",
 	Engineer = "hero_engineer" }
 
-Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista" }
+Config.TowerOrder = { "Ranger", "FlameCannon", "FrostCrystal", "StormObelisk", "Ballista", "Barricade" }
 Config.SellRefund = 0.7 -- you get back 70% of what you paid
 Config.TowerSpacing = 6 -- defenders can't stand closer than this
 
@@ -676,6 +754,64 @@ Config.Sounds = {
 	Coin = { Id = "rbxasset://sounds/volume_slider.ogg", Volume = 0.6, Pitch = { 1.8, 2.1 } },
 	Land = { Id = "rbxasset://sounds/action_jump_land.mp3", Volume = 1, Pitch = { 0.6, 0.7 } },
 }
+
+-- the nearest spot on the middle line of the path: { Distance = studs walked from the start to it, Point = the spot
+-- (y = 0), Dir = the way enemies walk there, Offset = how far `pos` is from it, Length = the whole path,
+-- Bend = studs to the nearest bend }. Path defenders (the Oak Barricade) snap to it, server and client alike.
+function Config.PathSpot(pos)
+	local flat = Vector3.new(pos.X, 0, pos.Z)
+	local pts = Config.Path
+	local walked, best = 0, nil
+	local corners = { 0 }
+	for i = 1, #pts - 1 do
+		local a, b = Vector3.new(pts[i].X, 0, pts[i].Z), Vector3.new(pts[i + 1].X, 0, pts[i + 1].Z)
+		local length = (b - a).Magnitude
+		if length > 0 then
+			local t = math.clamp((flat - a):Dot(b - a) / (length * length), 0, 1)
+			local point = a + (b - a) * t
+			local offset = (flat - point).Magnitude
+			if not best or offset < best.Offset then
+				best = { Distance = walked + length * t, Point = point, Dir = (b - a).Unit, Offset = offset }
+			end
+		end
+		walked += length
+		corners[#corners + 1] = walked
+	end
+	if not best then
+		return nil
+	end
+	best.Length = walked
+	best.Bend = math.huge
+	for i = 2, #corners - 1 do
+		best.Bend = math.min(best.Bend, math.abs(corners[i] - best.Distance))
+	end
+	return best
+end
+
+-- can a path defender stand at this spot? `others` = { Distance along the path } of the path defenders already built.
+-- returns ok, reason, spot (the snapped PathSpot)
+function Config.CanPlaceOnPath(pos, others)
+	local spot = Config.PathSpot(pos)
+	if not spot or spot.Offset > Config.PathWidth / 2 + 2 then
+		return false, "Build it on the path", spot
+	end
+	local rules = Config.Barricade
+	if spot.Distance < rules.FromStart then
+		return false, "Too close to where enemies come in", spot
+	end
+	if spot.Length - spot.Distance < rules.FromPortal then
+		return false, "Too close to the portal", spot
+	end
+	if spot.Bend < rules.FromBend then
+		return false, "Too close to a bend", spot
+	end
+	for _, d in others or {} do
+		if math.abs(d - spot.Distance) < rules.Spacing then
+			return false, "Too close to another barricade", spot
+		end
+	end
+	return true, nil, spot
+end
 
 -- how far a point is from the middle line of the path
 function Config.DistanceToPath(pos)

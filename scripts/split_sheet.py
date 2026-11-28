@@ -19,6 +19,8 @@ for x, wcol in enumerate(cols):
 if start is not None:
     runs.append((start, w))
 print("parts", runs)
-for i, (a, b) in enumerate(runs[:3], start=1):
+# optional third argument: the names for N, comma separated (default 1,2,3; the Oak Barricade: l1,l2,thorn,root)
+names = sys.argv[3].split(",") if len(sys.argv) > 3 else ["1", "2", "3"]
+for name, (a, b) in zip(names, runs):
     pad = 20
-    im.crop((max(0, a - pad), 0, min(w, b + pad), h)).save(sys.argv[2].replace("N", str(i)))
+    im.crop((max(0, a - pad), 0, min(w, b + pad), h)).save(sys.argv[2].replace("N", name))

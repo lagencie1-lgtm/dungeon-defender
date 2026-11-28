@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - Rendering quality and art style: painting is a high-resolution, smooth 2D/stylized vector illustration, while model is a 3D model with low-resolution, pixelated texturing and visible compression artifacts.
+  - Geometry and edges: The posts, rope lashings, and log tips in model show visible polygonal facets and blocky edges, whereas painting has smooth, organic curves.
+  - Texture detail: painting has clean, hand-painted wood grain and soft shading, while model uses a noisy, stretched wood grain texture.
+  - Color and lighting: painting features warm, subtle gradients and smooth shadows, whereas model has harsher contrast and high-frequency noise.

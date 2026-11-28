@@ -1,0 +1,6 @@
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - painting is a high-detail 2D rendered illustration, while model is a low-poly 3D mesh model.
+  - The tops of the vertical posts in painting have organic carved wood details, whereas model uses simple flat-shaded cones.
+  - The right ends of the horizontal logs are rounded with detailed tree-ring grain in painting, but flatly truncated in model.
+  - The ropes in painting feature detailed, smooth braided textures, while model shows chunky, low-polygon rope geometry.
+  - Overall texture resolution, wood grain detail, and lighting/shadow quality are significantly higher in painting.

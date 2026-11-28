@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 4 (A was the painting)
+  - The forward-pointing wooden spikes in model are replaced with low-detail, flat-shaded red cone primitives that are misaligned and glitched.
+  - model suffers from severe texture corruption, broken geometry, and jagged torn edges around the bottom.
+  - The metallic studs/rivets on the lower beam in model are rendered as flat yellow dots rather than detailed 3D metallic bolts.
+  - The overall image quality of model is heavily degraded with visual artifacts and lost surface details on the wood and shield.

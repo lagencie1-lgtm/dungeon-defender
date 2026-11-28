@@ -28,7 +28,8 @@ args = sys.argv[sys.argv.index("--") + 1:]
 mode, fbx, tex_path = args[0], os.path.abspath(args[1]), os.path.abspath(args[2])
 CELL = 512
 ELEVATION = 15
-VIEWS = [("pic", -75), ("right", 15), ("back", 105), ("left", -165)]
+AZ0 = float(os.environ.get("HTD_VIEW_AZ", "-75"))   # the picture's azimuth (the barricade's pictures show its +Y face: 105)
+VIEWS = [("pic", AZ0), ("right", AZ0 + 90), ("back", AZ0 + 180), ("left", AZ0 + 270)]
 SLOT = {"pic": (0, 0), "right": (1, 0), "back": (0, 1), "left": (1, 1)}   # column, row in the sheet
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -151,6 +152,17 @@ def fill_gaps(img, used, rounds=24):
     return out
 
 
+def bilinear(img, x, y):
+    """img sampled at float pixel positions (x, y), pixel centres at +0.5"""
+    h, w = img.shape[:2]
+    x = np.clip(x - 0.5, 0, w - 1.001)
+    y = np.clip(y - 0.5, 0, h - 1.001)
+    x0, y0 = np.floor(x).astype(int), np.floor(y).astype(int)
+    fx, fy = (x - x0)[..., None], (y - y0)[..., None]
+    return (img[y0, x0] * (1 - fx) * (1 - fy) + img[y0, x0 + 1] * fx * (1 - fy) + img[y0 + 1, x0] * (1 - fx) * fy
+            + img[y0 + 1, x0 + 1] * fx * fy)
+
+
 def to_view(points, az):
     d, r, u = basis(az)
     rel = points - center
@@ -263,10 +275,15 @@ elif mode == "project":
             px, py, pz = to_view(pos, az)
             ix = np.clip(px.astype(int), 0, CELL - 1)
             iy = np.clip(py.astype(int), 0, CELL - 1)
-            colour = cell[iy, ix]
+            # bilinear, not nearest: nearest sampling of the painted views gave blocky, stair-stepped grain
+            # (HTD_PROJECT_NEAREST=1 keeps the old way)
+            colour = cell[iy, ix] if os.environ.get("HTD_PROJECT_NEAREST") else bilinear(cell, px, py)
             if name == "pic" and front is not None:   # the full-size painting of the picture's view
                 fs = front.shape[0] / CELL
-                colour = front[np.clip((py * fs).astype(int), 0, front.shape[0] - 1), np.clip((px * fs).astype(int), 0, front.shape[1] - 1)]
+                if os.environ.get("HTD_PROJECT_NEAREST"):
+                    colour = front[np.clip((py * fs).astype(int), 0, front.shape[0] - 1), np.clip((px * fs).astype(int), 0, front.shape[1] - 1)]
+                else:
+                    colour = bilinear(front, px * fs, py * fs)
             # (the kit's parts do not all wind the same way; the depth test already says what this view can see)
             facing = np.abs(nor @ d)
             seen = used & (pz <= zbufs[name][iy, ix] + SPAN * 0.01) & (facing > 0.2)

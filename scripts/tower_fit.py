@@ -4,13 +4,17 @@ bigger and smaller and keeps what overlaps better, round after round with smalle
 json the builder reads.
 
 Run: python scripts/tower_fit.py ranger 2 [rounds=4]
-     -> art/blender/params/tower_ranger_l2.json (and prints IoU and the widths per round)"""
+     -> art/blender/params/tower_ranger_l2.json (and prints IoU and the widths per round)
+     python scripts/tower_fit.py barricade l2     (the barricade's named looks: l1 l2 thorn root; scripts/tower_stage.py)"""
 import json
 import os
 import subprocess
 import sys
 
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tower_stage import stage  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
@@ -37,12 +41,27 @@ SEARCH = {"ballista1": ["aim", "pitch", "foot_r", "leg_h", "leg_spread", "bow_w"
           "flame3": ["aim", "tilt", "foot_r", "drum_r", "drum_h", "barrel_r", "barrel_len", "barrel_z"],
           "ranger1": ["view_turn", "foot_r", "leg_half", "box_z0", "box_h", "box_half", "eave", "ridge", "roof_len", "roof_span"],
           "ranger2": ["roof_r", "roof_z0", "bell", "look_r", "wall_top", "wall_r0", "wall_r1", "foot_r", "foot_h", "post_top", "post_r", "flag_len", "flag_h"],
-          "ranger3": ["roof_r", "roof_z0", "roof_z1", "look_r", "wall_top", "band_z", "wall_r0", "wall_r1", "wall2_r", "foot_r", "post_top"]}
+          "ranger3": ["roof_r", "roof_z0", "roof_z1", "look_r", "wall_top", "band_z", "wall_r0", "wall_r1", "wall2_r", "foot_r", "post_top"],
+          # the barricade's centre section (the picture's square gate): log size, post size and spacing, how far the
+          # posts rise above the top log and the logs reach past them, the shield
+          "barricade_l1": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "lift", "pair_y"],
+          "barricade_l2": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield"],
+          "barricade_thorn": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "stake_len", "front_len", "front_tilt", "stake_lean", "stake_out", "rail_h"],   # (crest_len fixed: an intended difference from the picture)
+          "barricade_root": ["log_r", "big_r", "big_x", "post_up", "tip", "overhang", "shield", "reach", "sapling", "root_r", "spread", "crown", "fan", "fork_len", "trunk", "trunk_in", "claw", "claw_curl", "spread"]}
 RULES = {"ranger1": [lambda p: p["ridge"] > p["eave"] + 1, lambda p: p["box_half"] <= p["leg_half"] + 0.7],
          "ranger3": [lambda p: p["wall_r0"] >= p["wall_r1"] >= p["wall2_r"], lambda p: p["roof_r"] > p["look_r"],
                      lambda p: p["band_z"] < p["wall_top"] - 2, lambda p: p["post_top"] < p["roof_z0"] + 0.2],
          "ranger2": [lambda p: p["wall_r0"] >= p["wall_r1"], lambda p: p["roof_r"] > p["look_r"],
                      lambda p: p["foot_r"] >= p["wall_r0"], lambda p: p["post_top"] < p["roof_z0"] + 0.2]}
+for _k in ("barricade_l2", "barricade_thorn", "barricade_root"):   # the shield stays inside the bay between the posts
+    RULES[_k] = [lambda p: p["shield"] + 0.15 < p["big_x"] - p["big_r"], lambda p: p["big_r"] > p["log_r"]]
+# the Rootwall's pencil tips stand clear above the top log, like the picture (the loop sank them under the moss)
+RULES["barricade_root"] = RULES["barricade_root"] + [lambda p: p["post_up"] >= 0.5, lambda p: p["tip"] >= 1.1, lambda p: p["crown"] <= 1.0]
+RULES["barricade_l1"] = [lambda p: p["big_r"] > p["log_r"] * 0.8]
+
+
+# sizes that sit near zero or go negative move by a fixed amount (studs) per step instead of a share of themselves
+ADDITIVE = {"post_up": 1.0, "lift": 0.5, "stake_lean": 0.3, "stake_out": 0.2}
 
 
 def widths(path, rows=100):
@@ -73,16 +92,19 @@ def run(cmd, env=None):
 
 
 def main():
-    kind, level = sys.argv[1], int(sys.argv[2])
-    rounds = int(sys.argv[3]) if len(sys.argv) > 3 else 4
-    key = f"{kind}{level}"
-    picture = os.path.join(ROOT, "art", "ref3d", f"tower_{kind}_l{level}.png")
-    params_path = os.path.join(ROOT, "art", "blender", "params", f"tower_{kind}_l{level}.json")
+    kind = sys.argv[1]
+    st = stage(kind, sys.argv[2])
+    level = st["builder_arg"]
+    rounds = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 4
+    key = st["key"]
+    picture = st["picture"]
+    params_path = st["params"]
     os.makedirs(os.path.dirname(params_path), exist_ok=True)
     os.makedirs(WORK, exist_ok=True)
-    builder = os.path.join(ROOT, "art", "blender", f"tower_{kind}_detail.py")
+    builder = st["builder"]
+    fast = dict(os.environ, HTD_FAST="1", **({"HTD_CENTRE_ONLY": "1"} if st["centre"] else {}))
     out = run([BLENDER, "-b", "-P", builder, "--", os.path.join(WORK, "probe.fbx"), str(level), "--print-params"],
-              env=dict(os.environ, HTD_FAST="1", HTD_PARAMS_ONLY="1"))
+              env=dict(fast, HTD_PARAMS_ONLY="1"))
     params = json.loads(next(ln[7:] for ln in out.splitlines() if ln.startswith("PARAMS ")))
     if os.path.exists(params_path):
         params.update(json.load(open(params_path)))
@@ -95,21 +117,43 @@ def main():
             json.dump(p, open(trial, "w"))
             fbx = os.path.join(WORK, f"{key}.fbx")
             render = os.path.join(WORK, f"{key}_trial.png")
-            run([BLENDER, "-b", "-P", builder, "--", fbx, str(level), trial], env=dict(os.environ, HTD_FAST="1"))
-            run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"])
+            run([BLENDER, "-b", "-P", builder, "--", fbx, str(level), trial], env=fast)
+            run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, str(st["az"]), "15", "512"])
             line = run([sys.executable, os.path.join(ROOT, "scripts", "match_score.py"), picture, render]).splitlines()[0]
             cache[k] = float(line.split("IoU ")[1].split("%")[0])
         return cache[k]
 
     best = iou(params)
     print(f"start IoU {best:.1f}%", flush=True)
+    # --random N: first N trials that move every size at once by up to 10% (one size at a time stalls when two have
+    # to move together, e.g. posts thicker while the wall gets narrower)
+    tries = int(sys.argv[sys.argv.index("--random") + 1]) if "--random" in sys.argv else 0
+    import random
+    rng = random.Random(7)
+    for t in range(tries):
+        trial = dict(params)
+        for name in SEARCH[key]:
+            if name in ADDITIVE:
+                trial[name] = round(params[name] + rng.uniform(-0.5, 0.5) * ADDITIVE[name], 3)
+            else:
+                trial[name] = round(params[name] * (1 + rng.uniform(-0.1, 0.1)), 3)
+        if not all(rule(trial) for rule in RULES.get(key, [])):
+            continue
+        got = iou(trial)
+        if got > best + 0.05:
+            best, params = got, trial
+            json.dump(params, open(params_path, "w"), indent=1)
+            print(f"random {t}: IoU {best:.1f}%", flush=True)
     step = 0.06
     for rnd in range(rounds):
         moved = []
         for name in SEARCH[key]:
             for sign in (1, -1):
                 trial = dict(params)
-                trial[name] = round(params[name] * (1 + sign * step), 3)
+                if name in ADDITIVE:
+                    trial[name] = round(params[name] + sign * step * ADDITIVE[name] * 5, 3)
+                else:
+                    trial[name] = round(params[name] * (1 + sign * step), 3)
                 if not all(rule(trial) for rule in RULES.get(key, [])):
                     continue
                 got = iou(trial)

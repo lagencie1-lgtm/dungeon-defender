@@ -1,0 +1,19 @@
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - painting has a smoother, cleaner painted finish, while picture A is rougher, more pixelated and more heavily textured.
+  - The front stakes in B are broader and more evenly spaced; those in A are narrower, more irregular and extend farther across the barricade.
+  - A has more visible diagonal wooden bracing and rough structural pieces around the sides and lower posts.
+  - The shield and iron bands have cleaner, more regular shapes and rivets in B; A’s details are more irregular and weathered.
+  - B’s horizontal logs have more prominent exposed round ends on the right, while A’s ends are less uniform and partly obscured.
+CODEX gpt-6.1-terra: score 7 (A was the model)
+  - painting has a smoother, cleaner painted finish, while picture A is more textured and pixelated.
+  - The shield in picture B has a cleaner, more regular gold rim and stud pattern; picture A’s shield is more irregular and heavily weathered.
+  - The front stakes differ in shape and coloring: picture B’s have darker wooden bases and more evenly defined red tips.
+  - The lower ends and bracing of the stakes are arranged differently, with picture A showing more visible wooden supports behind the front rail.
+  - painting’s horizontal logs and iron bands are more regular and clearly defined, with different grain and rivet details.
+CODEX gpt-6.1-terra: score 7 (A was the painting)
+  - model has noticeably pixelated, jagged painted detail and harsher contrast across the wood and metal.
+  - The lower ends of the foreground stakes extend farther and at different angles in B, with an additional small protrusion at the left.
+  - The right post and surrounding logs have distorted, fragmented edges in B, especially near the lower iron band.
+  - The shield and its gold rim are less cleanly defined and more heavily obscured by the foreground stakes in B.
+  - The rear stakes differ slightly in shape and spacing, with some appearing chipped or irregular in B.
+JUDGE 7 7 7 avg 7.0

@@ -1,0 +1,4 @@
+Codex pairwise (HTD_JUDGE=codex-pair), Thornwall round 16 vs round 18, each order twice:
+2 to 2: Codex picked the image passed second every time, so it does not separate these two (they differ only in the
+number of sides on round parts and the tree rings). Kept: round 18 (94.1 / 5.5 / 0.86), which answers Gemini's jagged
+curves and missing tree rings; round 16 stays the fallback.

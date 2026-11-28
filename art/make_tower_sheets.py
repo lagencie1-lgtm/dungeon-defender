@@ -1,6 +1,7 @@
 """Paints the level sheets of the defenders with Codex (docs/tower-pipeline.md): one wide picture per tower with its
 three levels side by side as one family, then cuts it into art/ref3d/tower_<kind>_l1..l3.png (ready for Tripo).
-Run: python art/make_tower_sheets.py [kind ...]      kinds: flame frost storm ballista
+Run: python art/make_tower_sheets.py [kind ...]      kinds: flame frost storm ballista barricade
+(the Oak Barricade stands on the path and has four looks: level 1, level 2 and the two level 3 branches)
 """
 import glob
 import json
@@ -35,6 +36,25 @@ SHEETS = {
                 "heavier ballista with iron arms and a crank. RIGHT (level 3): a double ballista on a small stone "
                 "bastion with crimson banners and brass fittings.",
 }
+# the Oak Barricade: four looks on one sheet, on the road instead of a stone footing (art/blender/tower_barricade_detail.py)
+OWN_STYLE = {
+    "barricade": ("Painted fantasy game art for a friendly kids' tower defense game: soft painterly shading, bold "
+                  "readable silhouettes, chunky proportions, light from the top-left, palette dark wood #46301E, brass "
+                  "#D6AA50, cream #F3E6C8, oak brown and moss green. Not photo-real. One wide image, plain pure white "
+                  "background, no text. Four versions of the same wooden barricade that blocks a road, standing side by "
+                  "side with clear white gaps, left to right, same scale and same three-quarter view from slightly "
+                  "above, the side the enemies come from facing the viewer, clearly one family, each standing on a short "
+                  "strip of packed dirt road. "),
+}
+SHEETS["barricade"] = ("1 (level 1): a low wall of three stacked oak logs held by two pairs of posts with sharpened tops, "
+                       "tied with rope. 2 (level 2): taller, four logs, thicker posts with iron bands and brass rivets, a "
+                       "round wooden shield with a brass rim and boss in the middle. 3 (Thornwall): the level 2 wall with "
+                       "two rows of long sharpened stakes dug in at its foot pointing out and up toward the viewer, the "
+                       "points fire-hardened red-brown, wooden braces behind. 4 (Rootwall): the level 2 wall overgrown by "
+                       "thick living tree roots that climb over the logs and spread over the road in front and behind, "
+                       "moss on top and a small leafy sapling growing from it. The Thornwall reads as spikes pointing "
+                       "out, the Rootwall as roots on the ground.")
+PARTS = {"barricade": "l1,l2,thorn,root"}
 
 
 def codex():
@@ -51,7 +71,7 @@ def main():
         target = os.path.join(OUT, name + ".png")
         if not os.path.exists(target):
             started = time.time()
-            prompt = (STYLE + SHEETS[kind] + f" Use your image generation tool and save the image as {name}.png in the "
+            prompt = (OWN_STYLE.get(kind, STYLE) + SHEETS[kind] + f" Use your image generation tool and save the image as {name}.png in the "
                       "current folder. Reply only with the file path.")
             try:
                 subprocess.run([exe, "exec", "-m", model, "--skip-git-repo-check", "--sandbox", "workspace-write", prompt],
@@ -63,8 +83,12 @@ def main():
                 if made:
                     shutil.copy(max(made, key=os.path.getmtime), target)
         if os.path.exists(target):
-            subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "split_sheet.py"), target,
-                            os.path.join(OUT, f"tower_{kind}_lN.png")])
+            if kind in PARTS:
+                subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "split_sheet.py"), target,
+                                os.path.join(OUT, f"tower_{kind}_N.png"), PARTS[kind]])
+            else:
+                subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "split_sheet.py"), target,
+                                os.path.join(OUT, f"tower_{kind}_lN.png")])
         print("made" if os.path.exists(target) else "FAILED", kind, flush=True)
 
 

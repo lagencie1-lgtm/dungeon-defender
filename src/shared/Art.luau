@@ -72,6 +72,7 @@ Art.Icons = {
 	tower_frost = "140456354843254",
 	tower_storm = "138499479214660",
 	tower_ballista = "109131683987177",
+	tower_barricade = "131867274898781",
 	hero_swordmaster = "107097240985907",
 	hero_hunter = "77953179182389",
 	hero_mage = "99257200114899",
@@ -80,6 +81,10 @@ Art.Icons = {
 
 -- 3D models built in Blender (art/blender), uploaded by scripts/upload_models.py
 Art.Models = {
+	tower_barricade_thorn = "134336351181462",
+	tower_barricade_root = "138006996909154",
+	tower_barricade_l2 = "107723066728579",
+	tower_barricade_l1 = "92374570739223",
 	mapkit_stairs_magma = "113865995439876",
 	mapkit_stairs_forest = "114535015859995",
 	mapkit_stairs_crystal = "135666276174351",
@@ -208,6 +213,10 @@ Art.Models = {
 -- painted textures (Decal ids, resolved like the icons into ReplicatedStorage.ArtImages):
 -- sky boxes, terrain looks and the baked paint of the Blender models (paint_<model name>)
 Art.Textures = {
+	paint_tower_barricade_root = "83374740898674",
+	paint_tower_barricade_thorn = "123688527416074",
+	paint_tower_barricade_l2 = "83570228110719",
+	paint_tower_barricade_l1 = "134624693231847",
 	paint_mapkit_stairs_magma = "96540177451650",
 	paint_mapkit_stairs_forest = "99548681241432",
 	paint_mapkit_stairs_crystal = "74117814610835",

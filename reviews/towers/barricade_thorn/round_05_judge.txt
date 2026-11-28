@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 4 (A was the painting)
+  - The forward-facing spikes in model are simplified, flat-colored 3D cones lacking the detailed wood texture, painted gradient tips, and shading seen in painting.
+  - painting is a high-resolution 2D render, whereas model is a low-resolution, pixelated 3D model with noticeable texture artifacts and distortion.
+  - The metal brackets and rivets on the front crossbeam in model are replaced with simplified flat yellow circles and low-detail straps.
+  - The center circular shield in model has distorted, low-quality texturing and missing surface highlights.

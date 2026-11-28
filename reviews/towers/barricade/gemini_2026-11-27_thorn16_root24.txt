@@ -1,0 +1,34 @@
+== thorn r16
+GEMINI gemini-3.5-flash: score 8 (A was the painting)
+  - model is a lower-resolution 3D render/model with noticeable pixelation and compression artifacts across the surface.
+  - Curved elements such as the round shield, metal hoops, and post tops show jagged low-polygon edges in model.
+  - Some texture stretching and alignment artifacts are visible on the wooden posts in model.
+== thorn r16
+GEMINI gemini-3.5-flash: score 8 (A was the model)
+  - Resolution and rendering quality: model is a low-resolution sprite with pixelated textures and rough edges, whereas painting is a high-definition, smooth render.
+  - Surface detail and texture: painting has smooth wood grain textures, detailed log end-grains on the right edge, and refined metallic shading compared to the blockier textures in model.
+  - Edge cleanup: model has jagged cutout artifacts around the edges, while painting has clean, sharp outlines.
+== thorn r16
+GEMINI gemini-3.5-flash: score 7 (A was the model)
+  - Rendering style and resolution: model is a low-resolution, pixelated 3D game sprite, whereas painting is a smooth, high-definition digital illustration.
+  - Shield rim studs: painting features an irregular cluster of small extra gold studs on the right side of the shield's outer rim, while model has evenly spaced studs.
+  - Wood cross-sections: The log ends on the right edge of painting show detailed, round tree rings, whereas model shows jagged, low-poly textures.
+  - Spike tip gradients: The red paint on the spike tips in painting has a smooth, glowing gradient compared to the sharp color blocks in model.
+== root r24
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - painting is a high-detail 2D illustration/render, whereas model is a low-polygon 3D model with visible blocky geometry.
+  - The tree foliage on top is detailed and smooth in painting, but composed of chunky polygonal blocks in model.
+  - The wooden roots in model are much chunkier and angular, with some roots clipping over the left side of the central golden shield.
+  - Texture clarity and lighting highlights on the wood, metal, and shield are crisp in painting, but pixelated and stretched in model.
+== root r24
+GEMINI gemini-3.5-flash: score 7 (A was the painting)
+  - Rendering style: painting is a high-resolution 2D digital illustration, while model is a low-polygon 3D model.
+  - Tree foliage: painting features smooth, detailed leaves on curved branches, whereas model uses blocky, low-resolution geometry for the tree canopy.
+  - Root placement around shield: In painting, the roots frame the central shield without overlapping it, while in model, several root strands extend across the front of the shield.
+  - Texture and material quality: painting displays clean lighting, crisp wood grain, and metallic highlights, whereas model has pixelated textures, low-poly edges, and visible seams.
+== root r24
+GEMINI gemini-3.5-flash: score 6 (A was the painting)
+  - painting is a smooth, high-detail 2D illustration, whereas model is a low-poly 3D model with visible polygonal facets and texture distortion.
+  - In model, thick root branches reach across and partially cover the front sides of the central round shield, unlike in painting where the shield is fully unobstructed.
+  - The tree on top in model has a much smaller, blocky, low-poly canopy compared to the full, organic foliage in painting.
+  - The root 'feet' at the bottom in model are chunkier, shaped differently, and spread wider than the detailed claw-like roots in painting.

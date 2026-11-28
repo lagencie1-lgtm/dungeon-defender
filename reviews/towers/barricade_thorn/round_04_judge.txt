@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 5 (A was the model)
+  - Front spike design: model features low angled wooden planks and small dark spikes on a crossbar, whereas painting features two prominent rows of large red-tipped stakes pointing diagonally upwards.
+  - Top stakes: model has red-tipped stakes extending above the top wall, while painting has no stakes along the top edge.
+  - Rendering style and quality: model is a 3D model asset with noticeable cut-out artifacts, while painting is a clean, smooth digital painting.
+  - Rivets and metal fittings: model has double rows of small golden dots on broad metal straps, whereas painting has larger single golden rivets on rounded dark metal bands.

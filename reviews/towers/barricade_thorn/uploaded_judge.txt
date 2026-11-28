@@ -1,0 +1,4 @@
+Blind judge (Gemini 3.5 Flash) of the uploaded Thornwall (round 8) against art/ref3d/tower_barricade_thorn_fit_cam.png, 2026-11-26:
+- run 1: 7 (painting smooth, model pixelated; dark cutouts on the right post and behind the front spikes; higher saturation, harsh highlights)
+- run 2: 6 (low-poly look, jagged cutouts around stakes and posts; more saturated, harsher shadows)
+average 6.5 (earlier runs on round 8: 8 and 6)

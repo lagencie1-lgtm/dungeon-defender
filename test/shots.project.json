@@ -1,0 +1,35 @@
+{
+  "name": "htd-film-phone-barricade",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "../src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "../src/server"
+      },
+      "BarricadeShots": {
+        "$path": "shots/BarricadeShots.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "../src/client"
+        },
+        "BarCheck": {
+          "$path": "shots/BarCheck.client.luau"
+        },
+        "LookCheck": {
+          "$path": "shots/LookCheck.client.luau"
+        }
+      }
+    },
+    "MaterialService": {
+      "$path": "../src/materials"
+    }
+  }
+}

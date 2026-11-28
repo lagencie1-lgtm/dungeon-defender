@@ -1,6 +1,7 @@
 -- Defenders: placing, upgrading, selling, and shooting at goblins.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local State = require(script.Parent.State)
@@ -20,6 +21,7 @@ local TowerService = {}
 -- [model] = { type, level, spent, nextShot, position, muzzle, kicker, turners }
 local towers = {}
 local turrets = {} -- the Engineer's mini turrets
+local runWall -- (the path defenders' heartbeat, below)
 
 local function newPart(model, props)
 	local p = Instance.new("Part")
@@ -112,14 +114,29 @@ local BUILDERS = {
 			Color = Color3.fromRGB(180, 180, 190), Material = Enum.Material.Metal })
 		return Vector3.new(0, 5, -3), rail, { rail, arms, bolt }
 	end,
+	-- only until its painted model is uploaded (art/blender/tower_barricade_detail.py): logs across the path
+	Barricade = function(model, at, color)
+		newPart(model, { Name = "Base", Size = Vector3.new(Config.PathWidth, 0.3, 2), CFrame = at * CFrame.new(0, 0.15, 0),
+			Transparency = 1, CanCollide = false })
+		local wood = Color3.fromRGB(120, 82, 50)
+		for i = 0, 2 do
+			newPart(model, { Name = "Log", Shape = Enum.PartType.Cylinder, Size = Vector3.new(Config.PathWidth + 1, 1.15, 1.15),
+				CFrame = at * CFrame.new(0, 0.6 + i * 1.05, 0), Color = wood:Lerp(color, i * 0.15), Material = Enum.Material.Wood })
+		end
+		for _, x in { -Config.PathWidth / 2 - 0.2, Config.PathWidth / 2 + 0.2 } do
+			newPart(model, { Name = "Post", Shape = Enum.PartType.Cylinder, Size = Vector3.new(4.4, 0.9, 0.9),
+				CFrame = at * CFrame.new(x, 2.2, 0) * CFrame.Angles(0, 0, math.pi / 2), Color = wood, Material = Enum.Material.Wood })
+		end
+		return Vector3.new(0, 3, 0), nil, nil
+	end,
 }
 
 -- the Blender-built look of a defender, scaled to its height, standing on `at`.
 -- Returns true when the model was used (otherwise the part-built look is used).
 -- heights and shot origins of the hand-built models (art/blender/towers_hand.py prints each HEIGHT)
-local MODEL_HEIGHT = { Ranger = 15.65, FlameCannon = 5.5, FrostCrystal = 8.28, StormObelisk = 13.08, Ballista = 5.93 }
+local MODEL_HEIGHT = { Ranger = 15.65, FlameCannon = 5.5, FrostCrystal = 8.28, StormObelisk = 13.08, Ballista = 5.93, Barricade = 4.65 }
 local MODEL_NAME = { Ranger = "tower_ranger", FlameCannon = "tower_flame", FrostCrystal = "tower_frost",
-	StormObelisk = "tower_storm", Ballista = "tower_ballista" }
+	StormObelisk = "tower_storm", Ballista = "tower_ballista", Barricade = "tower_barricade_l1" }
 local MODEL_MUZZLE = { Ranger = Vector3.new(0, 8.25, -2.8), FlameCannon = Vector3.new(0, 4.6, -3.2), FrostCrystal = Vector3.new(0, 6.6, 0),
 	StormObelisk = Vector3.new(0, 11.75, 0), Ballista = Vector3.new(0, 5.6, -4.6) }
 -- a look per level (docs/tower-pipeline.md): the tower grows and changes as it is upgraded. Heights and muzzles
@@ -160,21 +177,39 @@ local LEVEL_LOOKS = {
 		{ Name = "tower_ballista_l2", Height = 6.38, Muzzle = Vector3.new(-3.65, 6.44, -2.34) },
 		{ Name = "tower_ballista_l3", Height = 8.05, Muzzle = Vector3.new(-1.36, 7.95, -2.40) },
 	},
+	-- the Oak Barricade (art/blender/tower_barricade_detail.py prints each HEIGHT): built along X, so it spans the path;
+	-- Yaw turns a look if its spikes ever face the wrong way in the game (degrees)
+	Barricade = {
+		{ Name = "tower_barricade_l1", Height = 4.65, Muzzle = Vector3.new(0, 3, 0) },
+		{ Name = "tower_barricade_l2", Height = 6.23, Muzzle = Vector3.new(0, 4, 0) },
+		{ Name = "tower_barricade_thorn", Height = 6.11, Muzzle = Vector3.new(0, 4, 0) },
+	},
 }
 TowerService.LevelLooks = LEVEL_LOOKS
+-- level 3 looks of a branching defender, by branch
+local BRANCH_LOOKS = {
+	Barricade = {
+		Thornwall = { Name = "tower_barricade_thorn", Height = 6.11, Muzzle = Vector3.new(0, 4, 0) },
+		Rootwall = { Name = "tower_barricade_root", Height = 9.15, Muzzle = Vector3.new(0, 4, 0) },
+	},
+}
+TowerService.BranchLooks = BRANCH_LOOKS
 
-local function lookFor(towerType, level)
+local function levelEntry(towerType, level, branch)
+	local byBranch = branch and BRANCH_LOOKS[towerType]
+	if byBranch and byBranch[branch] then
+		return byBranch[branch]
+	end
 	local set = LEVEL_LOOKS[towerType]
-	local entry = set and set[level or 1]
+	return set and set[math.clamp(level or 1, 1, #set)]
+end
+
+local function lookFor(towerType, level, branch)
+	local entry = levelEntry(towerType, level or 1, branch)
 	if entry and ArtService.Model(entry.Name) then
 		return entry.Name, entry.Height, entry.Muzzle
 	end
 	return MODEL_NAME[towerType], MODEL_HEIGHT[towerType], MODEL_MUZZLE[towerType]
-end
-
-local function levelEntry(towerType, level)
-	local set = LEVEL_LOOKS[towerType]
-	return set and set[math.clamp(level or 1, 1, #set)]
 end
 
 -- the archers of a look (the Ranger): their own painted model, standing on the look's floor, each with its own
@@ -206,8 +241,8 @@ local function placeArchers(look, entry, at, scale)
 	end
 end
 
-local function useModel(model, towerType, at, drop, level, noArchers)
-	local name, height = lookFor(towerType, level)
+local function useModel(model, towerType, at, drop, level, noArchers, branch)
+	local name, height = lookFor(towerType, level, branch)
 	local template = name and ArtService.Model(name)
 	if not template or not height then
 		return false
@@ -216,6 +251,13 @@ local function useModel(model, towerType, at, drop, level, noArchers)
 	look.Name = "Look"
 	local _, size = look:GetBoundingBox()
 	look:ScaleTo(look:GetScale() * height / size.Y)
+	-- a path defender turns to span the path (`at` carries its turn; the others stand as built)
+	local entry = levelEntry(towerType, level, branch)
+	local turn = at.Rotation * CFrame.Angles(0, math.rad(entry and entry.Yaw or 0), 0)
+	if Config.Towers[towerType].OnPath then
+		local pivot = look:GetPivot()
+		look:PivotTo(CFrame.new(pivot.Position) * turn * pivot.Rotation)
+	end
 	-- stand it on the spot: move the bottom centre of its box to `at`
 	local box, newSize = look:GetBoundingBox()
 	local bottom = box.Position - Vector3.new(0, newSize.Y / 2, 0)
@@ -234,6 +276,12 @@ local function useModel(model, towerType, at, drop, level, noArchers)
 	if model:FindFirstChild("Base") then
 		return true -- an upgrade swaps only the look; the plinth stays
 	end
+	if Config.Towers[towerType].OnPath then
+		-- on the path it stands on the road itself: an invisible base keeps labels and selection working
+		newPart(model, { Name = "Base", Size = Vector3.new(Config.PathWidth, 0.3, 2), CFrame = at * CFrame.new(0, 0.15, 0),
+			Transparency = 1, CanCollide = false })
+		return true
+	end
 	newPart(model, { Name = "Base", Size = Vector3.new(5, 0.55 + drop, 5), CFrame = at * CFrame.new(0, (0.55 - drop) / 2, 0), Material = Enum.Material.Slate, Color = Color3.fromRGB(81, 74, 66),
 		CanCollide = false })
 	return true
@@ -245,7 +293,7 @@ local function setLevelLabel(model, level)
 		gui = Instance.new("BillboardGui")
 		gui.Name = "LevelLabel"
 		gui.Size = UDim2.fromOffset(112, 20)
-		local _, lookHeight = lookFor(model:GetAttribute("TowerType"), level)
+		local _, lookHeight = lookFor(model:GetAttribute("TowerType"), level, model:GetAttribute("Branch"))
 		-- clear of the top (the level 3 gem sat under the text): 2.4 studs above the look's own height
 		gui.StudsOffsetWorldSpace = Vector3.new(0, (lookHeight or MODEL_HEIGHT[model:GetAttribute("TowerType")] or 9) + 2.4, 0)
 		gui.MaxDistance = 26 -- only up close: from the run camera the names piled up under the wave bar
@@ -261,7 +309,8 @@ local function setLevelLabel(model, level)
 		label.TextScaled = true
 		label.Parent = gui
 	end
-	gui:FindFirstChild("Text").Text = model.Name .. "  Lv " .. level
+	local branch = Config.TowerBranch(model:GetAttribute("TowerType"), model:GetAttribute("Branch"))
+	gui:FindFirstChild("Text").Text = (branch and branch.Name or model.Name) .. "  Lv " .. level
 end
 
 -- how wide each defender stands (radius of the ground it needs)
@@ -270,6 +319,32 @@ TowerService.Foot = FOOT
 
 local function flat(v)
 	return Vector3.new(v.X, 0, v.Z)
+end
+
+-- where the path defenders stand, as studs along the path (Config.CanPlaceOnPath)
+local function pathDistances()
+	local list = {}
+	for _, t in towers do
+		if t.wall then
+			table.insert(list, t.wall.Distance)
+		end
+	end
+	return list
+end
+
+-- can a path defender (the Oak Barricade) stand here? returns ok, reason, spot (the snapped PathSpot)
+function TowerService.CanPlaceOnPath(position)
+	local ok, reason, spot = Config.CanPlaceOnPath(position, pathDistances())
+	if not ok then
+		return false, reason, spot
+	end
+	-- a defender beside the path whose footprint reaches over the road (near a bend)
+	for _, t in towers do
+		if not t.wall and (flat(t.position) - spot.Point).Magnitude < Config.PathWidth / 2 + (FOOT[t.type] or 2.5) then
+			return false, "Too close to another defender", spot
+		end
+	end
+	return true, nil, spot
 end
 
 -- can a defender stand here? returns ok, reason
@@ -285,7 +360,7 @@ function TowerService.CanPlace(position)
 		return false, "Too close to the portal"
 	end
 	for _, t in towers do
-		if (flat(t.position) - flat(position)).Magnitude < Config.TowerSpacing then
+		if not t.wall and (flat(t.position) - flat(position)).Magnitude < Config.TowerSpacing then
 			return false, "Too close to another defender"
 		end
 	end
@@ -318,17 +393,30 @@ function TowerService.Place(player, towerType, position)
 		return false, "Unlock the " .. info.DisplayName .. " in the Shop first"
 	end
 	position = Vector3.new(position.X, 0, position.Z)
-	local ok, reason = TowerService.CanPlace(position)
-	if not ok then
-		return false, reason
+	local ok, reason, spot, height, low
+	if info.OnPath then
+		-- on the path: snapped to its middle line, turned to span it, standing on the road there
+		ok, reason, spot = TowerService.CanPlaceOnPath(position)
+		if not ok then
+			return false, reason
+		end
+		-- the highest road under its footprint, like every defender (test/ground checks it stands, never floats)
+		height, low = Ground.Footprint(spot.Point, FOOT[towerType] or 2.5)
+		position = Vector3.new(spot.Point.X, height, spot.Point.Z)
+	else
+		ok, reason = TowerService.CanPlace(position)
+		if not ok then
+			return false, reason
+		end
+		-- stand on the real ground (highest point under the footprint), never on y = 0
+		local why
+		height, why = Ground.Pad(position, FOOT[towerType] or 2.5)
+		if not height then
+			return false, why
+		end
+		position = Vector3.new(position.X, height, position.Z)
+		low = select(2, Ground.Footprint(position, FOOT[towerType] or 2.5))
 	end
-	-- stand on the real ground (highest point under the footprint), never on y = 0
-	local height, why = Ground.Pad(position, FOOT[towerType] or 2.5)
-	if not height then
-		return false, why
-	end
-	position = Vector3.new(position.X, height, position.Z)
-	local _, low = Ground.Footprint(position, FOOT[towerType] or 2.5)
 	local points = Config.BuildPoints[towerType] or 0
 	local used = State.Get("BuildUsed") or 0
 	local limit = State.Get("BuildMax") or Config.BuildLimit
@@ -342,7 +430,7 @@ function TowerService.Place(player, towerType, position)
 
 	local model = Instance.new("Model")
 	model.Name = info.DisplayName
-	local at = CFrame.new(position)
+	local at = spot and CFrame.lookAt(position, position + spot.Dir) or CFrame.new(position)
 	local muzzle, kicker, turners
 	if useModel(model, towerType, at, height - low + 0.02, 1) then
 		muzzle = select(3, lookFor(towerType, 1))
@@ -356,7 +444,8 @@ function TowerService.Place(player, towerType, position)
 		StoreService.ApplyModelSkin(model, StoreService.SkinFor(player, towerType))
 	end
 	local pickHeight = MODEL_HEIGHT[towerType] or 8
-	newPart(model, { Name = "SelectionVolume", Size = Vector3.new(6, pickHeight, 6),
+	newPart(model, { Name = "SelectionVolume", Size = info.OnPath and Vector3.new(Config.PathWidth + 1, pickHeight + 1, 3)
+		or Vector3.new(6, pickHeight, 6),
 		CFrame = at * CFrame.new(0, pickHeight / 2, 0), Transparency = 1,
 		CanCollide = false, CanTouch = false, CanQuery = true, CastShadow = false })
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
@@ -387,6 +476,9 @@ function TowerService.Place(player, towerType, position)
 		kicker = kicker,
 		turners = turnInfo,
 	}
+	if info.OnPath then
+		TowerService.AddWall(model, towers[model], spot)
+	end
 	Effects.Ring(position + Vector3.new(0, 0.3, 0), 6, Color3.fromRGB(255, 230, 150), 0.4)
 	Effects.Burst(position + Vector3.new(0, 1, 0), 4, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
 	Sound.Play("Build", position)
@@ -397,34 +489,50 @@ function TowerService.Place(player, towerType, position)
 	return true
 end
 
-function TowerService.Upgrade(_player, model)
+function TowerService.Upgrade(_player, model, branchId)
 	local t = towers[model]
 	if not t then
 		return false, "That's not a defender"
+	end
+	if t.wall and t.wall.Broken then
+		-- (the info panel's main button rebuilds a broken barricade)
+		return TowerService.Rebuild(_player, model)
 	end
 	local info = Config.Towers[t.type]
 	local nextLevel = info.Levels[t.level + 1]
 	if not nextLevel then
 		return false, "Already at max level"
 	end
+	-- the last level of a branching defender: the player picks the branch
+	local branching = info.Branches and t.level + 1 == #info.Levels
+	if branching and not Config.TowerBranch(t.type, branchId) then
+		return false, "Pick a branch first"
+	end
 	if not State.TrySpend(nextLevel.Cost) then
 		return false, "Not enough mana"
+	end
+	if branching then
+		t.branch = branchId
+		model:SetAttribute("Branch", branchId)
 	end
 	t.level += 1
 	t.spent += nextLevel.Cost
 	model:SetAttribute("Level", t.level)
-	model:SetAttribute("Range", nextLevel.Range)
+	model:SetAttribute("Range", Config.TowerStats(t.type, t.level, t.branch).Range)
 	model:SetAttribute("Spent", t.spent)
 	setLevelLabel(model, t.level)
 	local base = model.PrimaryPart
-	local name, height, muzzle = lookFor(t.type, t.level)
+	local name, height, muzzle = lookFor(t.type, t.level, t.branch)
 	local oldLook = model:FindFirstChild("Look")
+	if t.wall then
+		TowerService.UpgradeWall(t)
+	end
 	if LEVEL_LOOKS[t.type] and oldLook and name and ArtService.Model(name) then
 		-- the new level's own look: swap the model and let it settle on a spring (90% -> 100% size in about 0.35 s,
 		-- a little overshoot), with a small dust ring; no ceremony
 		oldLook:Destroy()
-		local at = CFrame.new(t.position)
-		useModel(model, t.type, at, 0, t.level, true) -- (the archers step up after the settle, so they never stretch)
+		local at = t.wall and CFrame.lookAt(t.position, t.position + t.wall.Dir) or CFrame.new(t.position)
+		useModel(model, t.type, at, 0, t.level, true, t.branch) -- (the archers step up after the settle, so they never stretch)
 		local look = model:FindFirstChild("Look")
 		if muzzle then
 			t.muzzle = t.position + muzzle
@@ -436,7 +544,7 @@ function TowerService.Upgrade(_player, model)
 		end
 		local volume = model:FindFirstChild("SelectionVolume")
 		if volume then
-			volume.Size = Vector3.new(6, height, 6)
+			volume.Size = t.wall and Vector3.new(Config.PathWidth + 1, height + 1, 3) or Vector3.new(6, height, 6)
 			volume.CFrame = at * CFrame.new(0, height / 2, 0)
 		end
 		if look then
@@ -455,7 +563,7 @@ function TowerService.Upgrade(_player, model)
 				local box, size = look:GetBoundingBox()
 				look:PivotTo(look:GetPivot() + (t.position - (box.Position - Vector3.new(0, size.Y / 2, 0))))
 				if done and look.Parent then
-					placeArchers(look, levelEntry(t.type, t.level), at, 1)
+					placeArchers(look, levelEntry(t.type, t.level, t.branch), at, 1)
 				end
 			end)
 		end
@@ -463,6 +571,22 @@ function TowerService.Upgrade(_player, model)
 		if typeof(t.owner) == "Instance" then
 			StoreService.ApplyModelSkin(model, StoreService.SkinFor(t.owner, t.type))
 		end
+	elseif t.wall then
+		-- no painted look yet (the part-built logs): rebuild it a little taller, tinted by its branch
+		for _, part in model:GetChildren() do
+			if part:IsA("BasePart") and (part.Name == "Log" or part.Name == "Post") then
+				part:Destroy()
+			end
+		end
+		local branch = Config.TowerBranch(t.type, t.branch)
+		local at = CFrame.lookAt(t.position, t.position + t.wall.Dir)
+		local wood = Color3.fromRGB(120, 82, 50)
+		for i = 0, t.level + 1 do
+			newPart(model, { Name = "Log", Shape = Enum.PartType.Cylinder, Size = Vector3.new(Config.PathWidth + 1, 1.15, 1.15),
+				CFrame = at * CFrame.new(0, 0.6 + i * 1.05, 0), Color = wood:Lerp(branch and branch.Color or info.Color, 0.3),
+				Material = Enum.Material.Wood })
+		end
+		Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
 	else
 		-- towers with one look grow their plinth a little, and glow at the top level
 		base.Size += Vector3.new(0.6, 0.2, 0.6)
@@ -490,6 +614,9 @@ function TowerService.Sell(_player, model)
 	Effects.Burst(t.position + Vector3.new(0, 2, 0), 5, Color3.fromRGB(200, 180, 140), 0.3, 0.4)
 	Sound.Play("Coin", t.position)
 	State.Set("BuildUsed", math.max(0, (State.Get("BuildUsed") or 0) - (Config.BuildPoints[t.type] or 0)))
+	if t.wall then
+		EnemyService.Blockers[t.wall.Key] = nil
+	end
 	towers[model] = nil
 	model:Destroy()
 	return true, refund
@@ -498,7 +625,9 @@ end
 -- a boss slam knocks defenders out for a moment
 function TowerService.Stun(position, radius, seconds)
 	for _, t in towers do
-		if (flat(t.position) - flat(position)).Magnitude <= radius then
+		if t.wall and (flat(t.position) - flat(position)).Magnitude <= radius then
+			TowerService.HurtWall(t, t.wall.MaxHealth * Config.Barricade.BossSlam)
+		elseif (flat(t.position) - flat(position)).Magnitude <= radius then
 			t.nextShot = math.max(t.nextShot, Clock.now + seconds)
 			Effects.Text(t.position + Vector3.new(0, 9, 0), "Stunned", Color3.fromRGB(255, 200, 120), 0.9)
 		end
@@ -510,6 +639,7 @@ function TowerService.Clear()
 		model:Destroy()
 	end
 	table.clear(towers)
+	table.clear(EnemyService.Blockers)
 	for _, tur in turrets do
 		tur.model:Destroy()
 	end
@@ -566,7 +696,7 @@ end
 function TowerService.Overclock(position, radius, speed, seconds)
 	local count = 0
 	for model, t in towers do
-		if (flat(t.position) - flat(position)).Magnitude <= radius then
+		if not t.wall and (flat(t.position) - flat(position)).Magnitude <= radius then
 			t.overclockUntil = Clock.now + seconds
 			t.overclockSpeed = speed
 			count += 1
@@ -592,7 +722,7 @@ function TowerService.PetBoost(position, radius, kind, amount, seconds)
 	local best, bestScore = nil, math.huge
 	for _, t in towers do
 		local d = (flat(t.position) - flat(position)).Magnitude
-		if d <= radius then
+		if d <= radius and not t.wall then
 			local busy = t["pet" .. kind .. "Until"] and Clock.now < t["pet" .. kind .. "Until"]
 			local score = d + (busy and 1000 or 0)
 			if score < bestScore then
@@ -749,19 +879,283 @@ local function shoot(t, now, model)
 	end
 end
 
+-------------------------------------------------------------------------------
+-- Path defenders (the Oak Barricade): a wall with health on the path. EnemyService stops enemies in rows in front of
+-- it and calls OnHit for every enemy in the pile; heroes standing near repair it; Thornwall hurts whoever hits it, Rootwall
+-- slows the lane in front of it. When its health runs out it breaks (its Build Points come back, its mana does not).
+-------------------------------------------------------------------------------
+local WALL = Config.Barricade
+local wallKeys = 0
+
+local function wallBar(t)
+	local model = t.model
+	local gui = model:FindFirstChild("WallHealth")
+	if not gui then
+		gui = Instance.new("BillboardGui")
+		gui.Name = "WallHealth"
+		gui.Size = UDim2.fromOffset(96, 12)
+		gui.MaxDistance = 140
+		gui.AlwaysOnTop = true -- (the wall's own posts and the units at it must not hide it)
+		gui.Adornee = model.PrimaryPart
+		gui.Parent = model
+		local back = Instance.new("Frame")
+		back.Name = "Back"
+		back.Size = UDim2.fromScale(1, 1)
+		back.BackgroundColor3 = Color3.fromRGB(40, 28, 20)
+		back.BorderSizePixel = 0
+		back.Parent = gui
+		Instance.new("UICorner", back).CornerRadius = UDim.new(0.5, 0)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(214, 170, 80)
+		stroke.Thickness = 1.5
+		stroke.Parent = back
+		local fill = Instance.new("Frame")
+		fill.Name = "Fill"
+		fill.BorderSizePixel = 0
+		fill.Parent = back
+		Instance.new("UICorner", fill).CornerRadius = UDim.new(0.5, 0)
+	end
+	-- the bar sits on the road on the player's side of the wall (above the wall it ended up under the wave panel at the
+	-- top of a phone screen whenever the wall was far up the road)
+	local _, height = lookFor(t.type, t.level, t.branch)
+	local adornee = gui.Adornee
+	if adornee then
+		local dir = t.wall.Dir and Vector3.new(t.wall.Dir.X, 0, t.wall.Dir.Z) or Vector3.zero
+		dir = dir.Magnitude > 0 and dir.Unit or dir
+		-- low and out in front: at 55% of its height the bar still sat under the objective banner (NextGoal) from the
+		-- run camera at 15 studs (test/shots BarCheck); at its foot, 3.5 studs out on the road, it is clear
+		local spot = t.position + Vector3.new(0, (height or 3.4) * 0.2, 0) + dir * (t.wall.Depth + 3.5)
+		-- (StudsOffsetWorldSpace is taken in the adornee's own axes, not the world's: a wall turned to span the path
+		-- threw a world offset sideways, and the bar showed in the top right corner of a phone screen)
+		gui.StudsOffsetWorldSpace = adornee.CFrame:VectorToObjectSpace(spot - adornee.Position)
+	end
+	local share = math.clamp(t.wall.Health / t.wall.MaxHealth, 0, 1)
+	local fill = gui.Back.Fill
+	if t.wall.Broken then
+		-- broken: the bar shows the rebuild (empty until the player pays for it)
+		fill.Size = UDim2.fromScale(math.clamp(t.wall.rebuild or 0, 0, 1), 1)
+		fill.BackgroundColor3 = Color3.fromRGB(120, 180, 255)
+		gui.Enabled = true
+	else
+		fill.Size = UDim2.fromScale(share, 1)
+		fill.BackgroundColor3 = share > 0.5 and Color3.fromRGB(120, 200, 90) or share > 0.25 and Color3.fromRGB(240, 190, 70)
+			or Color3.fromRGB(230, 80, 60)
+		-- only while it is hurt: a full wall shows nothing over the road
+		gui.Enabled = share < 0.999
+	end
+	model:SetAttribute("Health", math.floor(t.wall.Health + 0.5))
+	model:SetAttribute("MaxHealth", t.wall.MaxHealth)
+end
+
+-- a broken wall sinks into a stump (StumpShare of it above the ground); while it is rebuilt it rises back with the
+-- progress, so the model itself shows how far the rebuild is
+local function sinkLook(t, raised)
+	local look = t.model:FindFirstChild("Look")
+	if not look then
+		return
+	end
+	if not t.wall.lookPivot then
+		t.wall.lookPivot = look:GetPivot()
+	end
+	local _, height = lookFor(t.type, t.level, t.branch)
+	local down = (height or 4) * (1 - WALL.StumpShare) * (1 - raised)
+	look:PivotTo(t.wall.lookPivot - Vector3.new(0, down, 0))
+end
+
+-- broken, not gone (Lemp 2026-11-26): enemies walk over the stump until the player pays to rebuild it. Model
+-- attributes: Broken (true until rebuilt), Rebuilding (true while the rebuild runs), RebuildProgress (0..1).
+local function breakWall(t)
+	if not t.wall or t.wall.Broken then
+		return
+	end
+	local wall = t.wall
+	wall.Broken = true
+	wall.Health = 0
+	wall.rebuild = nil
+	EnemyService.Blockers[wall.Key] = nil
+	local model = t.model
+	model:SetAttribute("Broken", true)
+	model:SetAttribute("Rebuilding", false)
+	model:SetAttribute("RebuildProgress", 0)
+	model:SetAttribute("Repairing", false)
+	Effects.Burst(t.position + Vector3.new(0, 2, 0), 7, Color3.fromRGB(150, 110, 70), 0.4, 0.5)
+	Effects.Ring(t.position + Vector3.new(0, 0.3, 0), 7, Color3.fromRGB(190, 170, 140), 0.4)
+	Effects.Text(t.position + Vector3.new(0, 6, 0), "Barricade broke!", Color3.fromRGB(255, 160, 120), 1.4)
+	Sound.Play("Land", t.position)
+	sinkLook(t, 0)
+	wallBar(t)
+end
+
+-- the player pays RebuildCost; the rebuild then runs for RebuildTime seconds of game time (runWall)
+function TowerService.Rebuild(_player, model)
+	local t = towers[model]
+	if not t or not t.wall then
+		return false, "That's not a barricade"
+	end
+	if not t.wall.Broken then
+		return false, "It isn't broken"
+	end
+	if t.wall.rebuild then
+		return false, "Already rebuilding"
+	end
+	if not State.TrySpend(WALL.RebuildCost) then
+		return false, "Not enough mana"
+	end
+	t.wall.rebuild = 0
+	model:SetAttribute("Rebuilding", true)
+	Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
+	Sound.Play("Build", t.position)
+	return true
+end
+
+local function finishRebuild(t)
+	local wall = t.wall
+	wall.Broken = false
+	wall.rebuild = nil
+	wall.Health = wall.MaxHealth
+	wall.warned = false
+	EnemyService.Blockers[wall.Key] = wall
+	t.model:SetAttribute("Broken", false)
+	t.model:SetAttribute("Rebuilding", false)
+	t.model:SetAttribute("RebuildProgress", 1)
+	sinkLook(t, 1)
+	wall.lookPivot, wall.shownRebuild = nil, nil -- (an upgrade later swaps the look: measure it again next time)
+	Effects.Ring(t.position + Vector3.new(0, 0.25, 0), 5, Color3.fromRGB(205, 190, 160), 0.35)
+	Sound.Play("Build", t.position)
+	wallBar(t)
+end
+
+function TowerService.HurtWall(t, amount)
+	if not t.wall or t.wall.Broken then
+		return
+	end
+	t.wall.Health -= amount
+	t.wall.hurtAt = Clock.now
+	if t.wall.Health <= 0 then
+		breakWall(t)
+		return
+	end
+	if not t.wall.warned and t.wall.Health < t.wall.MaxHealth * 0.3 then
+		-- once per wall: the call to come and repair it
+		t.wall.warned = true
+		Effects.Text(t.position + Vector3.new(0, 7, 0), "Repair me!", Color3.fromRGB(255, 200, 120), 1.4)
+	end
+end
+
+local function wallStats(t)
+	return Config.TowerStats(t.type, t.level, t.branch)
+end
+
+function TowerService.AddWall(model, t, spot)
+	wallKeys += 1
+	local stats = wallStats(t)
+	local wall = { Key = wallKeys, Distance = spot.Distance, Depth = 1.2, Dir = spot.Dir, Health = stats.Health,
+		MaxHealth = stats.Health, count = 0 }
+	t.model = model
+	model:SetAttribute("PathDistance", spot.Distance) -- (the build preview keeps barricades apart with it)
+	t.wall = wall
+	wall.OnHit = function(enemy, dt)
+		TowerService.HurtWall(t, (Config.ContactDamage[enemy.name] or 5) * WALL.HitScale * dt)
+		local now = Clock.now
+		-- a dull knock now and then, not on every hit (6A: rare and small)
+		if now >= (wall.nextKnock or 0) then
+			wall.nextKnock = now + 0.9 + math.random() * 0.5
+			Sound.Play("Land", t.position)
+		end
+		local thorns = wallStats(t).Thorns
+		if thorns then
+			EnemyService.Damage(enemy, thorns * dt)
+		end
+	end
+	EnemyService.Blockers[wall.Key] = wall
+	wallBar(t)
+end
+
+-- after an upgrade: more health, the hurt share kept (a half-broken wall stays half-broken, only taller)
+function TowerService.UpgradeWall(t)
+	local stats = wallStats(t)
+	local share = t.wall.Health / t.wall.MaxHealth
+	t.wall.MaxHealth = stats.Health
+	t.wall.Health = stats.Health * share
+	t.wall.warned = false
+	wallBar(t)
+end
+
+runWall = function(t, dt)
+	local wall = t.wall
+	if wall.Broken then
+		-- dt is game time (Clock.scale), so a faster run rebuilds faster in real seconds
+		if wall.rebuild then
+			wall.rebuild = math.min(1, wall.rebuild + dt / WALL.RebuildTime)
+			if wall.rebuild >= 1 then
+				finishRebuild(t)
+				return
+			end
+			if wall.rebuild - (wall.shownRebuild or 0) >= 0.02 then
+				wall.shownRebuild = wall.rebuild
+				t.model:SetAttribute("RebuildProgress", wall.rebuild)
+				sinkLook(t, wall.rebuild)
+				wallBar(t)
+			end
+		end
+		return
+	end
+	-- a hero standing near repairs it (no button to hold: phone and controller friendly)
+	if wall.Health < wall.MaxHealth then
+		local near = false
+		for _, player in Players:GetPlayers() do
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if root and (flat(root.Position) - flat(t.position)).Magnitude <= WALL.RepairRange then
+				near = true
+				break
+			end
+		end
+		if near then
+			wall.Health = math.min(wall.MaxHealth, wall.Health + wall.MaxHealth * WALL.RepairRate * dt)
+			if wall.Health >= wall.MaxHealth * 0.3 then
+				wall.warned = false
+			end
+		end
+		if near ~= wall.repairing then
+			wall.repairing = near
+			t.model:SetAttribute("Repairing", near)
+		end
+	end
+	-- Rootwall: the lane in front of it walks at half speed
+	local stats = wallStats(t)
+	if stats.Slow and stats.Range and stats.Range > 0 then
+		for _, e in EnemyService.GetActive() do
+			if not e.dead and not e.stats.Flying and e.distance <= wall.Distance and e.distance >= wall.Distance - stats.Range then
+				EnemyService.Slow(e, stats.Slow, 0.3)
+			end
+		end
+	end
+	-- the bar: about ten updates a second is plenty
+	wall.barIn = (wall.barIn or 0) - dt
+	if wall.barIn <= 0 then
+		wall.barIn = 0.1
+		wallBar(t)
+	end
+end
+
 function TowerService.Start()
 	Remotes.PlaceTower.OnServerInvoke = TowerService.Place
 	Remotes.UpgradeTower.OnServerInvoke = TowerService.Upgrade
 	Remotes.SellTower.OnServerInvoke = TowerService.Sell
 
-	RunService.Heartbeat:Connect(function()
+	RunService.Heartbeat:Connect(function(realDt)
 		local now = Clock.now
 		runTurrets(now)
 		for model, t in towers do
-			if model.Parent then
-				shoot(t, now, model)
-			else
+			if not model.Parent then
 				towers[model] = nil
+				if t.wall then
+					EnemyService.Blockers[t.wall.Key] = nil
+				end
+			elseif t.wall then
+				runWall(t, realDt * Clock.scale)
+			else
+				shoot(t, now, model)
 			end
 		end
 	end)

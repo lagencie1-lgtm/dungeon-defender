@@ -12,6 +12,9 @@ import sys
 
 from PIL import Image
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tower_stage import AZIMUTH, kind_of  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 BANDS = 12
@@ -41,21 +44,30 @@ def main():
     strength = float(sys.argv[3]) if len(sys.argv) > 3 else 0.8
     paint = fbx[:-4] + "_paint.png"
     keep = fbx[:-4] + "_ungraded.png"
-    shutil.copy(paint, keep)
+    # from the projection itself (scripts/tower_paint.py keeps it): grading the graded paint again sharpened it twice
+    projected = fbx[:-4] + "_projected.png"
+    use = projected if os.path.exists(projected) and os.path.getmtime(projected) >= os.path.getmtime(fbx) else paint
+    shutil.copy(use, keep)
     import glob
     for skin in glob.glob(fbx[:-4] + "_paint_*.png"):   # the other parts (tower kit atlases), sharpened the same way
         other = fbx[:-4] + "_ungraded_" + skin[len(fbx[:-4] + "_paint_"):]
         from PIL import ImageFilter as _F
-        Image.open(skin).convert("RGB").filter(_F.UnsharpMask(radius=2, percent=55, threshold=2)).save(other)
+        Image.open(skin).convert("RGB").filter(_F.UnsharpMask(radius=2, percent=int(os.environ.get("HTD_SHARPEN", "55")), threshold=2)).save(other)
         shutil.copy(other, skin)
     # crisp painted edges like the picture (the projection softens them a little): a light unsharp mask first, so
     # the grade below measures the sharpened paint
     from PIL import ImageFilter
-    Image.open(keep).convert("RGB").filter(ImageFilter.UnsharpMask(radius=2, percent=55, threshold=2)).save(keep)
+    Image.open(keep).convert("RGB").filter(ImageFilter.UnsharpMask(radius=2, percent=int(os.environ.get("HTD_SHARPEN", "55")), threshold=2)).save(keep)
     shutil.copy(keep, paint)
     render = fbx[:-4] + "_grade_render.png"
-    subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"],
-                   capture_output=True)
+    kind = kind_of(fbx)
+    scored = fbx
+    if kind == "barricade":   # graded on the centre section the picture shows (scripts/tower_round.py)
+        import tower_round
+        from tower_stage import stage
+        scored = tower_round.centre_model(stage(kind, os.path.basename(fbx)[:-4].split("_")[2]), fbx)
+    subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", scored, render,
+                    str(AZIMUTH.get(kind, -75.0)), "15", "512"], capture_output=True)
     pic = Image.open(picture).convert("RGB")
     pp = pic.load()
     ren = Image.open(render).convert("RGBA")
@@ -63,8 +75,16 @@ def main():
     want = band_means(pic, lambda x, y: min(pp[x, y]) < 238)
     have = band_means(ren, lambda x, y: rp[x, y][3] > 200)
     gains = []
+    # HTD_GRADE_CHROMA: how far one colour channel's gain may stray from the band's mean gain (unset = free); the
+    # barricade's grade tinted the parts the picture never shows (log ends pink, bands purple, rope green) at 0.2
+    spread = float(os.environ["HTD_GRADE_CHROMA"]) if os.environ.get("HTD_GRADE_CHROMA") else None
     for wv, hv in zip(want, have):
-        gains.append([max(0.8, min(1.2, (wv[i] / max(1e-4, hv[i])) ** strength)) for i in range(3)])
+        lo, hi = (float(v) for v in os.environ.get("HTD_GRADE_RANGE", "0.8,1.2").split(","))
+        g = [max(lo, min(hi, (wv[i] / max(1e-4, hv[i])) ** strength)) for i in range(3)]
+        if spread is not None:
+            m = sum(g) / 3
+            g = [max(m - spread, min(m + spread, x)) for x in g]
+        gains.append(g)
     path = fbx[:-4] + "_gains.json"
     json.dump({"bands": gains}, open(path, "w"))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "tower_project.py"), "--", "grade", fbx, keep, path, paint],

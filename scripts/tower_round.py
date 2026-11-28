@@ -5,12 +5,18 @@ four sides, scores it against the picture (scripts/match_score.py) and writes
   reviews/towers/<kind>_l<level>/rounds.md             one line per round: what changed and the numbers
 
 Run: python scripts/tower_round.py <kind> <level> <round> model.fbx "what changed this round"
-"""
+     python scripts/tower_round.py barricade l2 3 art/models/tower_barricade_l2.fbx "..."
+The barricade is scored on its centre section (the picture has no wings): the centre is built alone
+(HTD_CENTRE_ONLY=1), takes the full wall's paint (art/blender/paint_transfer.py) and is rendered at azimuth 105.
+The four sides below show the full wall."""
 import os
 import subprocess
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tower_stage import stage  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
@@ -21,18 +27,37 @@ def run(cmd):
     return r.stdout
 
 
+def centre_model(st, fbx):
+    """the barricade's centre section, built alone with the full wall's paint carried onto it"""
+    work = os.path.join(ROOT, "tools", "fit")
+    os.makedirs(work, exist_ok=True)
+    centre = os.path.join(work, os.path.basename(fbx)[:-4] + "_centre.fbx")
+    r = subprocess.run([BLENDER, "-b", "-P", st["builder"], "--", centre, st["builder_arg"]], capture_output=True, text=True,
+                       encoding="utf-8", errors="ignore", env=dict(os.environ, HTD_CENTRE_ONLY="1"))
+    if "EXPORTED" not in r.stdout and not os.path.exists(centre):
+        raise SystemExit("centre build failed: " + r.stdout[-1500:])
+    base = centre[:-4] + "_paint.png"
+    out = run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "paint_transfer.py"), "--", fbx, fbx[:-4] + "_paint.png",
+               centre, base, base])
+    print(next((ln for ln in out.splitlines() if ln.startswith("TRANSFERRED")), out[-800:]), flush=True)
+    return centre
+
+
 def main():
-    kind, level, rnd, fbx = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), os.path.abspath(sys.argv[4])
+    kind, rnd, fbx = sys.argv[1], int(sys.argv[3]), os.path.abspath(sys.argv[4])
+    st = stage(kind, sys.argv[2])
+    level = st["look"]
     note = sys.argv[5] if len(sys.argv) > 5 else ""
-    folder = os.path.join(ROOT, "reviews", "towers", f"{kind}_l{level}")
+    folder = st["folder"]
     os.makedirs(folder, exist_ok=True)
-    picture = os.path.join(ROOT, "art", "ref3d", f"tower_{kind}_l{level}.png")
+    picture = st["picture"]
     stem = os.path.join(folder, f"round_{rnd:02d}")
     render = stem + "_render.png"
-    run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", fbx, render, "-75", "15", "512"])
+    scored = centre_model(st, fbx) if st["centre"] else fbx
+    run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "render_match.py"), "--", scored, render, str(st["az"]), "15", "512"])
     out = run([sys.executable, os.path.join(ROOT, "scripts", "match_score.py"), picture, render, stem + "_match.png"]).splitlines()
     around = stem + "_around.png"
-    for k, az in enumerate((-75, 15, 105, -165)):
+    for k, az in enumerate(st["sides"]):
         run([BLENDER, "-b", "-P", os.path.join(ROOT, "art", "blender", "parts_render.py"), "--", fbx, around[:-4] + f"_{k}.png",
              str(az), "15", "300", "persp", "lit"])
     match = Image.open(stem + "_match.png")
@@ -49,7 +74,7 @@ def main():
         font = ImageFont.truetype("arial.ttf", 15)
     except OSError:
         font = ImageFont.load_default()
-    d.text((8, 4), f"{kind} level {level}, round {rnd}: {note}", fill=(20, 20, 20), font=font)
+    d.text((8, 4), f"{kind} {level}, round {rnd}: {note}", fill=(20, 20, 20), font=font)
     d.text((8, 22), out[0] if out else "no score", fill=(20, 20, 20), font=font)
     d.text((8, 40), out[1] if len(out) > 1 else "", fill=(60, 60, 60), font=font)
     sheet.save(stem + ".png")

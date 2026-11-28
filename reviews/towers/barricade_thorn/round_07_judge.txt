@@ -1,0 +1,5 @@
+GEMINI gemini-3.5-flash: score 8 (A was the model)
+  - model is a low-resolution 3D game render with jagged cutout edges, whereas painting is a smooth, high-definition digital illustration.
+  - painting cleanly renders four pointed wooden stakes extending beneath the bottom horizontal beam, which are fragmented and cut off in model.
+  - model includes an extra smaller spike on the far-left front rack, whereas painting shows five evenly sized front spikes.
+  - The metal bands, rivets, and shield boss have sharper highlights and smoother textures in painting compared to the pixelated surfaces in model.

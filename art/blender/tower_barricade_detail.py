@@ -103,7 +103,8 @@ DEFAULTS = {
     "thorn": dict(BASE, pairs=4, stake_len=4.6, stake_tilt=60, front=4, front_len=3.4, crest=0.8, crest_len=2.0, upper=5,
                   stake_lean=-0.3, front_tilt=38, rail_h=1.3, stake_out=0.3),
     "root": dict(BASE, reach=3.0, sapling=1.0, root_r=0.62, spread=0.4, crown=1.4, pour=4, fan=1.6, fork_len=1.0, pour_in=0.4, wind_drop=0.0, trunk_in=0.55, trunk=0.0, tuft_r=0.42,
-                 leaves=18, wind_turns=1.0, clear_shield=0, claw=1.0),
+                 leaves=18, wind_turns=1.0, clear_shield=0, claw=1.0,
+                 claw_curl=0.0, hang=0),
 }
 P = dict(DEFAULTS[stage])
 saved = os.path.join(HERE, "params", f"tower_barricade_{stage}.json")
@@ -185,6 +186,18 @@ def disc_y(name, y0, y1, z, r0, r1, facing, color, key=None, tile=1.0, verts=24,
     """a short round slab standing on the wall face (a lathe turned to face +Y or -Y; limb() cannot aim along Y)"""
     o = K.lathe(name, [(r0, y0), (r1, y1)], color, key=key, tile=tile, verts=verts)
     return moved(o, (x, 0, z), FACE_Y[facing])
+
+
+def claw(name, a, tip, r_base, curl, color, verts=8):
+    """a root claw from a to tip: it bows up a little, curls sideways and digs down at the end, tapering all the way
+    (Gemini, Rootwall round 26: the straight 3-point forks read as "sharp geometric spikes")"""
+    a, tip = Vector(a), Vector(tip)
+    d = tip - a
+    side = Vector((-d.y, d.x, 0)).normalized() * curl if d.length > 0 else Vector((0, 0, 0))
+    pts = [a, a + d * 0.3 + Vector((0, 0, 0.08)) + side * 0.3, a + d * 0.6 + Vector((0, 0, 0.06)) + side * 0.8,
+           a + d * 0.85 + side * 1.0, tip + side * 0.7 + Vector((0, 0, -0.06))]
+    tube(name, [tuple(p) for p in pts], [r_base, r_base * 0.72, r_base * 0.48, r_base * 0.26, r_base * 0.07], color, "bark", 1.6,
+         verts=verts)
 
 
 def tube(name, pts, radii, color, key=None, tile=1.4, verts=10):
@@ -481,8 +494,11 @@ if stage == "root":
             a = rad(ang + 12 * lean)
             ln = rnd.uniform(0.8, 1.2) * P["fork_len"]   # (the post roots' forks: short; the fan in the middle is the big one)
             tip = fork + Vector((math.sin(a) * ln, s * math.cos(a) * ln, -0.12))
-            bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
-            tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.46 * P["claw"], r0 * 0.28 * P["claw"], r0 * 0.03], ROOT_T, "bark", 1.6, verts=8)
+            if P["claw_curl"]:
+                claw(f"{name}Fork{f}", fork, tip, r0 * 0.46 * P["claw"], P["claw_curl"] * (1 if f % 2 else -1) * ln * 0.25, ROOT_T)
+            else:
+                bend = fork.lerp(tip, 0.5) + Vector((0, 0, 0.1))
+                tube(f"{name}Fork{f}", [fork, bend, tip], [r0 * 0.46 * P["claw"], r0 * 0.28 * P["claw"], r0 * 0.03], ROOT_T, "bark", 1.6, verts=8)
 
     def root(name, x0, s, phase, top, r0=0.5, w=0.14):
         pts = [(x0, -s * 0.2, top + 0.06), (x0 + w * 0.3, s * R * 0.5, top + 0.16), (x0 + w * 0.5, s * (R + 0.22), top - 0.45)]
@@ -539,7 +555,7 @@ if stage == "root":
             radii.append(r0 * (0.95 + 0.05 * g.random()))
         # the foot: out toward the viewer and in toward the middle, then the fan
         t = (k + 0.5) / n - 0.5                       # -0.5 .. 0.5 across the fan
-        foot = Vector((x0 * P["trunk_in"] * 0.6, s * (R + 0.9), 0.3))
+        foot = Vector((x0 * P["trunk_in"] * 0.6, s * (R + (0.55 if P["hang"] else 0.9)), 0.3))
         end = Vector((t * 2 * P["fan"], s * (R + P["reach"] * 0.9), 0.06))
         pts += [tuple(foot), tuple(foot.lerp(end, 0.55) + Vector((0, 0, 0.05))), tuple(end)]
         radii += [r0 * 0.85, r0 * 0.5 * P["claw"], r0 * 0.05]   # (fine root ends: the judge saw blunt, coarse ones)
@@ -547,8 +563,11 @@ if stage == "root":
         for f, side in enumerate((-1, 1)):            # two short forks off the fan's end
             a = Vector(pts[-2])
             tip = a + Vector((side * g.uniform(0.6, 1.0), s * g.uniform(0.4, 0.8), -0.1))
-            tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.36 * P["claw"], r0 * 0.2 * P["claw"], r0 * 0.025], ROOT_T,
-                 "bark", 1.6, verts=8)
+            if P["claw_curl"]:
+                claw(f"{name}Fork{f}", a, tip, r0 * 0.36 * P["claw"], P["claw_curl"] * side * 0.25, ROOT_T)
+            else:
+                tube(f"{name}Fork{f}", [a, a.lerp(tip, 0.5) + Vector((0, 0, 0.05)), tip], [r0 * 0.36 * P["claw"], r0 * 0.2 * P["claw"], r0 * 0.025], ROOT_T,
+                     "bark", 1.6, verts=8)
 
     shield_low = (zs[0] + (zs[-1] - zs[0]) * P["shield_h"] - P["shield"] - 0.2) if P["shield"] > 0 else top_c * 0.4
     for s, tag in ((1, "F"), (-1, "B")):
@@ -571,9 +590,12 @@ if stage == "root":
             tr = P["root_r"] * P["trunk"]
             y_face = s * (R + tr * 0.55)
             top = shield_z - P["shield"] - tr * 0.7 if P["clear_shield"] else shield_low   # (below the rim: the shield stays clear)
+            # (hang: the central roots hang straight down the face instead of bulging out toward the viewer; Gemini,
+            # Rootwall round 26: "a protruding, bulky mass" where the picture's roots hang vertically)
+            out1, out2 = (0.55, 0.75) if P["hang"] else (0.8, 1.5)
             tube(f"Trunk{tag}", [(0.0, s * R * 0.7, max(0.9, top - 0.15)), (0.0, y_face, max(0.8, top - 0.45)),
-                                 (0.0, s * (R + tr * 0.8), 0.5), (0.0, s * (R + tr * 1.5), 0.16)],
-                 [tr * 0.8, tr, tr * 1.15, tr * 1.25], ROOT_T, "bark", 1.6, verts=14)
+                                 (0.0, s * (R + tr * out1), 0.5), (0.0, s * (R + tr * out2), 0.16)],
+                 [tr * 0.8, tr, tr * 1.1, tr * 1.2], ROOT_T, "bark", 1.6, verts=14)
 
     wing_mid = (BX + BR + WX - WR) / 2
     for s, tag in ((1, "F"), (-1, "B")):

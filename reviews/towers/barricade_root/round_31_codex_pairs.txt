@@ -1,0 +1,4 @@
+Codex pairwise (HTD_JUDGE=codex-pair), Rootwall round 26 vs round 31, each order twice: 2 to 2, no clear winner.
+For round 26: brighter gold rim and boss, warmer wood and moss. For round 31: the central roots run down into claws
+like the picture, closer spreading root shapes. Round 26 stays the upload candidate (fallback files:
+tools/fit/root_r25.fbx with tools/fit/root_r26_paint.png); round 31 passes the gates too (90.3 / 9.8 / 1.14).

@@ -81,3 +81,18 @@ From round 2 on, the Rootwall is scored against art/ref3d/tower_barricade_root_f
 - round 26: round 25 with the shield faces lightened (1.25 / 1.18 / 1.08)
   IoU 91.0%  width profile off 11.1%  region colour dE 9.3  (pixel dE 52.0)  detail 26.2% vs picture 23.4% (ratio 1.12)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
   bands (dE, lightness picture/model): roof 3 (L 49/48)  lookout 2 (L 37/36)  wall 1 (L 36/36)  footing 4 (L 50/53)
+- round 27: central roots hang straight down (no forward bulge), curved tapering claws (curl 0.25), 30 single leaves per tuft on a smaller core; shape fit 90.1; fresh Codex repaint graded once; shield lightened
+  IoU 89.7%  width profile off 14.7%  region colour dE 9.5  (pixel dE 51.9)  detail 26.6% vs picture 23.4% (ratio 1.13)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/48)  lookout 2 (L 37/37)  wall 3 (L 36/36)  footing 10 (L 50/57)
+- round 28: round 27 with bigger tufts (0.46) and a wider fan (1.45), refit 90.2; round 27's paintings re-projected on the fresh build
+  IoU 89.9%  width profile off 14.7%  region colour dE 9.6  (pixel dE 52.2)  detail 26.3% vs picture 23.4% (ratio 1.12)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/49)  lookout 2 (L 37/37)  wall 3 (L 36/37)  footing 10 (L 50/57)
+- round 29: round 26's shape with the central roots hanging straight down (thicker trunk 1.6, fan 1.5), 30 leaves per tuft, straight tapered claws; round 27's paintings re-projected
+  IoU 90.3%  width profile off 14.2%  region colour dE 10.4  (pixel dE 54.2)  detail 27.1% vs picture 23.4% (ratio 1.16)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/49)  lookout 1 (L 37/37)  wall 2 (L 36/37)  footing 11 (L 50/58)
+- round 30: round 29's shape (hanging central roots, thicker trunk, 30 leaves) with a fresh Codex repaint graded once
+  IoU 90.3%  width profile off 14.2%  region colour dE 10.1  (pixel dE 54.6)  detail 27.1% vs picture 23.4% (ratio 1.16)  not yet  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/48)  lookout 2 (L 37/38)  wall 3 (L 36/37)  footing 8 (L 50/57)
+- round 31: round 30 without the shield lightening (graded again from the projection)
+  IoU 90.3%  width profile off 14.2%  region colour dE 9.8  (pixel dE 54.0)  detail 26.8% vs picture 23.4% (ratio 1.14)  PASS  [pass: IoU >= 90%, region dE <= 10.0, detail ratio 0.85-1.3]
+  bands (dE, lightness picture/model): roof 4 (L 49/48)  lookout 2 (L 37/35)  wall 3 (L 36/37)  footing 8 (L 50/57)

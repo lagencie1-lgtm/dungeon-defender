@@ -26,15 +26,16 @@
  "spread": 0.3,
  "crown": 1.0,
  "pour": 2,
- "fan": 1.25,
+ "fan": 1.5,
  "fork_len": 0.993,
  "pour_in": 0.8,
  "wind_drop": 1.2,
  "trunk_in": 0.12,
- "trunk": 1.15,
+ "trunk": 1.6,
  "tuft_r": 0.46,
- "leaves": 22,
+ "leaves": 30,
  "wind_turns": 0.7,
  "clear_shield": 1,
- "claw": 0.65
+ "claw": 0.65,
+ "hang": 1
 }
